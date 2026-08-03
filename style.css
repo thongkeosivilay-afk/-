@@ -53,6 +53,17 @@
     z-index:0;
   }
 
+  /* ---------- Right-edge shadow (faint black fade, runs the full page) ---------- */
+  .shell::after{
+    content:"";
+    position:absolute;
+    top:0; right:0; bottom:0;
+    width:70px;
+    background:linear-gradient(to left, rgba(0,0,0,.6), rgba(0,0,0,.25) 45%, transparent 100%);
+    pointer-events:none;
+    z-index:2;
+  }
+
   /* ---------- Ticker ---------- */
   .ticker-wrap{
     background:#000;
@@ -224,16 +235,25 @@
   .rail::-webkit-scrollbar{ display:none; }
 
   /* ---------- Category stack (full-width banner cards) ---------- */
-  .cat-stack{ display:flex; flex-direction:column; gap:22px; padding:2px 20px 6px; }
-  .cat-item{ display:flex; flex-direction:column; }
+  .cat-stack{ display:flex; flex-direction:column; gap:14px; padding:2px 20px 6px; }
+
+  /* the whole card — banner + meta text — lives inside ONE bordered box */
+  .cat-item{
+    display:flex; flex-direction:column;
+    border-radius:16px;
+    overflow:hidden;
+    border:1px solid var(--card-border);
+    background:var(--card);
+    box-shadow:0 14px 34px -14px rgba(0,0,0,.7);
+  }
 
   .cat-banner{
     position:relative;
     display:block;
-    border-radius:16px;
-    overflow:hidden;
-    min-height:230px;
-    border:1px solid var(--card-border);
+    min-height:168px;
+  }
+  .cat-banner-bg{
+    position:absolute; inset:0;
     background:
       radial-gradient(circle at 12% 15%, rgba(227,28,61,.30), transparent 55%),
       repeating-linear-gradient(115deg, rgba(227,28,61,.05) 0 10px, transparent 10px 22px),
@@ -260,37 +280,38 @@
   .cat-img-placeholder svg{ width:26px; height:26px; opacity:.45; }
   .cat-img-placeholder span{ font-size:10.5px; line-height:1.5; }
 
-  /* soft dark fade along the bottom so text always stays legible */
+  /* soft dark fade along the bottom so text always stays legible, and so
+     the banner blends smoothly into the meta text beneath it */
   .cat-banner::after{
     content:"";
     position:absolute; inset:0;
-    background:linear-gradient(to top, rgba(5,3,4,.55), transparent 45%);
+    background:linear-gradient(to top, var(--card) 0%, rgba(5,3,4,.5) 22%, transparent 55%);
     pointer-events:none;
   }
 
   .cat-banner-content{
     position:relative; z-index:2;
-    padding:20px 20px 0;
+    padding:16px 20px 0;
     max-width:64%;
   }
   .cat-tag-row{
     display:flex; align-items:center; gap:6px;
-    font-size:12px; font-weight:600; color:var(--text);
-    margin-bottom:6px;
+    font-size:11.5px; font-weight:600; color:var(--text);
+    margin-bottom:5px;
   }
   .cat-tag-row .accent-bar{
-    width:4px; height:14px; border-radius:2px;
+    width:4px; height:13px; border-radius:2px;
     background:var(--red-glow);
     box-shadow:0 0 8px rgba(255,59,59,.7);
     flex-shrink:0;
   }
-  .cat-tag-row svg{ width:15px; height:15px; color:var(--text); flex-shrink:0; }
+  .cat-tag-row svg{ width:14px; height:14px; color:var(--text); flex-shrink:0; }
   .cat-big-title{
-    font-size:38px; font-weight:900; line-height:1;
+    font-size:30px; font-weight:900; line-height:1;
     color:var(--red-glow);
     text-shadow:0 0 24px rgba(255,59,59,.45);
     letter-spacing:.5px;
-    margin-bottom:10px;
+    margin-bottom:8px;
     word-break:break-word;
   }
   .cat-url-pill{
@@ -308,7 +329,7 @@
   }
   .cat-click .dot{ width:6px; height:6px; background:rgba(255,255,255,.6); box-shadow:none; }
 
-  .cat-meta{ padding:14px 4px 0; }
+  .cat-meta{ padding:12px 18px 14px; position:relative; z-index:2; }
   .cat-meta-name{ font-size:16.5px; font-weight:800; margin-bottom:4px; }
   .cat-meta-desc{
     font-size:12.5px; color:var(--text-dim); line-height:1.6;
