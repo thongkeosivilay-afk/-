@@ -250,7 +250,7 @@
   .cat-banner{
     position:relative;
     display:block;
-    min-height:168px;
+    height:176px;
   }
   .cat-banner-bg{
     position:absolute; inset:0;
@@ -260,24 +260,32 @@
       linear-gradient(150deg,#1c0d10,#0a0708);
   }
 
-  /* image / media area — right side, fading softly into the card so the
-     seam between the picture and the text/name reads as one surface */
+  /* image / media area — right side. Sits in the exact spot a real photo
+     will occupy. Add class "has-image" (see HTML comment) once a real
+     <img> replaces the placeholder — that's what turns on the soft fade
+     into the card so the picture blends seamlessly with the text below. */
   .cat-banner-media{
     position:absolute; inset:0; left:28%;
+  }
+  .cat-banner-media.has-image{
     -webkit-mask-image:linear-gradient(to left, #000 55%, transparent 100%);
     mask-image:linear-gradient(to left, #000 55%, transparent 100%);
   }
   .cat-banner-media img{
     width:100%; height:100%; object-fit:cover; display:block; opacity:.92;
   }
-  /* placeholder shown until a real image is dropped in (see HTML comment) */
+  /* placeholder shown until a real image is dropped in — a clearly
+     marked upload slot, not a faded ghost, so it's obvious where the
+     photo goes and exactly what size it will fill */
   .cat-banner-media .cat-img-placeholder{
-    width:100%; height:100%;
-    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:6px;
-    background:linear-gradient(160deg,#20080b,#0a0506);
-    color:var(--text-faint); text-align:center; padding:0 14px;
+    position:absolute; inset:12px 12px 12px 4px;
+    border-radius:12px;
+    border:1.5px dashed rgba(255,255,255,.22);
+    background:linear-gradient(160deg, rgba(227,28,61,.12), rgba(0,0,0,.35));
+    display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;
+    color:var(--text-dim); text-align:center; padding:0 14px;
   }
-  .cat-img-placeholder svg{ width:26px; height:26px; opacity:.45; }
+  .cat-img-placeholder svg{ width:30px; height:30px; opacity:.6; color:var(--red-glow); }
   .cat-img-placeholder span{ font-size:10.5px; line-height:1.5; }
 
   /* soft dark fade along the bottom so text always stays legible, and so
@@ -329,7 +337,7 @@
   }
   .cat-click .dot{ width:6px; height:6px; background:rgba(255,255,255,.6); box-shadow:none; }
 
-  .cat-meta{ padding:12px 18px 14px; position:relative; z-index:2; }
+  .cat-meta{ padding:12px 18px 14px; position:relative; z-index:2; min-height:86px; }
   .cat-meta-name{ font-size:16.5px; font-weight:800; margin-bottom:4px; }
   .cat-meta-desc{
     font-size:12.5px; color:var(--text-dim); line-height:1.6;
