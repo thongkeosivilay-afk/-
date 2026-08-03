@@ -86,7 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const update = (now) => {
       const railRect = rail.getBoundingClientRect();
       const centerX = railRect.left + railRect.width / 2;
-      const halfWidth = railRect.width / 2 || 1;
+      // ຄູນຫາຄ່າ halfWidth ໃຫ້ໃຫຍ່ຂຶ້ນ (SCROLL_EASE) — ຕ້ອງເລື່ອນໄກກວ່າເກົ່າ
+      // ກ່ອນທີ່ການ໌ດ໌ຈະໝຸນ/ລອຍເຕັມທີ່ ເຮັດໃຫ້ຄວາມຮູ້ສຶກຕອນເລື່ອນຊ້າລົງ ບໍ່ວູບວາບ
+      const SCROLL_EASE = 1.8;
+      const halfWidth = (railRect.width / 2 || 1) * SCROLL_EASE;
 
       cards.forEach((card, i) => {
         const r = card.getBoundingClientRect();

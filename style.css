@@ -77,17 +77,17 @@
     flex-shrink:0;
   }
 
-  /* ---------- Discord login button (header) ---------- */
+  /* ---------- Login button (header) ---------- */
   .login-btn{
     display:inline-flex; align-items:center; gap:7px;
     padding:8px 14px;
     border-radius:999px;
-    background:linear-gradient(145deg,#5865F2,#4752c4);
+    background:linear-gradient(145deg,var(--red),var(--red-deep));
     color:#fff;
     font-size:13px;
     font-weight:700;
     letter-spacing:.2px;
-    box-shadow:0 0 16px rgba(88,101,242,.45), inset 0 0 0 1px rgba(255,255,255,.10);
+    box-shadow:0 0 16px rgba(227,28,61,.45), inset 0 0 0 1px rgba(255,255,255,.10);
     border:none;
     flex-shrink:0;
     transition:transform .15s ease, box-shadow .15s ease;
@@ -95,7 +95,7 @@
   }
   .login-btn:hover{
     transform:translateY(-1px);
-    box-shadow:0 0 22px rgba(88,101,242,.6), inset 0 0 0 1px rgba(255,255,255,.14);
+    box-shadow:0 0 22px rgba(227,28,61,.6), inset 0 0 0 1px rgba(255,255,255,.14);
   }
   .login-btn:active{ transform:translateY(0); }
   .login-btn svg{ width:17px; height:17px; flex-shrink:0; }
@@ -224,21 +224,11 @@
 
   /* ---------- Category rail (legacy, still used by product rails) ---------- */
   .rail{
-    display:flex; gap:14px; overflow-x:auto; padding:14px 20px 18px;
+    display:flex; gap:9px; overflow-x:auto; padding:14px 20px 18px;
     scroll-snap-type:x mandatory;
     position:relative;
   }
   .rail::-webkit-scrollbar{ display:none; }
-  /* faint black fade over the right edge of each product rail — hints that
-     the next card is cut off and the row scrolls further; stays fixed to
-     the rail's own box (not the scrolling content) so it never moves */
-  .rail::after{
-    content:"";
-    position:absolute; top:0; right:0; bottom:6px; width:56px;
-    background:linear-gradient(to left, rgba(0,0,0,.7), rgba(0,0,0,.28) 45%, transparent 100%);
-    pointer-events:none;
-    z-index:3;
-  }
 
   /* ---------- Category stack (full-width banner cards) ---------- */
   .cat-stack{ display:flex; flex-direction:column; gap:14px; padding:2px 20px 6px; }
