@@ -1,0 +1,11 @@
+name = "dekmashshop"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "74ffa29122634c6f9cd4db4d71c40a56"
