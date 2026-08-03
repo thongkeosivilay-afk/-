@@ -110,4 +110,21 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', onScroll);
   });
 
+  /* ---------- 5) Category card scroll-reveal ----------
+     ການ໌ດ໌ໝວດໝູ່ (.cat-item) ຈະ fade + ເລື່ອນຂຶ້ນເບົາໆ ເມື່ອ scroll
+     ເຂົ້າມາໃນຈໍ, ແທນທີ່ຈະໂຜ່ອອກມາແບບແຂງໆໃນເທື່ອດຽວ */
+  const catItems = document.querySelectorAll('.cat-item');
+  if (catItems.length) {
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('cat-in-view');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    catItems.forEach((item) => revealObserver.observe(item));
+  }
+
 });
