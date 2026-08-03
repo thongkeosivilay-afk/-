@@ -127,4 +127,45 @@ document.addEventListener('DOMContentLoaded', () => {
     catItems.forEach((item) => revealObserver.observe(item));
   }
 
+  /* ---------- 6) Discord login state ----------
+     ใช้ .avatar ที่มุมขวาบน (มีอยู่แล้วในหน้าเว็บ) เป็นทั้งปุ่ม
+     "เข้าสู่ระบบ" (ยังไม่ login) และ "รูปโปรไฟล์ / ออกจากระบบ" (login แล้ว)
+     ทำงานคู่กับ worker/src/index.js -> /api/me, /auth/discord/login, /auth/logout */
+  (async () => {
+    const avatarEl = document.querySelector('.avatar');
+    if (!avatarEl) return;
+
+    avatarEl.style.cursor = 'pointer';
+
+    try {
+      const res = await fetch('/api/me');
+      const data = await res.json();
+
+      if (data.loggedIn) {
+        avatarEl.innerHTML = '';
+        if (data.user.avatar) {
+          const img = document.createElement('img');
+          img.src = data.user.avatar;
+          img.alt = data.user.username;
+          img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
+          avatarEl.appendChild(img);
+        }
+        avatarEl.title = `${data.user.username} — ກົດເພື່ອອອກຈາກລະບົບ`;
+        avatarEl.addEventListener('click', () => {
+          if (confirm(`ອອກຈາກລະບົບ (${data.user.username}) ບໍ?`)) {
+            window.location.href = '/auth/logout';
+          }
+        });
+      } else {
+        avatarEl.title = 'ເຂົ້າສູ່ລະບົບດ້ວຍ Discord';
+        avatarEl.addEventListener('click', () => {
+          window.location.href = '/auth/discord/login';
+        });
+      }
+    } catch (err) {
+      // ยังไม่ deploy worker หรือ endpoint /api/me ใช้ไม่ได้ -> ปล่อยเป็น avatar เฉยๆ
+      console.error('Session check failed:', err);
+    }
+  })();
+
 });
