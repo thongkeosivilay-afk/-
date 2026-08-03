@@ -54,14 +54,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ---------- 4) Card-fold scroll animation ----------
-     ແນວຄິດ: ແຕ່ລະການ໌ດ໌ໃນ .rail ຈະຄິດໄລ່ໄລຍະຫ່າງຈາກຈຸດກາງ (center)
-     ຂອງແຖວ scroll ຂອງມັນເອງ. ຍິ່ງໄກຈາກກາງ (ຊິດຂອບ) ການ໌ດ໌ຍິ່ງໜຸນ/ພັບ
-     ອອກ (rotateY) ພ້ອມຫຍໍ້ຂະໜາດ ແລະ ຈາງລົງເລັກນ້ອຍ — ຄືກັບເຈ້ຍພັບ.
-     ເມື່ອ scroll ການ໌ດ໌ເຂົ້າໃກ້ກາງ ມັນຈະຄ່ອຍໆຄືນເປັນທ່າປົກກະຕິ (flat). */
-  const FOLD_MAX_DEG   = 26;   // ອົງສາການພັບສູງສຸດທີ່ຂອບ
-  const SCALE_MIN      = 0.9;  // ຂະໜາດນ້ອຍສຸດທີ່ຂອບ
-  const OPACITY_MIN    = 0.55; // ຄວາມໂປ່ງໃສນ້ອຍສຸດທີ່ຂອບ
+  /* ---------- 4) Card "float away into space" scroll animation ----------
+     ແນວຄິດ: ແຕ່ລະການ໌ດ໌ໃນ .rail ຄິດໄລ່ໄລຍະຫ່າງຈາກຈຸດກາງ (center) ຄືເດີມ
+     ແຕ່ແທນທີ່ຈະພັບແປ໊ະໆ (fold ທຳມະດາ) ຄາດ໌ຈະ:
+       - ໜຸນອອກ (rotateY) + ໝຸນຄ້າຍໜີນ (rotateZ) ຄືວັດຖຸລອຍໝຸນຢູ່ໃນອາວະກາດ
+       - ຖອຍລົງເລິກ (translateZ) ແລະ ຖືກຜັກອອກທາງຂ້າງ (translateX) ຄືຖືກໂຍນລອຍ
+         ໜີໄກອອກຈາກຈໍເມື່ອຫ່າງຈາກກາງ
+       - ຫຍໍ້ຂະໜາດ + ຈາງລົງ ຄືໄກສາຍຕາຂຶ້ນ
+       - ໃນຂະນະດຽວກັນ ທຸກການ໌ດ໌ (ບໍ່ວ່າຈະຢູ່ກາງ ຫຼື ຂອບ) ຈະໂຍກຂຶ້ນ-ລົງເບົາໆ
+         ຕະຫຼອດເວລາ (ບໍ່ຢຸດນິ່ງ) ຄືລອຍຢູ່ໃນສະພາບໄຮ້ແຮງໂນ້ມຖ່ວງ
+     ເມື່ອ scroll ການ໌ດ໌ກັບເຂົ້າໃກ້ກາງ ທຸກຄ່າຈະຄ່ອຍໆຄືນເປັນທ່າປົກກະຕິ (flat)
+     ໂດຍອັດຕະໂນມັດ ເພາະທຸກຄ່າຄຳນວນຈາກຕຳແໜ່ງ scroll ປັດຈຸບັນສະເໝີ (reversible). */
+  const FOLD_MAX_DEG  = 30;   // ອົງສາການໜຸນ (rotateY) ສູງສຸດທີ່ຂອບ
+  const TILT_MAX_DEG  = 24;   // ອົງສາການໝຸນຄ້າຍໜີນ (rotateZ) ສູງສຸດ — ໃຫ້ຄວາມຮູ້ສຶກລອຍໝຸນ
+  const SCALE_MIN     = 0.76; // ຂະໜາດນ້ອຍສຸດ — ຄືລອຍໄກອອກຈາກຈໍ
+  const OPACITY_MIN   = 0.3;  // ຄວາມໂປ່ງໃສນ້ອຍສຸດ — ຄືໄກສາຍຕາ
+  const DRIFT_X_MAX   = 60;   // px ຜັກອອກທາງຂ້າງເພີ່ມຈາກຕຳແໜ່ງ scroll ປົກກະຕິ
+  const DEPTH_MAX     = 260;  // px ຖອຍເລິກເຂົ້າຈໍ (translateZ) ເມື່ອຫ່າງຈາກກາງ
+  const BOB_AMPLITUDE = 6;    // px ໄລຍະໂຍກຂຶ້ນ-ລົງຂອງການລອຍຕົວເບົາໆ (idle float)
+  const BOB_SPEED     = 0.0017;
 
   const rails = document.querySelectorAll('.rail');
 
@@ -69,45 +80,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const cards = Array.from(rail.querySelectorAll('.prod-card'));
     if (!cards.length) return;
 
-    let rafId = null;
+    // ໃຫ້ແຕ່ລະການ໌ດ໌ໂຍກຄົນລະຈັງຫວະກັນ (phase offset) ບໍ່ໃຫ້ລອຍພ້ອມກັນທຸກໃບ
+    const phases = cards.map(() => Math.random() * Math.PI * 2);
 
-    const update = () => {
+    const update = (now) => {
       const railRect = rail.getBoundingClientRect();
       const centerX = railRect.left + railRect.width / 2;
       const halfWidth = railRect.width / 2 || 1;
 
-      cards.forEach((card) => {
+      cards.forEach((card, i) => {
         const r = card.getBoundingClientRect();
         const cardCenter = r.left + r.width / 2;
 
-        // -1 (ຊິດຂອບຊ້າຍ) ... 0 (ກາງ) ... 1 (ຊິດຂອບຂວາ)
+        // -1 (ຊິດຂອບຊ້າຍ) ... 0 (ກາງ) ... 1 (ຊິດຂອບຂວາ), ຍອມໃຫ້ເກີນເລັກນ້ອຍເພື່ອ
+        // ໃຫ້ການ໌ດ໌ທີ່ຫຼຸດອອກຈາກຈໍໄປແລ້ວຍັງໝຸນ/ລອຍຕໍ່ໄປອີກໜ້ອຍໜຶ່ງ
         let progress = (cardCenter - centerX) / halfWidth;
-        progress = Math.max(-1.3, Math.min(1.3, progress));
+        progress = Math.max(-1.4, Math.min(1.4, progress));
         const absProgress = Math.min(1, Math.abs(progress));
 
         const rotateY = -progress * FOLD_MAX_DEG;
+        const rotateZ = progress * TILT_MAX_DEG * absProgress;
         const scale = 1 - absProgress * (1 - SCALE_MIN);
         const opacity = 1 - absProgress * (1 - OPACITY_MIN);
+        const driftX = progress * DRIFT_X_MAX * absProgress;
+        const depthZ = -absProgress * DEPTH_MAX;
+
+        // ການລອຍໂຍກຂຶ້ນ-ລົງເບົາໆຕະຫຼອດເວລາ — ຫຍໍ້ລົງເລັກນ້ອຍເມື່ອການ໌ດ໌ລອຍໄກ
+        // ອອກຈາກກາງ (ໃຫ້ຄວາມຮູ້ສຶກວ່າມັນ "ນິ້ງລົງ" ຂະນະລອຍໜີໄປ ບໍ່ແມ່ນໂຍກແຮງຂຶ້ນ)
+        const bobY = Math.sin(now * BOB_SPEED + phases[i]) * BOB_AMPLITUDE * (1 - absProgress * 0.65);
+
         const originX = progress > 0 ? '0% 50%' : '100% 50%';
 
         card.style.transformOrigin = originX;
         card.style.transform =
-          `perspective(900px) rotateY(${rotateY}deg) scale(${scale})`;
+          `perspective(900px) translate3d(${driftX.toFixed(1)}px, ${bobY.toFixed(1)}px, ${depthZ.toFixed(1)}px) ` +
+          `rotateY(${rotateY.toFixed(2)}deg) rotateZ(${rotateZ.toFixed(2)}deg) scale(${scale.toFixed(3)})`;
         card.style.opacity = opacity.toFixed(3);
       });
-
-      rafId = null;
     };
 
-    const onScroll = () => {
-      if (rafId === null) {
-        rafId = requestAnimationFrame(update);
-      }
+    // ວົນ animation loop ຕະຫຼອດເວລາ (ບໍ່ແມ່ນແຕ່ຕອນ scroll ເທົ່ານັ້ນ) ເພື່ອໃຫ້
+    // ການລອຍໂຍກເບົາໆ (idle float) ເຮັດວຽກແມ່ນແຕ່ຕອນທ່ານບໍ່ໄດ້ scroll ຢູ່
+    const loop = (now) => {
+      update(now);
+      requestAnimationFrame(loop);
     };
+    requestAnimationFrame(loop);
 
-    update(); // ตั้งค่าเริ่มต้นตอนโหลดหน้า
-    rail.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
+    window.addEventListener('resize', () => update(performance.now()));
   });
 
   /* ---------- 5) Category card scroll-reveal ----------
@@ -128,43 +148,48 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ---------- 6) Discord login state ----------
-     ใช้ .avatar ที่มุมขวาบน (มีอยู่แล้วในหน้าเว็บ) เป็นทั้งปุ่ม
-     "เข้าสู่ระบบ" (ยังไม่ login) และ "รูปโปรไฟล์ / ออกจากระบบ" (login แล้ว)
+     ใช้ .login-btn ที่มุมขวาบน เป็นทั้งปุ่ม "ลงชื่อเข้าใช้ด้วย Discord"
+     (ยังไม่ login) และ "รูปโปรไฟล์ / ออกจากระบบ" (login แล้ว)
      ทำงานคู่กับ worker/src/index.js -> /api/me, /auth/discord/login, /auth/logout */
   (async () => {
-    const avatarEl = document.querySelector('.avatar');
-    if (!avatarEl) return;
-
-    avatarEl.style.cursor = 'pointer';
+    const loginBtn = document.querySelector('.login-btn');
+    if (!loginBtn) return;
 
     try {
       const res = await fetch('/api/me');
       const data = await res.json();
 
       if (data.loggedIn) {
-        avatarEl.innerHTML = '';
+        loginBtn.classList.add('is-authed');
+        loginBtn.innerHTML = '';
         if (data.user.avatar) {
           const img = document.createElement('img');
           img.src = data.user.avatar;
           img.alt = data.user.username;
-          img.style.cssText = 'width:100%;height:100%;border-radius:50%;object-fit:cover;';
-          avatarEl.appendChild(img);
+          loginBtn.appendChild(img);
         }
-        avatarEl.title = `${data.user.username} — ກົດເພື່ອອອກຈາກລະບົບ`;
-        avatarEl.addEventListener('click', () => {
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = data.user.username;
+        loginBtn.appendChild(nameSpan);
+
+        loginBtn.title = `${data.user.username} — ກົດເພື່ອອອກຈາກລະບົບ`;
+        loginBtn.addEventListener('click', () => {
           if (confirm(`ອອກຈາກລະບົບ (${data.user.username}) ບໍ?`)) {
             window.location.href = '/auth/logout';
           }
         });
       } else {
-        avatarEl.title = 'ເຂົ້າສູ່ລະບົບດ້ວຍ Discord';
-        avatarEl.addEventListener('click', () => {
+        loginBtn.title = 'ເຂົ້າສູ່ລະບົບດ້ວຍ Discord';
+        loginBtn.addEventListener('click', () => {
           window.location.href = '/auth/discord/login';
         });
       }
     } catch (err) {
-      // ยังไม่ deploy worker หรือ endpoint /api/me ใช้ไม่ได้ -> ปล่อยเป็น avatar เฉยๆ
+      // ยังไม่ deploy worker หรือ endpoint /api/me ใช้ไม่ได้ -> ปล่อยเป็นปุ่มเฉยๆ
       console.error('Session check failed:', err);
+      loginBtn.addEventListener('click', () => {
+        window.location.href = '/auth/discord/login';
+      });
     }
   })();
 
