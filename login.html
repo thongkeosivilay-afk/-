@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ລົງຊື່ເຂົ້າໃຊ້ — 𝐃𝐄𝐊 𝐌𝐀𝐒𝐇 𝐒𝐇𝐎𝐏</title>
+<link rel="stylesheet" href="auth.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Noto+Sans+Lao+Looped:wght@600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="auth-shell">
+
+  <a class="auth-back" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    ກັບໜ້າຫຼັກ
+  </a>
+
+  <div class="auth-crest">
+    <div class="auth-crest-inner">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 8L5 21H19L21 8L12 2Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 8L12 12L16 8" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
+  <div class="auth-brand en">𝐃𝐄𝐊 𝐌𝐀𝐒𝐇 <span class="accent">𝐒𝐇𝐎𝐏</span></div>
+  <div class="auth-tagline">ຍິນດີຕ້ອນຮັບກັບຄືນ</div>
+
+  <div class="auth-card-wrap">
+    <div class="auth-card">
+      <div class="auth-card-title">ລົງຊື່ເຂົ້າໃຊ້</div>
+      <div class="auth-card-sub">ເຂົ້າສູ່ບັນຊີຂອງທ່ານເພື່ອສັ່ງຊື້ ແລະ ຕິດຕາມອໍເດີ້</div>
+
+      <form id="login-form" novalidate>
+        <div class="field" id="login-email-field">
+          <label for="login-email">ອີເມວ</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            <input id="login-email" type="email" placeholder="you@example.com" autocomplete="email" required>
+          </div>
+          <div class="field-error"></div>
+        </div>
+
+        <div class="field" id="login-password-field">
+          <label for="login-password">ລະຫັດຜ່ານ</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="field-toggle" aria-label="ສະແດງລະຫັດຜ່ານ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+
+        <div class="field-row">
+          <label class="check-row">
+            <input type="checkbox">
+            ຈື່ຈຳຂ້ອຍໄວ້
+          </label>
+          <a class="link-muted" href="#">ລືມລະຫັດຜ່ານ?</a>
+        </div>
+
+        <button type="submit" class="btn-block btn-submit">ລົງຊື່ເຂົ້າໃຊ້</button>
+      </form>
+
+      <div class="divider">ຫຼື</div>
+
+      <button type="button" class="btn-block btn-discord">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.9-1.52.07.07 0 0 0-.08.04c-.21.38-.45.86-.61 1.24a18.3 18.3 0 0 0-5.46 0 12.6 12.6 0 0 0-.62-1.24.08.08 0 0 0-.08-.04c-1.7.29-3.34.8-4.9 1.52a.07.07 0 0 0-.03.03C.53 8.7-.32 12.9.1 17.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.87-.9.08.08 0 0 1 0-.13c.13-.09.25-.19.37-.28a.07.07 0 0 1 .08 0c3.93 1.8 8.18 1.8 12.06 0a.07.07 0 0 1 .08 0c.12.1.24.19.37.28a.08.08 0 0 1 0 .13c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.12c.37.7.78 1.36 1.23 2a.08.08 0 0 0 .08.02 19.8 19.8 0 0 0 6.01-3.03.08.08 0 0 0 .03-.05c.5-4.83-.83-9-3.51-12.66a.06.06 0 0 0-.03-.03ZM8.02 14.6c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.95 2.42-2.15 2.42Zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.94 2.42-2.15 2.42Z"/></svg>
+        ເຂົ້າສູ່ລະບົບດ້ວຍ Discord
+      </button>
+    </div>
+  </div>
+
+  <div class="auth-switch">ຍັງບໍ່ມີບັນຊີ? <a href="signup.html">ສະໝັກສະມາຊິກ</a></div>
+  <div class="auth-terms">ການດຳເນີນການຕໍ່ ຖືວ່າທ່ານຍອມຮັບ <a href="#">ເງື່ອນໄຂການນຳໃຊ້</a> ແລະ <a href="#">ນະໂຍບາຍຄວາມເປັນສ່ວນຕົວ</a></div>
+
+</div>
+
+<script src="auth.js"></script>
+</body>
+</html>
