@@ -8,7 +8,7 @@
    - Chat FAB / Footer
    ========================================================= */
 :root{
-    --bg:#050505;
+    --bg:#0d0b0c;
     --bg-raise:#0e0c0e;
     --card:#0d0b0d;
     --card-border:#241419;
@@ -46,8 +46,8 @@
     content:"";
     position:absolute;
     top:0; right:0; bottom:0;
-    width:70px;
-    background:linear-gradient(to left, rgba(0,0,0,.6), rgba(0,0,0,.25) 45%, transparent 100%);
+    width:100px;
+    background:linear-gradient(to left, rgba(0,0,0,1), rgba(0,0,0,.55) 40%, transparent 100%);
     pointer-events:none;
     z-index:2;
   }
