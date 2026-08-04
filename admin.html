@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ຫ້ອງແອດມິນ — 𝐃𝐄𝐊 𝐌𝐀𝐒𝐇 𝐒𝐇𝐎𝐏</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="admin.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ============ ໜ້າລົງຊື່ເຂົ້າຫ້ອງແອດມິນ ============ -->
+<div class="admin-shell login-screen" id="loginScreen">
+  <div class="login-logo">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  </div>
+  <div>
+    <div class="login-title">ຫ້ອງແອດມິນ ⋅ DEK MASH SHOP</div>
+    <div class="login-sub" style="margin-top:6px;">ສຳລັບຈັດການສິນຄ້າ ແລະ ເຕີມສະຕັອກລະຫັດ ເທົ່ານັ້ນ</div>
+  </div>
+  <div class="login-card">
+    <div>
+      <label class="field-label">ລະຫັດຜ່ານແອດມິນ</label>
+      <input type="password" id="pwInput" class="field-input" placeholder="ໃສ່ລະຫັດຜ່ານ" autocomplete="current-password">
+    </div>
+    <button class="btn-block" id="loginBtn">ເຂົ້າສູ່ລະບົບ</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+  <div class="hint" style="text-align:center; max-width:300px;">
+    ລະຫັດຜ່ານເລີ່ມຕົ້ນຄື <strong style="color:var(--text-dim)">admin123</strong> — ໄປປ່ຽນລະຫັດຜ່ານໄດ້ຫຼັງເຂົ້າສູ່ລະບົບ (ໃນໜ້ານີ້, ຂໍ້ມູນທັງໝົດເກັບໄວ້ໃນ browser ຂອງທ່ານເທົ່ານັ້ນ)
+  </div>
+</div>
+
+<!-- ============ Dashboard ============ -->
+<div class="admin-shell" id="dashboard" style="display:none;">
+
+  <div class="dash-header">
+    <div class="dash-title">ຫ້ອງແອດມິນ <span class="accent">SHOP</span></div>
+    <div class="dash-actions">
+      <button class="icon-btn" id="settingsBtn" title="ຕັ້ງຄ່າ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </button>
+      <button class="icon-btn" id="logoutBtn" title="ອອກຈາກລະບົບ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="dash-stats">
+    <div class="dash-stat"><div class="v" id="statReady">0</div><div class="l">ພ້ອມຂາຍ</div></div>
+    <div class="dash-stat"><div class="v" id="statStock">0</div><div class="l">ລະຫັດໃນສະຕັອກ</div></div>
+    <div class="dash-stat"><div class="v" id="statSold">0</div><div class="l">ຂາຍໄປແລ້ວ</div></div>
+  </div>
+
+  <div class="cat-tabs" id="catTabs">
+    <button class="cat-tab active" data-cat="all">ທັງໝົດ</button>
+    <button class="cat-tab" data-cat="pc">ບັດເຕີມເງິນ PC</button>
+    <button class="cat-tab" data-cat="android">ບັນຊີເກມ Android</button>
+    <button class="cat-tab" data-cat="gear">ອຸປະກອນເສີມ</button>
+  </div>
+
+  <div class="prod-list" id="prodList"><!-- ຖືກສ້າງດ້ວຍ JS --></div>
+</div>
+
+<!-- ============ Modal: ຈັດການສິນຄ້າ ============ -->
+<div class="modal-overlay hidden" id="prodModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-head-title" id="modalTitle">ຈັດການສິນຄ້າ</div>
+      <button class="modal-close" id="modalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+
+    <div>
+      <label class="field-label">ຊື່ສິນຄ້າ</label>
+      <input type="text" id="mName" class="field-input" placeholder="ເຊັ່ນ: ບັດເຕີມ Garena 50,000 ກີບ">
+    </div>
+    <div>
+      <label class="field-label">ລາຄາ (₭ ກີບ)</label>
+      <input type="number" id="mPrice" class="field-input" placeholder="0" min="0">
+    </div>
+    <button class="btn-block" id="mSaveInfo">ບັນທຶກຊື່/ລາຄາ</button>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-label">ເຕີມລະຫັດເຂົ້າສະຕັອກ <span class="hint">(1 ແຖວ = 1 ລະຫັດ)</span></div>
+      <textarea id="mCodesInput" class="stock-textarea" placeholder="XXXX-XXXX-XXXX&#10;YYYY-YYYY-YYYY&#10;..."></textarea>
+      <button class="btn-block" id="mAddCodes" style="margin-top:10px;">➕ ເພີ່ມເຂົ້າສະຕັອກ</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div>
+      <div class="section-label">ລະຫັດໃນສະຕັອກ (ຍັງບໍ່ຂາຍ) — <span class="count" id="mStockCount">0</span> ອັນ</div>
+      <div class="code-chip-list" id="mStockList"></div>
+    </div>
+
+    <div>
+      <div class="section-label">ປະຫວັດການຂາຍ — <span class="count" id="mSoldCount">0</span> ອັນ</div>
+      <div class="code-chip-list" id="mSoldList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Modal: ຕັ້ງຄ່າ ============ -->
+<div class="modal-overlay hidden" id="settingsModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-head-title">ຕັ້ງຄ່າ</div>
+      <button class="modal-close" id="settingsClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="settings-block">
+      <label class="field-label">ປ່ຽນລະຫັດຜ່ານແອດມິນ</label>
+      <input type="password" id="newPwInput" class="field-input" placeholder="ລະຫັດຜ່ານໃໝ່">
+      <button class="btn-block secondary" id="savePwBtn">ບັນທຶກລະຫັດຜ່ານໃໝ່</button>
+    </div>
+    <div class="divider"></div>
+    <div class="settings-block">
+      <div class="hint">ລ້າງຂໍ້ມູນສິນຄ້າ/ສະຕັອກ/ປະຫວັດການຂາຍທັງໝົດ ແລ້ວເລີ່ມໃໝ່ (ລົບບໍ່ໄດ້ຄືນ)</div>
+      <button class="btn-block danger" id="resetBtn">ລ້າງຂໍ້ມູນທັງໝົດ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="store-data.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
