@@ -81,7 +81,7 @@
   }
 
   /* ---------- Rendering ---------- */
-  const CAT_LABEL = { pc: 'PC', android: 'Android', gear: 'ອຸປະກອນ' };
+  const CAT_LABEL = { pc: 'PC', android: 'Android', ios: 'iOS', gear: 'ອຸປະກອນ' };
 
   function renderAll() {
     const data = StoreData.load();

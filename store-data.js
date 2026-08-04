@@ -19,7 +19,7 @@
   // ຕາມລຳດັບ: ໝວດ pc (3 ໃບ), ໝວດ android (15 ໃບ), ໝວດ gear (2 ໃບ)
   function buildDefaultProducts() {
     const products = [];
-    const counts = { pc: 3, android: 15, gear: 2 };
+    const counts = { pc: 3, android: 15, ios: 4, gear: 2 };
     Object.keys(counts).forEach((cat) => {
       for (let i = 1; i <= counts[cat]; i++) {
         products.push({
