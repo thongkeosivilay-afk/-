@@ -27,6 +27,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* ---------- 1b) ໄອຄອນກະຕ່າລອຍ (cart-quick) ເທິງແຕ່ລະການ໌ດ໌ສິນຄ້າ ----------
+     ກົດແລ້ວໄອຄອນປ່ຽນເປັນເຄື່ອງໝາຍຖືກຊົ່ວຄາວ ເພື່ອຢືນຢັນວ່າເພີ່ມໃສ່ກະຕ່າແລ້ວ */
+  document.querySelectorAll('.cart-quick').forEach((btn) => {
+    const originalIcon = btn.innerHTML;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // ບໍ່ໃຫ້ trigger click ຂອງການ໌ດ໌/ລິ້ງອ້ອມຂ້າງ
+      if (btn.classList.contains('is-added')) return;
+      // TODO: ຕໍ່ໄປສາຍານກັບລະບົບຕະກ້າ (cart state) ຈິງຂອງທ່ານທີ່ນີ້
+      btn.classList.add('is-added');
+      btn.setAttribute('aria-label', 'ເພີ່ມໃສ່ກະຕ່າແລ້ວ');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+      setTimeout(() => {
+        btn.classList.remove('is-added');
+        btn.setAttribute('aria-label', 'ເພີ່ມໃສ່ກະຕ່າ');
+        btn.innerHTML = originalIcon;
+      }, 1300);
+    });
+  });
+
   /* ---------- 2) ປຸ່ມແຊທລອຍ ---------- */
   const chatFab = document.querySelector('.chat-fab');
   if (chatFab) {
