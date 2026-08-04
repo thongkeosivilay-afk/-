@@ -139,11 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
   (async () => {
     const loginBtn = document.querySelector('.login-btn');
-    if (!loginBtn) return;
+    const adminLink = document.querySelector('#admin-link');
 
     try {
       const res = await fetch('/api/me');
       const data = await res.json();
+
+      // ---- ปุ่ม Admin: โผล่เฉพาะตอนล็อกอินอยู่แล้ว "และ" เป็นแอดมินเท่านั้น ----
+      // คนทั่วไป/ยังไม่ล็อกอิน จะไม่เห็นปุ่มนี้เลย
+      if (adminLink) {
+        if (data.loggedIn && data.user && data.user.isAdmin) {
+          adminLink.style.display = 'inline-block';
+        } else {
+          adminLink.style.display = 'none';
+        }
+      }
+
+      if (!loginBtn) return;
 
       if (data.loggedIn) {
         loginBtn.classList.add('is-authed');
@@ -172,10 +184,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } catch (err) {
       console.error('Session check failed:', err);
-      loginBtn.title = 'ລົງຊື່ເຂົ້າໃຊ້ / ສະໝັກສະມາຊິກ';
-      loginBtn.addEventListener('click', () => {
-        window.location.href = '/login.html';
-      });
+      if (adminLink) adminLink.style.display = 'none';
+      if (loginBtn) {
+        loginBtn.title = 'ລົງຊື່ເຂົ້າໃຊ້ / ສະໝັກສະມາຊິກ';
+        loginBtn.addEventListener('click', () => {
+          window.location.href = '/login.html';
+        });
+      }
     }
   })();
 
