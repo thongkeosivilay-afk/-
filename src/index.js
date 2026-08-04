@@ -2,12 +2,20 @@
    worker/src/index.js
    Cloudflare Worker — ระบบล็อกอินผ่าน Discord (OAuth2)
    Route ที่มี:
-     GET  /auth/discord/login     -> เด้งไปหน้า Discord authorize
+     GET  /auth/discord/login     -> เด้งไปหน้า Discord authorize (รับ ?next= ปลายทางหลังล็อกอินสำเร็จ)
      GET  /auth/discord/callback  -> Discord เด้งกลับมาที่นี่พร้อม ?code=
      GET  /auth/logout            -> ล้าง session cookie
-     GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user
+     GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user (รวมสถานะ isAdmin)
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
+
+   ---- ระบบแอดมิน ----
+   ห้องแอดมิน (admin.html) ไม่ใช้รหัสผ่านอีกต่อไป — ผู้ใช้ต้องล็อกอินด้วย
+   Discord แล้วอีเมลของบัญชี Discord นั้นต้องตรงกับ ADMIN_EMAIL ด้านล่าง
+   ถึงจะได้สิทธิ์ isAdmin: true (อีเมลต้องยืนยันแล้วในฝั่ง Discord ด้วย)
    ========================================================= */
+
+// อีเมล Discord ที่อนุญาตให้เข้าห้องแอดมินได้
+const ADMIN_EMAIL = 'bhchhhyggg@gmail.com';
 
 export default {
   async fetch(request, env) {
@@ -43,13 +51,18 @@ function getCookie(request, name) {
    แล้วเด้งผู้ใช้ไปหน้า authorize ของ Discord */
 async function handleLogin(request, env) {
   const state = crypto.randomUUID();
-  const redirectUri = `${new URL(request.url).origin}/auth/discord/callback`;
+  const url = new URL(request.url);
+  const redirectUri = `${url.origin}/auth/discord/callback`;
+
+  // ปลายทางที่จะเด้งกลับไปหลังล็อกอินสำเร็จ (เช่น /admin.html) — กันเปิดลิงก์ไปเว็บอื่น
+  let next = url.searchParams.get('next') || '/';
+  if (!next.startsWith('/')) next = '/';
 
   const params = new URLSearchParams({
     client_id: env.DISCORD_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: 'identify',
+    scope: 'identify email', // ต้องมี email เพื่อเอาไว้เช็คสิทธิ์แอดมิน
     state,
   });
 
@@ -59,6 +72,10 @@ async function handleLogin(request, env) {
   headers.append(
     'Set-Cookie',
     `oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`
+  );
+  headers.append(
+    'Set-Cookie',
+    `oauth_next=${encodeURIComponent(next)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`
   );
 
   return new Response(null, { status: 302, headers });
@@ -81,6 +98,7 @@ async function handleCallback(request, env) {
   }
 
   const redirectUri = `${url.origin}/auth/discord/callback`;
+  const nextPath = getCookie(request, 'oauth_next') || '/';
 
   // ---- แลก code เป็น access_token (ต้องทำฝั่ง server เท่านั้น เพราะใช้ client_secret) ----
   const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
@@ -108,6 +126,20 @@ async function handleCallback(request, env) {
   });
   const discordUser = await userRes.json();
 
+  // ---- DEBUG ชั่วคราว: ดูค่าจริงที่ Discord ส่งกลับมา (ลบทิ้งหลังแก้ปัญหาเสร็จ) ----
+  console.log('[DEBUG discordUser]', JSON.stringify({
+    id: discordUser.id,
+    username: discordUser.username,
+    email: discordUser.email,
+    verified: discordUser.verified,
+  }));
+
+  // ---- เช็คสิทธิ์แอดมิน: อีเมล Discord ต้องตรงกับ ADMIN_EMAIL และต้องยืนยันแล้ว ----
+  const isAdmin =
+    !!discordUser.email &&
+    discordUser.verified === true &&
+    discordUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
   // ---- สร้าง session แล้วเก็บลง KV (อายุ 7 วัน) ----
   const sessionId = crypto.randomUUID();
   const sessionData = {
@@ -116,6 +148,7 @@ async function handleCallback(request, env) {
     avatar: discordUser.avatar
       ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
       : null,
+    isAdmin,
     createdAt: Date.now(),
   };
 
@@ -123,13 +156,14 @@ async function handleCallback(request, env) {
     expirationTtl: 60 * 60 * 24 * 7, // 7 วัน
   });
 
-  // ---- ปิด session ด้วย cookie แล้วเด้งกลับหน้าแรก ----
-  const headers = new Headers({ Location: '/' });
+  // ---- ปิด session ด้วย cookie แล้วเด้งกลับไปยังปลายทางเดิม (เช่น /admin.html) ----
+  const headers = new Headers({ Location: nextPath });
   headers.append(
     'Set-Cookie',
     `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`
   );
   headers.append('Set-Cookie', 'oauth_state=; Path=/; Max-Age=0'); // ล้าง state cookie ทิ้ง
+  headers.append('Set-Cookie', 'oauth_next=; Path=/; Max-Age=0'); // ล้าง next cookie ทิ้ง
 
   return new Response(null, { status: 302, headers });
 }
