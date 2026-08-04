@@ -66,13 +66,17 @@
     <div class="dash-stat"><div class="v" id="statSold">0</div><div class="l">ຂາຍໄປແລ້ວ</div></div>
   </div>
 
-  <div class="cat-tabs" id="catTabs">
-    <button class="cat-tab active" data-cat="all">ທັງໝົດ</button>
-    <button class="cat-tab" data-cat="pc">ບັດເຕີມເງິນ PC</button>
-    <button class="cat-tab" data-cat="android">ບັນຊີເກມ Android</button>
-    <button class="cat-tab" data-cat="ios">ບັນຊີເກມ iOS</button>
-    <button class="cat-tab" data-cat="gear">ອຸປະກອນເສີມ</button>
+  <div class="cat-tabs" id="fnTabs">
+    <button class="cat-tab active" data-tab="add-product">ເພິ່ມສິນຄ້າ</button>
+    <button class="cat-tab" data-tab="add-code">ເຕິມລະຫັດ</button>
+    <button class="cat-tab" data-tab="edit-name-cat">ແກ້ໄຂຊື່-ຫມວດຫມູ່</button>
+    <button class="cat-tab" data-tab="edit-image">ປັບປ່ຽນຮູບພາບ</button>
+    <button class="cat-tab" data-tab="edit-desc">ແກ້ໄຂຄຳບັນຍາຍ</button>
   </div>
+
+  <div class="tab-hint" id="tabHint"></div>
+
+  <button class="btn-block new-prod-btn hidden" id="newProdBtn" style="margin:0 18px 4px; width:calc(100% - 36px);">➕ ສ້າງສິນຄ້າໃໝ່</button>
 
   <div class="prod-list" id="prodList"><!-- ຖືກສ້າງດ້ວຍ JS --></div>
 </div>
@@ -85,35 +89,97 @@
       <button class="modal-close" id="modalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     </div>
 
-    <div>
+    <!-- ຊື່ -->
+    <div class="modal-section" data-section="name">
       <label class="field-label">ຊື່ສິນຄ້າ</label>
       <input type="text" id="mName" class="field-input" placeholder="ເຊັ່ນ: ບັດເຕີມ Garena 50,000 ກີບ">
     </div>
-    <div>
+
+    <!-- ລາຄາ -->
+    <div class="modal-section" data-section="price">
       <label class="field-label">ລາຄາ (₭ ກີບ)</label>
       <input type="number" id="mPrice" class="field-input" placeholder="0" min="0">
     </div>
-    <button class="btn-block" id="mSaveInfo">ບັນທຶກຊື່/ລາຄາ</button>
 
-    <div class="divider"></div>
+    <!-- ຫມວດຫມູ່ -->
+    <div class="modal-section" data-section="category">
+      <label class="field-label">ຫມວດຫມູ່</label>
+      <select id="mCategory" class="field-input">
+        <option value="pc">ບັດເຕີມເງິນ PC</option>
+        <option value="android">ບັນຊີເກມ Android</option>
+        <option value="ios">ບັນຊີເກມ iOS</option>
+        <option value="gear">ອຸປະກອນເສີມ</option>
+      </select>
+    </div>
 
-    <div>
+    <button class="btn-block modal-section" data-section="name,price,category" id="mSaveInfo">ບັນທຶກ</button>
+
+    <!-- ຮູບພາບ -->
+    <div class="modal-section" data-section="image">
+      <div class="divider"></div>
+      <label class="field-label">ລິ້ງຮູບພາບສິນຄ້າ (URL)</label>
+      <input type="text" id="mImage" class="field-input" placeholder="https://example.com/image.jpg">
+      <div class="img-preview-wrap" id="mImagePreviewWrap">
+        <img id="mImagePreview" class="img-preview" alt="ຕົວຢ່າງຮູບພາບ">
+      </div>
+      <button class="btn-block" id="mSaveImage" style="margin-top:10px;">ບັນທຶກຮູບພາບ</button>
+    </div>
+
+    <!-- ຄຳບັນຍາຍ -->
+    <div class="modal-section" data-section="description">
+      <div class="divider"></div>
+      <label class="field-label">ຄຳບັນຍາຍສິນຄ້າ</label>
+      <textarea id="mDescription" class="stock-textarea" placeholder="ອະທິບາຍລາຍລະອຽດສິນຄ້າ ເຊັ່ນ ວິທີໃຊ້, ເງື່ອນໄຂ, ອື່ນໆ..."></textarea>
+      <button class="btn-block" id="mSaveDescription" style="margin-top:10px;">ບັນທຶກຄຳບັນຍາຍ</button>
+    </div>
+
+    <!-- ລະຫັດ/ສະຕັອກ -->
+    <div class="modal-section" data-section="codes">
+      <div class="divider"></div>
       <div class="section-label">ເຕີມລະຫັດເຂົ້າສະຕັອກ <span class="hint">(1 ແຖວ = 1 ລະຫັດ)</span></div>
       <textarea id="mCodesInput" class="stock-textarea" placeholder="XXXX-XXXX-XXXX&#10;YYYY-YYYY-YYYY&#10;..."></textarea>
       <button class="btn-block" id="mAddCodes" style="margin-top:10px;">➕ ເພີ່ມເຂົ້າສະຕັອກ</button>
-    </div>
 
-    <div class="divider"></div>
+      <div class="divider"></div>
 
-    <div>
       <div class="section-label">ລະຫັດໃນສະຕັອກ (ຍັງບໍ່ຂາຍ) — <span class="count" id="mStockCount">0</span> ອັນ</div>
       <div class="code-chip-list" id="mStockList"></div>
     </div>
 
-    <div>
+    <!-- ປະຫວັດການຂາຍ (ສະແດງໃນແທັບ ເພິ່ມສິນຄ້າ ແລະ ເຕິມລະຫັດ) -->
+    <div class="modal-section" data-section="sold">
       <div class="section-label">ປະຫວັດການຂາຍ — <span class="count" id="mSoldCount">0</span> ອັນ</div>
       <div class="code-chip-list" id="mSoldList"></div>
     </div>
+  </div>
+</div>
+
+<!-- ============ Modal: ສ້າງສິນຄ້າໃໝ່ ============ -->
+<div class="modal-overlay hidden" id="newProdModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-head-title">ສ້າງສິນຄ້າໃໝ່</div>
+      <button class="modal-close" id="newProdClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div>
+      <label class="field-label">ຊື່ສິນຄ້າ</label>
+      <input type="text" id="npName" class="field-input" placeholder="ເຊັ່ນ: ບັດເຕີມ Garena 50,000 ກີບ">
+    </div>
+    <div>
+      <label class="field-label">ລາຄາ (₭ ກີບ)</label>
+      <input type="number" id="npPrice" class="field-input" placeholder="0" min="0">
+    </div>
+    <div>
+      <label class="field-label">ຫມວດຫມູ່</label>
+      <select id="npCategory" class="field-input">
+        <option value="pc">ບັດເຕີມເງິນ PC</option>
+        <option value="android">ບັນຊີເກມ Android</option>
+        <option value="ios">ບັນຊີເກມ iOS</option>
+        <option value="gear">ອຸປະກອນເສີມ</option>
+      </select>
+    </div>
+    <div class="hint">⚠️ ໝາຍເຫດ: ສິນຄ້າໃໝ່ຈະຖືກເພີ່ມເຂົ້າໃນລະບົບຫຼັງບ້ານ ແຕ່ຈະບໍ່ຂຶ້ນຢູ່ໜ້າຮ້ານໂດຍອັດຕະໂນມັດ (ໜ້າຮ້ານເປັນ static HTML) — ຕ້ອງແຈ້ງຜູ້ພັດທະນາໃຫ້ເພີ່ມກາຕູນສິນຄ້າໃນໜ້າຮ້ານດ້ວຍ</div>
+    <button class="btn-block" id="npCreate">➕ ສ້າງສິນຄ້າ</button>
   </div>
 </div>
 
