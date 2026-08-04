@@ -18,17 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  document.querySelectorAll('.cart-quick').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      if (btn.disabled) return;
-      btn.classList.add('is-added');
-      btn.disabled = true;
-      btn.setAttribute('aria-label', 'ເພີ່ມໃສ່ກະຕ່າແລ້ວ');
-      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
-    });
-  });
-
   const chatFab = document.querySelector('.chat-fab');
   if (chatFab) {
     chatFab.addEventListener('click', () => {
