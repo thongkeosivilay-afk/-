@@ -1,13 +1,14 @@
 /* =========================================================
    admin.js — ຫ້ອງແອດມິນ DEK MASH SHOP
-   ⚠️ ການລ໋ອກອິນນີ້ກວດຢູ່ຝັ່ງ browser (client-side) ເທົ່ານັ້ນ —
-   ເໝາະສຳລັບ demo/ທົດລອງໃຊ້ງານ ບໍ່ແມ່ນຄວາມປອດໄພລະດັບໃຊ້ງານຈິງ
+   ການລ໋ອກອິນຫ້ອງແອດມິນໃຊ້ Discord OAuth (worker/src/index.js)
+   ຝັ່ງເຊີບເວີເປັນຄົນເຊັກວ່າອີເມວ Discord ກົງກັບອີເມວແອດມິນ
+   ຫຼືບໍ່ (isAdmin) — ໜ້ານີ້ພຽງແຕ່ຖາມສະຖານະຈາກ /api/me ເທົ່ານັ້ນ
    ========================================================= */
 
 (function () {
-  const SESSION_KEY = 'dms_admin_session';
   let currentCat = 'all';
   let activeModalPid = null;
+  let currentUser = null;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -22,30 +23,60 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
   }
 
-  /* ---------- Auth ---------- */
-  function isLoggedIn() {
-    return sessionStorage.getItem(SESSION_KEY) === '1';
+  /* ---------- Auth (ຜ່ານ Discord + worker session) ---------- */
+  function goToDiscordLogin() {
+    window.location.href = '/auth/discord/login?next=' + encodeURIComponent(location.pathname);
   }
-  function login() {
-    const pw = $('#pwInput').value;
-    if (StoreData.checkPassword(pw)) {
-      sessionStorage.setItem(SESSION_KEY, '1');
-      showDashboard();
-    } else {
-      $('#loginError').textContent = 'ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ';
-    }
-  }
+
   function logout() {
-    sessionStorage.removeItem(SESSION_KEY);
-    $('#dashboard').style.display = 'none';
+    window.location.href = '/auth/logout';
+  }
+
+  async function checkAuthAndInit() {
+    let res;
+    try {
+      res = await fetch('/api/me', { credentials: 'same-origin' });
+    } catch (e) {
+      showLogin('ຕິດຕໍ່ເຊີບເວີບໍ່ໄດ້ — ລອງໃໝ່ພາຍຫຼັງ');
+      return;
+    }
+    const data = await res.json();
+
+    if (!data.loggedIn) {
+      showLogin();
+      return;
+    }
+    if (!data.user || !data.user.isAdmin) {
+      currentUser = data.user;
+      showDenied();
+      return;
+    }
+
+    currentUser = data.user;
+    showDashboard();
+  }
+
+  function showLogin(errorMsg) {
     $('#loginScreen').style.display = 'flex';
-    $('#pwInput').value = '';
-    $('#loginError').textContent = '';
+    $('#deniedScreen').style.display = 'none';
+    $('#dashboard').style.display = 'none';
+    $('#loginError').textContent = errorMsg || '';
+  }
+
+  function showDenied() {
+    $('#loginScreen').style.display = 'none';
+    $('#deniedScreen').style.display = 'flex';
+    $('#dashboard').style.display = 'none';
   }
 
   function showDashboard() {
     $('#loginScreen').style.display = 'none';
+    $('#deniedScreen').style.display = 'none';
     $('#dashboard').style.display = 'block';
+    const info = $('#settingsAccountInfo');
+    if (info && currentUser) {
+      info.textContent = `ລ໋ອກອິນເປັນ: ${currentUser.username || 'ບໍ່ຮູ້ຊື່'}`;
+    }
     renderAll();
   }
 
@@ -197,17 +228,6 @@
   function openSettings() { $('#settingsModal').classList.remove('hidden'); }
   function closeSettings() { $('#settingsModal').classList.add('hidden'); }
 
-  function savePassword() {
-    const pw = $('#newPwInput').value.trim();
-    if (pw.length < 4) {
-      toast('ລະຫັດຜ່ານຄວນຍາວຢ່າງນ້ອຍ 4 ຕົວອັກສອນ');
-      return;
-    }
-    StoreData.setPassword(pw);
-    $('#newPwInput').value = '';
-    toast('ປ່ຽນລະຫັດຜ່ານແລ້ວ');
-  }
-
   function resetAllData() {
     if (!confirm('ລ້າງຂໍ້ມູນສິນຄ້າ/ສະຕັອກ/ປະຫວັດການຂາຍທັງໝົດ? ການນີ້ບໍ່ສາມາດກູ້ຄືນໄດ້')) return;
     StoreData.resetAll();
@@ -224,12 +244,10 @@
 
   /* ---------- Wire up ---------- */
   document.addEventListener('DOMContentLoaded', () => {
-    if (isLoggedIn()) {
-      showDashboard();
-    }
+    checkAuthAndInit();
 
-    $('#loginBtn').addEventListener('click', login);
-    $('#pwInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+    $('#discordLoginBtn').addEventListener('click', goToDiscordLogin);
+    $('#deniedLogoutBtn').addEventListener('click', logout);
     $('#logoutBtn').addEventListener('click', logout);
 
     $$('.cat-tab').forEach((tab) => {
@@ -249,7 +267,6 @@
     $('#settingsBtn').addEventListener('click', openSettings);
     $('#settingsClose').addEventListener('click', closeSettings);
     $('#settingsModal').addEventListener('click', (e) => { if (e.target.id === 'settingsModal') closeSettings(); });
-    $('#savePwBtn').addEventListener('click', savePassword);
     $('#resetBtn').addEventListener('click', resetAllData);
   });
 })();

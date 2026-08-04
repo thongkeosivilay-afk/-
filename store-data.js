@@ -38,7 +38,6 @@
 
   function defaultData() {
     return {
-      password: 'admin123', // ລະຫັດຜ່ານແອດມິນເລີ່ມຕົ້ນ — ໄປປ່ຽນໄດ້ໃນໜ້າຫ້ອງແອດມິນ
       products: buildDefaultProducts()
     };
   }
@@ -131,17 +130,6 @@
     return code;
   }
 
-  function checkPassword(pw) {
-    const data = load();
-    return data.password === pw;
-  }
-
-  function setPassword(newPw) {
-    const data = load();
-    data.password = newPw;
-    save(data);
-  }
-
   function resetAll() {
     const fresh = defaultData();
     save(fresh);
@@ -152,7 +140,6 @@
     load, save,
     getProduct, updateProduct,
     addCodes, removeCode, consumeCode,
-    checkPassword, setPassword,
     resetAll
   };
 })(window);
