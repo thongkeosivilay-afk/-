@@ -7,6 +7,7 @@
      GET  /auth/logout            -> ล้าง session cookie
      GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user (รวมสถานะ isAdmin)
      ALL  /api/admin/supabase/*   -> proxy ไป Supabase จริง ด้วย service_role key (ดูรายละเอียดด้านล่าง)
+     GET  /api/public/storefront  -> ข้อมูลหน้าร้านสาธารณะ (หมวดหมู่/สินค้า/สต็อกจริง) ดูรายละเอียดด้านล่าง
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
 
    ---- ระบบแอดมิน ----
@@ -25,6 +26,16 @@
    ต้องตั้งค่า secret ก่อนใช้งาน (ดูคำแนะนำท้ายไฟล์นี้ / ที่แชท):
      wrangler secret put SUPABASE_SERVICE_ROLE_KEY
    และตั้ง SUPABASE_URL ไว้ใน wrangler.toml [vars] (ไม่ใช่ secret เพราะไม่ใช่ข้อมูลลับ)
+
+   ---- หน้าร้านสาธารณะ (/api/public/storefront) ----
+   index.html (ผ่าน storefront-data.js + storefront.js) และ category.html (ผ่าน category.js)
+   ไม่ได้อ่านข้อมูลตรงจาก Supabase อีกต่อไป (เดิมเป็น demo ที่ปั้นข้อมูลไว้ใน localStorage ฝั่ง
+   browser เท่านั้น) แต่เรียก endpoint นี้แทน ซึ่ง Worker จะเป็นคนไปดึงข้อมูลจริงจาก Supabase
+   ด้วย SUPABASE_SERVICE_ROLE_KEY เอง (คีย์ไม่เคยหลุดไปถึง browser) แล้วคัดกรองเฉพาะฟิลด์ที่
+   ปลอดภัย/จำเป็นสำหรับหน้าร้านเท่านั้นก่อนส่งกลับไป (ชื่อ/ราคา/รูป/จำนวนสต็อกคงเหลือ) —
+   ไม่ดึง/ไม่ส่ง service key และไม่ดึงตาราง product_codes (รหัสสินค้าจริงที่ยังไม่ถูกขาย) ออกไปเด็ดขาด
+   สินค้าที่ archived = true (ถูกซ่อนจากหน้าร้านโดยแอดมิน) จะไม่ถูกส่งออกไปเลย
+   Endpoint นี้เป็น public (GET อย่างเดียว, ไม่ต้อง login) เพราะเป็นข้อมูลที่ลูกค้าทุกคนควรเห็นอยู่แล้ว
    ========================================================= */
 
 // อีเมล Discord ที่อนุญาตให้เข้าห้องแอดมินได้
@@ -50,6 +61,9 @@ export default {
     }
     if (url.pathname.startsWith(SUPABASE_PROXY_PREFIX + '/')) {
       return handleSupabaseProxy(request, env, url);
+    }
+    if (url.pathname === '/api/public/storefront') {
+      return handlePublicStorefront(request, env);
     }
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
@@ -270,4 +284,148 @@ function json(data, status) {
     status: status || 200,
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+/* ---------- 6) /api/public/storefront ----------
+   ดึงหมวดหมู่ (category_1..4 name/image จาก site_settings) + สินค้า (products ที่ไม่ถูก
+   archived) + สต็อกจริงของแต่ละชิ้น (ผ่าน RPC product_stock / product_duration_stock —
+   ตัวเลขคงเหลือเท่านั้น ไม่ใช่รหัสสินค้าจริง) แล้วคืนเป็น JSON ก้อนเดียวให้ทั้ง index.html
+   และ category.html ใช้งาน (category.html กรองด้วย ?cat=1..4 เอาเองฝั่ง client จาก
+   products[].category ที่ตรงกับ categories[].name) */
+async function handlePublicStorefront(request, env) {
+  if (request.method !== 'GET') {
+    return json({ error: 'Method not allowed' }, 405);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (ເບິ່ງ wrangler.toml + wrangler secret)' },
+      500
+    );
+  }
+
+  const CATEGORY_SLOT_COUNT = 4; // index.html มี 4 การ์ดหมวดหมู่บนหน้าแรกเสมอ
+
+  try {
+    const siteSettingsColumns = [
+      'store_name', 'tagline', 'announcement_text', 'hero_image',
+      ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_name`),
+      ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_image`),
+    ];
+
+    const [settingsRows, products, durations] = await Promise.all([
+      supabaseSelect(env, 'site_settings', {
+        select: siteSettingsColumns.join(','),
+        id: 'eq.1',
+        limit: '1',
+      }),
+      // archived เป็น null ได้ (แถวเก่าก่อนมีคอลัมน์นี้) จึงต้องรวม is.null ด้วย ไม่ใช่แค่ eq.false
+      supabaseSelect(env, 'products', {
+        select: 'id,name,category,price,image_url,duration_enabled,paused,paused_note,created_at',
+        or: '(archived.is.null,archived.eq.false)',
+        order: 'created_at.desc',
+      }),
+      supabaseSelect(env, 'product_durations', {
+        select: 'id,product_id,label,price,sort_order',
+        order: 'sort_order.asc',
+      }),
+    ]);
+
+    const settings = settingsRows[0] || {};
+
+    // ດຶງສະຕັອກຈິງ (ຕົວເລກເທົ່ານັ້ນ) ຂອງແຕ່ລະສິນຄ້າ/ໄລຍະເວລາ ແບບຂະໜານກັນ
+    const productsWithStock = await Promise.all((products || []).map(async (p) => {
+      const stock = await supabaseRpc(env, 'product_stock', { p_product_id: p.id });
+      const ownDurations = (durations || []).filter((d) => d.product_id === p.id);
+      const durationsWithStock = await Promise.all(ownDurations.map(async (d) => {
+        const dStock = await supabaseRpc(env, 'product_duration_stock', { p_duration_id: d.id });
+        return { id: d.id, label: d.label, price: d.price, stock: dStock ?? 0 };
+      }));
+
+      return {
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        price: p.price,
+        image_url: p.image_url,
+        duration_enabled: !!p.duration_enabled,
+        paused: !!p.paused,
+        paused_note: p.paused_note || null,
+        stock: stock ?? 0,
+        durations: durationsWithStock,
+      };
+    }));
+
+    const totalStock = productsWithStock.reduce((sum, p) => {
+      const pStock = p.duration_enabled
+        ? p.durations.reduce((s, d) => s + (d.stock || 0), 0)
+        : (p.stock || 0);
+      return sum + pStock;
+    }, 0);
+
+    const categories = Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => {
+      const idx = i + 1;
+      return {
+        index: idx,
+        name: (settings[`category_${idx}_name`] || `ໝວດໝູ່ ${idx}`).trim(),
+        image: settings[`category_${idx}_image`] || null,
+      };
+    });
+
+    return json({
+      store: {
+        name: settings.store_name || null,
+        tagline: settings.tagline || null,
+        announcement: settings.announcement_text || null,
+        heroImage: settings.hero_image || null,
+      },
+      categories,
+      stats: {
+        productCount: productsWithStock.length,
+        totalStock,
+      },
+      products: productsWithStock,
+    });
+  } catch (err) {
+    console.error('handlePublicStorefront failed:', err);
+    return json({ error: 'ດຶງຂໍ້ມູນຮ້ານບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+  }
+}
+
+/* ---------- helper: ຍິງ SELECT ໄປ Supabase REST ດ້ວຍ service_role key (ຝັ່ງ Worker ເທົ່ານັ້ນ) ---------- */
+async function supabaseSelect(env, table, params) {
+  const url = new URL(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}`);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  const res = await fetch(url.toString(), {
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase select "${table}" failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+/* ---------- helper: ຮຽກ Supabase RPC ດ້ວຍ service_role key (ຝັ່ງ Worker ເທົ່ານັ້ນ) ---------- */
+async function supabaseRpc(env, fnName, args) {
+  const url = `${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/${fnName}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(args || {}),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Supabase rpc "${fnName}" failed (${res.status}):`, text);
+    return null;
+  }
+  return res.json();
 }
