@@ -1,21 +1,36 @@
 /* =========================================================
    worker/src/index.js
-   Cloudflare Worker — ระบบล็อกอินผ่าน Discord (OAuth2)
+   Cloudflare Worker — ระบบล็อกอินผ่าน Discord (OAuth2) + Supabase proxy ห้องแอดมิน
    Route ที่มี:
      GET  /auth/discord/login     -> เด้งไปหน้า Discord authorize (รับ ?next= ปลายทางหลังล็อกอินสำเร็จ)
      GET  /auth/discord/callback  -> Discord เด้งกลับมาที่นี่พร้อม ?code=
      GET  /auth/logout            -> ล้าง session cookie
      GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user (รวมสถานะ isAdmin)
+     ALL  /api/admin/supabase/*   -> proxy ไป Supabase จริง ด้วย service_role key (ดูรายละเอียดด้านล่าง)
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
 
    ---- ระบบแอดมิน ----
    ห้องแอดมิน (admin.html) ไม่ใช้รหัสผ่านอีกต่อไป — ผู้ใช้ต้องล็อกอินด้วย
    Discord แล้วอีเมลของบัญชี Discord นั้นต้องตรงกับ ADMIN_EMAIL ด้านล่าง
    ถึงจะได้สิทธิ์ isAdmin: true (อีเมลต้องยืนยันแล้วในฝั่ง Discord ด้วย)
+
+   ---- Supabase proxy (/api/admin/supabase/*) ----
+   admin.js (ผ่าน admin-supabase-config.js) ไม่ถือ Supabase key จริงในเบราว์เซอร์อีกต่อไป
+   ทุกคำขอที่ supabase-js สร้าง (.from().select/insert/update/delete, .rpc(), .storage...)
+   จะวิ่งมาที่ path นี้บนโดเมนตัวเอง (same-origin จึงพ่วง session cookie มาด้วยอัตโนมัติ)
+   ก่อน forward ไป Supabase จริง Worker จะ:
+     1) เช็ค session cookie -> ต้อง isAdmin: true เท่านั้น (ยกเว้น GET รูปจาก storage bucket
+        ที่ตั้งเป็น public ไว้ ซึ่งเปิดให้อ่านได้อยู่แล้วโดยไม่ต้องมี key ใดๆ)
+     2) ทิ้ง apikey/authorization ที่เบราว์เซอร์ส่งมา แล้วใส่ SUPABASE_SERVICE_ROLE_KEY แทนเสมอ
+   ต้องตั้งค่า secret ก่อนใช้งาน (ดูคำแนะนำท้ายไฟล์นี้ / ที่แชท):
+     wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+   และตั้ง SUPABASE_URL ไว้ใน wrangler.toml [vars] (ไม่ใช่ secret เพราะไม่ใช่ข้อมูลลับ)
    ========================================================= */
 
 // อีเมล Discord ที่อนุญาตให้เข้าห้องแอดมินได้
 const ADMIN_EMAIL = 'bhchhhyggg@gmail.com';
+
+const SUPABASE_PROXY_PREFIX = '/api/admin/supabase';
 
 export default {
   async fetch(request, env) {
@@ -32,6 +47,9 @@ export default {
     }
     if (url.pathname === '/api/me') {
       return handleMe(request, env);
+    }
+    if (url.pathname.startsWith(SUPABASE_PROXY_PREFIX + '/')) {
+      return handleSupabaseProxy(request, env, url);
     }
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
@@ -178,23 +196,78 @@ async function handleLogout() {
 /* ---------- 4) /api/me ----------
    หน้าเว็บเรียก endpoint นี้ตอนโหลด เพื่อเช็คว่า login ค้างอยู่ไหม */
 async function handleMe(request, env) {
-  const sessionId = getCookie(request, 'session');
-
-  if (!sessionId) {
+  const user = await getSessionUser(request, env);
+  if (!user) {
     return json({ loggedIn: false });
   }
-
-  const raw = await env.SESSIONS.get(sessionId);
-  if (!raw) {
-    return json({ loggedIn: false });
-  }
-
-  const user = JSON.parse(raw);
   return json({ loggedIn: true, user });
 }
 
-function json(data) {
+/* ---------- helper: อ่าน session cookie -> ผู้ใช้ปัจจุบัน (หรือ null) ---------- */
+async function getSessionUser(request, env) {
+  const sessionId = getCookie(request, 'session');
+  if (!sessionId) return null;
+
+  const raw = await env.SESSIONS.get(sessionId);
+  if (!raw) return null;
+
+  return JSON.parse(raw);
+}
+
+/* ---------- 5) /api/admin/supabase/* ----------
+   Proxy คำขอทั้งหมดจากห้องแอดมินไป Supabase จริง โดยที่เบราว์เซอร์ไม่ถือ key จริงเลย
+   - ต้อง login เป็นแอดมิน (session cookie -> isAdmin: true) ยกเว้นกรณีเดียว:
+     GET รูปจาก storage bucket ที่ตั้ง public ไว้ (product-images/site-assets/topup-slips)
+     ซึ่งเดิมก็เปิดให้ใครก็อ่านได้อยู่แล้วโดยไม่ต้องมี key ใดๆ (bucket public = true)
+     ถ้าไม่เว้นกรณีนี้ รูปสินค้าจะโหลดไม่ขึ้นตอนแสดงในหน้าร้านจริง (ลูกค้าไม่ได้ login แอดมิน) */
+async function handleSupabaseProxy(request, env, url) {
+  const targetPath = url.pathname.slice(SUPABASE_PROXY_PREFIX.length) || '/';
+  const isPublicStorageRead =
+    request.method === 'GET' && targetPath.startsWith('/storage/v1/object/public/');
+
+  if (!isPublicStorageRead) {
+    const user = await getSessionUser(request, env);
+    if (!user || !user.isAdmin) {
+      return json({ error: 'ບໍ່ມີສິດເຂົ້າເຖິງ — ຕ້ອງລ໋ອກອິນເປັນແອດມິນກ່ອນ' }, 403);
+    }
+  }
+
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (ເບິ່ງ wrangler.toml + wrangler secret)' },
+      500
+    );
+  }
+
+  // header ที่ไม่ควร forward ไปตรงๆ: host เดิม, cookie ของเว็บเรา (ไม่เกี่ยวกับ Supabase),
+  // และ apikey/authorization ที่เบราว์เซอร์ส่งมา (จะถูกใส่ค่าจริงทับด้านล่างเสมอ)
+  const skipHeaders = new Set(['host', 'cookie', 'apikey', 'authorization', 'content-length']);
+  const headers = new Headers();
+  for (const [key, value] of request.headers) {
+    if (!skipHeaders.has(key.toLowerCase())) headers.set(key, value);
+  }
+  headers.set('apikey', env.SUPABASE_SERVICE_ROLE_KEY);
+  headers.set('authorization', `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`);
+
+  const targetUrl = env.SUPABASE_URL.replace(/\/$/, '') + targetPath + url.search;
+  const hasBody = !['GET', 'HEAD'].includes(request.method);
+
+  const upstream = await fetch(targetUrl, {
+    method: request.method,
+    headers,
+    body: hasBody ? request.body : undefined,
+    duplex: hasBody ? 'half' : undefined,
+  });
+
+  const respHeaders = new Headers(upstream.headers);
+  respHeaders.delete('set-cookie'); // กันไม่ให้ response จาก Supabase ไปยุ่งกับ cookie ของเว็บเรา
+
+  return new Response(upstream.body, { status: upstream.status, headers: respHeaders });
+}
+
+function json(data, status) {
   return new Response(JSON.stringify(data), {
+    status: status || 200,
     headers: { 'Content-Type': 'application/json' },
   });
 }
