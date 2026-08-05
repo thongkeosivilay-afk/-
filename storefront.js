@@ -1,0 +1,136 @@
+/* =========================================================
+   storefront.js — ໜ້າຫຼັກ (index.html)
+   ດຶງຂໍ້ມູນຈິງຈາກ StorefrontData (GET /api/public/storefront) ແລ້ວ:
+     1) ສ້າງກາຕູນ 4 ໝວດໝູ່ (#cat-stack) ຈາກຊື່/ຮູບຈິງທີ່ແອດມິນຕັ້ງໄວ້
+        (ຖ້າຍັງບໍ່ຕັ້ງຊື່/ຮູບ ຈະໂຊວ໌ຄ່າເລີ່ມຕົ້ນ/placeholder ຄືເກົ່າ)
+     2) ອັບເດດສະຖິຕິ "ສິນຄ້າ" ແລະ "ຄັງສິນຄ້າ" ໃຫ້ເປັນຕົວເລກຈິງ
+   ========================================================= */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const stack = document.querySelector('#cat-stack');
+  if (!stack || !window.StorefrontData) return;
+
+  // ອົງປະກອບຕົກແຕ່ງປະຈຳແຕ່ລະຊ່ອງໝວດໝູ່ (1-4) — ບໍ່ໄດ້ຢູ່ໃນຖານຂໍ້ມູນ (ບໍ່ມີຄອລັມສຳລັບໄອຄອນ/ຄຳໂຄສະນາ)
+  // ຈຶ່ງໃຊ້ຊຸດເລີ່ມຕົ້ນເກົ່າຄືເດີມ (ຕົງກັບ 4 ໝວດ PC/Android/iOS/Gear ຂອງຮ້ານນີ້) ສ່ວນຊື່/ຄຳອະທິບາຍ/
+  // ຮູບແມ່ນອັນທີ່ດຶງມາຈິງ (ຊື່ ແລະ ຮູບ ດຶງຈິງ, ຄຳອະທິບາຍໃຊ້ຄ່າເລີ່ມຕົ້ນ ເພາະບໍ່ມີໃນຖານຂໍ້ມູນ)
+  const SLOT_DECOR = {
+    1: {
+      tagIcon: '<path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/>',
+      tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງ PC',
+      bigTitle: 'PANELPC',
+      desc: 'ລວມໂປຣແກຣມເສີມສຳລັບເກມ PC ໃຊ້ງານງ່າຍ ຮອງຮັບຫຼາກຫຼາຍເກມ ພ້ອມອັບເດດສະໝ່ຳສະເໝີ',
+    },
+    2: {
+      tagIcon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 18h6"/>',
+      tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື',
+      bigTitle: 'ANDROID',
+      desc: 'ລວມແອັບ ແລະ ເຄື່ອງມືເສີມສຳລັບເກມມືຖື Android ເພີ່ມຄວາມສະດວກໃນການຫຼິ້ນ',
+    },
+    3: {
+      tagIcon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 18h6"/>',
+      tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື',
+      bigTitle: 'IOS',
+      desc: 'ລວມແອັບ ແລະ ບໍລິການສຳລັບຜູ້ໃຊ້ iPhone/iPad ພ້ອມເຄື່ອງມືເສີມ',
+    },
+    4: {
+      tagIcon: '<path d="M4 15a8 8 0 0 1 16 0"/><rect x="2" y="15" width="5" height="6" rx="1.5"/><rect x="17" y="15" width="5" height="6" rx="1.5"/>',
+      tagText: 'ອຸປະກອນເສີມເກມມິ່ງ',
+      bigTitle: 'GEAR',
+      desc: 'ຄີບອດ, ເມົາສ໌, ຫູຟັງ ແລະ ອຸປະກອນເສີມເກມມິ່ງຄຸນນະພາບສູງ',
+    },
+  };
+
+  function escapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  function categoryCardHTML(category, productCount, stockCount) {
+    const decor = SLOT_DECOR[category.index] || {
+      tagIcon: '<path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/>',
+      tagText: 'ໝວດໝູ່ສິນຄ້າ',
+      bigTitle: `CAT${category.index}`,
+      desc: '',
+    };
+    const mediaHTML = category.image
+      ? `<img src="${escapeHtml(category.image)}" alt="${escapeHtml(category.name)}">`
+      : `
+        <div class="cat-img-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>
+          <span>ໃສ່ຮູບພາບໝວດໝູ່ນີ້<br>ຂະໜາດ 1600×560px (ອັດຕາສ່ວນ 2.86:1)</span>
+        </div>`;
+
+    return `
+      <div class="cat-item">
+        <a class="cat-banner" href="category.html?cat=${category.index}">
+          <div class="cat-banner-bg"></div>
+          <div class="cat-banner-media${category.image ? ' has-image' : ''}">${mediaHTML}</div>
+          <div class="cat-banner-content">
+            <div class="cat-tag-row"><span class="accent-bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${decor.tagIcon}</svg>${decor.tagText}</div>
+            <div class="cat-big-title display-en en">${escapeHtml(decor.bigTitle)}</div>
+            <span class="cat-url-pill en">HTTPS://DEKHERE.COM</span>
+          </div>
+          <div class="cat-click"><span class="dot"></span>Click Here!</div>
+        </a>
+        <div class="cat-meta">
+          <div class="cat-meta-name">${escapeHtml(category.name)}</div>
+          <div class="cat-meta-desc">${escapeHtml(decor.desc)}</div>
+          <div class="cat-meta-count">${productCount.toLocaleString('en-US')} ລາຍການ • ຄົງເຫຼືອ ${stockCount.toLocaleString('en-US')} ຊິ້ນ</div>
+        </div>
+      </div>`;
+  }
+
+  function renderCategories(data) {
+    stack.innerHTML = data.categories.map((category) => {
+      const products = window.StorefrontData.productsByCategoryName(data, category.name);
+      const productCount = products.length;
+      const stockCount = products.reduce((sum, p) => sum + window.StorefrontData.productTotalStock(p), 0);
+      return categoryCardHTML(category, productCount, stockCount);
+    }).join('');
+
+    // ອານິເມຊັນ "ຄ່ອຍໆເຫັນ" ຕອນເລື່ອນລົງມາ (ຄືເກົ່າ ໃນ script.js) — ຕ້ອງຕິດຕັ້ງໃໝ່ ເພາະ
+    // script.js ໄດ້ observe ໄປແລ້ວກ່ອນກາຕູນເຫຼົ່ານີ້ຈະຖືກສ້າງ (ດຶງຂໍ້ມູນແບບ async)
+    const catItems = stack.querySelectorAll('.cat-item');
+    if (catItems.length && 'IntersectionObserver' in window) {
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('cat-in-view');
+            revealObserver.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+      catItems.forEach((item) => revealObserver.observe(item));
+    } else {
+      catItems.forEach((item) => item.classList.add('cat-in-view'));
+    }
+  }
+
+  function updateStats(data) {
+    const statCards = document.querySelectorAll('.stat-card');
+    // ລຳດັບກາຕູນສະຖິຕິໃນ index.html: [0] ຜູ້ໃຊ້ງານ, [1] ສິນຄ້າ, [2] ຄັງສິນຄ້າ, [3] ຂາຍແລ້ວ
+    // ອັບເດດສະເພາະ "ສິນຄ້າ" ແລະ "ຄັງສິນຄ້າ" ໃຫ້ເປັນຕົວເລກຈິງຕາມທີ່ຮ້ອງຂໍ
+    const productStatValue = statCards[1]?.querySelector('.stat-value');
+    const stockStatValue = statCards[2]?.querySelector('.stat-value');
+
+    // .stat-value ຮູບແບບ: "0<span class="unit">...</span>" -> text node ທຳອິດຄືຕົວເລກ
+    if (productStatValue && productStatValue.firstChild) {
+      productStatValue.firstChild.textContent = data.stats.productCount.toLocaleString('en-US');
+    }
+    if (stockStatValue && stockStatValue.firstChild) {
+      stockStatValue.firstChild.textContent = data.stats.totalStock.toLocaleString('en-US');
+    }
+  }
+
+  window.StorefrontData.fetchData()
+    .then((data) => {
+      renderCategories(data);
+      updateStats(data);
+    })
+    .catch(() => {
+      // ດຶງຂໍ້ມູນບໍ່ສຳເລັດ (ເຊັ່ນ Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase secret) — ປ່ອຍ markup ຄ່າເລີ່ມຕົ້ນ
+      // ໄວ້ຄືເກົ່າ ບໍ່ໃຫ້ໜ້າເວັບພັງ, ພຽງແຕ່ຈະບໍ່ມີກາຕູນໝວດໝູ່/ສະຖິຕິຈິງໂຊວ໌
+      stack.innerHTML = '<div class="empty-note">ດຶງຂໍ້ມູນໝວດໝູ່ບໍ່ສຳເລັດ, ກະລຸນາໂຫຼດໜ້ານີ້ໃໝ່ພາຍຫຼັງ</div>';
+    });
+});
