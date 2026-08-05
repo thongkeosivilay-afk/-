@@ -8,9 +8,542 @@
 <link rel="stylesheet" href="admin.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ===== ຄ່າສີ/ຟອນພື້ນຖານ ທີ່ຫ້ອງແອດມິນເອົາມາຈາກເວັບເກົ່າ (scope ສະເພາະໜ້ານີ້ ບໍ່ກະທົບໜ້າອື່ນ) ===== */
+  :root{
+    --navy-950:#05070c;
+    --navy-900:#0d0f16;
+    --navy-800:#131620;
+    --navy-700:#1b1f2c;
+    --black-500:#8a5a00;
+    --black-400:#b8860b;
+    --black-300:#e8ad2e;
+    --shine:#ffffff;
+    --shine-dim:#ffcf4d;
+    --ink-100:#eef2fb;
+    --ink-300:#aab4c8;
+    --ink-500:#78839b;
+    --green-500:#22c55e;
+  }
+  .ambient-glow{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+  .ambient-glow .orb{ position:absolute; border-radius:50%; filter:blur(60px); opacity:0.55; will-change:transform; }
+  .ambient-glow .orb-gold{ width:340px;height:340px; top:-60px;left:-80px; background:radial-gradient(circle, rgba(255,224,150,0.55), transparent 70%); animation:driftA 22s ease-in-out infinite; }
+  .ambient-glow .orb-navy{ width:400px;height:400px; top:20%;right:-140px; background:radial-gradient(circle, rgba(255,207,77,0.30), transparent 70%); animation:driftB 26s ease-in-out infinite; }
+  .ambient-glow .orb-gold-soft{ width:260px;height:260px; bottom:5%;left:10%; background:radial-gradient(circle, rgba(255,235,190,0.5), transparent 70%); animation:driftC 30s ease-in-out infinite; }
+  @keyframes driftA{ 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(40px,60px) scale(1.08);} 66%{transform:translate(-20px,30px) scale(0.95);} }
+  @keyframes driftB{ 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-50px,80px) scale(1.12);} }
+  @keyframes driftC{ 0%,100%{transform:translate(0,0) scale(1);} 40%{transform:translate(30px,-40px) scale(1.1);} 70%{transform:translate(-30px,-10px) scale(0.9);} }
+  @media (prefers-reduced-motion: reduce){ .ambient-glow .orb{animation:none;} }
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translate(-50%, 20px);
+    background:var(--navy-800);border:1px solid rgba(255,207,77,0.35);
+    color:var(--ink-100);padding:12px 20px;border-radius:12px;
+    font-size:13.5px;opacity:0;transition:opacity .25s ease, transform .25s ease;
+    pointer-events:none;z-index:200;
+  }
+  .toast.show{opacity:1;transform:translate(-50%, 0);}
+
+  .back-row{ display:flex;align-items:center;gap:10px; margin-bottom:22px; }
+  .back-btn{
+    width:40px;height:40px;border-radius:12px;
+    border:1px solid rgba(255,207,77,0.3);
+    background:rgba(255,207,77,0.07);
+    color:var(--shine-dim);font-size:18px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer; transition:transform .15s ease, border-color .2s ease;
+  }
+  .back-btn:hover{border-color:rgba(255,207,77,0.6);}
+  .back-btn:active{transform:scale(0.92);}
+  .back-btn svg{width:18px;height:18px;stroke:currentColor;}
+  .page-title{font-size:19px;font-weight:800;margin:0;}
+
+<style>
+  :root{
+    --gx-signal:#b8860b;
+    --gx-signal-soft:rgba(232,173,46,0.35);
+    --gx-signal-dim:rgba(232,173,46,0.16);
+    --gx-danger:#e8395a;
+    --gx-success:#20b56a;
+    --gx-warn:#ffb020;
+    --gx-font:'Chakra Petch', 'Noto Sans Lao', sans-serif;
+  }
+
+  .gx-grid{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(232,173,46,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,173,46,0.05) 1px, transparent 1px);
+    background-size:34px 34px;
+    -webkit-mask-image:radial-gradient(ellipse 70% 55% at 50% 20%, #000 0%, transparent 75%);
+            mask-image:radial-gradient(ellipse 70% 55% at 50% 20%, #000 0%, transparent 75%);
+    opacity:0.8;
+  }
+  .gx-scanline{
+    position:fixed;left:0;right:0;height:140px;z-index:1;pointer-events:none;
+    background:linear-gradient(180deg, transparent, rgba(232,173,46,0.04) 45%, rgba(232,173,46,0.07) 50%, rgba(232,173,46,0.04) 55%, transparent);
+    animation:gxScan 7s linear infinite;
+  }
+  @keyframes gxScan{ 0%{top:-140px;} 100%{top:100vh;} }
+  @media (prefers-reduced-motion: reduce){ .gx-scanline{animation:none;display:none;} }
+
+  .wrap{position:relative;z-index:2;}
+  .back-btn{transition:border-color .2s ease, box-shadow .2s ease, transform .15s ease;}
+  .back-btn:hover{border-color:var(--gx-signal-soft);box-shadow:0 0 0 3px var(--gx-signal-dim);}
+  .back-btn:active{transform:scale(0.94);}
+  .page-title{font-family:var(--gx-font);letter-spacing:0.4px;}
+
+  /* ===== gate: shown while checking admin access ===== */
+  #gate{ text-align:center; padding:70px 10px; color:var(--ink-300); font-size:13.5px; }
+  #gate .gx-spinner-lg{
+    width:34px;height:34px;border-radius:50%;margin:0 auto 16px;
+    border:3px solid rgba(232,173,46,0.15); border-top-color:var(--gx-signal);
+    animation:gxSpin .8s linear infinite;
+  }
+  @keyframes gxSpin{ to{transform:rotate(360deg);} }
+
+  #adminApp{ display:none; }
+
+  /* ===== status strip — signature element: a live "operations" readout ===== */
+  .ops-strip{
+    display:flex; gap:10px; margin:6px 0 18px; overflow-x:auto; padding-bottom:2px;
+  }
+  .ops-chip{
+    flex-shrink:0; display:flex; flex-direction:column; gap:2px;
+    padding:10px 16px; border-radius:14px;
+    background:linear-gradient(165deg, rgba(232,173,46,0.08), rgba(232,173,46,0.02));
+    border:1px solid rgba(232,173,46,0.18);
+    min-width:96px;
+    animation:chipIn .3s ease both;
+  }
+  .ops-chip.topup-chip{ border-color:rgba(255,176,32,0.35); }
+  .ops-chip.topup-chip .ops-num{ color:var(--gx-warn); }
+  @keyframes chipIn{ from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
+  .ops-chip .ops-num{ font-family:var(--gx-font); font-weight:700; font-size:19px; color:var(--ink-100); }
+  .ops-chip .ops-label{ font-size:10.5px; color:var(--ink-500); letter-spacing:0.4px; }
+
+  /* ===== tabs (scrollable, ຈຳນວນປຸ່ມບໍ່ຈຳກັດ) ===== */
+  .gx-tabs3{
+    position:relative;display:flex;
+    border:1px solid rgba(232,173,46,0.18);
+    border-radius:12px;padding:4px;margin-bottom:20px;
+    background:rgba(232,173,46,0.03);
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .gx-tabs3::-webkit-scrollbar{ display:none; }
+  .gx-tab-slider3{
+    position:absolute;top:4px;bottom:4px;left:4px;
+    width:0;border-radius:9px;
+    background:linear-gradient(135deg,var(--black-300),var(--black-500));
+    border:1px solid rgba(232,173,46,0.4);
+    box-shadow:0 0 14px -3px var(--gx-signal-soft);
+    transition:transform .28s cubic-bezier(.2,.8,.2,1), width .28s cubic-bezier(.2,.8,.2,1);
+    z-index:0;
+  }
+  .gx-tab3{
+    position:relative;z-index:1;flex:0 0 auto;text-align:center;padding:9px 15px;
+    font-family:var(--gx-font);font-weight:600;font-size:11.5px;letter-spacing:0.2px;
+    color:var(--ink-500);cursor:pointer;transition:color .2s ease;
+    white-space:nowrap;
+  }
+  .gx-tab3.active{color:var(--shine);}
+  .tab-badge{
+    position:absolute;top:-2px;right:2px;
+    background:var(--gx-danger);color:#fff;font-size:9px;font-weight:700;
+    padding:1px 5px;border-radius:20px;line-height:1.35;
+    box-shadow:0 0 0 2px rgba(10,8,20,0.4);
+  }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  /* ===== static card (no rotating border, for content-heavy panels) ===== */
+  .stat-panel{
+    border-radius:18px;
+    background:linear-gradient(165deg, rgba(232,173,46,0.06), rgba(232,173,46,0.015));
+    border:1px solid rgba(232,173,46,0.16);
+    padding:20px 18px;margin-bottom:16px;
+  }
+  .stat-panel h3{
+    font-family:var(--gx-font); font-size:14.5px; margin:0 0 14px;
+    display:flex;align-items:center;gap:8px;color:var(--ink-100);
+  }
+  .stat-panel h3 svg{width:16px;height:16px;stroke:var(--gx-signal);flex-shrink:0;}
+
+  .mini-refresh{
+    margin-left:auto;width:28px;height:28px;border-radius:8px;flex-shrink:0;
+    border:1px solid rgba(232,173,46,0.25); background:rgba(232,173,46,0.05);
+    color:var(--ink-300); display:flex;align-items:center;justify-content:center;
+    cursor:pointer; transition:color .2s ease, border-color .2s ease;
+  }
+  .mini-refresh:hover{ color:var(--shine-dim); border-color:var(--gx-signal-soft); }
+  .mini-refresh svg{ width:14px;height:14px;stroke:currentColor; }
+  .mini-refresh.spinning svg{ animation:gxSpin .6s linear; }
+
+  /* fields reused from login.html */
+  .gx-field{margin-bottom:14px;}
+  .gx-field label{
+    display:flex;align-items:center;gap:6px;
+    margin-bottom:6px;font-size:11.5px;color:var(--ink-300);
+    font-family:var(--gx-font);letter-spacing:0.5px;text-transform:uppercase;
+  }
+  .gx-input-wrap input, .gx-input-wrap textarea, .gx-input-wrap select{
+    width:100%;padding:12px 14px;border-radius:10px;
+    border:1px solid rgba(232,173,46,0.25);
+    background:#ffffff;color:#161a2c;font-size:0.95rem;
+    font-family:'Noto Sans Lao', sans-serif;
+    transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .gx-input-wrap textarea{resize:vertical;min-height:96px;line-height:1.5;}
+  .gx-input-wrap input::placeholder, .gx-input-wrap textarea::placeholder{color:var(--ink-500);}
+  .gx-input-wrap input:focus, .gx-input-wrap textarea:focus, .gx-input-wrap select:focus{
+    outline:none;border-color:var(--gx-signal);
+    box-shadow:0 0 0 3px var(--gx-signal-dim);
+  }
+  .gx-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  .gx-submit{
+    position:relative;overflow:hidden;
+    width:100%;margin-top:6px;border:none;border-radius:12px;padding:13px;
+    background:linear-gradient(135deg,var(--black-300),var(--black-500));
+    color:var(--shine);font-weight:700;font-size:14.5px;
+    font-family:var(--gx-font);letter-spacing:0.5px;
+    border:1px solid rgba(232,173,46,0.35);
+    cursor:pointer;transition:transform .15s ease, box-shadow .2s ease;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .gx-submit:hover{box-shadow:0 0 20px -4px var(--gx-signal-soft);}
+  .gx-submit:active{transform:scale(0.98);}
+  .gx-submit:disabled{opacity:.6;cursor:default;}
+  .gx-submit.danger{ border-color:rgba(232,57,90,0.4); }
+  .gx-spinner{
+    width:15px;height:15px;border-radius:50%;
+    border:2px solid rgba(232,232,238,0.25); border-top-color:var(--shine);
+    animation:gxSpin .7s linear infinite; display:none;
+  }
+  .gx-submit.loading .gx-spinner{display:inline-block;}
+  .gx-submit.loading .gx-submit-label{opacity:.6;}
+
+  .gx-msg{
+    display:flex;align-items:center;gap:7px;justify-content:center;
+    margin-top:12px;font-size:13px;min-height:1.4em;
+    opacity:0;transform:translateY(-4px);
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .gx-msg.show{opacity:1;transform:translateY(0);}
+  .gx-msg.error{color:var(--gx-danger);}
+  .gx-msg.success{color:var(--gx-success);}
+  .gx-msg.pending{color:var(--ink-300);}
+
+  /* ===== image dropzone ===== */
+  .drop-zone{
+    border:1.5px dashed rgba(232,173,46,0.35); border-radius:14px;
+    padding:18px; text-align:center; cursor:pointer;
+    color:var(--ink-500); font-size:12.5px;
+    transition:border-color .2s ease, background .2s ease;
+    position:relative; overflow:hidden;
+  }
+  .drop-zone:hover{ border-color:var(--gx-signal-soft); background:rgba(232,173,46,0.04); }
+  .drop-zone.has-image{ padding:0; border-style:solid; }
+  .drop-zone img{ width:100%; max-height:200px; object-fit:cover; display:block; border-radius:12px; }
+  .drop-zone input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
+
+  /* ===== ຮູບປະຈຳໝວດໝູ່ (1-10) ===== */
+  .cat-field-group{
+    padding:12px; margin-bottom:10px;
+    border:1px solid rgba(232,173,46,0.12); border-radius:12px;
+  }
+  .cat-img-row{ display:flex; align-items:stretch; gap:8px; margin-top:8px; }
+  .drop-zone.cat-img-drop{ flex:1; padding:10px; font-size:11.5px; }
+  .drop-zone.cat-img-drop img{ max-height:90px; border-radius:10px; }
+  .cat-img-remove-btn{
+    flex-shrink:0; border:1px solid rgba(255,90,90,0.35); background:transparent;
+    color:var(--gx-danger); border-radius:10px; padding:0 12px; font-size:12px;
+    cursor:pointer; white-space:nowrap;
+  }
+  .cat-img-remove-btn:hover{ background:rgba(255,90,90,0.08); }
+
+  /* ===== ຢືນຢັນຊື່ໝວດໝູ່ ແຍກແຕ່ລະອັນ (ບໍ່ຕ້ອງເລື່ອນລົງໄປກົດປຸ່ມລວມ) ===== */
+  .cat-name-row{ display:flex; align-items:stretch; gap:8px; }
+  .cat-name-row input{ flex:1; min-width:0; }
+  .cat-name-confirm-btn{
+    flex-shrink:0; border:1px solid rgba(232,173,46,0.4);
+    background:linear-gradient(135deg,var(--black-300),var(--black-500));
+    color:var(--shine); border-radius:10px; padding:0 16px; font-size:12.5px;
+    font-weight:700; font-family:var(--gx-font); letter-spacing:0.3px;
+    cursor:pointer; white-space:nowrap; transition:box-shadow .2s ease, transform .15s ease;
+  }
+  .cat-name-confirm-btn:hover{ box-shadow:0 0 14px -4px var(--gx-signal-soft); }
+  .cat-name-confirm-btn:active{ transform:scale(0.96); }
+  .cat-name-confirm-btn.loading{ opacity:.6; cursor:default; pointer-events:none; }
+  .cat-name-msg{ margin-top:6px; justify-content:flex-start; font-size:12px; }
+
+  /* ===== product management list ===== */
+  .prod-row{
+    display:flex; gap:12px; align-items:flex-start;
+    padding:14px 0; border-bottom:1px solid rgba(232,173,46,0.12);
+  }
+  .prod-row:last-child{ border-bottom:none; }
+  .prod-thumb{
+    width:56px;height:56px;border-radius:10px;flex-shrink:0;
+    background:rgba(232,173,46,0.04); border:1px solid rgba(232,173,46,0.18);
+    object-fit:cover;
+  }
+  .prod-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+  .prod-fields .gx-row2 input{ width:100%; min-width:0; padding:9px 10px; font-size:0.88rem; }
+  .prod-meta-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .prod-stock{ font-size:11px; color:var(--ink-500); white-space:nowrap; }
+  .prod-actions{ display:flex; gap:8px; }
+  .icon-btn{
+    width:34px;height:34px;border-radius:9px;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(232,173,46,0.05); border:1px solid rgba(232,173,46,0.22);
+    color:var(--ink-300); cursor:pointer; transition:all .15s ease;
+  }
+  .icon-btn:hover{ border-color:var(--gx-signal-soft); color:var(--shine-dim); }
+  .icon-btn.save-btn:hover{ border-color:rgba(32,181,106,0.5); color:var(--gx-success); }
+  .icon-btn.del-btn:hover{ border-color:rgba(232,57,90,0.5); color:var(--gx-danger); }
+  .icon-btn.hard-del-btn{ border-color:rgba(232,57,90,0.35); color:var(--gx-danger); }
+  .icon-btn.hard-del-btn:hover{ border-color:var(--gx-danger); background:rgba(232,57,90,0.12); color:var(--gx-danger); }
+  .icon-btn svg{ width:15px;height:15px;stroke:currentColor; }
+  .empty-note{ text-align:center; color:var(--ink-500); font-size:13px; padding:24px 0; }
+
+  select#codeProductSelect{ appearance:none; -webkit-appearance:none; }
+
+  /* ===== top-up requests panel ===== */
+  .topup-card{
+    border-radius:16px;
+    background:linear-gradient(165deg, rgba(232,173,46,0.07), rgba(232,173,46,0.015));
+    border:1px solid rgba(232,173,46,0.18);
+    padding:16px;margin-bottom:14px;
+    position:relative;overflow:hidden;
+    animation:topupIn .35s ease both;
+  }
+  @keyframes topupIn{ from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
+  .topup-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg, transparent, var(--gx-signal-soft), transparent);
+  }
+  .topup-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:10px; }
+  .topup-amount{ font-family:var(--gx-font); font-weight:700; font-size:21px; color:var(--shine); }
+  .topup-meta{ font-size:11.5px; color:var(--ink-500); line-height:1.6; margin-top:2px; }
+  .topup-meta .ref{ color:var(--ink-300); }
+  .topup-status-tag{
+    flex-shrink:0; font-size:10.5px; padding:4px 11px; border-radius:20px;
+    font-family:var(--gx-font); font-weight:600; letter-spacing:.4px; white-space:nowrap;
+  }
+  .topup-status-tag.pending{
+    background:rgba(255,176,32,0.14); color:var(--gx-warn); border:1px solid rgba(255,176,32,0.35);
+    animation:tagPulse 1.8s ease-in-out infinite;
+  }
+  @keyframes tagPulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,176,32,0.35); }
+    50%{ box-shadow:0 0 0 5px rgba(255,176,32,0); }
+  }
+  .topup-slip-wrap{
+    border-radius:12px; overflow:hidden; border:1px solid rgba(232,173,46,0.2);
+    margin-bottom:14px; cursor:zoom-in; position:relative; background:rgba(0,0,0,0.03);
+  }
+  .topup-slip-wrap img{ width:100%; max-height:260px; object-fit:contain; display:block; }
+  .topup-slip-wrap .zoom-hint{
+    position:absolute; bottom:8px; right:8px; background:rgba(10,8,20,0.55);
+    color:#fff; font-size:10px; padding:3px 9px; border-radius:20px;
+    display:flex; align-items:center; gap:4px; backdrop-filter:blur(3px);
+  }
+  .topup-slip-wrap .zoom-hint svg{ width:11px;height:11px;stroke:currentColor; }
+  .topup-actions-row{ display:flex; gap:10px; }
+  .topup-btn{
+    flex:1; border:none; border-radius:11px; padding:12px;
+    font-family:var(--gx-font); font-weight:700; font-size:13.5px; letter-spacing:.3px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
+    transition:transform .15s ease, box-shadow .2s ease, opacity .2s ease;
+  }
+  .topup-btn:active{ transform:scale(0.96); }
+  .topup-btn:disabled{ opacity:.5; cursor:default; }
+  .topup-btn svg{ width:16px;height:16px;stroke:currentColor; }
+  .topup-btn.approve{
+    background:linear-gradient(135deg, #22c579, #159657);
+    color:#fff; box-shadow:0 4px 14px -4px rgba(32,181,106,0.55);
+  }
+  .topup-btn.approve:hover{ box-shadow:0 4px 20px -3px rgba(32,181,106,0.7); }
+  .topup-btn.reject{
+    background:linear-gradient(135deg, #ec4a6b, #c22246);
+    color:#fff; box-shadow:0 4px 14px -4px rgba(232,57,90,0.55);
+  }
+  .topup-btn.reject:hover{ box-shadow:0 4px 20px -3px rgba(232,57,90,0.7); }
+  .topup-btn.ai-verify{ background:rgba(120,140,255,0.14); color:#9cabff; border:1px solid rgba(120,140,255,0.35); }
+  .ai-verify-box{ margin:10px 0; }
+  .ai-result{ font-size:12.5px; line-height:1.6; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.04); }
+  .ai-result.ai-ok{ border:1px solid rgba(32,181,106,0.35); color:#20b56a; }
+  .ai-result.ai-warn{ border:1px solid rgba(255,196,0,0.35); color:#ffcf4d; }
+  .ai-note{ margin-top:4px; opacity:0.7; }
+
+  /* ===== slip lightbox (fullscreen viewer) ===== */
+  .slip-lightbox{
+    position:fixed; inset:0; z-index:80; background:rgba(8,6,16,0.92);
+    display:none; align-items:center; justify-content:center; padding:24px;
+    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    animation:lbIn .2s ease;
+  }
+  .slip-lightbox.show{ display:flex; }
+  @keyframes lbIn{ from{opacity:0;} to{opacity:1;} }
+  .slip-lightbox img{
+    max-width:100%; max-height:88vh; border-radius:14px;
+    box-shadow:0 25px 70px -12px rgba(0,0,0,0.7);
+    border:1px solid rgba(232,173,46,0.3);
+  }
+  .slip-lightbox .lb-close{
+    position:absolute; top:18px; right:18px; width:38px;height:38px;border-radius:50%;
+    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18);
+    color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .slip-lightbox .lb-close svg{ width:18px;height:18px;stroke:currentColor; }
+
+  /* ===== duration options (12ຊມ / 1ວັນ ... 30ວັນ) ===== */
+  .duration-toggle-label{
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    font-size:0.95rem; color:var(--ink-100); text-transform:none;
+    font-family:'Noto Sans Lao', sans-serif; letter-spacing:0;
+  }
+  .duration-toggle-label input[type="checkbox"]{
+    width:18px;height:18px;accent-color:var(--gx-signal);cursor:pointer;flex-shrink:0;
+  }
+  .duration-options-list{
+    display:flex; flex-direction:column; gap:8px;
+    border:1px solid rgba(232,173,46,0.18); border-radius:12px;
+    padding:12px; background:rgba(232,173,46,0.03);
+  }
+  .duration-opt-row{
+    display:flex; align-items:center; gap:10px;
+  }
+  .duration-opt-row label{
+    display:flex; align-items:center; gap:8px; flex:1; min-width:64px;
+    font-size:0.9rem; color:var(--ink-100); cursor:pointer;
+  }
+  .duration-opt-row input[type="checkbox"]{
+    width:16px;height:16px;accent-color:var(--gx-signal);cursor:pointer;flex-shrink:0;
+  }
+  .duration-opt-row .dur-price{
+    width:150px; padding:8px 10px; border-radius:8px;
+    border:1px solid rgba(232,173,46,0.25); background:#fff;
+    color:#161a2c; font-size:0.9rem;
+  }
+  .duration-pill-badge{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:10.5px; padding:2px 8px; border-radius:20px;
+    background:rgba(232,173,46,0.12); color:var(--gx-signal);
+    border:1px solid rgba(232,173,46,0.25); margin-left:6px;
+  }
+  .prod-duration-list{
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;
+  }
+  .prod-duration-chip{
+    font-size:10.5px; padding:3px 9px; border-radius:20px;
+    background:rgba(232,173,46,0.08); border:1px solid rgba(232,173,46,0.2);
+    color:var(--ink-300);
+  }
+  .prod-row.is-archived{
+    opacity: 0.55;
+  }
+  .archived-tag{
+    display:inline-block;
+    font-size:10.5px; font-weight:600;
+    padding:2px 8px; border-radius:20px;
+    background:rgba(239,68,68,0.1); color:#dc2626;
+    border:1px solid rgba(239,68,68,0.25);
+    margin-bottom:8px;
+  }
+
+  /* ===== ລິ້ງໂບນັດ — ຕອນເພີ່ມສິນຄ້າໃໝ່ ===== */
+  .link-rows-list{
+    display:flex; flex-direction:column; gap:8px;
+    border:1px solid rgba(232,173,46,0.18); border-radius:12px;
+    padding:12px; background:rgba(232,173,46,0.03);
+    margin-bottom:8px;
+  }
+  .link-row{ display:flex; gap:8px; align-items:center; }
+  .link-row input{
+    flex:1; min-width:0; padding:8px 10px; border-radius:8px;
+    border:1px solid rgba(232,173,46,0.25); background:#fff;
+    color:#161a2c; font-size:0.85rem; font-family:inherit;
+  }
+  .link-row-remove{
+    flex-shrink:0; width:30px;height:30px;border-radius:8px;
+    border:1px solid rgba(232,57,90,0.3); background:rgba(232,57,90,0.06);
+    color:var(--gx-danger); font-size:16px; line-height:1; cursor:pointer;
+  }
+  .gx-add-link-btn{
+    width:100%; padding:10px; border-radius:10px;
+    border:1.5px dashed rgba(232,173,46,0.35); background:transparent;
+    color:var(--gx-signal); font-weight:700; font-size:0.85rem; cursor:pointer;
+    font-family:var(--gx-font);
+  }
+  .gx-add-link-btn:hover{ background:rgba(232,173,46,0.05); }
+
+  /* ===== ຢຸດຂາຍຊົ່ວຄາວ ===== */
+  .pause-toggle-label{
+    display:flex; align-items:center; gap:8px; cursor:pointer;
+    font-size:0.85rem; color:var(--ink-100);
+    font-family:'Noto Sans Lao', sans-serif;
+    margin:2px 0;
+  }
+  .pause-toggle-label input[type="checkbox"]{
+    width:16px;height:16px;accent-color:var(--gx-warn);cursor:pointer;flex-shrink:0;
+  }
+  .pause-note-wrap input{
+    width:100%; padding:8px 10px; border-radius:8px;
+    border:1px solid rgba(255,176,32,0.35); background:rgba(255,176,32,0.04);
+    color:var(--ink-100); font-size:0.82rem; font-family:inherit;
+  }
+  .paused-tag{
+    display:inline-block;
+    font-size:10.5px; font-weight:600;
+    padding:2px 8px; border-radius:20px;
+    background:rgba(255,176,32,0.14); color:#a06600;
+    border:1px solid rgba(255,176,32,0.35);
+    margin-bottom:8px;
+  }
+  .prod-row.is-paused{ opacity:0.85; }
+
+  /* ===== ລິ້ງໂບນັດ — ຕອນຈັດການສິນຄ້າ ===== */
+  .prod-links-section{ margin-top:4px; }
+  .prod-links-list{
+    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;
+  }
+  .prod-link-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:10.5px; padding:3px 6px 3px 9px; border-radius:20px;
+    background:rgba(232,173,46,0.08); border:1px solid rgba(232,173,46,0.2);
+    color:var(--ink-300);
+  }
+  .link-chip-remove{
+    width:16px;height:16px;border-radius:50%;flex-shrink:0;
+    border:none; background:rgba(232,57,90,0.14); color:var(--gx-danger);
+    font-size:11px; line-height:1; cursor:pointer;
+  }
+  .link-add-inline{ display:flex; gap:6px; }
+  .link-add-inline input{
+    flex:1; min-width:0; padding:7px 9px; border-radius:8px;
+    border:1px solid rgba(232,173,46,0.22); background:#fff;
+    color:#161a2c; font-size:0.8rem; font-family:inherit;
+  }
+  .link-add-btn{
+    flex-shrink:0; width:30px;height:30px;border-radius:8px;
+    border:1px solid rgba(232,173,46,0.3); background:rgba(232,173,46,0.06);
+    color:var(--gx-signal); font-size:16px; line-height:1; cursor:pointer;
+  }
+</style>
 </head>
 <body>
+<div class="ambient-glow">
+  <div class="orb orb-gold"></div>
+  <div class="orb orb-navy"></div>
+  <div class="orb orb-gold-soft"></div>
+</div>
+<div class="gx-grid"></div>
+<div class="gx-scanline"></div>
 
 <!-- ============ ໜ້າລົງຊື່ເຂົ້າຫ້ອງແອດມິນ (ຜ່ານ Discord) ============ -->
 <div class="admin-shell login-screen" id="loginScreen">
@@ -45,166 +578,480 @@
   <button class="btn-block secondary" id="deniedLogoutBtn" style="max-width:340px;">ອອກຈາກລະບົບ</button>
 </div>
 
-<!-- ============ Dashboard ============ -->
-<div class="admin-shell" id="dashboard" style="display:none;">
-
-  <div class="dash-header">
-    <div class="dash-title">ຫ້ອງແອດມິນ <span class="accent">SHOP</span></div>
-    <div class="dash-actions">
-      <button class="icon-btn" id="settingsBtn" title="ຕັ້ງຄ່າ">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
-      </button>
-      <button class="icon-btn" id="logoutBtn" title="ອອກຈາກລະບົບ">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-      </button>
-    </div>
-  </div>
-
-  <div class="dash-stats">
-    <div class="dash-stat"><div class="v" id="statReady">0</div><div class="l">ພ້ອມຂາຍ</div></div>
-    <div class="dash-stat"><div class="v" id="statStock">0</div><div class="l">ລະຫັດໃນສະຕັອກ</div></div>
-    <div class="dash-stat"><div class="v" id="statSold">0</div><div class="l">ຂາຍໄປແລ້ວ</div></div>
-  </div>
-
-  <div class="cat-tabs" id="fnTabs">
-    <button class="cat-tab active" data-tab="add-product">ເພິ່ມສິນຄ້າ</button>
-    <button class="cat-tab" data-tab="add-code">ເຕິມລະຫັດ</button>
-    <button class="cat-tab" data-tab="edit-name-cat">ແກ້ໄຂຊື່-ຫມວດຫມູ່</button>
-    <button class="cat-tab" data-tab="edit-image">ປັບປ່ຽນຮູບພາບ</button>
-    <button class="cat-tab" data-tab="edit-desc">ແກ້ໄຂຄຳບັນຍາຍ</button>
-  </div>
-
-  <div class="tab-hint" id="tabHint"></div>
-
-  <button class="btn-block new-prod-btn hidden" id="newProdBtn" style="margin:0 18px 4px; width:calc(100% - 36px);">➕ ສ້າງສິນຄ້າໃໝ່</button>
-
-  <div class="prod-list" id="prodList"><!-- ຖືກສ້າງດ້ວຍ JS --></div>
+<!-- ============ Gate: ກຳລັງກວດສອບ (ຫຼັງລ໋ອກອິນ Discord ຜ່ານແລ້ວ ລໍຖ້າໂຫຼດຂໍ້ມູນ Supabase) ============ -->
+<div id="gate" style="display:none; text-align:center; padding:70px 10px; color:var(--ink-300); font-size:13.5px;">
+  <div style="width:34px;height:34px;border-radius:50%;margin:0 auto 16px; border:3px solid rgba(232,173,46,0.15); border-top-color:var(--gx-signal); animation:gxSpin .8s linear infinite;"></div>
+  <div>ກຳລັງໂຫຼດຂໍ້ມູນ...</div>
 </div>
 
-<!-- ============ Modal: ຈັດການສິນຄ້າ ============ -->
-<div class="modal-overlay hidden" id="prodModal">
-  <div class="modal-card">
-    <div class="modal-head">
-      <div class="modal-head-title" id="modalTitle">ຈັດການສິນຄ້າ</div>
-      <button class="modal-close" id="modalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+<!-- ============ Dashboard (ພອດແອດມິນຈິງ — ຕໍ່ Supabase) ============ -->
+<div class="wrap" id="adminApp" style="display:none;">
+
+  <div class="back-row">
+    <button class="icon-btn" id="logoutBtn" title="ອອກຈາກລະບົບ" style="width:40px;height:40px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+    </button>
+    <h1 class="page-title">ຫ້ອງຄວບຄຸມແອດມິນ</h1>
+  </div>
+
+  <div class="ops-strip" id="opsStrip"></div>
+
+  <div class="gx-tabs3">
+    <div class="gx-tab-slider3" id="tabSlider3"></div>
+    <div class="gx-tab3 active" data-panel="panelAdd">ເພີ່ມສິນຄ້າ</div>
+    <div class="gx-tab3" data-panel="panelManage">ຈັດການສິນຄ້າ</div>
+    <div class="gx-tab3" data-panel="panelCodes">ເຕີມລະຫັດ</div>
+    <div class="gx-tab3" data-panel="panelTopup">ຄຳຂໍເຕີມເງິນ<span class="tab-badge" id="topupBadge" style="display:none;"></span></div>
+    <div class="gx-tab3" data-panel="panelSettings">ຕັ້ງຄ່າຮ້ານ</div>
+  </div>
+
+  <!-- ===== PANEL 1: ເພີ່ມສິນຄ້າ ===== -->
+  <div class="panel active" id="panelAdd">
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        ເພີ່ມສິນຄ້າໃໝ່
+      </h3>
+      <form id="addForm">
+        <div class="gx-field">
+          <label>ຮູບສິນຄ້າ</label>
+          <div class="drop-zone" id="dropZone">
+            <span id="dropZoneText">ແຕະເພື່ອເລືອກຮູບພາບ</span>
+            <input type="file" id="imageInput" accept="image/*">
+          </div>
+        </div>
+        <div class="gx-field">
+          <label>ຊື່ສິນຄ້າ</label>
+          <div class="gx-input-wrap"><input type="text" id="pName" required placeholder="ຕົວຢ່າງ: ບັດເຕີມເງິນ 100 ບາດ"></div>
+        </div>
+        <div class="gx-row2">
+          <div class="gx-field">
+            <label>ໝວດໝູ່</label>
+            <div class="gx-input-wrap">
+              <select id="pCategorySelect" required>
+                <option value="">ເລືອກໝວດໝູ່</option>
+                <option value="__new__">+ ເພີ່ມໝວດໝູ່ໃໝ່</option>
+              </select>
+            </div>
+            <div class="gx-input-wrap" id="pCategoryNewWrap" style="display:none;margin-top:8px;">
+              <input type="text" id="pCategoryNew" placeholder="ພິມຊື່ໝວດໝູ່ໃໝ່">
+            </div>
+          </div>
+          <div class="gx-field" id="basePriceField">
+            <label>ລາຄາ (ກີບ)</label>
+            <div class="gx-input-wrap"><input type="number" id="pPrice" min="0" step="0.01" placeholder="0"></div>
+          </div>
+        </div>
+
+        <div class="gx-field">
+          <label class="duration-toggle-label">
+            <input type="checkbox" id="pDurationEnabled">
+            ມີຕົວເລືອກໄລຍະເວລາ (12ຊມ, 1ວັນ, 2ວັນ ... 30ວັນ) — ແຕ່ລະຕົວເລືອກຕັ້ງລາຄາເອງໄດ້
+          </label>
+        </div>
+        <div class="gx-field" id="durationOptionsWrap" style="display:none;">
+          <label>ເລືອກໄລຍະເວລາ ແລະ ຕັ້ງລາຄາ (ກີບ)</label>
+          <div class="duration-options-list" id="durationOptionsList"></div>
+        </div>
+
+        <div class="gx-field">
+          <label class="duration-toggle-label">
+            <input type="checkbox" id="pLinksEnabled">
+            ມີລິ້ງໂບນັດ — ລູກຄ້າຈະກົດເບິ່ງໄດ້ກໍ່ຕໍ່ເມື່ອຊື້ສິນຄ້ານີ້ແລ້ວຢ່າງໜ້ອຍ 1 ຄັ້ງ
+          </label>
+        </div>
+        <div class="gx-field" id="linksOptionsWrap" style="display:none;">
+          <label>ລິ້ງໂບນັດ (ໃສ່ຊື່ + ລິ້ງ, ເພີ່ມໄດ້ບໍ່ຈຳກັດ)</label>
+          <div class="link-rows-list" id="linkRowsList"></div>
+          <button type="button" class="gx-add-link-btn" id="addLinkRowBtn">+ ເພີ່ມລິ້ງ</button>
+        </div>
+
+        <button type="submit" class="gx-submit" id="addSubmit">
+          <span class="gx-spinner"></span>
+          <span class="gx-submit-label">ເພີ່ມສິນຄ້າ</span>
+        </button>
+        <div class="gx-msg" id="addMsg"></div>
+      </form>
     </div>
+  </div>
 
-    <!-- ຊື່ -->
-    <div class="modal-section" data-section="name">
-      <label class="field-label">ຊື່ສິນຄ້າ</label>
-      <input type="text" id="mName" class="field-input" placeholder="ເຊັ່ນ: ບັດເຕີມ Garena 50,000 ກີບ">
+  <!-- ===== PANEL 2: ຈັດການສິນຄ້າ ===== -->
+  <div class="panel" id="panelManage">
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+        ຈັດການສິນຄ້າ
+      </h3>
+      <div id="manageList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
     </div>
+  </div>
 
-    <!-- ລາຄາ -->
-    <div class="modal-section" data-section="price">
-      <label class="field-label">ລາຄາ (₭ ກີບ)</label>
-      <input type="number" id="mPrice" class="field-input" placeholder="0" min="0">
-    </div>
-
-    <!-- ຫມວດຫມູ່ -->
-    <div class="modal-section" data-section="category">
-      <label class="field-label">ຫມວດຫມູ່</label>
-      <select id="mCategory" class="field-input">
-        <option value="pc">ບັດເຕີມເງິນ PC</option>
-        <option value="android">ບັນຊີເກມ Android</option>
-        <option value="ios">ບັນຊີເກມ iOS</option>
-        <option value="gear">ອຸປະກອນເສີມ</option>
-      </select>
-    </div>
-
-    <button class="btn-block modal-section" data-section="name,price,category" id="mSaveInfo">ບັນທຶກ</button>
-
-    <!-- ຮູບພາບ -->
-    <div class="modal-section" data-section="image">
-      <div class="divider"></div>
-      <label class="field-label">ລິ້ງຮູບພາບສິນຄ້າ (URL)</label>
-      <input type="text" id="mImage" class="field-input" placeholder="https://example.com/image.jpg">
-      <div class="img-preview-wrap" id="mImagePreviewWrap">
-        <img id="mImagePreview" class="img-preview" alt="ຕົວຢ່າງຮູບພາບ">
+  <!-- ===== PANEL 3: ເຕີມລະຫັດ ===== -->
+  <div class="panel" id="panelCodes">
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        ເຕີມລະຫັດສິນຄ້າ
+      </h3>
+      <div class="gx-field">
+        <label>ເລືອກສິນຄ້າ</label>
+        <div class="gx-input-wrap"><select id="codeProductSelect"></select></div>
       </div>
-      <button class="btn-block" id="mSaveImage" style="margin-top:10px;">ບັນທຶກຮູບພາບ</button>
-    </div>
-
-    <!-- ຄຳບັນຍາຍ -->
-    <div class="modal-section" data-section="description">
-      <div class="divider"></div>
-      <label class="field-label">ຄຳບັນຍາຍສິນຄ້າ</label>
-      <textarea id="mDescription" class="stock-textarea" placeholder="ອະທິບາຍລາຍລະອຽດສິນຄ້າ ເຊັ່ນ ວິທີໃຊ້, ເງື່ອນໄຂ, ອື່ນໆ..."></textarea>
-      <button class="btn-block" id="mSaveDescription" style="margin-top:10px;">ບັນທຶກຄຳບັນຍາຍ</button>
-    </div>
-
-    <!-- ລະຫັດ/ສະຕັອກ -->
-    <div class="modal-section" data-section="codes">
-      <div class="divider"></div>
-      <div class="section-label">ເຕີມລະຫັດເຂົ້າສະຕັອກ <span class="hint">(1 ແຖວ = 1 ລະຫັດ)</span></div>
-      <textarea id="mCodesInput" class="stock-textarea" placeholder="XXXX-XXXX-XXXX&#10;YYYY-YYYY-YYYY&#10;..."></textarea>
-      <button class="btn-block" id="mAddCodes" style="margin-top:10px;">➕ ເພີ່ມເຂົ້າສະຕັອກ</button>
-
-      <div class="divider"></div>
-
-      <div class="section-label">ລະຫັດໃນສະຕັອກ (ຍັງບໍ່ຂາຍ) — <span class="count" id="mStockCount">0</span> ອັນ</div>
-      <div class="code-chip-list" id="mStockList"></div>
-    </div>
-
-    <!-- ປະຫວັດການຂາຍ (ສະແດງໃນແທັບ ເພິ່ມສິນຄ້າ ແລະ ເຕິມລະຫັດ) -->
-    <div class="modal-section" data-section="sold">
-      <div class="section-label">ປະຫວັດການຂາຍ — <span class="count" id="mSoldCount">0</span> ອັນ</div>
-      <div class="code-chip-list" id="mSoldList"></div>
+      <div class="gx-field" id="codeDurationWrap" style="display:none;">
+        <label>ເລືອກໄລຍະເວລາ (ລະຫັດຈະຖືກແຍກເກັບຕາມໄລຍະເວລານີ້)</label>
+        <div class="gx-input-wrap"><select id="codeDurationSelect"></select></div>
+      </div>
+      <div class="gx-field">
+        <label>ລະຫັດ (ໜຶ່ງແຖວຕໍ່ໜຶ່ງລະຫັດ)</label>
+        <div class="gx-input-wrap"><textarea id="codesInput" placeholder="ABCD-1234&#10;EFGH-5678&#10;IJKL-9012"></textarea></div>
+      </div>
+      <button type="button" class="gx-submit" id="codesSubmit">
+        <span class="gx-spinner"></span>
+        <span class="gx-submit-label">ເພີ່ມລະຫັດ</span>
+      </button>
+      <div class="gx-msg" id="codesMsg"></div>
+      <div class="ops-strip" id="codeStockStrip" style="margin-top:16px;"></div>
     </div>
   </div>
+
+  <!-- ===== PANEL 4: ຄຳຂໍເຕີມເງິນ ===== -->
+  <div class="panel" id="panelTopup">
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        ຄຳຂໍເຕີມເງິນ
+        <button type="button" class="mini-refresh" id="topupRefreshBtn" title="ໂຫຼດຄືນໃໝ່">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </h3>
+      <div id="topupList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+    </div>
+  </div>
+
+  <!-- ===== PANEL 5: ຕັ້ງຄ່າຮ້ານ ===== -->
+  <div class="panel" id="panelSettings">
+
+    <!-- ຊື່ຮ້ານ -->
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
+        ຊື່ຮ້ານ
+      </h3>
+      <div class="gx-field">
+        <label>ຊື່ຮ້ານ (ຈະປ່ຽນທຸກຈຸດທີ່ສະແດງຊື່ຮ້ານໃນເວັບໄຊທ໌ໂດຍອັດຕະໂນມັດ)</label>
+        <div class="gx-input-wrap"><input type="text" id="settingStoreName" placeholder="ຕົວຢ່າງ: Dek Mash Shop"></div>
+      </div>
+      <button type="button" class="gx-submit" id="saveStoreNameBtn">
+        <span class="gx-spinner"></span>
+        <span class="gx-submit-label">ບັນທຶກຊື່ຮ້ານ</span>
+      </button>
+      <div class="gx-msg" id="storeNameMsg"></div>
+    </div>
+
+    <!-- ຄຳອະທິບາຍ -->
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        ຄຳອະທິບາຍຮ້ານ
+      </h3>
+      <div class="gx-field">
+        <label>ຂໍ້ຄວາມສັ້ນໆໃຕ້ຊື່ຮ້ານໃນໜ້າຫຼັກ</label>
+        <div class="gx-input-wrap"><textarea id="settingTagline" placeholder="ຄຳອະທິບາຍສັ້ນໆກ່ຽວກັບຮ້ານ..."></textarea></div>
+      </div>
+      <button type="button" class="gx-submit" id="saveTaglineBtn">
+        <span class="gx-spinner"></span>
+        <span class="gx-submit-label">ບັນທຶກຄຳອະທິບາຍ</span>
+      </button>
+      <div class="gx-msg" id="taglineMsg"></div>
+    </div>
+
+    <!-- ຂໍ້ຄວາມປະກາດ -->
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg>
+        ຂໍ້ຄວາມປະກາດ (ແລ່ນຂວາໄປຊ້າຍ)
+      </h3>
+      <div class="gx-field">
+        <label>ຂໍ້ຄວາມນີ້ຈະເລື່ອນຈາກຂວາໄປຊ້າຍໃນໜ້າຫຼັກ ແລ້ວວົນຊ້ຳໄປເລື່ອຍໆ</label>
+        <div class="gx-input-wrap"><input type="text" id="settingAnnouncement" placeholder="ຕົວຢ່າງ: ໂປຣໂມຊັ່ນພິເສດເດືອນນີ້ ສ່ວນຫຼຸດ 10%!"></div>
+      </div>
+      <button type="button" class="gx-submit" id="saveAnnouncementBtn">
+        <span class="gx-spinner"></span>
+        <span class="gx-submit-label">ບັນທຶກຂໍ້ຄວາມປະກາດ</span>
+      </button>
+      <div class="gx-msg" id="announcementMsg"></div>
+    </div>
+
+    <!-- ຮູບ hero ໜ້າຫຼັກ -->
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        ຮູບ Hero ໜ້າຫຼັກ
+      </h3>
+      <div class="gx-field cat-field-group">
+        <label>ຮູບກາງໜ້າຫຼັກ (ຖ້າບໍ່ໃສ່ຮູບ ຈະໃຊ້ວິດີໂອຄ່າເລີ່ມຕົ້ນແທນ)</label>
+        <div class="cat-img-row">
+          <div class="drop-zone cat-img-drop" id="heroImageDropZone">
+            <span id="heroImageDropZoneText">ແຕະເພື່ອເລືອກຮູບ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+            <input type="file" id="heroImageInput" accept="image/*">
+          </div>
+          <button type="button" class="cat-img-remove-btn" id="heroImageRemoveBtn" title="ລຶບຮູບ, ກັບໄປໃຊ້ວິດີໂອຄ່າເລີ່ມຕົ້ນ">ລຶບຮູບ</button>
+        </div>
+        <div class="gx-msg" id="heroImageMsg"></div>
+      </div>
+    </div>
+
+    <!-- ຊື່ + ຮູບປະຈຳໝວດໝູ່ 1-10 -->
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        ໝວດໝູ່ສິນຄ້າ (1-10) — ຊື່ ແລະ ຮູບພາບ
+      </h3>
+      <p style="font-size:12px;color:var(--ink-500);margin:0 0 10px;">ຕັ້ງຊື່ ແລະ ເລືອກຮູບໃຫ້ໝວດໝູ່ໃດກໍໄດ້ຕາມທີ່ຕ້ອງການ ຈະໃສ່ຄົບ 10 ຫຼືບໍ່ຄົບກໍໄດ້ — ຮູບພາບອັບໂຫລດ+ບັນທຶກອັດຕະໂນມັດທັນທີ, ສ່ວນຊື່ພິມແລ້ວກົດ "ຢືນຢັນ" ຂ້າງໆຊ່ອງນັ້ນເລີຍ (ຫຼືກົດ Enter) ບໍ່ຕ້ອງເລື່ອນລົງໄປລຸ່ມສຸດ</p>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 1 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName1" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm1">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg1"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop1">
+          <span id="catImgDropText1">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput1" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove1" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg1"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 2 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName2" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm2">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg2"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop2">
+          <span id="catImgDropText2">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput2" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove2" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg2"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 3 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName3" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm3">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg3"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop3">
+          <span id="catImgDropText3">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput3" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove3" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg3"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 4 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName4" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm4">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg4"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop4">
+          <span id="catImgDropText4">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput4" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove4" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg4"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 5 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName5" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm5">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg5"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop5">
+          <span id="catImgDropText5">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput5" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove5" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg5"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 6 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName6" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm6">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg6"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop6">
+          <span id="catImgDropText6">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput6" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove6" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg6"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 7 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName7" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm7">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg7"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop7">
+          <span id="catImgDropText7">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput7" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove7" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg7"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 8 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName8" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm8">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg8"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop8">
+          <span id="catImgDropText8">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput8" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove8" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg8"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 9 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName9" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm9">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg9"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop9">
+          <span id="catImgDropText9">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput9" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove9" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg9"></div>
+    </div>
+    <div class="gx-field cat-field-group">
+      <label>ໝວດໝູ່ 10 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName10" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm10">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg10"></div>
+      <div class="cat-img-row" style="margin-top:8px;">
+        <div class="drop-zone cat-img-drop" id="catImgDrop10">
+          <span id="catImgDropText10">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+          <input type="file" id="catImgInput10" accept="image/*">
+        </div>
+        <button type="button" class="cat-img-remove-btn" id="catImgRemove10" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
+      </div>
+      <div class="gx-msg" id="catImgMsg10"></div>
+    </div>
+    <button type="button" class="gx-submit" id="saveCategoryNamesBtn" style="margin-top:14px;">
+      <span class="gx-spinner"></span>
+      <span class="gx-submit-label">ບັນທຶກຊື່ໝວດໝູ່ທັງໝົດ</span>
+    </button>
+    <div class="gx-msg" id="categoryNamesMsg"></div>
+  </div>
+
+  <!-- ຊ່ອງທາງໂຊເຊียล -->
+  <div class="stat-panel">
+    <h3>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+      ຊ່ອງທາງໂຊເຊียล
+    </h3>
+    <div class="gx-field">
+      <label>ລິ້ງ Facebook (ວາງລິ້ງເຕັມ ເຊັ່ນ https://facebook.com/ຮ້ານທ່ານ)</label>
+      <div class="gx-input-wrap"><input type="url" id="settingSocialFacebook" placeholder="https://facebook.com/..."></div>
+    </div>
+    <div class="gx-field">
+      <label>ລິ້ງ Discord</label>
+      <div class="gx-input-wrap"><input type="url" id="settingSocialDiscord" placeholder="https://discord.gg/..."></div>
+    </div>
+    <div class="gx-field">
+      <label>ລິ້ງ Line</label>
+      <div class="gx-input-wrap"><input type="url" id="settingSocialLine" placeholder="https://line.me/ti/p/..."></div>
+    </div>
+    <div class="gx-field">
+      <label>ລິ້ງ Telegram</label>
+      <div class="gx-input-wrap"><input type="url" id="settingSocialTelegram" placeholder="https://t.me/..."></div>
+    </div>
+    <div class="gx-field">
+      <label>ລິ້ງ WhatsApp</label>
+      <div class="gx-input-wrap"><input type="url" id="settingSocialWhatsapp" placeholder="https://wa.me/856XXXXXXXXX"></div>
+    </div>
+    <div class="gx-msg" style="margin-bottom:10px;color:var(--ink-500);font-size:12px;">
+      ປ່ອຍຊ່ອງໃດຫວ່າງໄວ້ = ໄອຄອນຊ່ອງທາງນັ້ນຈະຖືກເຊື່ອງໄວ້ໃນ footer ໜ້າຫຼັກອັດຕະໂນມັດ
+    </div>
+    <button type="button" class="gx-submit" id="saveSocialLinksBtn">
+      <span class="gx-spinner"></span>
+      <span class="gx-submit-label">ບັນທຶກຊ່ອງທາງໂຊເຊียล</span>
+    </button>
+    <div class="gx-msg" id="socialLinksMsg"></div>
+  </div>
+
+  <!-- ໂລໂກ້ຮ້ານ -->
+  <div class="stat-panel">
+    <h3>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+      ໂລໂກ້ຮ້ານ
+    </h3>
+    <div class="gx-field">
+      <label>ຮູບໂລໂກ້ (ຈະສະແດງທັງໃນແຖບເມນູ ແລະ ເມນູຂ້າງ)</label>
+      <div class="drop-zone" id="logoDropZone">
+        <span id="logoDropZoneText">ແຕະເພື່ອເລືອກຮູບໂລໂກ້ໃໝ່</span>
+        <input type="file" id="logoInput" accept="image/*">
+      </div>
+    </div>
+    <button type="button" class="gx-submit" id="saveLogoBtn">
+      <span class="gx-spinner"></span>
+      <span class="gx-submit-label">ບັນທຶກໂລໂກ້</span>
+    </button>
+    <div class="gx-msg" id="logoMsg"></div>
+  </div>
+
+  <!-- QR ໂອນເງິນ -->
+  <div class="stat-panel">
+    <h3>
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="17.5" y1="14" x2="17.5" y2="17.5"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>
+      QR ໂອນເງິນ
+    </h3>
+    <div class="gx-row2">
+      <div>
+        <div class="gx-field">
+          <label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 1</label>
+          <div class="gx-input-wrap"><input type="text" id="settingQrLabel1" placeholder="ເຊັ່ນ: ບັນຊີທະນາຄານ"></div>
+        </div>
+        <div class="gx-field">
+          <label>ຮູບ QR ຮັບເງິນ ອັນທີ 1</label>
+          <div class="drop-zone" id="qrDropZone">
+            <span id="qrDropZoneText">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
+            <input type="file" id="qrInput" accept="image/*">
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="gx-field">
+          <label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 2</label>
+          <div class="gx-input-wrap"><input type="text" id="settingQrLabel2" placeholder="ເຊັ່ນ: ບັນຊີພັດທະນາ"></div>
+        </div>
+        <div class="gx-field">
+          <label>ຮູບ QR ຮັບເງິນ ອັນທີ 2 (ບໍ່ບັງຄັບ)</label>
+          <div class="drop-zone" id="qrDropZone2">
+            <span id="qrDropZoneText2">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
+            <input type="file" id="qrInput2" accept="image/*">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="gx-msg" style="margin-bottom:10px;color:var(--ink-500);font-size:12px;">
+      ຖ້າບໍ່ໃສ່ຮູບ QR ອັນທີ 2 ໜ້າເຕີມເງິນຈະສະແດງແຕ່ QR ອັນທີ 1 ຄືເກົ່າ
+    </div>
+    <button type="button" class="gx-submit" id="saveQrBtn">
+      <span class="gx-spinner"></span>
+      <span class="gx-submit-label">ບັນທຶກ QR ໂອນເງິນ</span>
+    </button>
+    <div class="gx-msg" id="qrMsg"></div>
+  </div>
+
+  </div>
+  <!-- /panelSettings -->
+
 </div>
+<!-- /adminApp -->
 
-<!-- ============ Modal: ສ້າງສິນຄ້າໃໝ່ ============ -->
-<div class="modal-overlay hidden" id="newProdModal">
-  <div class="modal-card">
-    <div class="modal-head">
-      <div class="modal-head-title">ສ້າງສິນຄ້າໃໝ່</div>
-      <button class="modal-close" id="newProdClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-    </div>
-    <div>
-      <label class="field-label">ຊື່ສິນຄ້າ</label>
-      <input type="text" id="npName" class="field-input" placeholder="ເຊັ່ນ: ບັດເຕີມ Garena 50,000 ກີບ">
-    </div>
-    <div>
-      <label class="field-label">ລາຄາ (₭ ກີບ)</label>
-      <input type="number" id="npPrice" class="field-input" placeholder="0" min="0">
-    </div>
-    <div>
-      <label class="field-label">ຫມວດຫມູ່</label>
-      <select id="npCategory" class="field-input">
-        <option value="pc">ບັດເຕີມເງິນ PC</option>
-        <option value="android">ບັນຊີເກມ Android</option>
-        <option value="ios">ບັນຊີເກມ iOS</option>
-        <option value="gear">ອຸປະກອນເສີມ</option>
-      </select>
-    </div>
-    <div class="hint">⚠️ ໝາຍເຫດ: ສິນຄ້າໃໝ່ຈະຖືກເພີ່ມເຂົ້າໃນລະບົບຫຼັງບ້ານ ແຕ່ຈະບໍ່ຂຶ້ນຢູ່ໜ້າຮ້ານໂດຍອັດຕະໂນມັດ (ໜ້າຮ້ານເປັນ static HTML) — ຕ້ອງແຈ້ງຜູ້ພັດທະນາໃຫ້ເພີ່ມກາຕູນສິນຄ້າໃນໜ້າຮ້ານດ້ວຍ</div>
-    <button class="btn-block" id="npCreate">➕ ສ້າງສິນຄ້າ</button>
+<div class="slip-lightbox" id="slipLightbox">
+  <div class="lb-close" id="slipLightboxClose">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </div>
-</div>
-
-<!-- ============ Modal: ຕັ້ງຄ່າ ============ -->
-<div class="modal-overlay hidden" id="settingsModal">
-  <div class="modal-card">
-    <div class="modal-head">
-      <div class="modal-head-title">ຕັ້ງຄ່າ</div>
-      <button class="modal-close" id="settingsClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-    </div>
-    <div class="settings-block">
-      <label class="field-label">ບັນຊີແອດມິນ</label>
-      <div class="hint" id="settingsAccountInfo">—</div>
-    </div>
-    <div class="divider"></div>
-    <div class="settings-block">
-      <div class="hint">ລ້າງຂໍ້ມູນສິນຄ້າ/ສະຕັອກ/ປະຫວັດການຂາຍທັງໝົດ ແລ້ວເລີ່ມໃໝ່ (ລົບບໍ່ໄດ້ຄືນ)</div>
-      <button class="btn-block danger" id="resetBtn">ລ້າງຂໍ້ມູນທັງໝົດ</button>
-    </div>
-  </div>
+  <img id="slipLightboxImg" src="" alt="ສະລິບ">
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script src="store-data.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="admin-supabase-config.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>
