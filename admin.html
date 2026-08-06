@@ -12,9 +12,9 @@
 <style>
   /* ===== ຄ່າສີ/ຟອນພື້ນຖານ ທີ່ຫ້ອງແອດມິນເອົາມາຈາກເວັບເກົ່າ (scope ສະເພາະໜ້ານີ້ ບໍ່ກະທົບໜ້າອື່ນ) ===== */
   :root{
-    --navy-950:#05070c;
-    --navy-900:#0d0f16;
-    --navy-800:#131620;
+    --navy-950:#06070d;
+    --navy-900:#0d101c;
+    --navy-800:#141827;
     --navy-700:#1b1f2c;
     --black-500:#b3123f;
     --black-400:#ff2d6d;
@@ -25,7 +25,34 @@
     --ink-300:#aab4c8;
     --ink-500:#78839b;
     --green-500:#22c55e;
+    /* ===== Control Deck accents (ໃໝ່) ===== */
+    --deck-violet:#7c5cff;
+    --deck-violet-dim:rgba(124,92,255,0.18);
+    --deck-cyan:#28e0d6;
+    --deck-edge:rgba(255,255,255,0.07);
   }
+  body{
+    background:
+      radial-gradient(1100px 600px at 15% -10%, rgba(124,92,255,0.14), transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, rgba(255,47,104,0.12), transparent 60%),
+      var(--navy-950);
+  }
+  .deck-floor{
+    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.45;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size:36px 36px;
+    -webkit-mask-image:radial-gradient(ellipse 60% 45% at 50% 0%, #000 0%, transparent 75%);
+            mask-image:radial-gradient(ellipse 60% 45% at 50% 0%, #000 0%, transparent 75%);
+  }
+  .deck-eyebrow{
+    font-family:'Chakra Petch', sans-serif; font-size:10.5px; letter-spacing:2px;
+    color:var(--deck-violet); text-transform:uppercase; margin:0 0 3px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .deck-eyebrow .dot{ width:6px;height:6px;border-radius:50%; background:var(--deck-cyan); box-shadow:0 0 8px var(--deck-cyan); animation:deckPulse 2s ease-in-out infinite; }
+  @keyframes deckPulse{ 0%,100%{opacity:1;} 50%{opacity:0.35;} }
   .ambient-glow{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
   .ambient-glow .orb{ position:absolute; border-radius:50%; filter:blur(60px); opacity:0.55; will-change:transform; }
   .ambient-glow .orb-gold{ width:340px;height:340px; top:-60px;left:-80px; background:radial-gradient(circle, rgba(255,120,150,0.55), transparent 70%); animation:driftA 22s ease-in-out infinite; }
@@ -60,6 +87,7 @@
   .back-btn:active{transform:scale(0.92);}
   .back-btn svg{width:18px;height:18px;stroke:currentColor;}
   .page-title{font-size:19px;font-weight:800;margin:0;}
+  .head-titles{flex:1;min-width:0;}
 
 <style>
   :root{
@@ -164,7 +192,7 @@
   }
   .gx-tab3.active::before{ opacity:1; }
   @media (hover:hover){
-    .gx-tab3:hover{ transform:translateY(-3px); border-color:rgba(255,45,109,0.45); box-shadow:0 14px 30px -12px rgba(255,20,90,0.4), inset 0 1px 0 rgba(255,255,255,0.12); }
+    .gx-tab3:hover{ transform:translateY(-3px); border-color:var(--deck-violet); box-shadow:0 14px 30px -12px rgba(124,92,255,0.45), inset 0 1px 0 rgba(255,255,255,0.12); }
   }
   .dash-icon{
     width:38px;height:38px;border-radius:12px;flex-shrink:0;
@@ -172,6 +200,7 @@
     background:linear-gradient(140deg, var(--black-300), var(--black-500));
     box-shadow:0 4px 14px -4px rgba(255,20,90,0.55), inset 0 1px 0 rgba(255,255,255,0.25);
   }
+  .gx-tab3:not(.active) .dash-icon{ background:linear-gradient(140deg, var(--deck-violet), #4d36c9); box-shadow:0 4px 14px -4px rgba(124,92,255,0.6), inset 0 1px 0 rgba(255,255,255,0.25); }
   .dash-icon svg{ width:19px;height:19px;stroke:#fff; }
   .dash-title{ font-weight:700; font-size:13.5px; letter-spacing:0.2px; color:inherit; }
   .dash-desc{ font-size:10.8px; line-height:1.45; color:var(--ink-500); font-family:'Noto Sans Lao', sans-serif; letter-spacing:0; }
@@ -588,6 +617,7 @@
 </div>
 <div class="gx-grid"></div>
 <div class="gx-scanline"></div>
+<div class="deck-floor"></div>
 
 <!-- ============ ໜ້າລົງຊື່ເຂົ້າຫ້ອງແອດມິນ (ຜ່ານ Discord) ============ -->
 <div class="admin-shell login-screen" id="loginScreen">
@@ -635,7 +665,10 @@
     <button class="icon-btn" id="logoutBtn" title="ອອກຈາກລະບົບ" style="width:40px;height:40px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
     </button>
-    <h1 class="page-title">ຫ້ອງຄວບຄຸມແອດມິນ</h1>
+    <div class="head-titles">
+      <p class="deck-eyebrow"><span class="dot"></span>CONTROL DECK</p>
+      <h1 class="page-title">ຫ້ອງຄວບຄຸມແອດມິນ</h1>
+    </div>
   </div>
 
   <div class="ops-strip" id="opsStrip"></div>
