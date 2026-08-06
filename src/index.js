@@ -310,6 +310,8 @@ async function handlePublicStorefront(request, env) {
       'store_name', 'tagline', 'announcement_text', 'hero_image',
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_name`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_image`),
+      ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_title`),
+      ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_desc`),
     ];
 
     const [settingsRows, products, durations] = await Promise.all([
@@ -368,6 +370,8 @@ async function handlePublicStorefront(request, env) {
         index: idx,
         name: (settings[`category_${idx}_name`] || `ໝວດໝູ່ ${idx}`).trim(),
         image: settings[`category_${idx}_image`] || null,
+        title: (settings[`category_${idx}_title`] || '').trim() || null,
+        desc: (settings[`category_${idx}_desc`] || '').trim() || null,
       };
     });
 
