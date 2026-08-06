@@ -422,6 +422,8 @@
     font-size:12.5px; color:var(--text-dim); line-height:1.6;
     display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
   }
+  .cat-meta-count{ font-size:11px; color:var(--text-faint); margin-top:6px; font-weight:600; }
+  .empty-note{ font-size:12.5px; color:var(--text-faint); padding:14px 4px; text-align:center; }
 
 
   /* ---------- Product rail ---------- */
@@ -469,6 +471,10 @@
     width:34px; height:34px; opacity:.28; position:relative; z-index:1;
     color:var(--red-glow);
     animation:media-idle 2.6s ease-in-out infinite;
+  }
+  /* ຮູບສິນຄ້າຈິງ (image_url ຈາກ Supabase) — ເຕັມກ່ອງ ບໍ່ຢືດ ບໍ່ຕັດຫຼາຍໂພດ */
+  .prod-media img.prod-img{
+    position:relative; z-index:1; width:100%; height:100%; object-fit:cover;
   }
   @keyframes media-idle{
     0%,100%{ opacity:.22; transform:scale(1); }

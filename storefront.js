@@ -125,6 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.StorefrontData.fetchData()
     .then((data) => {
+      const { name } = window.StorefrontData.applyStoreBranding(data.store);
+      document.title = `${name} — ຮ້ານເກມອອນລາຍ`;
       renderCategories(data);
       updateStats(data);
     })

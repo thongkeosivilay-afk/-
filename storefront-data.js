@@ -81,6 +81,35 @@
     return (data.categories || []).find((c) => c.index === idx) || null;
   }
 
+  // ຄ່າເລີ່ມຕົ້ນ (ໃຊ້ຕອນແອດມິນຍັງບໍ່ໄດ້ຕັ້ງຊື່ຮ້ານ/ຄຳອະທິບາຍໃນ "ຕັ້ງຄ່າຮ້ານ")
+  const DEFAULT_STORE_NAME = '𝐃𝐄𝐊 𝐌𝐀𝐒𝐇 𝐒𝐇𝐎𝐏';
+  const DEFAULT_TAGLINE =
+    'ຮ້ານຈຳໜ່າຍບັນຊີເກມ ບັດເຕີມເງິນ ແລະ ອຸປະກອນເສີມເກມມິ່ງ\n' +
+    'ບໍລິການວ່ອງໄວ ປອດໄພ 100%\n' +
+    'ສາມາດສັ່ງຊື້ສິນຄ້າຜ່ານລະບົບອັດຕະໂນມັດ !!';
+
+  function escapeHtmlLocal(str) {
+    return String(str || '').replace(/[&<>"']/g, (c) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[c]));
+  }
+
+  // ເອົາຊື່ຮ້ານ/ຄຳອະທິບາຍທີ່ແອດມິນຕັ້ງໄວ້ (ຈາກ /api/public/storefront -> store.name / store.tagline)
+  // ໄປໃສ່ທຸກຈຸດທີ່ມີໃນໜ້ານັ້ນ (header, hero, footer, ...) ໃຫ້ອັດຕະໂນມັດ — ບໍ່ວ່າຈະເປັນ index.html
+  // ຫຼື category.html ກໍ່ໃຊ້ຟັງຊັນດຽວກັນນີ້ໄດ້ເລີຍ (element ໃດບໍ່ມີໃນໜ້ານັ້ນຈະຖືກຂ້າມແບບປອດໄພ)
+  function applyStoreBranding(store) {
+    const name = (store && store.name && String(store.name).trim()) || DEFAULT_STORE_NAME;
+    const tagline = (store && store.tagline && String(store.tagline).trim()) || DEFAULT_TAGLINE;
+    const taglineHTML = tagline.split('\n').map(escapeHtmlLocal).join('<br>');
+
+    document.querySelectorAll('.brand-name, .brand-name-inline, .eyebrow-text, .headline .hl, footer .fname')
+      .forEach((el) => { el.textContent = name; });
+    document.querySelectorAll('.sub, footer .fnote')
+      .forEach((el) => { el.innerHTML = taglineHTML; });
+
+    return { name, tagline };
+  }
+
   global.StorefrontData = {
     fetchData,
     formatKip,
@@ -89,5 +118,6 @@
     isProductBuyable,
     productsByCategoryName,
     categoryByIndex,
+    applyStoreBranding,
   };
 })(window);
