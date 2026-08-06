@@ -1309,31 +1309,28 @@ async function initAdminPanel() {
   const backBtn = document.getElementById('backBtn');
   if (backBtn) backBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
 
-  // ---- tabs (ເລື່ອນຊ້າຍ-ຂວາໄດ້, ຮອງຮັບຈຳນວນແທັບບໍ່ຈຳກັດ) ----
-  const tabs = document.querySelectorAll('.gx-tab3');
-  const tabsWrap = document.querySelector('.gx-tabs3');
-  const slider = document.getElementById('tabSlider3');
-  const panels = document.querySelectorAll('.panel');
-
-  function positionTabSlider(tab) {
-    if (!tab || !slider) return;
-    slider.style.width = tab.offsetWidth + 'px';
-    slider.style.transform = `translateX(${tab.offsetLeft - 4}px)`;
-  }
-
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      panels.forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.panel).classList.add('active');
-      positionTabSlider(tab);
-      tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-    });
+  // ---- accordion nav ("control deck" — ກົດປຸ່ມແລ້ວເນື້ອຫາໂຜ່ອອກມາທີລະອັນ) ----
+  // ຍ້າຍເນື້ອຫາຂອງແຕ່ລະ panel (ທີ່ຍັງຢູ່ໃນ DOM ບ່ອນເກົ່າ) ເຂົ້າໄປຢູ່ໃຕ້ປຸ່ມຂອງມັນເອງ
+  // ໝາຍເຫດ: ການຍ້າຍນີ້ບໍ່ກະທົບ id ຫຼື event listener ໃດໆທີ່ຜູກກັບ element ພາຍໃນ panel
+  document.querySelectorAll('.switch[data-target]').forEach((sw) => {
+    const targetEl = document.getElementById(sw.dataset.target);
+    const bodyInner = sw.querySelector('.switch-body-inner');
+    if (targetEl && bodyInner) bodyInner.appendChild(targetEl);
   });
 
-  requestAnimationFrame(() => positionTabSlider(document.querySelector('.gx-tab3.active')));
-  window.addEventListener('resize', () => positionTabSlider(document.querySelector('.gx-tab3.active')));
+  const switches = document.querySelectorAll('.switch');
+  switches.forEach((sw) => {
+    const head = sw.querySelector('.switch-head');
+    if (!head) return;
+    head.addEventListener('click', () => {
+      const isOpen = sw.classList.contains('open');
+      switches.forEach((s) => s.classList.remove('open'));
+      if (!isOpen) {
+        sw.classList.add('open');
+        requestAnimationFrame(() => sw.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+      }
+    });
+  });
 
   // ---- image dropzone ----
   const dropZone = document.getElementById('dropZone');
