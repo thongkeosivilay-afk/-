@@ -102,9 +102,9 @@
     const tagline = (store && store.tagline && String(store.tagline).trim()) || DEFAULT_TAGLINE;
     const taglineHTML = tagline.split('\n').map(escapeHtmlLocal).join('<br>');
 
-    document.querySelectorAll('.brand-name, .brand-name-inline, .eyebrow-text, .headline .hl, footer .fname')
+    document.querySelectorAll('.brand-name, .brand-name-inline, .eyebrow-text, .headline .hl, footer .fname, footer .fcopy-name')
       .forEach((el) => { el.textContent = name; });
-    document.querySelectorAll('.sub, footer .fnote')
+    document.querySelectorAll('.sub')
       .forEach((el) => { el.innerHTML = taglineHTML; });
 
     return { name, tagline };

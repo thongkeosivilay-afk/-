@@ -53,6 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
       bigTitle: `CAT${category.index}`,
       desc: '',
     };
+    // ໃຊ້ຫົວຂໍ້/ຄຳອະທິບາຍທີ່ແອດມິນຕັ້ງເອງ (category_{i}_title / category_{i}_desc) ຖ້າມີ —
+    // ຖ້າຍັງບໍ່ໄດ້ຕັ້ງ ໃຫ້ໃຊ້ຄ່າເລີ່ມຕົ້ນເກົ່າຈາກ SLOT_DECOR ຄືເດີມ
+    const bigTitle = (category.title && String(category.title).trim()) || decor.bigTitle;
+    const desc = (category.desc && String(category.desc).trim()) || decor.desc;
+
     const mediaHTML = category.image
       ? `<img src="${escapeHtml(category.image)}" alt="${escapeHtml(category.name)}">`
       : `
@@ -68,14 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="cat-banner-media${category.image ? ' has-image' : ''}">${mediaHTML}</div>
           <div class="cat-banner-content">
             <div class="cat-tag-row"><span class="accent-bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${decor.tagIcon}</svg>${decor.tagText}</div>
-            <div class="cat-big-title display-en en">${escapeHtml(decor.bigTitle)}</div>
-            <span class="cat-url-pill en">HTTPS://DEKHERE.COM</span>
-          </div>
+            <div class="cat-big-title display-en en">${escapeHtml(bigTitle)}</div>
+                      </div>
           <div class="cat-click"><span class="dot"></span>Click Here!</div>
         </a>
         <div class="cat-meta">
           <div class="cat-meta-name">${escapeHtml(category.name)}</div>
-          <div class="cat-meta-desc">${escapeHtml(decor.desc)}</div>
+          <div class="cat-meta-desc">${escapeHtml(desc)}</div>
           <div class="cat-meta-count">${productCount.toLocaleString('en-US')} ລາຍການ • ຄົງເຫຼືອ ${stockCount.toLocaleString('en-US')} ຊິ້ນ</div>
         </div>
       </div>`;

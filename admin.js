@@ -248,6 +248,65 @@ function initCategoryNameConfirmButtons() {
   }
 }
 
+// ---------- ຫົວຂໍ້ໃຫຍ່ (bigTitle) ແລະ ຄຳອະທິບາຍ (desc) ເທິງແບນເນີໝວດໝູ່ — ບັນທຶກລົງ site_settings ----------
+// ໃຊ້ pattern ດຽວກັນກັບ saveSingleCategoryName ຂ້າງເທິງ (ຄອລັມ category_{i}_title / category_{i}_desc
+// ຕ້ອງມີຢູ່ໃນຕາຕະລາງ site_settings ຂອງ Supabase ກ່ອນ — ຖ້າຄອລັມຍັງບໍ່ມີ ການບັນທຶກຈະ error)
+async function saveSingleCategoryField(i, field, inputId, btnId, msgId) {
+  const input = document.getElementById(inputId);
+  const btn = document.getElementById(btnId);
+  const msg = document.getElementById(msgId);
+  if (!input || !btn) return;
+
+  const newVal = input.value.trim();
+  setLoading(btn, true);
+  setMsg(msg, 'ກຳລັງບັນທຶກ...', 'pending');
+  try {
+    await ensureSiteSettingsRow();
+    const { error } = await supabaseClient
+      .from(SITE_SETTINGS_TABLE)
+      .update({ [`category_${i}_${field}`]: newVal, updated_at: new Date().toISOString() })
+      .eq('id', SITE_SETTINGS_ID);
+    if (error) throw error;
+    setMsg(msg, 'ບັນທຶກສຳເລັດແລ້ວ ✓ — ໜ້າຮ້ານຈິງຈະອັບເດດອັດຕະໂນມັດ', 'success');
+    await loadSiteSettingsAdmin();
+  } catch (err) {
+    console.error(err);
+    setMsg(msg, 'ເກີດຂໍ້ຜິດພາດ: ' + (err.message || 'ລອງໃໝ່ອີກຄັ້ງ'), 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+function initCategoryTitleDescConfirmButtons() {
+  for (let i = 1; i <= 4; i++) {
+    const titleBtn = document.getElementById(`catTitleConfirm${i}`);
+    if (titleBtn && !titleBtn.dataset.bound) {
+      titleBtn.dataset.bound = '1';
+      titleBtn.addEventListener('click', () => saveSingleCategoryField(i, 'title', `catTitle${i}`, `catTitleConfirm${i}`, `catTitleMsg${i}`));
+    }
+    const titleInput = document.getElementById(`catTitle${i}`);
+    if (titleInput && !titleInput.dataset.bound) {
+      titleInput.dataset.bound = '1';
+      titleInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveSingleCategoryField(i, 'title', `catTitle${i}`, `catTitleConfirm${i}`, `catTitleMsg${i}`); }
+      });
+    }
+
+    const descBtn = document.getElementById(`catDescConfirm${i}`);
+    if (descBtn && !descBtn.dataset.bound) {
+      descBtn.dataset.bound = '1';
+      descBtn.addEventListener('click', () => saveSingleCategoryField(i, 'desc', `catDesc${i}`, `catDescConfirm${i}`, `catDescMsg${i}`));
+    }
+    const descInput = document.getElementById(`catDesc${i}`);
+    if (descInput && !descInput.dataset.bound) {
+      descInput.dataset.bound = '1';
+      descInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveSingleCategoryField(i, 'desc', `catDesc${i}`, `catDescConfirm${i}`, `catDescMsg${i}`); }
+      });
+    }
+  }
+}
+
 
 // ໃຊ້ຊື່ຈິງທີ່ແອດມິນຕັ້ງໄວ້ໃນ "ຕັ້ງຄ່າຮ້ານ > ໝວດໝູ່ 1-10" (category_1_name ... category_10_name)
 // ເພື່ອໃຫ້ໝວດໝູ່ທີ່ເລືອກຕອນເພີ່ມສິນຄ້າ ກົງກັນກັບ card ໝວດໝູ່ທີ່ໂຊວ໌ຢູ່ໜ້າຮ້ານ/ໜ້າໝວດໝູ່ທັງໝົດ ແບບ 100%
@@ -824,6 +883,14 @@ function loadSiteSettingsIntoForm(settings) {
     if (nameInputEl && document.activeElement !== nameInputEl) {
       nameInputEl.value = settings[`category_${i}_name`] || '';
     }
+    const titleInputEl = document.getElementById(`catTitle${i}`);
+    if (titleInputEl && document.activeElement !== titleInputEl) {
+      titleInputEl.value = settings[`category_${i}_title`] || '';
+    }
+    const descInputEl = document.getElementById(`catDesc${i}`);
+    if (descInputEl && document.activeElement !== descInputEl) {
+      descInputEl.value = settings[`category_${i}_desc`] || '';
+    }
     resetDropzoneIfEmpty(
       `catImgDrop${i}`, `catImgDropText${i}`, `catImgInput${i}`,
       settings[`category_${i}_image`],
@@ -1058,6 +1125,7 @@ function initSiteSettingsPanel() {
   initCategoryImageDropzones();
   initHeroImageDropzone();
   initCategoryNameConfirmButtons();
+  initCategoryTitleDescConfirmButtons();
 
   const saveStoreNameBtn = document.getElementById('saveStoreNameBtn');
   if (saveStoreNameBtn) {
