@@ -11,6 +11,13 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+  /* ---------- 0) ດຶງຊື່ຮ້ານຈິງທີ່ແອດມິນຕັ້ງໄວ້ ມາໃສ່ .auth-brand (ຄືກັນກັບ index.html/category.html) ---------- */
+  if (window.StorefrontData) {
+    window.StorefrontData.fetchData()
+      .then((data) => window.StorefrontData.applyStoreBranding(data.store))
+      .catch((err) => console.error('auth.js: applyStoreBranding failed', err));
+  }
+
   /* ---------- 1) 3D tilt on the auth card ---------- */
   const card = document.querySelector('.auth-card');
   const crest = document.querySelector('.auth-crest-inner');

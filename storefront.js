@@ -17,26 +17,26 @@ document.addEventListener('DOMContentLoaded', () => {
     1: {
       tagIcon: '<path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/>',
       tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງ PC',
-      bigTitle: 'PANELPC',
-      desc: 'ລວມໂປຣແກຣມເສີມສຳລັບເກມ PC ໃຊ້ງານງ່າຍ ຮອງຮັບຫຼາກຫຼາຍເກມ ພ້ອມອັບເດດສະໝ່ຳສະເໝີ',
+      bigTitle: '',
+      desc: '',
     },
     2: {
       tagIcon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 18h6"/>',
       tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື',
-      bigTitle: 'ANDROID',
-      desc: 'ລວມແອັບ ແລະ ເຄື່ອງມືເສີມສຳລັບເກມມືຖື Android ເພີ່ມຄວາມສະດວກໃນການຫຼິ້ນ',
+      bigTitle: '',
+      desc: '',
     },
     3: {
       tagIcon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 18h6"/>',
       tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື',
-      bigTitle: 'IOS',
-      desc: 'ລວມແອັບ ແລະ ບໍລິການສຳລັບຜູ້ໃຊ້ iPhone/iPad ພ້ອມເຄື່ອງມືເສີມ',
+      bigTitle: '',
+      desc: '',
     },
     4: {
       tagIcon: '<path d="M4 15a8 8 0 0 1 16 0"/><rect x="2" y="15" width="5" height="6" rx="1.5"/><rect x="17" y="15" width="5" height="6" rx="1.5"/>',
       tagText: 'ອຸປະກອນເສີມເກມມິ່ງ',
-      bigTitle: 'GEAR',
-      desc: 'ຄີບອດ, ເມົາສ໌, ຫູຟັງ ແລະ ອຸປະກອນເສີມເກມມິ່ງຄຸນນະພາບສູງ',
+      bigTitle: '',
+      desc: '',
     },
   };
 

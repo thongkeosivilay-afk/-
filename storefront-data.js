@@ -81,12 +81,10 @@
     return (data.categories || []).find((c) => c.index === idx) || null;
   }
 
-  // ຄ່າເລີ່ມຕົ້ນ (ໃຊ້ຕອນແອດມິນຍັງບໍ່ໄດ້ຕັ້ງຊື່ຮ້ານ/ຄຳອະທິບາຍໃນ "ຕັ້ງຄ່າຮ້ານ")
-  const DEFAULT_STORE_NAME = '𝐃𝐄𝐊 𝐌𝐀𝐒𝐇 𝐒𝐇𝐎𝐏';
-  const DEFAULT_TAGLINE =
-    'ຮ້ານຈຳໜ່າຍບັນຊີເກມ ບັດເຕີມເງິນ ແລະ ອຸປະກອນເສີມເກມມິ່ງ\n' +
-    'ບໍລິການວ່ອງໄວ ປອດໄພ 100%\n' +
-    'ສາມາດສັ່ງຊື້ສິນຄ້າຜ່ານລະບົບອັດຕະໂນມັດ !!';
+  // ຄ່າເລີ່ມຕົ້ນ (ໃຊ້ຕອນແອດມິນຍັງບໍ່ໄດ້ຕັ້ງຊື່ຮ້ານ/ຄຳອະທິບາຍໃນ "ຕັ້ງຄ່າຮ້ານ") — ປ່ອຍວ່າງໄວ້
+  // ບໍ່ໃສ່ຂໍ້ມູນຮ້ານເດີມ ເພື່ອບໍ່ໃຫ້ຂໍ້ມູນເກົ່າໂຜ່ອອກມາຖ້າແອດມິນຍັງບໍ່ໄດ້ຕັ້ງ
+  const DEFAULT_STORE_NAME = '';
+  const DEFAULT_TAGLINE = '';
 
   function escapeHtmlLocal(str) {
     return String(str || '').replace(/[&<>"']/g, (c) => ({
@@ -102,7 +100,18 @@
     const tagline = (store && store.tagline && String(store.tagline).trim()) || DEFAULT_TAGLINE;
     const taglineHTML = tagline.split('\n').map(escapeHtmlLocal).join('<br>');
 
-    document.querySelectorAll('.brand-name, .brand-name-inline, .eyebrow-text, .headline .hl, footer .fname, footer .fcopy-name')
+    // ໂລໂກ້ຮ້ານ (settings.logo_url ຈາກ "ຕັ້ງຄ່າຮ້ານ") — ຖ້າແອດມິນອັບໂຫລດໄວ້ ໃຫ້ສະແດງແທນໄອຄອນເລີ່ມຕົ້ນ
+    // (svg ຖົງເລີ່ມຕົ້ນ) ໃນທຸກບ່ອນທີ່ມີ .logo (header ຂອງ index.html / category.html)
+    const logoUrl = store && store.logoUrl ? String(store.logoUrl).trim() : '';
+    if (logoUrl) {
+      document.querySelectorAll('.logo').forEach((el) => {
+        el.classList.add('has-custom-logo');
+        el.innerHTML = `<img src="${escapeHtmlLocal(logoUrl)}" alt="${escapeHtmlLocal(name)}">`;
+      });
+    }
+
+
+    document.querySelectorAll('.brand-name, .brand-name-inline, .eyebrow-text, .headline .hl, footer .fname, footer .fcopy-name, .auth-brand')
       .forEach((el) => { el.textContent = name; });
     document.querySelectorAll('.sub')
       .forEach((el) => { el.innerHTML = taglineHTML; });

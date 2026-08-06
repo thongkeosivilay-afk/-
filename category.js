@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!grid || !window.StorefrontData) return;
 
-  // ຄຳອະທິບາຍປະຈຳຊ່ອງ (ບໍ່ມີໃນຖານຂໍ້ມູນ ໃຊ້ຄ່າເລີ່ມຕົ້ນ) — ຊື່ຫົວຂໍ້ຈິງໆດຶງມາຈາກ API ຂ້າງລຸ່ມ
+  // ຄຳອະທິບາຍປະຈຳຊ່ອງ (ຄ່າສຳຮອງ) — ໃຊ້ພຽງຖ້າແອດມິນຍັງບໍ່ໄດ້ຕັ້ງຄ່າ category_{i}_desc ເອງ
   const SLOT_DESC = {
-    1: 'ລວມໂປຣແກຣມເສີມສຳລັບເກມ PC ໃຊ້ງານງ່າຍ ຮອງຮັບຫຼາກຫຼາຍເກມ ພ້ອມອັບເດດສະໝ່ຳສະເໝີ',
-    2: 'ລວມແອັບ ແລະ ເຄື່ອງມືເສີມສຳລັບເກມມືຖື Android ເພີ່ມຄວາມສະດວກໃນການຫຼິ້ນ',
-    3: 'ລວມແອັບ ແລະ ບໍລິການສຳລັບຜູ້ໃຊ້ iPhone/iPad ພ້ອມເຄື່ອງມືເສີມ',
-    4: 'ຄີບອດ, ເມົາສ໌, ຫູຟັງ ແລະ ອຸປະກອນເສີມເກມມິ່ງຄຸນນະພາບສູງ',
+    1: '',
+    2: '',
+    3: '',
+    4: '',
   };
 
   function escapeHtml(str) {
@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const { name } = window.StorefrontData.applyStoreBranding(data.store);
       if (titleEl) titleEl.textContent = category.name;
-      if (descEl) descEl.textContent = SLOT_DESC[catIndex] || '';
+      if (descEl) descEl.textContent = (category.desc && String(category.desc).trim()) || SLOT_DESC[catIndex] || '';
       document.title = `${category.name} — ${name}`;
 
       const products = window.StorefrontData.productsByCategoryName(data, category.name);
