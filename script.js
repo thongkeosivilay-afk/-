@@ -2,6 +2,192 @@
    script.js — ການເຮັດວຽກ (interaction) ຂອງໜ້າເວັບ NEXUS STORE
    ========================================================= */
 
+/* ---------- Red Lightning Background (ผ่าแดงพื้นหลังทั้งเว็บ) ----------
+   สร้าง canvas + style ของตัวเองแบบไดนามิก ไม่ต้องแก้ HTML/CSS ไฟล์อื่น
+   ผ่าอัตโนมัติทุก 5 วินาที — ไม่มีการผ่าเมื่อแตะจอแล้ว */
+(function initRedLightningBackground() {
+  const style = document.createElement('style');
+  style.textContent = `
+    #rl-stage {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: #000000;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    #rl-stage canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    #rl-flash {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background: radial-gradient(ellipse at var(--rl-fx, 50%) var(--rl-fy, 20%), rgba(255,20,20,0.35), rgba(255,0,0,0.10) 45%, rgba(0,0,0,0) 80%);
+      opacity: 0;
+      mix-blend-mode: screen;
+    }
+    /* ให้พื้นหลังทึบของ body/.shell โปร่งใส เพื่อให้เห็นฟ้าผ่าด้านหลังทะลุออกมา
+       (การ์ด/ส่วนประกอบต่างๆ ยังทึบตามปกติเพราะมีสีพื้นหลังของตัวเองอยู่แล้ว) */
+    body, .shell { background: transparent !important; }
+  `;
+  document.head.appendChild(style);
+
+  const stage = document.createElement('div');
+  stage.id = 'rl-stage';
+  stage.innerHTML = `<canvas id="rl-glow"></canvas><canvas id="rl-bolt"></canvas>`;
+  document.body.prepend(stage);
+
+  const flashEl = document.createElement('div');
+  flashEl.id = 'rl-flash';
+  document.body.prepend(flashEl);
+
+  const glowCanvas = document.getElementById('rl-glow');
+  const boltCanvas = document.getElementById('rl-bolt');
+  const glowCtx = glowCanvas.getContext('2d');
+  const boltCtx = boltCanvas.getContext('2d');
+
+  function resize() {
+    const w = window.innerWidth, h = window.innerHeight;
+    [glowCanvas, boltCanvas].forEach((c) => {
+      c.width = w * devicePixelRatio;
+      c.height = h * devicePixelRatio;
+    });
+    glowCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    boltCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function generateBolt(x1, y1, x2, y2, displace, branches, out) {
+    if (displace < 6) {
+      out.push([x1, y1, x2, y2]);
+      return;
+    }
+    const mx = (x1 + x2) / 2 + (Math.random() - 0.5) * displace;
+    const my = (y1 + y2) / 2 + (Math.random() - 0.5) * displace * 0.5;
+
+    generateBolt(x1, y1, mx, my, displace / 2, branches, out);
+    generateBolt(mx, my, x2, y2, displace / 2, branches, out);
+
+    if (branches > 0 && Math.random() < 0.35) {
+      const bx = mx + (Math.random() - 0.5) * displace * 2.2;
+      const by = my + Math.abs(Math.random()) * displace * 1.4 + 20;
+      generateBolt(mx, my, bx, by, displace / 2.2, branches - 1, out);
+    }
+  }
+
+  function drawSegments(ctx, segs) {
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    segs.forEach(([x1, y1, x2, y2]) => {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.stroke();
+    });
+  }
+
+  function strike() {
+    const w = window.innerWidth, h = window.innerHeight;
+    const startX = w * (0.25 + Math.random() * 0.5);
+    const startY = -10;
+    const endX = startX + (Math.random() - 0.5) * w * 0.25;
+    const endY = h * (0.55 + Math.random() * 0.35);
+
+    const segs = [];
+    generateBolt(startX, startY, endX, endY, 90, 4, segs);
+
+    flashEl.style.setProperty('--rl-fx', (endX / w * 100) + '%');
+    flashEl.style.setProperty('--rl-fy', (endY / h * 100) + '%');
+
+    animateStrike(segs);
+  }
+
+  let rafId = null;
+  function animateStrike(segs) {
+    const duration = 550;
+    const start = performance.now();
+
+    function frame(now) {
+      const t = (now - start) / duration;
+      glowCtx.clearRect(0, 0, glowCanvas.width, glowCanvas.height);
+      boltCtx.clearRect(0, 0, boltCanvas.width, boltCanvas.height);
+      flashEl.style.opacity = 0;
+
+      if (t < 1) {
+        let intensity;
+        if (t < 0.08) intensity = t / 0.08;
+        else if (t < 0.18) intensity = 1;
+        else if (t < 0.30) intensity = 1 - (t - 0.18) / 0.12 * 0.7;
+        else if (t < 0.40) intensity = 0.3 + Math.random() * 0.5;
+        else intensity = Math.max(0, 0.6 * (1 - (t - 0.40) / 0.60));
+
+        glowCtx.save();
+        glowCtx.strokeStyle = 'rgba(255,30,30,' + (0.5 * intensity) + ')';
+        glowCtx.lineWidth = 22;
+        glowCtx.shadowColor = 'rgba(255,0,0,0.9)';
+        glowCtx.shadowBlur = 70 * intensity;
+        drawSegments(glowCtx, segs);
+        glowCtx.restore();
+
+        glowCtx.save();
+        glowCtx.strokeStyle = 'rgba(255,60,60,' + (0.32 * intensity) + ')';
+        glowCtx.lineWidth = 42;
+        glowCtx.shadowColor = 'rgba(255,0,0,0.6)';
+        glowCtx.shadowBlur = 130 * intensity;
+        drawSegments(glowCtx, segs);
+        glowCtx.restore();
+
+        glowCtx.save();
+        glowCtx.strokeStyle = 'rgba(255,80,80,' + (0.16 * intensity) + ')';
+        glowCtx.lineWidth = 70;
+        glowCtx.shadowColor = 'rgba(255,0,0,0.4)';
+        glowCtx.shadowBlur = 190 * intensity;
+        drawSegments(glowCtx, segs);
+        glowCtx.restore();
+
+        boltCtx.save();
+        boltCtx.strokeStyle = 'rgba(120,0,0,' + (0.9 * intensity) + ')';
+        boltCtx.lineWidth = 6;
+        boltCtx.translate(1.5, 1.5);
+        drawSegments(boltCtx, segs);
+        boltCtx.restore();
+
+        boltCtx.save();
+        boltCtx.strokeStyle = 'rgba(220,20,20,' + intensity + ')';
+        boltCtx.lineWidth = 3.5;
+        drawSegments(boltCtx, segs);
+        boltCtx.restore();
+
+        boltCtx.save();
+        boltCtx.strokeStyle = 'rgba(255,220,220,' + (0.95 * intensity) + ')';
+        boltCtx.lineWidth = 1.4;
+        boltCtx.translate(-0.6, -0.6);
+        drawSegments(boltCtx, segs);
+        boltCtx.restore();
+
+        flashEl.style.opacity = (0.55 * intensity).toFixed(3);
+
+        rafId = requestAnimationFrame(frame);
+      } else {
+        flashEl.style.opacity = 0;
+      }
+    }
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = requestAnimationFrame(frame);
+  }
+
+  // ผ่าอัตโนมัติทุก 5 วินาทีเท่านั้น — ไม่มีการผ่าเมื่อแตะ/คลิกหน้าจอ
+  strike();
+  setInterval(strike, 5000);
+})();
+
 // ---- ป้องกัน "ข้อมูลเก่าโผล่มาแวบหนึ่ง" ตอนกดย้อนกลับ/ปัดกลับมาหน้านี้ ----
 // มือถือหลายรุ่นจะเก็บภาพหน้าเว็บเก่า (bfcache) ไว้โชว์ทันทีตอนย้อนกลับมา
 // ก่อนข้อมูลจริงจะโหลดใหม่ ทำให้เห็นข้อมูลเก่าแวบหนึ่งแล้วค่อยหาย — บังคับโหลด
