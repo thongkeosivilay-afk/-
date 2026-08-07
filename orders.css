@@ -1,0 +1,98 @@
+/* =========================================================
+   orders.css — ສະໄຕລ໌ສະເພາະໜ້າ "ປະຫວັດການສັ່ງຊື້" (orders.html)
+   ໃຊ້ໂຕນສີ/ຕົວແປຮ່ວມກັບ style.css (--bg ດຳສະໜິດ #000000, --red-glow ແດງສະໜິດ)
+   ໂຄງສ້າງອ້າງອີງມາຈາກ topup-history.css ເພື່ອໃຫ້ໜ້າຕາເຂົ້າຊຸດກັນທັງເວັບ
+   ========================================================= */
+
+.oh-main{ padding:18px 20px 40px; position:relative; z-index:1; }
+
+.oh-title-row{ display:flex; align-items:center; gap:12px; margin:6px 0 6px; }
+.oh-back-btn{
+  width:36px; height:36px; border-radius:11px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--card); border:1px solid var(--card-border); color:var(--red-glow);
+}
+.oh-back-btn svg{ width:18px; height:18px; }
+.oh-title-row h1{ font-size:21px; font-weight:800; }
+.oh-sub{ font-size:13px; color:var(--text-dim); margin:0 0 20px; }
+
+/* ---------- Stat cards (stacked, full width — ตามชุดกับ topup-history) ---------- */
+.oh-stats{ display:flex; flex-direction:column; gap:12px; margin-bottom:22px; }
+.oh-stat{
+  background:var(--card); border:1px solid var(--card-border); border-radius:16px;
+  padding:16px 18px;
+}
+.oh-stat-head{
+  display:flex; align-items:center; gap:7px;
+  font-size:12.5px; color:var(--text-faint); font-weight:600; margin-bottom:8px;
+}
+.oh-stat-head svg{ width:14px; height:14px; }
+.oh-stat-value{ font-size:24px; font-weight:800; color:var(--text); line-height:1; }
+.oh-stat-value.is-green{ color:#37d67a; }
+.oh-stat-value.is-red{ color:var(--red-glow); }
+.oh-stat-value .unit{ font-size:14px; font-weight:700; margin-left:2px; }
+
+/* ---------- Loading ---------- */
+.oh-loading{ text-align:center; color:var(--text-faint); font-size:13px; padding:50px 20px; }
+
+/* ---------- Empty state ---------- */
+.oh-empty{
+  background:var(--card); border:1px solid var(--card-border); border-radius:20px;
+  padding:48px 24px; text-align:center;
+}
+.oh-empty-icon{
+  width:56px; height:56px; margin:0 auto 18px; border-radius:16px;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg-raise); color:var(--text-faint);
+}
+.oh-empty-icon svg{ width:26px; height:26px; }
+.oh-empty h2{ font-size:16px; font-weight:800; margin-bottom:6px; }
+.oh-empty p{ font-size:12.5px; color:var(--text-faint); margin-bottom:22px; }
+.oh-empty-btn{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:12px 26px; border-radius:13px; border:none; font-family:inherit;
+  font-size:14px; font-weight:800; color:#2a0a0a;
+  background:linear-gradient(90deg,var(--red-glow),#ff7a7a);
+  box-shadow:0 8px 18px -6px rgba(232,48,47,.55), inset 0 1px 0 rgba(255,255,255,.25);
+}
+
+/* ---------- Order list ---------- */
+.oh-list{ display:flex; flex-direction:column; gap:12px; }
+.oh-item{
+  background:var(--card); border:1px solid var(--card-border); border-radius:16px;
+  padding:14px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+}
+.oh-item-icon{
+  width:40px; height:40px; border-radius:12px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg-raise); color:var(--red-glow); overflow:hidden;
+}
+.oh-item-icon svg{ width:19px; height:19px; }
+.oh-item-icon img{ width:100%; height:100%; object-fit:cover; }
+.oh-item-body{ flex:1; min-width:140px; }
+.oh-item-name{ font-size:14.5px; font-weight:800; color:var(--text); }
+.oh-item-sub{ font-size:12px; color:var(--text-dim); margin-top:2px; }
+.oh-item-amount{ font-size:13px; font-weight:700; color:var(--red-glow); margin-top:4px; }
+.oh-item-date{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
+.oh-item-status{
+  flex-shrink:0; font-size:11px; font-weight:800; padding:5px 11px; border-radius:999px;
+  white-space:nowrap;
+}
+.oh-item-status.completed{ background:rgba(55,214,122,.12); color:#37d67a; border:1px solid rgba(55,214,122,.35); }
+.oh-item-status.failed{ background:rgba(232,48,47,.12); color:var(--red-glow); border:1px solid rgba(232,48,47,.35); }
+
+.oh-item-code{
+  width:100%; margin-top:4px; display:flex; align-items:center; gap:8px;
+  background:var(--bg-raise); border:1px dashed var(--card-border); border-radius:10px;
+  padding:8px 12px; font-size:12.5px; color:var(--text-dim); font-family:monospace;
+  cursor:pointer; justify-content:space-between;
+}
+.oh-item-code:active{ opacity:.7; }
+.oh-item-code .copy-hint{ font-family:inherit; color:var(--text-faint); font-size:11px; flex-shrink:0; }
+
+.oh-error{ text-align:center; color:var(--text-faint); font-size:12.5px; padding:20px; }
+
+@media (max-width:360px){
+  .oh-stats{ gap:10px; }
+  .oh-stat{ padding:14px; }
+}
