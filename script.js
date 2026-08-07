@@ -73,6 +73,116 @@ document.addEventListener('DOMContentLoaded', () => {
     catItems.forEach((item) => revealObserver.observe(item));
   }
 
+  /* ---------- Account dropdown menu helpers ---------- */
+  function acctEscapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+  function acctFormatKip(n) {
+    return Number(n || 0).toLocaleString('th-TH') + ' ₭';
+  }
+
+  function renderAccountMenu(loginBtn, user) {
+    // ຫໍ່ .login-btn ດ້ວຍ .acct-slot ເພື່ອວາງ dropdown ໄວ້ຂ້າງໆ
+    const wrap = document.createElement('div');
+    wrap.className = 'acct-slot';
+    loginBtn.replaceWith(wrap);
+    wrap.appendChild(loginBtn);
+
+    loginBtn.classList.add('is-authed');
+    loginBtn.innerHTML = '';
+    loginBtn.type = 'button';
+    loginBtn.setAttribute('aria-haspopup', 'true');
+    loginBtn.setAttribute('aria-expanded', 'false');
+    if (user.avatar) {
+      const img = document.createElement('img');
+      img.src = user.avatar;
+      img.alt = user.username;
+      loginBtn.appendChild(img);
+    }
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = user.username;
+    loginBtn.appendChild(nameSpan);
+    loginBtn.title = user.username;
+
+    const badgeHtml = user.isAdmin
+      ? `<span class="acct-dd-badge is-admin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/></svg> ADMIN</span>`
+      : `<span class="acct-dd-badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> ຜູ້ໃຊ້</span>`;
+
+    const adminLinkHtml = user.isAdmin
+      ? `<a class="acct-dd-link" href="admin.html" role="menuitem">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/><path d="m9 12 2 2 4-4"/></svg>
+           ຫ້ອງຄວບຄຸມແອດມິນ
+         </a>`
+      : '';
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'acct-dropdown';
+    dropdown.id = 'acctDropdown';
+    dropdown.setAttribute('role', 'menu');
+    dropdown.setAttribute('aria-hidden', 'true');
+    dropdown.innerHTML = `
+      <div class="acct-dd-user">
+        <div class="acct-dd-name">${acctEscapeHtml(user.username)}</div>
+        ${badgeHtml}
+        <div class="acct-dd-balance">ຍອດເງິນ: <b>${acctFormatKip(user.balance)}</b></div>
+      </div>
+      <nav class="acct-dd-nav">
+        ${adminLinkHtml}
+        <a class="acct-dd-link" href="index.html#categories" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/></svg>
+          ຮ້ານຄ້າ
+        </a>
+        <a class="acct-dd-link" href="topup.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M16 15h.01"/></svg>
+          ເຕີມເງິນ
+        </a>
+        <a class="acct-dd-link" href="orders.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
+          ປະຫວັດການຊື້
+        </a>
+        <a class="acct-dd-link" href="topup-history.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
+          ປະຫວັດເຕີມເງິນ
+        </a>
+        <a class="acct-dd-link" href="profile.html" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          ໂປຣໄຟລ໌
+        </a>
+      </nav>
+      <div class="acct-dd-divider"></div>
+      <nav class="acct-dd-nav">
+        <button type="button" class="acct-dd-link danger" id="acctDdLogout" role="menuitem">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          ອອກຈາກລະບົບ
+        </button>
+      </nav>
+    `;
+    wrap.appendChild(dropdown);
+
+    const closeDropdown = () => {
+      dropdown.classList.remove('show');
+      dropdown.setAttribute('aria-hidden', 'true');
+      loginBtn.setAttribute('aria-expanded', 'false');
+    };
+    const openDropdown = () => {
+      dropdown.classList.add('show');
+      dropdown.setAttribute('aria-hidden', 'false');
+      loginBtn.setAttribute('aria-expanded', 'true');
+    };
+
+    loginBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.contains('show') ? closeDropdown() : openDropdown();
+    });
+    dropdown.addEventListener('click', (e) => e.stopPropagation());
+    document.addEventListener('click', closeDropdown);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdown(); });
+
+    dropdown.querySelector('#acctDdLogout').addEventListener('click', () => {
+      window.location.href = '/auth/logout';
+    });
+  }
+
   (async () => {
     const loginBtn = document.querySelector('.login-btn');
     const adminLink = document.querySelector('#admin-link');
@@ -95,23 +205,23 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!loginBtn) return;
 
       if (data.loggedIn) {
-        loginBtn.classList.add('is-authed');
-        loginBtn.innerHTML = '';
-        if (data.user.avatar) {
-          const img = document.createElement('img');
-          img.src = data.user.avatar;
-          img.alt = data.user.username;
-          loginBtn.appendChild(img);
-        }
-        const nameSpan = document.createElement('span');
-        nameSpan.textContent = data.user.username;
-        loginBtn.appendChild(nameSpan);
-
-        loginBtn.title = `${data.user.username} — ກົດເພື່ອອອກຈາກລະບົບ`;
-        loginBtn.addEventListener('click', () => {
-          if (confirm(`ອອກຈາກລະບົບ (${data.user.username}) ບໍ?`)) {
-            window.location.href = '/auth/logout';
+        // ยอดเงิน (wallet balance): ยังไม่มี endpoint จริงในโปรเจกต์นี้
+        // ถ้ามี /api/wallet/balance ในอนาคต ให้ดึงค่าจริงมาแทน 0 ตรงนี้
+        // TODO: เชื่อม endpoint ยอดเงินจริงเมื่อ backend พร้อม
+        let balance = 0;
+        try {
+          const balRes = await fetch('/api/wallet/balance', { cache: 'no-store' });
+          if (balRes.ok) {
+            const balData = await balRes.json();
+            balance = balData.balance || 0;
           }
+        } catch (e) { /* ยังไม่มี endpoint นี้ — ใช้ 0 ไปก่อน */ }
+
+        renderAccountMenu(loginBtn, {
+          username: data.user.username,
+          avatar: data.user.avatar,
+          isAdmin: data.user.isAdmin,
+          balance,
         });
       } else {
         loginBtn.title = 'ລົງຊື່ເຂົ້າໃຊ້ / ສະໝັກສະມາຊິກ';

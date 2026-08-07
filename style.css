@@ -660,3 +660,178 @@
   footer .fcopy{ font-size:11px; color:var(--text-faint); line-height:1.7; }
 
   ::selection{ background:var(--red); color:#fff; }
+
+  /* =========================================================
+     Account dropdown menu (avatar in header, when logged in)
+     ========================================================= */
+  .acct-slot{ position:relative; display:inline-flex; flex-shrink:0; }
+
+  .login-btn.is-authed{ cursor:pointer; }
+
+  .acct-dropdown{
+    position:absolute; top:calc(100% + 10px); right:0; width:260px; max-width:82vw;
+    background:linear-gradient(165deg, rgba(13,11,13,0.98), rgba(0,0,0,0.99));
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    box-shadow:0 14px 34px -8px rgba(0,0,0,.65), 0 0 22px -8px rgba(232,48,47,.35);
+    padding:16px 0 8px; z-index:60;
+    opacity:0; visibility:hidden; transform:translateY(-8px) scale(.97); pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease, visibility .18s;
+  }
+  .acct-dropdown.show{ opacity:1; visibility:visible; transform:translateY(0) scale(1); pointer-events:auto; }
+
+  .acct-dd-user{ padding:0 18px 14px; border-bottom:1px solid var(--card-border); margin-bottom:6px; }
+  .acct-dd-name{ font-size:15px; font-weight:800; color:var(--text); margin-bottom:7px; word-break:break-all; }
+  .acct-dd-badge{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:999px;
+    border:1px solid rgba(232,48,47,.4); background:rgba(232,48,47,.1);
+    color:var(--red-glow); font-weight:700; font-size:11px; letter-spacing:.4px; margin-bottom:8px;
+  }
+  .acct-dd-badge.is-admin{ border-color:rgba(232,179,74,.45); background:rgba(232,179,74,.1); color:var(--gold); }
+  .acct-dd-badge svg{ width:11px; height:11px; stroke:currentColor; }
+  .acct-dd-balance{ font-size:12.5px; color:var(--text-dim); }
+  .acct-dd-balance b{ color:var(--text); }
+
+  .acct-dd-nav{ display:flex; flex-direction:column; padding:4px 8px; }
+  .acct-dd-link{
+    display:flex; align-items:center; gap:11px;
+    padding:10px 10px; border-radius:11px;
+    font-size:13.5px; font-weight:600; color:var(--text);
+    background:none; border:none; width:100%; text-align:left; font-family:inherit;
+  }
+  .acct-dd-link svg{ width:17px; height:17px; color:var(--text-dim); flex-shrink:0; }
+  .acct-dd-link:active{ background:rgba(255,255,255,.06); }
+  .acct-dd-link.danger{ color:var(--red-glow); }
+  .acct-dd-link.danger svg{ color:var(--red-glow); }
+
+  .acct-dd-divider{ height:1px; margin:4px 12px; background:var(--card-border); }
+
+  /* =========================================================
+     Top-up page (topup.html)
+     ========================================================= */
+  .topup-main{ padding:18px 20px 40px; position:relative; z-index:1; }
+
+  .topup-title-row{ display:flex; align-items:center; gap:12px; margin:6px 0 20px; }
+  .topup-back-btn{
+    width:36px; height:36px; border-radius:11px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--card); border:1px solid var(--card-border); color:var(--red-glow);
+  }
+  .topup-back-btn svg{ width:18px; height:18px; }
+  .topup-title-row h1{ font-size:21px; font-weight:800; }
+
+  .topup-label{ font-size:13.5px; font-weight:700; color:var(--text-dim); margin:0 0 12px; }
+
+  .topup-methods{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+  .topup-method{
+    position:relative; text-align:left; padding:13px; border-radius:16px;
+    background:var(--card); border:1px solid var(--card-border);
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .topup-method.active{
+    border-color:var(--red-glow);
+    background:linear-gradient(160deg,#1c1012,#0d0b0d);
+    box-shadow:0 0 0 1px rgba(232,48,47,.25), 0 0 18px -6px rgba(232,48,47,.4);
+  }
+  .topup-method-icon{
+    width:32px; height:32px; border-radius:9px;
+    background:var(--bg-raise); color:var(--red-glow);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .topup-method-icon svg{ width:16px; height:16px; }
+  .topup-method-name{ font-size:13.5px; font-weight:700; line-height:1.3; }
+  .topup-method-sub{ font-size:10.5px; color:var(--green); }
+  .topup-method-check{
+    position:absolute; top:12px; right:12px; width:18px; height:18px; color:var(--red-glow); display:none;
+  }
+  .topup-method.active .topup-method-check{ display:block; }
+
+  .topup-card{
+    background:linear-gradient(165deg,#130d0e,#000); border:1px solid var(--card-border);
+    border-radius:20px; padding:18px;
+  }
+  .topup-card-head{ display:flex; gap:12px; margin-bottom:18px; }
+  .topup-card-icon{
+    width:40px; height:40px; border-radius:12px; flex-shrink:0;
+    background:var(--bg-raise); color:var(--green);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .topup-card-icon svg{ width:19px; height:19px; }
+  .topup-card-head-text b{ font-size:13.5px; display:block; margin-bottom:4px; }
+  .topup-card-head-text p{ font-size:12px; color:var(--text-faint); line-height:1.6; }
+
+  .topup-amount-box{
+    display:flex; align-items:center; gap:8px;
+    background:var(--bg-raise); border:1px solid rgba(232,48,47,.3); border-radius:13px;
+    padding:13px 15px; margin-bottom:14px;
+  }
+  .topup-amount-box .cur{ color:var(--red-glow); font-weight:800; }
+  .topup-amount-box input{
+    flex:1; background:none; border:none; outline:none; font-family:inherit;
+    color:var(--text); font-size:18px; font-weight:700;
+  }
+  .topup-amount-box input::placeholder{ color:var(--text-faint); }
+
+  .topup-presets{ display:flex; gap:8px; overflow-x:auto; padding-bottom:2px; margin-bottom:16px; }
+  .topup-preset{
+    white-space:nowrap; flex-shrink:0; padding:9px 16px; border-radius:999px;
+    font-size:13px; font-weight:700; background:var(--bg-raise);
+    border:1px solid var(--card-border); color:var(--text);
+  }
+  .topup-preset.active{ border-color:var(--red-glow); background:rgba(232,48,47,.12); color:var(--red-glow); }
+
+  .topup-submit{
+    width:100%; padding:13px; border-radius:13px; border:none; font-family:inherit;
+    font-size:14.5px; font-weight:800; color:#2a0a0a;
+    background:linear-gradient(90deg,var(--red-glow),#ff7a7a);
+    box-shadow:0 8px 18px -6px rgba(232,48,47,.55), inset 0 1px 0 rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .topup-submit:disabled{ background:var(--bg-raise); color:var(--text-faint); box-shadow:none; opacity:.7; }
+  .topup-submit svg{ width:16px; height:16px; }
+  .topup-note{ font-size:11px; text-align:center; color:var(--text-faint); margin-top:12px; }
+
+  .topup-guide{ margin-top:26px; }
+  .topup-guide ol{ list-style:none; display:flex; flex-direction:column; gap:12px; }
+  .topup-guide li{ display:flex; align-items:flex-start; gap:12px; font-size:13px; color:var(--text-dim); line-height:1.6; }
+  .topup-guide .num{
+    width:20px; height:20px; border-radius:50%; flex-shrink:0; margin-top:1px;
+    background:var(--card); border:1px solid var(--card-border); color:var(--red-glow);
+    font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center;
+  }
+
+  .topup-qr-box{
+    width:190px; height:190px; margin:0 auto 16px; border-radius:14px;
+    border:2px dashed rgba(232,48,47,.35);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:12px; color:var(--text-faint); padding:12px;
+  }
+  .topup-qr-box img{ width:100%; height:100%; object-fit:contain; border-radius:12px; }
+
+  .topup-upload{
+    display:block; border:2px dashed rgba(232,48,47,.3); border-radius:16px;
+    padding:26px 16px; text-align:center; background:var(--card); margin-bottom:16px; cursor:pointer;
+  }
+  .topup-upload.has-file{ border-color:var(--green); }
+  .topup-upload svg{ width:22px; height:22px; color:var(--red-glow); margin-bottom:8px; }
+  .topup-upload.has-file svg{ color:var(--green); }
+  .topup-upload .fname{ font-size:13px; font-weight:600; }
+  .topup-upload .fhint{ font-size:11px; color:var(--text-faint); margin-top:4px; }
+
+  .topup-waiting{ text-align:center; padding:8px 4px 4px; }
+  .topup-waiting-icon{
+    width:56px; height:56px; margin:0 auto 16px; border-radius:50%;
+    background:var(--bg-raise); color:var(--red-glow);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .topup-waiting-icon svg{ width:24px; height:24px; }
+  .topup-waiting h2{ font-size:17px; font-weight:800; color:var(--red-glow); margin-bottom:8px; }
+  .topup-waiting p{ font-size:12px; color:var(--text-faint); line-height:1.7; margin-bottom:20px; }
+  .topup-waiting-info{
+    text-align:left; background:var(--bg-raise); border-radius:13px; padding:14px 16px;
+    display:flex; flex-direction:column; gap:8px; font-size:13px;
+  }
+  .topup-waiting-info .row{ display:flex; justify-content:space-between; color:var(--text-faint); }
+  .topup-waiting-info .row b{ color:var(--text); font-weight:700; }
+  .topup-waiting-info .row.status b{ color:var(--red-glow); }
+
