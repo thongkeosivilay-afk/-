@@ -1324,7 +1324,23 @@ async function initAdminPanel() {
     sw.addEventListener('click', () => {
       const targetId = sw.dataset.target;
       const alreadyOpen = sw.classList.contains('open');
-      openAccordion(alreadyOpen ? null : targetId);
+      const nextTarget = alreadyOpen ? null : targetId;
+      openAccordion(nextTarget);
+
+      // ปัญหาเดิม: #panelXxx (ເນື້ອຫາ) ຖືກວາງໄວ້ໄກຈາກ .switch (ຫົວຂໍ້) ຫຼາຍ
+      // (ຢູ່ລຸ່ມສຸດຂອງໜ້າ ຫຼັງ deck ທັງໝົດ) ພໍກົດເປີດແລ້ວບໍ່ເລື່ອນຫາ
+      // ເລີຍຄືກັບຟອร์มหายไปอยู่ล่างสุด ต้องเลื่อนเอง (ต่างจาก "ระบบตัวแทน" ที่
+      // ເນື້ອຫາຢູ່ໃນ .switch ດຽວກັນເລີຍບໍ່ມີບັນຫານີ້) — ແກ້ໂດຍເລື່ອນຫາກ່ອງ
+      // ເນື້ອຫາທີ່ຫາກໍ່ເປີດໃຫ້ອັດຕະໂນມັດ ຄືກັນກັບພຶດຕິກຳຂອງລະບົບຕົວແທນ
+      if (nextTarget) {
+        const openedPanel = document.getElementById(nextTarget);
+        const scrollTarget = openedPanel || sw;
+        requestAnimationFrame(() => {
+          scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+      } else {
+        sw.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     });
   });
 

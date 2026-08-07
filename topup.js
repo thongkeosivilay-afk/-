@@ -35,6 +35,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const refEl = document.querySelector('#topupRef');
   const waitAmountEl = document.querySelector('#topupWaitAmount');
 
+  /* ---------- toast ຂໍ້ຄວາມແຈ້ງເຕືອນ (ຂຽນເອງໃນນີ້ເລີຍ ເພາະໜ້ານີ້ບໍ່ໄດ້ link auth.css
+     ທີ່ມີ .toast ຢູ່) ---------- */
+  let toastTimer = null;
+  function showToast(message, isError = false) {
+    let toast = document.querySelector('.topup-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'topup-toast';
+      toast.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);'
+        + 'max-width:90vw;padding:12px 18px;border-radius:12px;background:rgba(20,20,24,.96);'
+        + 'border:1px solid rgba(255,255,255,.12);color:#fff;font-size:14px;z-index:9999;opacity:0;'
+        + 'transition:opacity .25s ease, transform .25s ease;pointer-events:none;'
+        + 'box-shadow:0 8px 24px rgba(0,0,0,.4);';
+      document.body.appendChild(toast);
+    }
+    toast.style.borderColor = isError ? 'rgba(232,48,47,.5)' : 'rgba(255,255,255,.12)';
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translate(-50%, 0)';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translate(-50%, 12px)';
+    }, 3200);
+  }
+
+  function redirectToLogin() {
+    window.location.href = '/login.html?next=' + encodeURIComponent('/topup.html');
+  }
+
   const BANKS = {
     1: { name: 'ບັນຊີທະນາຄານ 1' },
     2: { name: 'ບັນຊີທະນາຄານ 2' },
@@ -123,29 +153,31 @@ document.addEventListener('DOMContentLoaded', () => {
     createQrBtn.innerHTML = 'ກຳລັງສ້າງ QR...';
 
     try {
-      // TODO: ຕໍ່ API ຈິງ — ຄືນ { topupId, qrImageUrl } ຈາກ backend
       const res = await fetch('/api/topup/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bank: selectedBank, amount: selectedAmount }),
       });
+      const data = await res.json().catch(() => ({}));
 
-      let qrImageUrl = null;
-      if (res.ok) {
-        const data = await res.json();
-        currentTopupId = data.topupId || null;
-        qrImageUrl = data.qrImageUrl || null;
-      } else {
-        // ยังไม่มี endpoint จริง -> โชว์เป็น placeholder ไปก่อน ไม่บล็อกการทดลองใช้งาน
-        currentTopupId = 'LOCAL-' + Date.now().toString(36).toUpperCase();
+      // ບໍ່ໄດ້ login -> ພາໄປໜ້າ login ເລີຍ ດີກວ່າປ່ອຍໃຫ້ເຮັດຕໍ່ໄປແລ້ວມາຄ້າງຢູ່ຂັ້ນ
+      // ອັບໂຫຼດສະລິບ (ຈະບັນທຶກລົງ topup_requests ບໍ່ໄດ້ ເພາະບໍ່ຮູ້ວ່າເປັນລູກຄ້າຄົນໃດ)
+      if (res.status === 401 || data.requireLogin) {
+        showToast('ກະລຸນາລ໋ອກອິນກ່ອນເຕີມເງິນ', true);
+        redirectToLogin();
+        return;
       }
+      if (!res.ok) {
+        showToast(data.error || 'ສ້າງລາຍການເຕີມເງິນບໍ່ສຳເລັດ, ລອງໃໝ່ອີກຄັ້ງ', true);
+        return;
+      }
+
+      currentTopupId = data.topupId || null;
 
       payAmountEl.textContent = formatKip(selectedAmount);
       const realQrUrl = QR_IMAGES[selectedBank];
       if (realQrUrl) {
         qrBox.innerHTML = `<img src="${realQrUrl}" alt="QR ຮັບເງິນ">`;
-      } else if (qrImageUrl) {
-        qrBox.innerHTML = `<img src="${qrImageUrl}" alt="QR ຮັບເງິນ">`;
       } else {
         qrBox.textContent = `[ ຍັງບໍ່ໄດ້ຕັ້ງຮູບ QR — ໄປໃສ່ໃນຫ້ອງແອດມິນ > ຕັ້ງຄ່າຮ້ານ > QR ໂອນເງິນ ]`;
       }
@@ -155,15 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('ສ້າງ QR ບໍ່ສຳເລັດ', err);
-      currentTopupId = 'LOCAL-' + Date.now().toString(36).toUpperCase();
-      payAmountEl.textContent = formatKip(selectedAmount);
-      const fallbackQrUrl = QR_IMAGES[selectedBank];
-      qrBox.innerHTML = fallbackQrUrl
-        ? `<img src="${fallbackQrUrl}" alt="QR ຮັບເງິນ">`
-        : `[ ຍັງບໍ່ໄດ້ຕັ້ງຮູບ QR — ໄປໃສ່ໃນຫ້ອງແອດມິນ > ຕັ້ງຄ່າຮ້ານ > QR ໂອນເງິນ ]`;
-      stepAmount.style.display = 'none';
-      stepPay.style.display = '';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
     } finally {
       createQrBtn.disabled = false;
       createQrBtn.innerHTML = originalHtml;
@@ -200,23 +224,38 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmBtn.innerHTML = 'ກຳລັງສົ່ງ...';
 
     try {
-      // TODO: ຕໍ່ API ຈິງ — ອັບໂຫຼດ selectedSlip ໄປ Supabase storage bucket
-      // "topup-slips" ຜ່ານ Worker (ຄືກັນກັບ product-images) ແລ້ວບັນທຶກລາຍການ
+      // ອັບໂຫຼດ selectedSlip ໄປ Supabase storage bucket "topup-slips" ຜ່ານ Worker
+      // (ຄືກັນກັບ product-images) ແລ້ວບັນທຶກລາຍການເຂົ້າ topup_requests ຈິງ
       const form = new FormData();
       form.append('topupId', currentTopupId || '');
       form.append('bank', String(selectedBank));
       form.append('amount', String(selectedAmount));
       form.append('slip', selectedSlip);
 
-      await fetch('/api/topup/confirm', { method: 'POST', body: form }).catch(() => null);
-    } catch (err) {
-      console.error('ຢືນຢັນການໂອນບໍ່ສຳເລັດ (ຍັງບໍ່ໄດ້ຕໍ່ backend ຈິງ)', err);
-    } finally {
-      refEl.textContent = currentTopupId || '-';
+      const res = await fetch('/api/topup/confirm', { method: 'POST', body: form });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401 || data.requireLogin) {
+        showToast('ກະລຸນາລ໋ອກອິນກ່ອນເຕີມເງິນ', true);
+        redirectToLogin();
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        // ສົ່ງບໍ່ສຳເລັດຈິງ -> ຢູ່ໜ້າເດີມ ບໍ່ພາໄປໜ້າ "ລໍຖ້າກວດສອບ" ຫຼອກໆ ຄືເມື່ອກ່ອນ
+        showToast(data.error || 'ຢືນຢັນການໂອນບໍ່ສຳເລັດ, ລອງໃໝ່ອີກຄັ້ງ', true);
+        return;
+      }
+
+      // ບັນທຶກເຂົ້າ topup_requests ສຳເລັດແລ້ວແທ້ໆ -> ຫ້ອງແອດມິນຈະເຫັນລາຍການນີ້ທັນທີ
+      refEl.textContent = data.id || currentTopupId || '-';
       waitAmountEl.textContent = formatKip(selectedAmount);
       stepPay.style.display = 'none';
       stepWaiting.style.display = '';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error('ຢືນຢັນການໂອນບໍ່ສຳເລັດ', err);
+      showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+    } finally {
       confirmBtn.disabled = false;
       confirmBtn.innerHTML = originalHtml;
     }
