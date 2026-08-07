@@ -314,6 +314,7 @@ async function handlePublicStorefront(request, env) {
   try {
     const siteSettingsColumns = [
       'store_name', 'tagline', 'announcement_text', 'hero_image',
+      'qr_label', 'qr_label_2', 'qr_url', 'qr_url_2',
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_name`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_image`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_title`),
@@ -387,6 +388,10 @@ async function handlePublicStorefront(request, env) {
         tagline: settings.tagline || null,
         announcement: settings.announcement_text || null,
         heroImage: settings.hero_image || null,
+        qrLabel1: settings.qr_label || null,
+        qrLabel2: settings.qr_label_2 || null,
+        qrUrl1: settings.qr_url || null,
+        qrUrl2: settings.qr_url_2 || null,
       },
       categories,
       stats: {
