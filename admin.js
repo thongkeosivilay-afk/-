@@ -1327,7 +1327,9 @@ async function initAdminPanel() {
   }
 
   accSwitches.forEach((sw) => {
-    sw.addEventListener('click', () => {
+    const head = sw.querySelector('.switch-head');
+    if (!head) return;
+    head.addEventListener('click', () => {
       const targetId = sw.dataset.target;
       const alreadyOpen = sw.classList.contains('open');
       const nextTarget = alreadyOpen ? null : targetId;
