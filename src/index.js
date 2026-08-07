@@ -13,6 +13,13 @@
                                       topup_requests (status: pending) ให้ห้องแอดมินเห็น/อนุมัติได้
      GET  /api/topup/history      -> ลูกค้า (ต้อง login) ดึงประวัติการเติมเงินของตัวเองเท่านั้น
                                       (topup-history.html)
+     POST /api/orders/create      -> ลูกค้า (ต้อง login) กด "ซื้อเลย" ใน category.html —
+                                      เรียก RPC purchase_product แบบ atomic (เช็คสต็อก/ยอดเงิน,
+                                      หักเงิน, ออกรหัส, insert แถวใน orders) ดู SQL ท้ายไฟล์นี้
+     GET  /api/orders/history     -> ลูกค้า (ต้อง login) ดึงประวัติการสั่งซื้อของตัวเองเท่านั้น
+                                      (orders.html)
+     GET  /api/account/stats      -> ลูกค้า (ต้อง login) สรุปยอดสั่งซื้อสำเร็จ/ยอดใช้จ่ายรวม
+                                      (profile.html)
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
 
    ---- ระบบแอดมิน ----
@@ -78,6 +85,15 @@ export default {
     }
     if (url.pathname === '/api/topup/history') {
       return handleTopupHistory(request, env);
+    }
+    if (url.pathname === '/api/orders/create') {
+      return handleOrderCreate(request, env);
+    }
+    if (url.pathname === '/api/orders/history') {
+      return handleOrdersHistory(request, env);
+    }
+    if (url.pathname === '/api/account/stats') {
+      return handleAccountStats(request, env);
     }
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
@@ -562,6 +578,126 @@ async function handleTopupHistory(request, env) {
   }
 }
 
+/* ---------- 10) POST /api/orders/create ----------
+   ລູກຄ້າ (ຕ້ອງ login) ກົດ "ຊື້ເລີຍ" ໃນ category.html — ກ່ອນໜ້ານີ້ປຸ່ມນີ້ພຽງແຕ່ໂຊວ໌ alert
+   ບອກວ່າລະບົບຍັງບໍ່ເປີດໃຫ້ນຳໃຊ້ (ເບິ່ງ category.js) ຍັງບໍ່ມີການສັ່ງຊື້ຈິງເກີດຂຶ້ນເລີຍ
+   ຕອນນີ້: ຮຽກ RPC "purchase_product" (ຕ້ອງສ້າງໄວ້ໃນ Supabase ກ່ອນ — ເບິ່ງ README/ຄຳແນະນຳ
+   SQL ທ້າຍໂປຣເຈັກ) ເຊິ່ງເຮັດວຽກແບບ atomic ໃນ transaction ດຽວ: ລ໋ອກແຖວສິນຄ້າ/ກະເປົາເງິນ,
+   ເບິ່ງຍອດເງິນພຽງພໍບໍ່, ດຶງລະຫັດສິນຄ້າທີ່ຍັງບໍ່ຖືກໃຊ້ 1 ລະຫັດ, ຫັກເງິນ, ບັນທຶກແຖວໃໝ່ໃນ
+   ຕາຕະລາງ orders — ຖ້າຂັ້ນຕອນໃດລົ້ມເຫລວ ຈະ rollback ທັງໝົດ (ບໍ່ຫັກເງິນ/ບໍ່ອອກລະຫັດຊ້ຳ) */
+async function handleOrderCreate(request, env) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນສັ່ງຊື້', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (ເບິ່ງ wrangler.toml + wrangler secret)' },
+      500
+    );
+  }
+
+  let body = {};
+  try { body = await request.json(); } catch { /* productId จะเป็น undefined แล้วโดน validate ด้านล่าง */ }
+
+  const productId = body.productId ? String(body.productId) : null;
+  const durationId = body.durationId ? String(body.durationId) : null;
+  if (!productId) {
+    return json({ error: 'ບໍ່ພົບສິນຄ້າທີ່ຕ້ອງການຊື້' }, 400);
+  }
+
+  // ຂໍ້ຄວາມ error ຈາກ RAISE EXCEPTION ໃນ RPC (ເບິ່ງ SQL ທ້າຍໄຟລ໌) -> ຂໍ້ຄວາມພາສາລາວທີ່ໂຊວ໌ໃຫ້ລູກຄ້າ
+  const ERROR_LABEL = {
+    PRODUCT_NOT_FOUND: 'ບໍ່ພົບສິນຄ້ານີ້ (ອາດຖືກລຶບ/ເຊື່ອງໄປແລ້ວ)',
+    PRODUCT_PAUSED: 'ສິນຄ້ານີ້ຢຸດຂາຍຊົ່ວຄາວ',
+    DURATION_NOT_FOUND: 'ບໍ່ພົບໄລຍະເວລາທີ່ເລືອກ',
+    INSUFFICIENT_BALANCE: 'ຍອດເງິນໃນກະເປົາບໍ່ພຽງພໍ ກະລຸນາເຕີມເງິນກ່ອນ',
+    OUT_OF_STOCK: 'ສິນຄ້ານີ້ໝົດສະຕັອກແລ້ວ',
+  };
+
+  try {
+    const rows = await supabaseRpcStrict(env, 'purchase_product', {
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_product_id: productId,
+      p_duration_id: durationId,
+    });
+
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row || !row.order_id) {
+      return json({ error: 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+    }
+
+    return json({ ok: true, orderId: row.order_id, code: row.code });
+  } catch (err) {
+    const msg = String((err && err.message) || '');
+    const matchedKey = Object.keys(ERROR_LABEL).find((key) => msg.includes(key));
+    console.error('handleOrderCreate failed:', err);
+    return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, matchedKey === 'INSUFFICIENT_BALANCE' || matchedKey === 'OUT_OF_STOCK' ? 400 : 502);
+  }
+}
+
+/* ---------- 11) GET /api/orders/history ----------
+   ໜ້າ "ປະຫວັດການສັ່ງຊື້" (orders.html) ຮຽກຈຸດນີ້ ເພື່ອເອົາລາຍການສັ່ງຊື້ຂອງລູກຄ້າຄົນທີ່
+   login ຢູ່ເທົ່ານັ້ນມາໂຊວ໌ — ຄືກັນກັບ handleTopupHistory ແຕ່ອ່ານຈາກຕາຕະລາງ orders ແທນ */
+async function handleOrdersHistory(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+  }
+
+  try {
+    const rows = await supabaseSelect(env, 'orders', {
+      select: 'id,product_name,duration_label,price,code,status,created_at',
+      user_id: `eq.${user.id}`,
+      order: 'created_at.desc',
+      limit: '200',
+    });
+    return json({ ok: true, items: rows || [] });
+  } catch (err) {
+    console.error('handleOrdersHistory failed:', err);
+    return json({ error: 'ດຶງປະຫວັດການສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+  }
+}
+
+/* ---------- 12) GET /api/account/stats ----------
+   ໜ້າ profile.html (profile.js) ຮຽກຈຸດນີ້ ເພື່ອໂຊວ໌ "ຈຳນວນສັ່ງຊື້ສຳເລັດ" + "ຍອດຊື້ລວມ"
+   ໃນໜ້າໂປຣໄຟລ໌ — ເດີມ endpoint ນີ້ບໍ່ມີຢູ່ຈິງ (profile.js fetch ແລ້ວໄດ້ 404 ຄືນຄ່າ 0
+   ຕະຫຼອດ) ຕອນນີ້ຄິດໄລ່ຈາກຕາຕະລາງ orders ຈິງຂອງລູກຄ້າຄົນນັ້ນ */
+async function handleAccountStats(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ ordersCompleted: 0, totalSpent: 0 });
+  }
+
+  try {
+    const rows = await supabaseSelect(env, 'orders', {
+      select: 'price,status',
+      user_id: `eq.${user.id}`,
+      status: 'eq.completed',
+      limit: '10000',
+    });
+    const items = rows || [];
+    const totalSpent = items.reduce((sum, r) => sum + (Number(r.price) || 0), 0);
+    return json({ ordersCompleted: items.length, totalSpent });
+  } catch (err) {
+    console.error('handleAccountStats failed:', err);
+    return json({ ordersCompleted: 0, totalSpent: 0 });
+  }
+}
+
 /* ---------- helper: ຍິງ SELECT ໄປ Supabase REST ດ້ວຍ service_role key (ຝັ່ງ Worker ເທົ່ານັ້ນ) ---------- */
 async function supabaseSelect(env, table, params) {
   const url = new URL(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}`);
@@ -597,6 +733,30 @@ async function supabaseRpc(env, fnName, args) {
     const text = await res.text();
     console.error(`Supabase rpc "${fnName}" failed (${res.status}):`, text);
     return null;
+  }
+  return res.json();
+}
+
+/* ---------- helper: ຮຽກ Supabase RPC ແບບ "throw ຂໍ້ຄວາມ error ຈິງອອກມາ" (ໃຊ້ກັບ purchase_product
+   ເພື່ອໃຫ້ handleOrderCreate ຈັບຂໍ້ຄວາມ RAISE EXCEPTION ຈາກ Postgres ໄປແປເປັນພາສາລາວໄດ້ —
+   ຕ່າງຈາກ supabaseRpc() ທຳມະດາທີ່ log ແລ້ວຄືນ null ເສີຍໆ (ໃຊ້ກັບ product_stock ທີ່ຢາກໃຫ້
+   graceful degrade ເປັນ 0 ແທນ ບໍ່ໃຊ້ throw) ---------- */
+async function supabaseRpcStrict(env, fnName, args) {
+  const url = `${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/rpc/${fnName}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(args || {}),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    let message = text;
+    try { message = JSON.parse(text).message || text; } catch { /* ไม่ใช่ JSON ก็ใช้ text ดิบไป */ }
+    throw new Error(message);
   }
   return res.json();
 }
