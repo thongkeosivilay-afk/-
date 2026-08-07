@@ -177,10 +177,12 @@ async function handleCallback(request, env) {
   const sessionData = {
     id: discordUser.id,
     username: discordUser.global_name || discordUser.username,
+    email: discordUser.email || null,
     avatar: discordUser.avatar
       ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
       : null,
     isAdmin,
+    discordLinked: true,
     createdAt: Date.now(),
   };
 
