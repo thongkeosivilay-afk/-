@@ -282,7 +282,13 @@ async function handleSupabaseProxy(request, env, url) {
 function json(data, status) {
   return new Response(JSON.stringify(data), {
     status: status || 200,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      // ห้าม browser/Cloudflare cache คำตอบ API ทุกเส้นทาง — ข้อมูลร้าน (สินค้า/สต็อก/
+      // สถานะล็อกอิน) ต้องสดใหม่จริงทุกครั้งที่หน้าเว็บเรียก ไม่งั้นข้อมูลเก่าจะค้าง
+      // อยู่ใน cache แล้วโผล่มาแวบหนึ่งตอนโหลดหน้าเว็บใหม่ก่อนจะถูกแทนที่
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
   });
 }
 
