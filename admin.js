@@ -1312,6 +1312,12 @@ async function initAdminPanel() {
   // ---- accordion (.switch หัวข้อ <-> #panelXxx กล่องเนื้อหา) ----
   // ก่อนหน้านี้กดหัวข้อไม่มี JS คุมเลย ทำให้ .panel-content ทุกกล่องโชว์รวมกันหมด
   // ตอนนี้คุมให้เปิดได้ทีละกล่อง กดหัวข้ออื่นจะปิดกล่องเดิมแล้วเปิดกล่องที่กด
+  //
+  // ปัญหาเดิม: #panelXxx (ເນື້ອຫາ) ຖືກວາງໄວ້ໄກຈາກ .switch (ຫົວຂໍ້) ຫຼາຍ (ຢູ່ລຸ່ມສຸດ
+  // ຂອງໜ້າ ຫຼັງ deck ທັງໝົດ) ພໍກົດເປີດແລ້ວຟອร์มไปโผล่อยู่ล่างสุดแทน ต่างจาก
+  // "ລະບົບຕົວແທນ" ທີ່ເນື້ອຫາຢູ່ໃນ .switch ດຽວກັນເລີຍບໍ່ມີບັນຫານີ້ — ແກ້ໂດຍຍ້າຍ
+  // #panelXxx ແຕ່ລະອັນເຂົ້າໄປຢູ່ໃນ .switch-body-inner ຂອງຫົວຂໍ້ຕົນເອງໂດຍກົງ
+  // (ໃນ admin.html) ໃຫ້ພຶດຕິກຳຄືກັນກັບ "ລະບົບຕົວແທນ" ທຸກອັນ ບໍ່ຕ້ອງເລື່ອນຫາອີກຕໍ່ໄປ
   const accSwitches = document.querySelectorAll('.switch[data-target]');
   const accPanels = document.querySelectorAll('.panel-content');
 
@@ -1326,21 +1332,9 @@ async function initAdminPanel() {
       const alreadyOpen = sw.classList.contains('open');
       const nextTarget = alreadyOpen ? null : targetId;
       openAccordion(nextTarget);
-
-      // ปัญหาเดิม: #panelXxx (ເນື້ອຫາ) ຖືກວາງໄວ້ໄກຈາກ .switch (ຫົວຂໍ້) ຫຼາຍ
-      // (ຢູ່ລຸ່ມສຸດຂອງໜ້າ ຫຼັງ deck ທັງໝົດ) ພໍກົດເປີດແລ້ວບໍ່ເລື່ອນຫາ
-      // ເລີຍຄືກັບຟອร์มหายไปอยู่ล่างสุด ต้องเลื่อนเอง (ต่างจาก "ระบบตัวแทน" ที่
-      // ເນື້ອຫາຢູ່ໃນ .switch ດຽວກັນເລີຍບໍ່ມີບັນຫານີ້) — ແກ້ໂດຍເລື່ອນຫາກ່ອງ
-      // ເນື້ອຫາທີ່ຫາກໍ່ເປີດໃຫ້ອັດຕະໂນມັດ ຄືກັນກັບພຶດຕິກຳຂອງລະບົບຕົວແທນ
-      if (nextTarget) {
-        const openedPanel = document.getElementById(nextTarget);
-        const scrollTarget = openedPanel || sw;
-        requestAnimationFrame(() => {
-          scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      } else {
+      requestAnimationFrame(() => {
         sw.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      });
     });
   });
 
