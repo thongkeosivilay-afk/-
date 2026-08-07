@@ -13,8 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!loadingEl || !emptyEl || !listEl) return; // ไม่ใช่หน้า orders
 
   const statTotalEl = document.querySelector('#ohStatTotal');
-  const statDoneEl = document.querySelector('#ohStatDone');
-  const statAmountEl = document.querySelector('#ohStatAmount');
 
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, (c) => ({
@@ -102,13 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ---- สถิติ: คิดจากข้อมูลจริงที่ดึงมาเท่านั้น ----
       const total = items.length;
-      const doneItems = items.filter((r) => r.status === 'completed');
-      const done = doneItems.length;
-      const totalAmount = doneItems.reduce((sum, r) => sum + (Number(r.price) || 0), 0);
 
       statTotalEl.textContent = total.toLocaleString('th-TH');
-      statDoneEl.textContent = done.toLocaleString('th-TH');
-      statAmountEl.textContent = formatKip(totalAmount);
 
       loadingEl.style.display = 'none';
 
