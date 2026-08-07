@@ -144,7 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
           ປະຫວັດເຕີມເງິນ
         </a>
-        <a class="acct-dd-link" href="profile.html" role="menuitem">
+        <a class="acct-dd-link" href="profile.html" id="acctDdProfileLink" role="menuitem">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           ໂປຣໄຟລ໌
         </a>
@@ -158,6 +158,15 @@ document.addEventListener('DOMContentLoaded', () => {
       </nav>
     `;
     wrap.appendChild(dropdown);
+
+    const profileLink = dropdown.querySelector('#acctDdProfileLink');
+    if (profileLink && window.openProfileModal) {
+      profileLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        closeDropdown();
+        window.openProfileModal();
+      });
+    }
 
     const closeDropdown = () => {
       dropdown.classList.remove('show');
@@ -182,6 +191,410 @@ document.addEventListener('DOMContentLoaded', () => {
       window.location.href = '/auth/logout';
     });
   }
+
+  /* =========================================================
+     Profile modal — ເດັ້ງຂຶ້ນເປັນປັອບອັບທັບໜ້າປັດຈຸບັນ (ບໍ່ປ່ຽນໜ້າ)
+     ໃຊ້ຜ່ານ window.openProfileModal() — ສ້າງ DOM ຄັ້ງດຽວແລ້ວໃຊ້ຊ້ຳ
+     ========================================================= */
+  let pmOverlay = null;
+  let pmBuilt = false;
+
+  function pmFormatMoney(n) {
+    return Number(n || 0).toLocaleString('lo-LA') + ' ₭';
+  }
+  const PM_LAO_MONTHS = ['ມັງກອນ','ກຸມພາ','ມີນາ','ເມສາ','ພຶດສະພາ','ມິຖຸນາ','ກໍລະກົດ','ສິງຫາ','ກັນຍາ','ຕຸລາ','ພະຈິກ','ທັນວາ'];
+  function pmFormatDate(iso) {
+    if (!iso) return '-';
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '-';
+      const day = d.getDate();
+      const month = PM_LAO_MONTHS[d.getMonth()];
+      const year = d.getFullYear() + 543;
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      return `${day} ${month} ${year} ເວລາ ${hh}:${mm}`;
+    } catch {
+      return '-';
+    }
+  }
+  function pmInitials(name) {
+    return (name || '?').trim().slice(0, 1).toUpperCase();
+  }
+  function pmEscapeHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+
+  let pmToastTimer = null;
+  function pmShowToast(message, isError) {
+    let toast = document.querySelector('.pm-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.className = 'pm-toast';
+      toast.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z"/></svg><span></span>`;
+      document.body.appendChild(toast);
+    }
+    toast.classList.toggle('error', !!isError);
+    toast.querySelector('span').textContent = message;
+    toast.classList.add('show');
+    clearTimeout(pmToastTimer);
+    pmToastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+
+  function pmBuild() {
+    if (pmBuilt) return;
+    pmBuilt = true;
+
+    pmOverlay = document.createElement('div');
+    pmOverlay.className = 'pm-overlay';
+    pmOverlay.id = 'pmOverlay';
+    pmOverlay.innerHTML = `
+      <div class="pm-modal" role="dialog" aria-modal="true" aria-label="ໂປຣໄຟລ໌ຂອງຂ້ອຍ">
+        <button type="button" class="pm-close" id="pmClose" aria-label="ປິດ">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+        <div class="pm-loading" id="pmLoading">ກຳລັງໂຫຼດ...</div>
+        <div class="pm-content" id="pmContent">
+
+          <div class="pm-card pm-headcard">
+            <div class="pm-head-row">
+              <div class="pm-avatar-wrap">
+                <div class="pm-avatar" id="pmAvatarBox"><div class="pm-avatar-fallback" id="pmAvatarFallback">?</div></div>
+                <button type="button" class="pm-avatar-edit" id="pmAvatarEditBtn" aria-label="ປ່ຽນຮູບໂປຣໄຟລ໌">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <input type="file" id="pmAvatarFile" accept="image/png,image/jpeg,image/webp" hidden>
+              </div>
+              <div class="pm-head-info">
+                <div class="pm-username" id="pmUsername">—</div>
+                <div class="pm-email" id="pmEmail">—</div>
+                <span class="pm-badge" id="pmBadge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                  <span id="pmBadgeText">ສະມາຊິກ</span>
+                </span>
+              </div>
+            </div>
+            <div class="pm-stats">
+              <div class="pm-stat">
+                <div class="pm-stat-value" id="pmStatBalance">0 ₭</div>
+                <div class="pm-stat-label">ຍອດເງິນຄົງເຫຼືອ</div>
+              </div>
+              <div class="pm-stat">
+                <div class="pm-stat-value" id="pmStatOrders">0</div>
+                <div class="pm-stat-label">ອໍເດີ້ສຳເລັດ</div>
+              </div>
+              <div class="pm-stat">
+                <div class="pm-stat-value" id="pmStatSpent">0 ₭</div>
+                <div class="pm-stat-label">ຍອດຊື້ລວມ</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="pm-card">
+            <div class="pm-card-title">
+              <span class="pm-card-title-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+              ຂໍ້ມູນບັນຊີ
+            </div>
+            <div class="pm-row"><span class="pm-row-label">ຊື່ຜູ້ໃຊ້</span><span class="pm-row-value" id="pmInfoUsername">—</span></div>
+            <div class="pm-row"><span class="pm-row-label">ອີເມວ</span><span class="pm-row-value" id="pmInfoEmail">—</span></div>
+            <div class="pm-row"><span class="pm-row-label">ສະໝັກເມື່ອ</span><span class="pm-row-value" id="pmInfoCreated">—</span></div>
+            <div class="pm-row"><span class="pm-row-label">ເຂົ້າສູ່ລະບົບລ່າສຸດ</span><span class="pm-row-value" id="pmInfoLastLogin">—</span></div>
+            <div class="pm-row"><span class="pm-row-label">Discord</span><span class="pm-row-value" id="pmInfoDiscord">—</span></div>
+          </div>
+
+          <div class="pm-card">
+            <div class="pm-card-title">
+              <span class="pm-card-title-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+              <span id="pmPwCardTitle">ປ່ຽນລະຫັດຜ່ານ</span>
+            </div>
+            <p class="pm-note" id="pmPwNote" style="display:none;">
+              ບັນຊີນີ້ຍັງບໍ່ເຄີຍຕັ້ງລະຫັດຜ່ານມາກ່ອນ (ລ໋ອກອິນຜ່ານ Discord ຢ່າງດຽວ) — ຕັ້ງໄວ້ນຳ ຈະໄດ້ລ໋ອກອິນດ້ວຍອີເມວ+ລະຫັດຜ່ານໄດ້ນຳ
+            </p>
+            <form id="pmPwForm" class="pm-form" novalidate>
+              <div class="field" id="pmCurrentPwField">
+                <label for="pmCurrentPw">ລະຫັດຜ່ານປັດຈຸບັນ</label>
+                <div class="field-input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                  <input id="pmCurrentPw" type="password" placeholder="••••••••" autocomplete="current-password">
+                  <button type="button" class="field-toggle" data-toggle-for="pmCurrentPw" aria-label="ສະແດງລະຫັດຜ່ານ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <div class="field-error"></div>
+              </div>
+              <div class="field" id="pmNewPwField">
+                <label for="pmNewPw">ລະຫັດຜ່ານໃໝ່</label>
+                <div class="field-input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                  <input id="pmNewPw" type="password" placeholder="••••••••" autocomplete="new-password">
+                  <button type="button" class="field-toggle" data-toggle-for="pmNewPw" aria-label="ສະແດງລະຫັດຜ່ານ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <div class="field-error"></div>
+              </div>
+              <div class="field" id="pmNewPw2Field">
+                <label for="pmNewPw2">ຢືນຢັນລະຫັດຜ່ານໃໝ່</label>
+                <div class="field-input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                  <input id="pmNewPw2" type="password" placeholder="••••••••" autocomplete="new-password">
+                  <button type="button" class="field-toggle" data-toggle-for="pmNewPw2" aria-label="ສະແດງລະຫັດຜ່ານ">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <div class="field-error"></div>
+              </div>
+              <button type="submit" class="btn-block btn-submit">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                ບັນທຶກລະຫັດຜ່ານ
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    `;
+    document.body.appendChild(pmOverlay);
+
+    // ---- close interactions ----
+    const closePm = () => {
+      pmOverlay.classList.remove('show');
+      document.body.style.overflow = '';
+    };
+    pmOverlay.querySelector('#pmClose').addEventListener('click', closePm);
+    pmOverlay.addEventListener('click', (e) => { if (e.target === pmOverlay) closePm(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && pmOverlay.classList.contains('show')) closePm();
+    });
+
+    // ---- password show/hide toggles ----
+    pmOverlay.querySelectorAll('.field-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const input = btn.closest('.field-input').querySelector('input');
+        const isPw = input.type === 'password';
+        input.type = isPw ? 'text' : 'password';
+        btn.classList.toggle('is-visible', isPw);
+      });
+    });
+
+    function setPmFieldError(fieldEl, message) {
+      fieldEl.classList.toggle('has-error', !!message);
+      const errEl = fieldEl.querySelector('.field-error');
+      if (errEl) errEl.textContent = message || '';
+    }
+
+    // ---- avatar edit ----
+    const avatarEditBtn = pmOverlay.querySelector('#pmAvatarEditBtn');
+    const avatarFileInput = pmOverlay.querySelector('#pmAvatarFile');
+    avatarEditBtn.addEventListener('click', () => avatarFileInput.click());
+    avatarFileInput.addEventListener('change', () => {
+      const file = avatarFileInput.files && avatarFileInput.files[0];
+      if (!file) return;
+      if (!/^image\//.test(file.type)) {
+        pmShowToast('ກະລຸນາເລືອກໄຟລ໌ຮູບພາບເທົ່ານັ້ນ', true);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const size = 240;
+          const canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          const scale = Math.max(size / img.width, size / img.height);
+          const w = img.width * scale, h = img.height * scale;
+          ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+          avatarEditBtn.disabled = true;
+          fetch('/api/account/avatar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ avatarDataUrl: dataUrl }),
+          })
+            .then((res) => res.json().then((data) => ({ ok: res.ok, data })))
+            .then(({ ok, data }) => {
+              if (!ok) { pmShowToast(data.error || 'ອັບເດດຮູບໂປຣໄຟລ໌ບໍ່ສຳເລັດ', true); return; }
+              const avatarBox = pmOverlay.querySelector('#pmAvatarBox');
+              avatarBox.innerHTML = `<img src="${dataUrl}" alt="">`;
+              pmShowToast('ອັບເດດຮູບໂປຣໄຟລ໌ສຳເລັດແລ້ວ');
+            })
+            .catch(() => pmShowToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true))
+            .finally(() => { avatarEditBtn.disabled = false; avatarFileInput.value = ''; });
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // ---- change password form ----
+    const pwForm = pmOverlay.querySelector('#pmPwForm');
+    pwForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const currentField = pmOverlay.querySelector('#pmCurrentPwField');
+      const newField = pmOverlay.querySelector('#pmNewPwField');
+      const new2Field = pmOverlay.querySelector('#pmNewPw2Field');
+      const currentPw = pmOverlay.querySelector('#pmCurrentPw').value;
+      const newPw = pmOverlay.querySelector('#pmNewPw').value;
+      const newPw2 = pmOverlay.querySelector('#pmNewPw2').value;
+
+      let ok = true;
+      if (currentField.style.display !== 'none' && !currentPw) {
+        setPmFieldError(currentField, 'ກະລຸນາໃສ່ລະຫັດຜ່ານປັດຈຸບັນ'); ok = false;
+      } else setPmFieldError(currentField, '');
+
+      if (newPw.length < 6) {
+        setPmFieldError(newField, 'ລະຫັດຜ່ານໃໝ່ຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ'); ok = false;
+      } else setPmFieldError(newField, '');
+
+      if (newPw2 !== newPw || !newPw2) {
+        setPmFieldError(new2Field, 'ລະຫັດຜ່ານບໍ່ກົງກັນ'); ok = false;
+      } else setPmFieldError(new2Field, '');
+
+      if (!ok) return;
+
+      const submitBtn = pwForm.querySelector('.btn-submit');
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'ກຳລັງບັນທຶກ...';
+
+      try {
+        const res = await fetch('/api/account/change-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
+        });
+        const data = await res.json();
+        if (!res.ok) { pmShowToast(data.error || 'ປ່ຽນລະຫັດຜ່ານບໍ່ສຳເລັດ', true); return; }
+
+        pmShowToast('ບັນທຶກລະຫັດຜ່ານສຳເລັດແລ້ວ');
+        pwForm.reset();
+        pmOverlay.querySelector('#pmCurrentPwField').style.display = '';
+        pmOverlay.querySelector('#pmPwNote').style.display = 'none';
+        pmOverlay.querySelector('#pmPwCardTitle').textContent = 'ປ່ຽນລະຫັດຜ່ານ';
+      } catch (err) {
+        console.error('ປ່ຽນລະຫັດຜ່ານບໍ່ສຳເລັດ', err);
+        pmShowToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  function pmRenderDiscordCell(user) {
+    const cell = pmOverlay.querySelector('#pmInfoDiscord');
+    if (user.discordLinked) {
+      cell.innerHTML = `
+        <span class="pm-discord-actions">
+          <span class="pm-discord-chip">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#5865f2"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.9-1.52.07.07 0 0 0-.08.04c-.21.38-.45.86-.61 1.24a18.3 18.3 0 0 0-5.46 0 12.6 12.6 0 0 0-.62-1.24.08.08 0 0 0-.08-.04c-1.7.29-3.34.8-4.9 1.52a.07.07 0 0 0-.03.03C.53 8.7-.32 12.9.1 17.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.87-.9.08.08 0 0 1 0-.13c.13-.09.25-.19.37-.28a.07.07 0 0 1 .08 0c3.93 1.8 8.18 1.8 12.06 0a.07.07 0 0 1 .08 0c.12.1.24.19.37.28a.08.08 0 0 1 0 .13c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.12c.37.7.78 1.36 1.23 2a.08.08 0 0 0 .08.02 19.8 19.8 0 0 0 6.01-3.03.08.08 0 0 0 .03-.05c.5-4.83-.83-9-3.51-12.66a.06.06 0 0 0-.03-.03Z"/></svg>
+            <span>${pmEscapeHtml(user.username)}</span>
+          </span>
+          <button type="button" class="pm-unlink-btn" id="pmUnlinkDiscordBtn">ຍົກເລີກ</button>
+        </span>`;
+      const unlinkBtn = cell.querySelector('#pmUnlinkDiscordBtn');
+      unlinkBtn.addEventListener('click', async () => {
+        if (!window.confirm('ຍົກເລີກການເຊື່ອມຕໍ່ Discord ຈາກບັນຊີນີ້?')) return;
+        unlinkBtn.disabled = true;
+        try {
+          const res = await fetch('/api/account/discord/unlink', { method: 'POST' });
+          const data = await res.json();
+          if (!res.ok) { pmShowToast(data.error || 'ຍົກເລີກການເຊື່ອມຕໍ່ບໍ່ສຳເລັດ', true); unlinkBtn.disabled = false; return; }
+          pmShowToast('ຍົກເລີກການເຊື່ອມຕໍ່ Discord ແລ້ວ');
+          user.discordLinked = false;
+          pmRenderDiscordCell(user);
+        } catch {
+          pmShowToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+          unlinkBtn.disabled = false;
+        }
+      });
+    } else {
+      cell.innerHTML = `<button type="button" class="pm-connect-btn" id="pmConnectDiscordBtn">ເຊື່ອມຕໍ່ Discord</button>`;
+      cell.querySelector('#pmConnectDiscordBtn').addEventListener('click', () => {
+        window.location.href = '/auth/discord/login?next=' + encodeURIComponent(window.location.pathname);
+      });
+    }
+  }
+
+  window.openProfileModal = async function openProfileModal() {
+    pmBuild();
+    pmOverlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+
+    const loadingEl = pmOverlay.querySelector('#pmLoading');
+    const contentEl = pmOverlay.querySelector('#pmContent');
+    contentEl.classList.remove('ready');
+    loadingEl.style.display = 'block';
+
+    let me;
+    try {
+      const res = await fetch('/api/me', { cache: 'no-store' });
+      me = await res.json();
+    } catch (err) {
+      console.error('ດຶງ /api/me ບໍ່ສຳເລັດ', err);
+      loadingEl.textContent = 'ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ';
+      return;
+    }
+
+    if (!me.loggedIn) {
+      window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+
+    const user = me.user || {};
+
+    const avatarBox = pmOverlay.querySelector('#pmAvatarBox');
+    avatarBox.innerHTML = user.avatar
+      ? `<img src="${user.avatar}" alt="${pmEscapeHtml(user.username)}">`
+      : `<div class="pm-avatar-fallback">${pmInitials(user.username)}</div>`;
+
+    pmOverlay.querySelector('#pmUsername').textContent = user.username || 'ຜູ້ໃຊ້';
+    pmOverlay.querySelector('#pmEmail').textContent = user.email || '';
+    pmOverlay.querySelector('#pmEmail').style.display = user.email ? '' : 'none';
+    pmOverlay.querySelector('#pmInfoUsername').textContent = user.username || '—';
+
+    const badge = pmOverlay.querySelector('#pmBadge');
+    const badgeText = pmOverlay.querySelector('#pmBadgeText');
+    badge.classList.toggle('is-admin', !!user.isAdmin);
+    badgeText.textContent = user.isAdmin ? 'ADMIN' : 'ສະມາຊິກ';
+
+    pmOverlay.querySelector('#pmStatBalance').textContent = pmFormatMoney(user.balance);
+    pmOverlay.querySelector('#pmInfoEmail').textContent = user.email || 'ບໍ່ມີ';
+    pmOverlay.querySelector('#pmInfoCreated').textContent = pmFormatDate(user.createdAt);
+    pmOverlay.querySelector('#pmInfoLastLogin').textContent = pmFormatDate(user.lastLoginAt);
+
+    pmRenderDiscordCell(user);
+
+    const hasPassword = !!user.hasPassword;
+    const currentPwField = pmOverlay.querySelector('#pmCurrentPwField');
+    const pwNote = pmOverlay.querySelector('#pmPwNote');
+    const pwCardTitle = pmOverlay.querySelector('#pmPwCardTitle');
+    if (!hasPassword) {
+      currentPwField.style.display = 'none';
+      pwNote.style.display = 'block';
+      pwCardTitle.textContent = 'ຕັ້ງລະຫັດຜ່ານ';
+    } else {
+      currentPwField.style.display = '';
+      pwNote.style.display = 'none';
+      pwCardTitle.textContent = 'ປ່ຽນລະຫັດຜ່ານ';
+    }
+
+    loadingEl.style.display = 'none';
+    contentEl.classList.add('ready');
+
+    try {
+      const statsRes = await fetch('/api/account/stats', { cache: 'no-store' });
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        pmOverlay.querySelector('#pmStatOrders').textContent = stats.ordersCompleted ?? 0;
+        pmOverlay.querySelector('#pmStatSpent').textContent = pmFormatMoney(stats.totalSpent);
+      }
+    } catch (err) {
+      console.error('ດຶງ /api/account/stats ບໍ່ສຳເລັດ', err);
+    }
+  };
 
   (async () => {
     const loginBtn = document.querySelector('.login-btn');

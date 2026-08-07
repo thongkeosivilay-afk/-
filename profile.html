@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ໂປຣໄຟລ໌</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="auth.css">
+<link rel="stylesheet" href="profile.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="p-shell">
+
+  <div class="p-topbar">
+    <a class="p-back" href="index.html" aria-label="ກັບໜ້າຫຼັກ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h1>ໂປຣໄຟລ໌ຂອງຂ້ອຍ</h1>
+  </div>
+
+  <div class="p-loading" id="pLoading">ກຳລັງໂຫຼດ...</div>
+
+  <div class="p-content" id="pContent">
+
+    <!-- Avatar / name / badge -->
+    <div class="p-head">
+      <div class="p-avatar-wrap">
+        <div class="p-avatar" id="pAvatarBox">
+          <div class="p-avatar-fallback" id="pAvatarFallback">?</div>
+        </div>
+      </div>
+      <div class="p-username" id="pUsername">—</div>
+      <span class="p-badge" id="pBadge">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+        <span id="pBadgeText">ຜູ້ໃຊ້</span>
+      </span>
+    </div>
+
+    <!-- Stats -->
+    <div class="p-stats">
+      <div class="p-stat">
+        <div class="p-stat-value" id="pStatBalance">0<span class="unit"> ₭</span></div>
+        <div class="p-stat-label">ຍອດເງິນ</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-value" id="pStatOrders">0</div>
+        <div class="p-stat-label">ອໍເດີ້ສຳເລັດ</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-value" id="pStatSpent">0<span class="unit"> ₭</span></div>
+        <div class="p-stat-label">ຍອດຊື້ລວມ</div>
+      </div>
+    </div>
+
+    <!-- Account info -->
+    <div class="p-card">
+      <div class="p-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        ຂໍ້ມູນບັນຊີ
+      </div>
+      <div class="p-row">
+        <span class="p-row-label">ຊື່ຜູ້ໃຊ້</span>
+        <span class="p-row-value" id="pInfoUsername">—</span>
+      </div>
+      <div class="p-row">
+        <span class="p-row-label">ອີເມວ</span>
+        <span class="p-row-value" id="pInfoEmail">—</span>
+      </div>
+      <div class="p-row">
+        <span class="p-row-label">ສະໝັກເມື່ອ</span>
+        <span class="p-row-value" id="pInfoCreated">—</span>
+      </div>
+      <div class="p-row">
+        <span class="p-row-label">ເຂົ້າສູ່ລະບົບລ່າສຸດ</span>
+        <span class="p-row-value" id="pInfoLastLogin">—</span>
+      </div>
+      <div class="p-row">
+        <span class="p-row-label">Discord</span>
+        <span class="p-row-value" id="pInfoDiscord">—</span>
+      </div>
+    </div>
+
+    <!-- Change password -->
+    <div class="p-card">
+      <div class="p-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        <span id="pPwCardTitle">ປ່ຽນລະຫັດຜ່ານ</span>
+      </div>
+      <p class="p-note" id="pPwNote" style="display:none;margin-bottom:14px;">
+        ບັນຊີນີ້ຍັງບໍ່ເຄີຍຕັ້ງລະຫັດຜ່ານມາກ່ອນ (ລ໋ອກອິນຜ່ານ Discord ຢ່າງດຽວ) — ຕັ້ງໄວ້ນຳ ຈະໄດ້ລ໋ອກອິນດ້ວຍອີເມວ+ລະຫັດຜ່ານໄດ້ນຳ
+      </p>
+      <form id="pPwForm" class="p-form" novalidate>
+        <div class="field" id="pCurrentPwField">
+          <label for="pCurrentPw">ລະຫັດຜ່ານປັດຈຸບັນ</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="pCurrentPw" type="password" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="field-toggle" data-toggle-for="pCurrentPw" aria-label="ສະແດງລະຫັດຜ່ານ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <div class="field" id="pNewPwField">
+          <label for="pNewPw">ລະຫັດຜ່ານໃໝ່</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="pNewPw" type="password" placeholder="••••••••" autocomplete="new-password">
+            <button type="button" class="field-toggle" data-toggle-for="pNewPw" aria-label="ສະແດງລະຫັດຜ່ານ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <div class="field" id="pNewPw2Field">
+          <label for="pNewPw2">ຢືນຢັນລະຫັດຜ່ານໃໝ່</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="pNewPw2" type="password" placeholder="••••••••" autocomplete="new-password">
+            <button type="button" class="field-toggle" data-toggle-for="pNewPw2" aria-label="ສະແດງລະຫັດຜ່ານ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <button type="submit" class="btn-block btn-submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          ບັນທຶກລະຫັດຜ່ານ
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script src="script.js"></script>
+<script src="profile.js"></script>
+</body>
+</html>

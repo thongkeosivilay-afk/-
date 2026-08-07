@@ -78,10 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ---------- 4) Discord buttons ---------- */
+  // ถ้า URL หน้านี้มี ?next=/xxx.html (เช่น มาจากหน้าโปรไฟล์ที่ยังไม่ login) ให้พาไปที่นั่นต่อหลัง login สำเร็จ
+  const nextParam = new URLSearchParams(window.location.search).get('next');
   document.querySelectorAll('.btn-discord').forEach((btn) => {
     btn.addEventListener('click', () => {
-      // TODO: ຢືນຢັນວ່າ worker/src/index.js ຂອງທ່ານມີເສັ້ນທາງນີ້ deploy ຢູ່ແລ້ວ
-      window.location.href = '/auth/discord/login';
+      const url = '/auth/discord/login' + (nextParam ? `?next=${encodeURIComponent(nextParam)}` : '');
+      window.location.href = url;
     });
   });
 
@@ -118,12 +120,24 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'ກຳລັງເຂົ້າສູ່ລະບົບ...';
 
-      // TODO: ປ່ຽນສ່ວນນີ້ໃຫ້ຍິງ fetch('/api/login', {method:'POST', body: JSON.stringify({email, password: pw})})
-      setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        showToast('ຟອມນີ້ຍັງບໍ່ໄດ້ຕໍ່ກັບລະບົບຈິງ — ກະລຸນາຕໍ່ API ຂອງທ່ານ', true);
-      }, 900);
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password: pw }),
+      })
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ');
+          const next = new URLSearchParams(window.location.search).get('next') || '/';
+          window.location.href = next;
+        })
+        .catch((err) => {
+          showToast(err.message || 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ', true);
+        })
+        .finally(() => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        });
     });
   }
 
@@ -168,12 +182,24 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'ກຳລັງສ້າງບັນຊີ...';
 
-      // TODO: ປ່ຽນສ່ວນນີ້ໃຫ້ຍິງ fetch('/api/signup', {method:'POST', body: JSON.stringify({username, email, password: pw})})
-      setTimeout(() => {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        showToast('ຟອມນີ້ຍັງບໍ່ໄດ້ຕໍ່ກັບລະບົບຈິງ — ກະລຸນາຕໍ່ API ຂອງທ່ານ', true);
-      }, 900);
+      fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, password: pw }),
+      })
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ');
+          const next = new URLSearchParams(window.location.search).get('next') || '/';
+          window.location.href = next;
+        })
+        .catch((err) => {
+          showToast(err.message || 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ', true);
+        })
+        .finally(() => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalText;
+        });
     });
   }
 

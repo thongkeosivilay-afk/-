@@ -835,3 +835,181 @@
   .topup-waiting-info .row b{ color:var(--text); font-weight:700; }
   .topup-waiting-info .row.status b{ color:var(--red-glow); }
 
+
+  /* =========================================================
+     Profile modal (pm-*) — ป๊อปอัพโปรไฟล์ (เด้งขึ้นทับหน้าปัจจุบัน แทนการเปลี่ยนหน้า)
+     ใช้ตัวแปรสี/ฟอนต์เดียวกับด้านบน ให้ตรงกับธีมเว็บทั้งหมด
+     ========================================================= */
+  .pm-overlay{
+    position:fixed; inset:0; z-index:200;
+    background:rgba(0,0,0,.72);
+    backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:78px 14px 24px;
+    overflow-y:auto;
+    opacity:0; pointer-events:none;
+    transition:opacity .18s ease;
+  }
+  .pm-overlay.show{ opacity:1; pointer-events:auto; }
+
+  .pm-modal{
+    position:relative;
+    width:100%; max-width:420px;
+    background:var(--bg);
+    border:1px solid var(--card-border);
+    border-radius:22px;
+    padding:16px 16px 22px;
+    transform:translateY(14px) scale(.98);
+    transition:transform .2s ease;
+    box-shadow:0 24px 60px rgba(0,0,0,.55);
+  }
+  .pm-overlay.show .pm-modal{ transform:translateY(0) scale(1); }
+
+  .pm-close{
+    position:absolute; top:14px; right:14px; z-index:2;
+    width:30px; height:30px; border-radius:50%;
+    background:var(--bg-raise); border:1px solid var(--card-border);
+    color:var(--text-dim); font-size:18px; line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .pm-loading{ text-align:center; color:var(--text-faint); font-size:13px; padding:60px 20px; }
+  .pm-content{ display:none; }
+  .pm-content.ready{ display:block; }
+
+  /* ---------- Head card: avatar + name/email/badge (row) + stats ---------- */
+  .pm-headcard{ padding:20px 16px 16px; }
+  .pm-head-row{ display:flex; align-items:center; gap:14px; margin-bottom:18px; }
+
+  .pm-avatar-wrap{ position:relative; flex-shrink:0; }
+  .pm-avatar{
+    width:74px; height:74px; border-radius:50%;
+    background:conic-gradient(from 220deg,var(--red-deep),#3a0c14,var(--gold),var(--red-deep));
+    padding:3px;
+  }
+  .pm-avatar img, .pm-avatar .pm-avatar-fallback{
+    width:100%; height:100%; border-radius:50%; object-fit:cover; display:block;
+    background:var(--bg-raise);
+  }
+  .pm-avatar .pm-avatar-fallback{
+    display:flex; align-items:center; justify-content:center;
+    font-size:24px; font-weight:800; color:var(--text);
+  }
+  .pm-avatar-edit{
+    position:absolute; right:-2px; bottom:-2px;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--red); border:2px solid var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    color:#fff;
+  }
+  .pm-avatar-edit svg{ width:12px; height:12px; }
+
+  .pm-head-info{ min-width:0; flex:1; }
+  .pm-username{ font-size:18px; font-weight:800; word-break:break-word; }
+  .pm-email{ font-size:12.5px; color:var(--text-dim); margin-top:2px; word-break:break-all; }
+  .pm-badge{
+    margin-top:8px;
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:11px; font-weight:800; letter-spacing:.3px;
+    padding:4px 10px; border-radius:999px;
+    border:1px solid rgba(232,48,47,.45); background:rgba(232,48,47,.1); color:var(--red-glow);
+  }
+  .pm-badge.is-admin{ border-color:rgba(232,179,74,.45); background:rgba(232,179,74,.1); color:var(--gold); }
+  .pm-badge svg{ width:12px; height:12px; }
+
+  .pm-stats{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:6px;
+    border-top:1px solid var(--card-border); padding-top:16px;
+  }
+  .pm-stat{ text-align:center; padding:0 2px; }
+  .pm-stat-value{ font-size:14.5px; font-weight:800; color:var(--red-glow); }
+  .pm-stat-label{ font-size:10px; color:var(--text-faint); margin-top:4px; }
+
+  /* ---------- Section cards ---------- */
+  .pm-card{
+    background:var(--card); border:1px solid var(--card-border); border-radius:16px;
+    padding:18px; margin-top:14px;
+  }
+  .pm-card-title{
+    display:flex; align-items:center; gap:9px;
+    font-size:14px; font-weight:800; margin-bottom:14px;
+  }
+  .pm-card-title-icon{
+    width:28px; height:28px; border-radius:9px; flex-shrink:0;
+    background:rgba(232,48,47,.12); color:var(--red-glow);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .pm-card-title-icon svg{ width:15px; height:15px; }
+
+  .pm-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:11px 0; border-bottom:1px solid var(--card-border);
+  }
+  .pm-row:last-child{ border-bottom:none; padding-bottom:0; }
+  .pm-row:first-child{ padding-top:0; }
+  .pm-row-label{ font-size:12.5px; color:var(--text-faint); flex-shrink:0; }
+  .pm-row-value{ font-size:13.5px; color:var(--text); font-weight:600; text-align:right; word-break:break-word; }
+
+  .pm-discord-chip{ display:inline-flex; align-items:center; gap:7px; }
+  .pm-discord-chip img{ width:20px; height:20px; border-radius:50%; object-fit:cover; }
+  .pm-discord-chip span{ font-size:13px; font-weight:700; color:#8f97ff; }
+  .pm-discord-actions{ display:flex; align-items:center; gap:8px; }
+  .pm-unlink-btn{
+    font-size:11.5px; font-weight:700; color:var(--red-glow);
+    background:transparent; border:1px solid rgba(232,48,47,.5); border-radius:999px;
+    padding:6px 12px;
+  }
+  .pm-unlink-btn:disabled{ opacity:.55; }
+  .pm-connect-btn{
+    font-size:12px; font-weight:700; color:#fff;
+    background:linear-gradient(150deg,#6a72f5,#5865f2);
+    padding:7px 12px; border-radius:9px; border:none;
+  }
+
+  .pm-note{ font-size:11.5px; color:var(--text-faint); line-height:1.6; margin-top:2px; margin-bottom:14px; }
+
+  /* ---------- Change-password form (self-contained, no auth.css needed) ---------- */
+  .pm-form .field{ margin-bottom:12px; }
+  .pm-form label{ display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600; }
+  .pm-form .field-input{
+    display:flex; align-items:center; gap:8px;
+    background:var(--bg-raise); border:1px solid var(--card-border); border-radius:12px;
+    padding:0 12px; height:44px;
+  }
+  .pm-form .field-input svg{ width:16px; height:16px; color:var(--text-faint); flex-shrink:0; }
+  .pm-form .field-input input{
+    flex:1; min-width:0; background:none; border:none; outline:none;
+    color:var(--text); font-size:13.5px; font-family:inherit; height:100%;
+  }
+  .pm-form .field-toggle{ background:none; border:none; color:var(--text-faint); display:flex; }
+  .pm-form .field-toggle svg{ width:16px; height:16px; }
+  .pm-form .field-toggle.is-visible{ color:var(--red-glow); }
+  .pm-form .field.has-error .field-input{ border-color:var(--red); }
+  .pm-form .field-error{ font-size:11px; color:var(--red-glow); margin-top:5px; min-height:14px; }
+  .pm-form .btn-block{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:linear-gradient(150deg,var(--red-glow),var(--red-deep));
+    color:#fff; font-size:13.5px; font-weight:800; border:none; border-radius:12px;
+    height:46px; margin-top:4px;
+  }
+  .pm-form .btn-block:disabled{ opacity:.6; }
+
+  /* ---------- Shared toast (self-contained copy for pages without auth.css) ---------- */
+  .pm-toast{
+    position:fixed; left:50%; bottom:26px; transform:translate(-50%, 12px);
+    z-index:300; display:flex; align-items:center; gap:8px;
+    background:#141014; border:1px solid var(--card-border); border-radius:12px;
+    padding:12px 16px; font-size:12.5px; font-weight:600; color:var(--text);
+    box-shadow:0 12px 30px rgba(0,0,0,.5);
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+    max-width:calc(100% - 32px);
+  }
+  .pm-toast.show{ opacity:1; transform:translate(-50%, 0); }
+  .pm-toast.error{ border-color:rgba(232,48,47,.5); }
+  .pm-toast svg{ width:16px; height:16px; color:var(--gold); flex-shrink:0; }
+  .pm-toast.error svg{ color:var(--red-glow); }
+
+  @media (max-width:360px){
+    .pm-stats{ gap:2px; }
+    .pm-avatar{ width:64px; height:64px; }
+  }
