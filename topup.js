@@ -36,9 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const waitAmountEl = document.querySelector('#topupWaitAmount');
 
   const BANKS = {
-    1: { name: 'ທະນາຄານ ພັດທະນາລາວ' },
-    2: { name: 'ທະນາຄານ ການຄ້າຕ່າງປະເທດ' },
+    1: { name: 'ບັນຊີທະນາຄານ 1' },
+    2: { name: 'ບັນຊີທະນາຄານ 2' },
   };
+  const QR_IMAGES = { 1: null, 2: null };
 
   let selectedBank = 1;
   let selectedAmount = 0;
@@ -53,6 +54,41 @@ document.addEventListener('DOMContentLoaded', () => {
     const b = BANKS[selectedBank];
     bankTitle.textContent = `ໂອນ QR ${b.name}`;
     bankDesc.textContent = `ສະແກນ QR ຮັບເງິນຂອງຮ້ານ (${b.name}) ຜ່ານແອັບທະນາຄານ ແລ້ວອັບໂຫຼດສະລິບເພື່ອລໍຖ້າແອດມິນກວດສອບ`;
+  }
+
+  // ---- ดึงข้อความกำกับ QR + รูป QR จริงที่แอดมินตั้งไว้ (ตั้งค่าร้าน > QR โอนเงิน) ----
+  // ก่อนหน้านี้หน้านี้เป็นข้อความคงที่ ไม่ได้ต่อกับข้อมูลจริงเลย จึงแก้ในแอดมินแล้วไม่มีอะไรเปลี่ยน
+  async function loadRealQrSettings() {
+    if (!window.StorefrontData) return;
+    try {
+      const data = await window.StorefrontData.fetchData();
+      const store = data.store || {};
+
+      BANKS[1].name = store.qrLabel1 || 'ບັນຊີທະນາຄານ 1';
+      QR_IMAGES[1] = store.qrUrl1 || null;
+
+      const method2Btn = document.querySelector('#topupMethod2');
+      const name2El = document.querySelector('#topupMethodName2');
+      // ตามที่ระบุในห้องแอดมิน: ถ้าไม่ได้ใส่รูป QR อันที่ 2 ไว้ ให้โชว์แต่ QR อันที่ 1 เหมือนเดิม
+      if (store.qrUrl2) {
+        BANKS[2].name = store.qrLabel2 || 'ບັນຊີທະນາຄານ 2';
+        QR_IMAGES[2] = store.qrUrl2;
+        if (name2El) name2El.textContent = BANKS[2].name;
+        if (method2Btn) method2Btn.style.display = '';
+      } else if (method2Btn) {
+        method2Btn.style.display = 'none';
+      }
+
+      const name1El = document.querySelector('#topupMethodName1');
+      if (name1El) name1El.textContent = BANKS[1].name;
+
+      updateBankText();
+    } catch (err) {
+      console.error('ດຶງຂໍ້ມູນ QR ຈິງບໍ່ສຳເລັດ', err);
+      const name1El = document.querySelector('#topupMethodName1');
+      if (name1El) name1El.textContent = BANKS[1].name;
+      updateBankText();
+    }
   }
 
   methods.forEach((btn) => {
@@ -105,10 +141,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       payAmountEl.textContent = formatKip(selectedAmount);
-      if (qrImageUrl) {
+      const realQrUrl = QR_IMAGES[selectedBank];
+      if (realQrUrl) {
+        qrBox.innerHTML = `<img src="${realQrUrl}" alt="QR ຮັບເງິນ">`;
+      } else if (qrImageUrl) {
         qrBox.innerHTML = `<img src="${qrImageUrl}" alt="QR ຮັບເງິນ">`;
       } else {
-        qrBox.textContent = `[ QR ຮັບເງິນ ${BANKS[selectedBank].name} ]`;
+        qrBox.textContent = `[ ຍັງບໍ່ໄດ້ຕັ້ງຮູບ QR — ໄປໃສ່ໃນຫ້ອງແອດມິນ > ຕັ້ງຄ່າຮ້ານ > QR ໂອນເງິນ ]`;
       }
 
       stepAmount.style.display = 'none';
@@ -118,7 +157,10 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error('ສ້າງ QR ບໍ່ສຳເລັດ', err);
       currentTopupId = 'LOCAL-' + Date.now().toString(36).toUpperCase();
       payAmountEl.textContent = formatKip(selectedAmount);
-      qrBox.textContent = `[ QR ຮັບເງິນ ${BANKS[selectedBank].name} ]`;
+      const fallbackQrUrl = QR_IMAGES[selectedBank];
+      qrBox.innerHTML = fallbackQrUrl
+        ? `<img src="${fallbackQrUrl}" alt="QR ຮັບເງິນ">`
+        : `[ ຍັງບໍ່ໄດ້ຕັ້ງຮູບ QR — ໄປໃສ່ໃນຫ້ອງແອດມິນ > ຕັ້ງຄ່າຮ້ານ > QR ໂອນເງິນ ]`;
       stepAmount.style.display = 'none';
       stepPay.style.display = '';
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -180,6 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ---- ตั้งค่าเริ่มต้น ----
-  updateBankText();
+  // ---- ตั้งค่าเริ่มต้น: ดึงชื่อธนาคาร/รูป QR จริงจากแอดมินมาแสดง ----
+  loadRealQrSettings();
 });

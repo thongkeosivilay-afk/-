@@ -1309,6 +1309,29 @@ async function initAdminPanel() {
   const backBtn = document.getElementById('backBtn');
   if (backBtn) backBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
 
+  // ---- accordion (.switch หัวข้อ <-> #panelXxx กล่องเนื้อหา) ----
+  // ก่อนหน้านี้กดหัวข้อไม่มี JS คุมเลย ทำให้ .panel-content ทุกกล่องโชว์รวมกันหมด
+  // ตอนนี้คุมให้เปิดได้ทีละกล่อง กดหัวข้ออื่นจะปิดกล่องเดิมแล้วเปิดกล่องที่กด
+  const accSwitches = document.querySelectorAll('.switch[data-target]');
+  const accPanels = document.querySelectorAll('.panel-content');
+
+  function openAccordion(targetId) {
+    accSwitches.forEach((sw) => sw.classList.toggle('open', sw.dataset.target === targetId));
+    accPanels.forEach((p) => p.classList.toggle('open', p.id === targetId));
+  }
+
+  accSwitches.forEach((sw) => {
+    sw.addEventListener('click', () => {
+      const targetId = sw.dataset.target;
+      const alreadyOpen = sw.classList.contains('open');
+      openAccordion(alreadyOpen ? null : targetId);
+    });
+  });
+
+  // เปิดกล่องแรกที่ถูกตั้งเป็น .switch.open ไว้ใน HTML ตั้งแต่ต้น (panelAdd)
+  const initialOpen = document.querySelector('.switch.open[data-target]');
+  if (initialOpen) openAccordion(initialOpen.dataset.target);
+
   // ---- tabs (ເລື່ອນຊ້າຍ-ຂວາໄດ້, ຮອງຮັບຈຳນວນແທັບບໍ່ຈຳກັດ) ----
   const tabs = document.querySelectorAll('.gx-tab3');
   const tabsWrap = document.querySelector('.gx-tabs3');
@@ -1614,7 +1637,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (deniedLogoutBtn) deniedLogoutBtn.addEventListener('click', logout);
 
   const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) logoutBtn.addEventListener('click', logout);
+  if (logoutBtn) logoutBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
 
   checkAuthAndInit();
 });

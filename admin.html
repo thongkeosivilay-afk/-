@@ -205,6 +205,10 @@
   }
   .switch-placeholder svg{ width:18px;height:18px;stroke:var(--gx-violet); flex-shrink:0; }
 
+  /* ===== accordion content boxes (ຢູ່ນອກ .switch, ຄຸມແຍກຕາມ id ດ້ວຍ JS) ===== */
+  .panel-content{ display:none; }
+  .panel-content.open{ display:block; }
+
   /* ===== static card (no rotating border, for content-heavy panels) ===== */
   .stat-panel{
     border-radius:22px;
@@ -651,7 +655,7 @@
 <div class="wrap" id="adminApp" style="display:none;">
 
   <div class="back-row">
-    <button class="icon-btn" id="logoutBtn" title="ອອກຈາກລະບົບ" style="width:40px;height:40px;">
+    <button class="icon-btn" id="logoutBtn" title="ກັບໄປໜ້າເວັບ" style="width:40px;height:40px;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
     </button>
     <h1 class="page-title">ຫ້ອງຄວບຄຸມແອດມິນ</h1>
