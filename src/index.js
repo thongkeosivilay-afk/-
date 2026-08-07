@@ -219,13 +219,32 @@ async function handleLogout() {
 }
 
 /* ---------- 4) /api/me ----------
-   หน้าเว็บเรียก endpoint นี้ตอนโหลด เพื่อเช็คว่า login ค้างอยู่ไหม */
+   หน้าเว็บเรียก endpoint นี้ตอนโหลด เพื่อเช็คว่า login ค้างอยู่ไหม
+   ก่อนหน้านี้ user object ที่คืนกลับไปมาจาก session อย่างเดียว ไม่เคยมีฟิลด์
+   "balance" เลย (เมนู dropdown/หน้าโปรไฟล์ที่อ่าน user.balance เลยเห็นเป็น 0
+   ตลอด ต่อให้แอดมินกด "ยืนยัน" เติมเงินแล้ว wallets ในฐานข้อมูลบวกเพิ่มจริงก็ตาม)
+   ตอนนี้ดึงยอดจริงจากตาราง wallets มาแนบให้ทุกครั้งที่เรียก */
 async function handleMe(request, env) {
-  const user = await getSessionUser(request, env);
-  if (!user) {
+  const sessionUser = await getSessionUser(request, env);
+  if (!sessionUser) {
     return json({ loggedIn: false });
   }
-  return json({ loggedIn: true, user });
+
+  let balance = 0;
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const rows = await supabaseSelect(env, 'wallets', {
+        select: 'balance',
+        user_id: `eq.${sessionUser.id}`,
+        limit: '1',
+      });
+      balance = (rows && rows[0] && Number(rows[0].balance)) || 0;
+    } catch (err) {
+      console.error('handleMe: ดึงຍອດເງິນຈາກ wallets ບໍ່ສຳເລັດ', err);
+    }
+  }
+
+  return json({ loggedIn: true, user: { ...sessionUser, balance } });
 }
 
 /* ---------- helper: อ่าน session cookie -> ผู้ใช้ปัจจุบัน (หรือ null) ---------- */
