@@ -201,17 +201,13 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!loginBtn) return;
 
       if (data.loggedIn) {
-        // ยอดเงิน (wallet balance): ยังไม่มี endpoint จริงในโปรเจกต์นี้
-        // ถ้ามี /api/wallet/balance ในอนาคต ให้ดึงค่าจริงมาแทน 0 ตรงนี้
-        // TODO: เชื่อม endpoint ยอดเงินจริงเมื่อ backend พร้อม
-        let balance = 0;
-        try {
-          const balRes = await fetch('/api/wallet/balance', { cache: 'no-store' });
-          if (balRes.ok) {
-            const balData = await balRes.json();
-            balance = balData.balance || 0;
-          }
-        } catch (e) { /* ยังไม่มี endpoint นี้ — ใช้ 0 ไปก่อน */ }
+        // ยอดเงิน (wallet balance): /api/me คืนค่ายอดเงินจริงมาให้อยู่แล้ว (ดึงจาก
+        // Supabase ฝั่ง Worker ที่ src/index.js) เดิมโค้ดตรงนี้ไปยิง
+        // /api/wallet/balance ซ้ำ ซึ่ง endpoint นั้นไม่มีอยู่จริงในโปรเจกต์เลย
+        // (ไม่มี route นี้ใน src/index.js) fetch จึงล้มเหลว/404 เงียบๆ แล้ว fallback
+        // เป็น 0 เสมอ ทำให้ยอดเงินในเมนู dropdown ค้างที่ 0 ตลอด ต่อให้แอดมิน
+        // อนุมัติการเติมเงินไปแล้วก็ตาม -> ตอนนี้ใช้ค่าจาก data.user.balance ตรงๆ
+        const balance = data.user.balance || 0;
 
         renderAccountMenu(loginBtn, {
           username: data.user.username,
