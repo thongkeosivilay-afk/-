@@ -8,6 +8,9 @@
      GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user (รวมสถานะ isAdmin)
      ALL  /api/admin/supabase/*   -> proxy ไป Supabase จริง ด้วย service_role key (ดูรายละเอียดด้านล่าง)
      GET  /api/public/storefront  -> ข้อมูลหน้าร้านสาธารณะ (หมวดหมู่/สินค้า/สต็อกจริง) ดูรายละเอียดด้านล่าง
+     POST /api/topup/create       -> ลูกค้า (ต้อง login) เริ่มรายการเติมเงิน คืน topupId ชั่วคราว
+     POST /api/topup/confirm      -> ลูกค้าอัพโหลดสลิป -> เก็บขึ้น storage + insert แถวจริงใน
+                                      topup_requests (status: pending) ให้ห้องแอดมินเห็น/อนุมัติได้
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
 
    ---- ระบบแอดมิน ----
@@ -64,6 +67,12 @@ export default {
     }
     if (url.pathname === '/api/public/storefront') {
       return handlePublicStorefront(request, env);
+    }
+    if (url.pathname === '/api/topup/create') {
+      return handleTopupCreate(request, env);
+    }
+    if (url.pathname === '/api/topup/confirm') {
+      return handleTopupConfirm(request, env);
     }
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
@@ -408,6 +417,97 @@ async function handlePublicStorefront(request, env) {
   }
 }
 
+/* ---------- 7) POST /api/topup/create ----------
+   ลูกค้ากดสร้างรายการเติมเงิน (ยังไม่มีสลิป) — ก่อนหน้านี้ path นี้ไม่มีอยู่จริงเลย
+   (fetch ไปแล้วโดน env.ASSETS ตอบ 404 กลับมา) topup.js เลยเงียบๆ fallback ไปสร้าง
+   topupId ปลอมฝั่ง browser เอง ไม่มีอะไรถูกบันทึกจริง — ตอนนี้เช็ค login จริง + คืน
+   topupId จริงให้ (แถวจริงใน topup_requests จะถูกสร้างตอน /api/topup/confirm พร้อม
+   สลิปเลย ไม่ใช่ตอนนี้ เพราะขั้นนี้ยังไม่มีสลิปให้แอดมินตรวจ) */
+async function handleTopupCreate(request, env) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນເຕີມເງິນ', requireLogin: true }, 401);
+  }
+
+  let body = {};
+  try { body = await request.json(); } catch { /* ignore, amount จะเป็น 0 แล้วโดน validate ด้านล่าง */ }
+
+  const amount = Number(body.amount) || 0;
+  if (amount < 1000) {
+    return json({ error: 'ຈຳນວນເງິນຕ້ອງບໍ່ຕ່ຳກວ່າ 1,000 ກີບ' }, 400);
+  }
+
+  return json({ topupId: crypto.randomUUID() });
+}
+
+/* ---------- 8) POST /api/topup/confirm ----------
+   ลูกค้าอัพโหลดสลิปตอนกดยืนยันการโอน — จุดนี้คือสาเหตุที่ห้องแอดมินไม่เคยมีรายการ
+   ขึ้นมาให้อนุมัติ/ปฏิเสธเลย: เดิม endpoint นี้ไม่มีอยู่จริง fetch จึงล้มเหลวเงียบๆ
+   (.catch(() => null)) แล้ว topup.js ก็พาไปหน้า "รอตรวจสอบ" อยู่ดีโดยไม่สนผลลัพธ์
+   ทำให้ลูกค้าเข้าใจว่าส่งสำเร็จ ทั้งที่ไม่มีอะไรถูกบันทึกลง Supabase เลยสักแถว
+   ตอนนี้: อัพโหลดสลิปขึ้น storage bucket "topup-slips" (public) แล้ว insert แถวจริง
+   เข้า topup_requests (status: pending) ด้วย service_role key ฝั่ง Worker เท่านั้น
+   (key ไม่เคยหลุดมาถึง browser) ให้ห้องแอดมินอ่านเจอทันทีที่กด "ໂຫຼດຄືນໃໝ່" */
+async function handleTopupConfirm(request, env) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນເຕີມເງິນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (ເບິ່ງ wrangler.toml + wrangler secret)' },
+      500
+    );
+  }
+
+  let form;
+  try {
+    form = await request.formData();
+  } catch (err) {
+    return json({ error: 'ອ່ານຟອມທີ່ສົ່ງມາບໍ່ສຳເລັດ' }, 400);
+  }
+
+  const amount = Number(form.get('amount')) || 0;
+  const bank = form.get('bank') != null ? String(form.get('bank')) : null;
+  const slip = form.get('slip');
+
+  if (amount < 1000) {
+    return json({ error: 'ຈຳນວນເງິນຕ້ອງບໍ່ຕ່ຳກວ່າ 1,000 ກີບ' }, 400);
+  }
+  if (!(slip instanceof File) || slip.size === 0) {
+    return json({ error: 'ກະລຸນາອັບໂຫຼດຮູບສະລິບກ່ອນ' }, 400);
+  }
+
+  try {
+    const extMatch = /\.([a-zA-Z0-9]{1,8})$/.exec(slip.name || '');
+    const ext = extMatch ? extMatch[1] : 'jpg';
+    const objectPath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+
+    const slipUrl = await uploadToSupabaseStorage(env, 'topup-slips', objectPath, slip);
+
+    // ໝາຍເຫດ: ບໍ່ໃສ່ຄໍລໍາ "bank" ໃນນີ້ ເພາະຕາຕະລາງ topup_requests ທີ່ໃຊ້ຢູ່ (ອ້າງອີງ
+    // ຈາກ admin.js) ບໍ່ໄດ້ອ່ານ/ໂຊວ໌ຄ່ານີ້ຢູ່ແລ້ວ — ຖ້າ column ບໍ່ມີໃນ Supabase ຈິງ ການ
+    // insert ຈະ error ທັງແຖວ. ຖ້າຢາກເກັບ bank ໄວ້ນຳ ໃຫ້ເພີ່ມຄໍລໍານີ້ໃນ Supabase ກ່ອນ
+    // ແລ້ວຄ່ອຍໃສ່ "bank" ກັບຄືນເຂົ້າ object ດ້ານລຸ່ມນີ້
+    const rows = await supabaseInsert(env, 'topup_requests', {
+      user_id: user.id,
+      user_email: user.email || null,
+      amount,
+      slip_url: slipUrl,
+      status: 'pending',
+    });
+
+    return json({ ok: true, id: (rows && rows[0] && rows[0].id) || null });
+  } catch (err) {
+    console.error('handleTopupConfirm failed:', err);
+    return json({ error: 'ບັນທຶກລາຍການເຕີມເງິນບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+  }
+}
+
 /* ---------- helper: ຍິງ SELECT ໄປ Supabase REST ດ້ວຍ service_role key (ຝັ່ງ Worker ເທົ່ານັ້ນ) ---------- */
 async function supabaseSelect(env, table, params) {
   const url = new URL(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}`);
@@ -445,4 +545,46 @@ async function supabaseRpc(env, fnName, args) {
     return null;
   }
   return res.json();
+}
+
+/* ---------- helper: ยิง INSERT ไป Supabase REST ด้วย service_role key (ฝั่ง Worker เท่านั้น) ---------- */
+async function supabaseInsert(env, table, row) {
+  const url = `${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+      prefer: 'return=representation',
+    },
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase insert "${table}" failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
+/* ---------- helper: อัพโหลดไฟล์ขึ้น Supabase storage bucket ด้วย service_role key
+   (เหมือนที่ upload รูปสินค้า/QR ทำผ่าน supabase-js ฝั่งแอดมิน แต่จุดนี้ฝั่งลูกค้าไม่มี
+   session แอดมิน จึงอัพโหลดผ่าน Worker ตรงนี้แทน ด้วย key ที่อยู่ฝั่ง Worker เท่านั้น) ---------- */
+async function uploadToSupabaseStorage(env, bucket, path, file) {
+  const url = `${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/${bucket}/${path}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': file.type || 'application/octet-stream',
+      'x-upsert': 'true',
+    },
+    body: file,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase storage upload to "${bucket}" failed (${res.status}): ${text}`);
+  }
+  return `${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/${bucket}/${path}`;
 }
