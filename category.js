@@ -34,8 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showEmpty(message) {
+    // ໝາຍເຫດ: ບໍ່ເຊື່ອງ .search-box ອີກຕໍ່ໄປ (ບໍ່ວ່າຈະໂຫຼດຍັງບໍ່ສຳເລັດ ຫຼື ໝວດນີ້
+    // ຍັງບໍ່ມີສິນຄ້າ) — ໃຫ້ box + icon ຄົ້ນຫາຄົງຢູ່ໜ້າຈໍສະເໝີ ບໍ່ຫາຍ/ບໍ່ກະພິບ
     if (grid) grid.innerHTML = '';
-    if (searchBox) searchBox.style.display = 'none';
     if (emptyEl) {
       emptyEl.style.display = 'flex';
       const p = emptyEl.querySelector('p');
@@ -132,8 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
         || { index: catIndex, name: `ໝວດໝູ່ ${catIndex}` };
 
       const { name } = window.StorefrontData.applyStoreBranding(data.store);
-      if (titleEl) titleEl.textContent = category.name;
-      if (descEl) descEl.textContent = (category.desc && String(category.desc).trim()) || SLOT_DESC[catIndex] || '';
+      if (titleEl) { titleEl.textContent = category.name; titleEl.classList.remove('is-loading'); }
+      if (descEl) {
+        descEl.textContent = (category.desc && String(category.desc).trim()) || SLOT_DESC[catIndex] || '';
+        descEl.classList.remove('is-loading');
+      }
       document.title = `${category.name} — ${name}`;
 
       const products = window.StorefrontData.productsByCategoryName(data, category.name);
@@ -145,13 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
       grid.innerHTML = products.map(cardHTML).join('');
       if (emptyEl) emptyEl.style.display = 'none';
-      if (searchBox) searchBox.style.display = '';
 
       wireBuyButtons();
       wireSearch(products);
     })
     .catch(() => {
-      if (titleEl) titleEl.textContent = 'ໝວດໝູ່ສິນຄ້າ';
+      if (titleEl) { titleEl.textContent = 'ໝວດໝູ່ສິນຄ້າ'; titleEl.classList.remove('is-loading'); }
+      if (descEl) descEl.classList.remove('is-loading');
       showEmpty('ດຶງຂໍ້ມູນສິນຄ້າບໍ່ສຳເລັດ<br>ກະລຸນາໂຫຼດໜ້ານີ້ໃໝ່ພາຍຫຼັງ');
     });
 });

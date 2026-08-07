@@ -20,7 +20,10 @@
   // ໃສ່ force = true ເພື່ອບັງຄັບດຶງໃໝ່ (ເຊັ່ນ ຫຼັງ retry)
   function fetchData(force) {
     if (!cachedPromise || force) {
-      cachedPromise = fetch(ENDPOINT, { headers: { Accept: 'application/json' } })
+      // cache: 'no-store' — บังคับให้ browser ไปดึงข้อมูลจาก network จริงทุกครั้ง
+      // ห้ามใช้ response เก่าที่ browser เคย cache ไว้ (สาเหตุที่ข้อมูลเก่าเคยโผล่มา
+      // แวบหนึ่งตอนรีเฟรชหน้าเว็บ ก่อนจะถูกแทนที่ด้วยข้อมูลจริง)
+      cachedPromise = fetch(ENDPOINT, { headers: { Accept: 'application/json' }, cache: 'no-store' })
         .then((res) => {
           if (!res.ok) throw new Error(`storefront endpoint responded ${res.status}`);
           return res.json();
