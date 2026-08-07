@@ -11,6 +11,8 @@
      POST /api/topup/create       -> ลูกค้า (ต้อง login) เริ่มรายการเติมเงิน คืน topupId ชั่วคราว
      POST /api/topup/confirm      -> ลูกค้าอัพโหลดสลิป -> เก็บขึ้น storage + insert แถวจริงใน
                                       topup_requests (status: pending) ให้ห้องแอดมินเห็น/อนุมัติได้
+     GET  /api/topup/history      -> ลูกค้า (ต้อง login) ดึงประวัติการเติมเงินของตัวเองเท่านั้น
+                                      (topup-history.html)
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
 
    ---- ระบบแอดมิน ----
@@ -73,6 +75,9 @@ export default {
     }
     if (url.pathname === '/api/topup/confirm') {
       return handleTopupConfirm(request, env);
+    }
+    if (url.pathname === '/api/topup/history') {
+      return handleTopupHistory(request, env);
     }
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
@@ -524,6 +529,36 @@ async function handleTopupConfirm(request, env) {
   } catch (err) {
     console.error('handleTopupConfirm failed:', err);
     return json({ error: 'ບັນທຶກລາຍການເຕີມເງິນບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+  }
+}
+
+/* ---------- 9) GET /api/topup/history ----------
+   ໜ້າ "ປະຫວັດເຕີມເງິນ" (topup-history.html) ຮຽກຈຸດນີ້ ເພື່ອເອົາລາຍການເຕີມເງິນ
+   ຂອງລູກຄ້າຄົນທີ່ login ຢູ່ເທົ່ານັ້ນມາໂຊວ໌ — ໃຊ້ service_role key ຝັ່ງ Worker
+   ດຶງຈາກ topup_requests ແລ້ວກັ່ນຕອງດ້ວຍ user_id ຂອງ session ນີ້ຄືກັນ (ບໍ່ໄດ້ໃຫ້
+   ລູກຄ້າຮ້ອງ Supabase ຕົງໆເລີຍ ຄືກັນກັບຈຸດອື່ນໆໃນໄຟລ໌ນີ້) */
+async function handleTopupHistory(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+  }
+
+  try {
+    const rows = await supabaseSelect(env, 'topup_requests', {
+      select: 'id,amount,status,slip_url,created_at',
+      user_id: `eq.${user.id}`,
+      order: 'created_at.desc',
+      limit: '200',
+    });
+    return json({ ok: true, items: rows || [] });
+  } catch (err) {
+    console.error('handleTopupHistory failed:', err);
+    return json({ error: 'ດຶງປະຫວັດການເຕີມເງິນບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
   }
 }
 
