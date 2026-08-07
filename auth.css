@@ -7,15 +7,15 @@
 :root{
   --bg:#050505;
   --bg-raise:#0e0c0e;
-  --card:#0d0b0d;
-  --card-border:#241419;
-  --red:#e8302f;
-  --red-deep:#8f0f24;
-  --red-glow:#ff3b3b;
+  --card:#0a0a0a;
+  --card-border:#222222;
+  --red:#ff1118;
+  --red-deep:#b30d14;
+  --red-glow:#ff1118;
   --gold:#e8b34a;
-  --text:#f5f1f2;
-  --text-dim:#a99ba1;
-  --text-faint:#6e6169;
+  --text:#ffffff;
+  --text-dim:#999999;
+  --text-faint:#777777;
   --radius:16px;
   --discord:#5865f2;
 }
@@ -135,7 +135,7 @@ button, input{ font-family:inherit; }
 /* ---------- The glossy 3D card ---------- */
 .auth-card-wrap{ position:relative; z-index:2; width:100%; perspective:1000px; }
 .auth-card{
-  background:linear-gradient(165deg, rgba(20,14,16,.92), rgba(9,7,8,.95));
+  background:linear-gradient(165deg, rgba(16,16,16,.92), rgba(9,9,9,.95));
   border:1px solid var(--card-border);
   border-radius:20px;
   padding:26px 22px 24px;

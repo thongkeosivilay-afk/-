@@ -29,7 +29,7 @@
 
 .login-card{
   width:100%; max-width:340px;
-  background:linear-gradient(175deg,#1c0f12,#100909 55%);
+  background:linear-gradient(175deg,#101010,#0a0a0a 55%);
   border:1px solid rgba(255,70,70,.28);
   border-radius:var(--radius);
   padding:22px; display:flex; flex-direction:column; gap:14px;
@@ -46,8 +46,8 @@
 }
 .btn-block:active{ transform:scale(.97); }
 .btn-block.secondary{
-  background:linear-gradient(160deg,#2c1519,#190d10);
-  border:1px solid rgba(255,80,80,.3); box-shadow:none;
+  background:linear-gradient(160deg,#151515,#0a0a0a);
+  border:1px solid #222; box-shadow:none;
 }
 
 .login-error{
