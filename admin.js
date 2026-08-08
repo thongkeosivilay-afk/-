@@ -314,8 +314,11 @@ function getCurrentCategoryNames() {
   const names = [];
   for (let i = 1; i <= 4; i++) {
     const raw = currentSiteSettings && currentSiteSettings[`category_${i}_name`];
-    const name = (raw ? String(raw) : `ໝວດໝູ່ ${i}`).trim();
-    if (name) names.push(name);
+    const trimmed = raw ? String(raw).trim() : '';
+    // ສຳຄັນ: ຕ້ອງໃຊ້ fallback ທຸກຄັ້ງທີ່ຊື່ຫວ່າງ/ມີແຕ່ຊ່ອງວ່າງ ບໍ່ດັ່ງນັ້ນໝວດໝູ່ນັ້ນຈະ
+    // "ຫາຍໄປ" ຈາກລາຍການເລືອກຕອນເພີ່ມສິນຄ້າແບບງຽບໆ (ບັນຫາທີ່ເຄີຍພົບ)
+    const name = trimmed || `ໝວດໝູ່ ${i}`;
+    names.push(name);
   }
   return names;
 }
