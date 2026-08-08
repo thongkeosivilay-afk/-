@@ -6,6 +6,8 @@
      GET  /auth/discord/callback  -> Discord เด้งกลับมาที่นี่พร้อม ?code=
      GET  /auth/logout            -> ล้าง session cookie
      GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user (รวมสถานะ isAdmin)
+     POST /api/auth/signup        -> สมัครสมาชิกด้วยอีเมล/รหัสผ่าน (ผ่าน Supabase Auth Admin API)
+     POST /api/auth/login         -> ล็อกอินด้วยอีเมล/รหัสผ่าน (ผ่าน Supabase Auth token endpoint)
      ALL  /api/admin/supabase/*   -> proxy ไป Supabase จริง ด้วย service_role key (ดูรายละเอียดด้านล่าง)
      GET  /api/public/storefront  -> ข้อมูลหน้าร้านสาธารณะ (หมวดหมู่/สินค้า/สต็อกจริง) ดูรายละเอียดด้านล่าง
      POST /api/topup/create       -> ลูกค้า (ต้อง login) เริ่มรายการเติมเงิน คืน topupId ชั่วคราว
@@ -70,6 +72,12 @@ export default {
     }
     if (url.pathname === '/api/me') {
       return handleMe(request, env);
+    }
+    if (url.pathname === '/api/auth/signup' && request.method === 'POST') {
+      return handlePasswordSignup(request, env);
+    }
+    if (url.pathname === '/api/auth/login' && request.method === 'POST') {
+      return handlePasswordLogin(request, env);
     }
     if (url.pathname.startsWith(SUPABASE_PROXY_PREFIX + '/')) {
       return handleSupabaseProxy(request, env, url);
@@ -277,6 +285,146 @@ async function getSessionUser(request, env) {
   if (!raw) return null;
 
   return JSON.parse(raw);
+}
+
+/* ---------- 4.5) /api/auth/signup + /api/auth/login (ອີເມວ/ລະຫັດຜ່ານ) ----------
+   ໜ້າ signup.html / login.html (ຜ່ານ auth.js) ຍິງມາທີ່ path ພວກນີ້ຢູ່ແລ້ວ ແຕ່ເມື່ອກ່ອນ
+   Worker ບໍ່ມີ route ພວກນີ້ເລີຍ (ມີແຕ່ Discord OAuth) → request ຕົກໄປໃສ່ env.ASSETS.fetch()
+   ເຊິ່ງບໍ່ຮູ້ຈັກ path ນີ້ ແລ້ວຄືນ error ແປກໆ ("The string did not match the expected
+   pattern.") ອອກມາແທນ — ນີ້ຄືສາເຫດຕົວຈິງທີ່ສະໝັກ/ລ໋ອກອິນດ້ວຍອີເມວບໍ່ໄດ້
+   ຂ້າງລຸ່ມນີ້ໃຊ້ Supabase Auth Admin API ຝັ່ງ server ດ້ວຍ SUPABASE_SERVICE_ROLE_KEY
+   (ບໍ່ເຄີຍສົ່ງ key ອອກໄປຫາ browser) ເພື່ອສ້າງ/ກວດຜູ້ໃຊ້ ແລ້ວອອກ session cookie
+   ແບບດຽວກັນກັບ Discord login (ເກັບໃນ env.SESSIONS) ເພື່ອໃຫ້ /api/me, wallets,
+   topup, orders ໃຊ້ user id ດຽວກັນໄດ້ທັນທີ */
+
+async function handlePasswordSignup(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'ລະບົບຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase (SUPABASE_SERVICE_ROLE_KEY)' }, 500);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400);
+  }
+
+  const username = (body.username || '').trim();
+  const email = (body.email || '').trim().toLowerCase();
+  const password = body.password || '';
+
+  if (username.length < 3) return json({ error: 'ຊື່ຜູ້ໃຊ້ຕ້ອງມີຢ່າງໜ້ອຍ 3 ໂຕ' }, 400);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: 'ອີເມວບໍ່ຖືກຕ້ອງ' }, 400);
+  if (password.length < 6) return json({ error: 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ' }, 400);
+
+  // ---- ສ້າງຜູ້ໃຊ້ໃໝ່ຜ່ານ Supabase Auth Admin API (ຢືນຢັນອີເມວທັນທີ ບໍ່ຕ້ອງລໍ email link) ----
+  const createRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { username },
+    }),
+  });
+
+  const createData = await createRes.json().catch(() => ({}));
+
+  if (!createRes.ok) {
+    const msg = (createData && createData.msg) || (createData && createData.message) || '';
+    if (createRes.status === 422 || /already been registered|already exists/i.test(msg)) {
+      return json({ error: 'ອີເມວນີ້ຖືກສະໝັກໄປແລ້ວ' }, 400);
+    }
+    console.error('handlePasswordSignup: Supabase admin create user failed', createRes.status, createData);
+    return json({ error: 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+  }
+
+  const authUser = createData;
+  const sessionId = await createSession(env, {
+    id: authUser.id,
+    username,
+    email,
+    avatar: null,
+    isAdmin: false,
+    discordLinked: false,
+    createdAt: Date.now(),
+  });
+
+  return jsonWithSession({ ok: true }, sessionId);
+}
+
+async function handlePasswordLogin(request, env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'ລະບົບຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase (SUPABASE_SERVICE_ROLE_KEY)' }, 500);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400);
+  }
+
+  const email = (body.email || '').trim().toLowerCase();
+  const password = body.password || '';
+  if (!email || !password) return json({ error: 'ກະລຸນາໃສ່ອີເມວ ແລະ ລະຫັດຜ່ານ' }, 400);
+
+  // ---- ກວດອີເມວ/ລະຫັດຜ່ານຜ່ານ Supabase Auth token endpoint ----
+  const tokenRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const tokenData = await tokenRes.json().catch(() => ({}));
+
+  if (!tokenRes.ok) {
+    return json({ error: 'ອີເມວ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ' }, 400);
+  }
+
+  const authUser = tokenData.user || {};
+  const username =
+    (authUser.user_metadata && authUser.user_metadata.username) ||
+    (authUser.email || '').split('@')[0];
+
+  const sessionId = await createSession(env, {
+    id: authUser.id,
+    username,
+    email: authUser.email || email,
+    avatar: null,
+    isAdmin: false,
+    discordLinked: false,
+    createdAt: Date.now(),
+  });
+
+  return jsonWithSession({ ok: true }, sessionId);
+}
+
+/* ---------- helper: ສ້າງ session ໃໝ່ (KV + cookie) ໃຊ້ຮ່ວມກັນທັງ Discord ແລະ ອີເມວ/ລະຫັດຜ່ານ ---------- */
+async function createSession(env, sessionData) {
+  const sessionId = crypto.randomUUID();
+  await env.SESSIONS.put(sessionId, JSON.stringify(sessionData), {
+    expirationTtl: 60 * 60 * 24 * 7, // 7 ວັນ
+  });
+  return sessionId;
+}
+
+/* ---------- helper: ตอบ JSON พร้อมแปะ session cookie (ใช้กับ signup/login ด้วยอีเมล) ---------- */
+function jsonWithSession(data, sessionId) {
+  const res = json(data);
+  res.headers.append(
+    'Set-Cookie',
+    `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`
+  );
+  return res;
 }
 
 /* ---------- 5) /api/admin/supabase/* ----------
