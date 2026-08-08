@@ -135,8 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function priceHTML(product) {
     const price = window.StorefrontData.productDisplayPrice(product);
     if (price === null) return `<div class="prod-price todo">₭ 0</div>`;
-    const prefix = product.duration_enabled ? 'ເລີ່ມຕົ້ນ ' : '';
-    return `<div class="prod-price">${prefix}${window.StorefrontData.formatKip(price)}</div>`;
+    return `<div class="prod-price">${window.StorefrontData.formatKip(price)}</div>`;
   }
 
   function cardHTML(product) {
