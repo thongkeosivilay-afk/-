@@ -577,87 +577,127 @@
   .buy-btn:active{ transform:scale(.96); box-shadow:0 4px 12px -6px rgba(255,45,45,.5), inset 0 1px 0 rgba(255,255,255,.18); }
   .buy-btn:disabled{ background:rgba(255,255,255,.08); color:var(--text-faint); opacity:1; box-shadow:none; }
 
-  /* ---------- Product card: "ຢຸດຂາຍຊົ່ວຄາວ" / "ສິນຄ້າໝົດ" overlay ---------- */
-  .out-badge{
-    position:absolute; top:9px; left:9px; z-index:2;
-    background:rgba(10,7,7,.78); backdrop-filter:blur(4px);
-    border:1px solid rgba(255,255,255,.1); font-size:10px; font-weight:700;
-    padding:4px 9px; border-radius:999px; color:var(--text-dim);
+  /* ---------- Product card v4: ສະຖານະ "ປັບປຸງ / ລໍຖ້າອັບເດດ" (admin ປິດຂາຍເອງ) ---------- */
+  .prod-media.is-paused{
+    background:linear-gradient(165deg,#131313,#090909);
+    flex-direction:column; gap:8px; padding:18px 12px;
   }
-  .waiting-note{ order:3; font-size:11px; color:var(--gold); font-weight:600; margin-top:-4px; opacity:.9; }
-
-  .stock-fx{
-    position:absolute; inset:0; z-index:1; overflow:hidden;
-    display:flex; align-items:center; justify-content:center;
-    background:rgba(8,6,7,.74); backdrop-filter:blur(1.5px);
+  .prod-media.is-paused::before,
+  .prod-media.is-paused::after{ content:none; }
+  .paused-icon{
+    position:relative; width:46px; height:40px; color:var(--gold);
+    filter:drop-shadow(0 0 8px rgba(232,179,74,.45));
   }
-
-  /* soft red glow pulsing behind the gear/wrench icons */
-  .fix-glow{
-    position:absolute; width:100px; height:100px; border-radius:50%;
-    background:radial-gradient(circle, rgba(255,45,45,.32), rgba(255,45,45,.08) 55%, transparent 72%);
-    animation:glow-pulse 2.4s ease-in-out infinite;
-  }
-  @keyframes glow-pulse{
-    0%,100%{ opacity:.55; transform:scale(.92); }
-    50%{ opacity:1; transform:scale(1.08); }
-  }
-  .fix-icons{ position:relative; width:64px; height:56px; }
-  /* gear: slow continuous rotation */
-  .gear-icon{
-    position:absolute; left:0; top:6px; width:34px; height:34px; color:#fff;
-    filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(255,45,45,.45));
+  .paused-icon .gear{
+    position:absolute; left:0; top:0; width:26px; height:26px;
     animation:gear-spin 6s linear infinite; transform-origin:50% 50%;
   }
-  .gear-icon svg{ width:100%; height:100%; }
-  @keyframes gear-spin{ to{ transform:rotate(360deg); } }
-  /* wrench: tilts back and forth like tightening a bolt */
-  .wrench-icon{
-    position:absolute; right:-2px; bottom:0; width:30px; height:30px; color:#fff;
-    filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(255,45,45,.45));
+  .paused-icon .gear svg{ width:100%; height:100%; }
+  .paused-icon .wrench{
+    position:absolute; right:0; bottom:0; width:24px; height:24px;
     transform-origin:70% 30%; animation:wrench-turn 1.7s ease-in-out infinite;
   }
-  .wrench-icon svg{ width:100%; height:100%; }
+  .paused-icon .wrench svg{ width:100%; height:100%; }
+  @keyframes gear-spin{ to{ transform:rotate(360deg); } }
   @keyframes wrench-turn{
-    0%,100%{ transform:rotate(-18deg); }
-    50%{ transform:rotate(14deg); }
+    0%,100%{ transform:rotate(-16deg); }
+    50%{ transform:rotate(12deg); }
+  }
+  .paused-title{ font-size:13px; font-weight:800; color:var(--gold); text-align:center; }
+  .paused-sub{ font-size:11px; color:var(--text-faint); font-weight:500; text-align:center; }
+  @media (prefers-reduced-motion: reduce){
+    .paused-icon .gear, .paused-icon .wrench{ animation:none; }
   }
 
-  /* sold-out: cart runs in from the left, "loads up" while items drop in, exits right, loops */
-  .cart-floor{
-    position:absolute; left:6%; right:6%; bottom:30%; height:2px;
-    background:linear-gradient(90deg, transparent, rgba(255,255,255,.12) 15%, rgba(255,255,255,.12) 85%, transparent);
+  /* ---------- Product card v4: ສະຖານະ "ສິນຄ້າໝົດ" (ຂາຍໝົດຈິງໆ) —
+     hologram/glitch "signal lost", ເຂົ້າກັບ vibe ຮ້ານເກມ/ແຮັກສີແດງ-ດຳ ---------- */
+  .prod-media.is-soldout{
+    background:radial-gradient(circle at 50% 40%, rgba(255,20,20,.08), transparent 65%), linear-gradient(165deg,#100909,#080505);
+    position:relative; overflow:hidden;
   }
-  .cart-icon{
-    position:absolute; left:50%; bottom:26%; width:34px; height:34px; margin-left:-17px; color:#fff;
-    filter:drop-shadow(0 3px 6px rgba(0,0,0,.6)) drop-shadow(0 0 5px rgba(255,45,45,.4));
-    animation:cart-run 4.2s cubic-bezier(.5,0,.25,1) infinite;
+  .prod-media.is-soldout::before{
+    content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
+    background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) 1px, transparent 1px, transparent 3px);
+    mix-blend-mode:overlay; opacity:.55;
   }
-  .cart-icon svg{ width:100%; height:100%; }
-  @keyframes cart-run{
-    0%{    transform:translateX(-90px); opacity:0; }
-    6%{    opacity:1; }
-    22%{   transform:translateX(0); }
-    74%{   transform:translateX(0); }
-    92%{   transform:translateX(90px); opacity:1; }
-    100%{  transform:translateX(90px); opacity:0; }
+  .prod-media.is-soldout::after{ content:none; }
+  .scan-bar{
+    position:absolute; left:0; right:0; height:2px; z-index:2;
+    background:linear-gradient(90deg, transparent, rgba(255,28,28,.95), transparent);
+    box-shadow:0 0 10px 2px rgba(255,20,20,.55);
+    animation:scan-move 2.8s ease-in-out infinite;
   }
-  .drop-item{
-    position:absolute; left:50%; top:8%; width:15px; height:15px; margin-left:-7.5px;
-    color:#fff; opacity:0;
-    filter:drop-shadow(0 0 4px rgba(255,45,45,.5));
-    animation:item-drop 4.2s ease-in infinite;
+  @keyframes scan-move{
+    0%{   top:-6%;  opacity:0; }
+    8%{   opacity:1; }
+    50%{  top:104%; opacity:1; }
+    58%{  opacity:0; }
+    100%{ top:104%; opacity:0; }
   }
-  .drop-item svg{ width:100%; height:100%; }
-  @keyframes item-drop{
-    0%,20%{   transform:translateY(0) scale(1); opacity:0; }
-    26%{      opacity:1; }
-    46%{      transform:translateY(42px) scale(.55); opacity:0; }
-    100%{     transform:translateY(42px) scale(.55); opacity:0; }
+  .soldout-wrap{
+    position:relative; z-index:2; display:flex; flex-direction:column;
+    align-items:center; gap:7px; width:100%; height:100%;
+    justify-content:center; padding:14px;
+    animation:hologram-jitter 4.6s infinite;
   }
+  @keyframes hologram-jitter{
+    0%,91%,100%{ transform:translate(0,0); filter:none; }
+    92%{ transform:translate(-2px,0); }
+    93%{ transform:translate(2px,0); filter:hue-rotate(25deg); }
+    94%{ transform:translate(-1px,1px); }
+    95%{ transform:translate(1px,-1px); filter:none; }
+    96%{ transform:translate(0,0); }
+  }
+  .soldout-icon-wrap{ position:relative; width:46px; height:40px; }
+  .soldout-icon{
+    width:100%; height:100%; color:#ff2f2f;
+    filter:drop-shadow(0 0 9px rgba(255,20,20,.6));
+    animation:hologram-flicker 3s infinite;
+  }
+  @keyframes hologram-flicker{
+    0%,100%{ opacity:.85; } 4%{ opacity:.28; } 6%{ opacity:.85; }
+    47%{ opacity:.85; } 49%{ opacity:.22; } 51%{ opacity:.85; }
+    73%{ opacity:.45; } 75%{ opacity:.85; }
+  }
+  .ember{
+    position:absolute; width:4px; height:4px; border-radius:50%;
+    background:radial-gradient(circle, #ff8a4a, #ff1a1a 65%, transparent);
+    box-shadow:0 0 6px 1px rgba(255,60,20,.8);
+    bottom:6px; opacity:0;
+    animation:ember-rise 3.4s ease-in infinite;
+  }
+  @keyframes ember-rise{
+    0%{   transform:translateY(0) scale(1);    opacity:0; }
+    12%{  opacity:1; }
+    75%{  opacity:.5; }
+    100%{ transform:translateY(-42px) scale(.25); opacity:0; }
+  }
+  .soldout-title{
+    position:relative; font-size:14px; font-weight:900; letter-spacing:.05em;
+    color:#fff; text-shadow:0 0 10px rgba(255,20,20,.5);
+  }
+  .soldout-title::before,
+  .soldout-title::after{
+    content:"ໝົດແລ້ວ"; position:absolute; left:0; top:0; width:100%; background:inherit;
+  }
+  .soldout-title::before{ color:#ff2a3a; clip-path:inset(0 0 55% 0); animation:glitch-a 2.6s infinite linear alternate-reverse; }
+  .soldout-title::after{ color:#2ad4ff; clip-path:inset(55% 0 0 0); animation:glitch-b 3.1s infinite linear alternate-reverse; }
+  @keyframes glitch-a{
+    0%{ transform:translate(0,0); } 20%{ transform:translate(-2px,1px); }
+    40%{ transform:translate(2px,-1px); } 60%{ transform:translate(-1px,0); }
+    80%{ transform:translate(1px,1px); } 100%{ transform:translate(0,0); }
+  }
+  @keyframes glitch-b{
+    0%{ transform:translate(0,0); } 25%{ transform:translate(2px,-1px); }
+    50%{ transform:translate(-2px,1px); } 75%{ transform:translate(1px,-1px); }
+    100%{ transform:translate(0,0); }
+  }
+  .soldout-sub{ font-size:10.5px; color:var(--text-faint); font-weight:500; text-align:center; }
   @media (prefers-reduced-motion: reduce){
-    .gear-icon, .wrench-icon, .fix-glow{ animation:none; transform:none; }
-    .cart-icon, .drop-item{ animation:none; transform:none; opacity:1; }
+    .scan-bar, .soldout-wrap, .soldout-icon, .ember, .soldout-title::before, .soldout-title::after{
+      animation:none !important;
+    }
+    .ember{ opacity:0; }
   }
 
   .cat-block{ margin-bottom:6px; }
