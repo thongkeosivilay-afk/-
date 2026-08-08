@@ -573,8 +573,92 @@
     box-shadow:0 8px 18px -6px rgba(232,48,47,.55), inset 0 1px 0 rgba(255,255,255,.22);
     transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
   }
+  .buy-btn svg{ width:15px; height:15px; flex-shrink:0; }
   .buy-btn:active{ transform:scale(.96); box-shadow:0 4px 12px -6px rgba(255,45,45,.5), inset 0 1px 0 rgba(255,255,255,.18); }
   .buy-btn:disabled{ background:rgba(255,255,255,.08); color:var(--text-faint); opacity:1; box-shadow:none; }
+
+  /* ---------- Product card: "ຢຸດຂາຍຊົ່ວຄາວ" / "ສິນຄ້າໝົດ" overlay ---------- */
+  .out-badge{
+    position:absolute; top:9px; left:9px; z-index:2;
+    background:rgba(10,7,7,.78); backdrop-filter:blur(4px);
+    border:1px solid rgba(255,255,255,.1); font-size:10px; font-weight:700;
+    padding:4px 9px; border-radius:999px; color:var(--text-dim);
+  }
+  .waiting-note{ order:3; font-size:11px; color:var(--gold); font-weight:600; margin-top:-4px; opacity:.9; }
+
+  .stock-fx{
+    position:absolute; inset:0; z-index:1; overflow:hidden;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(8,6,7,.74); backdrop-filter:blur(1.5px);
+  }
+
+  /* soft red glow pulsing behind the gear/wrench icons */
+  .fix-glow{
+    position:absolute; width:100px; height:100px; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,45,45,.32), rgba(255,45,45,.08) 55%, transparent 72%);
+    animation:glow-pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes glow-pulse{
+    0%,100%{ opacity:.55; transform:scale(.92); }
+    50%{ opacity:1; transform:scale(1.08); }
+  }
+  .fix-icons{ position:relative; width:64px; height:56px; }
+  /* gear: slow continuous rotation */
+  .gear-icon{
+    position:absolute; left:0; top:6px; width:34px; height:34px; color:#fff;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(255,45,45,.45));
+    animation:gear-spin 6s linear infinite; transform-origin:50% 50%;
+  }
+  .gear-icon svg{ width:100%; height:100%; }
+  @keyframes gear-spin{ to{ transform:rotate(360deg); } }
+  /* wrench: tilts back and forth like tightening a bolt */
+  .wrench-icon{
+    position:absolute; right:-2px; bottom:0; width:30px; height:30px; color:#fff;
+    filter:drop-shadow(0 2px 5px rgba(0,0,0,.6)) drop-shadow(0 0 6px rgba(255,45,45,.45));
+    transform-origin:70% 30%; animation:wrench-turn 1.7s ease-in-out infinite;
+  }
+  .wrench-icon svg{ width:100%; height:100%; }
+  @keyframes wrench-turn{
+    0%,100%{ transform:rotate(-18deg); }
+    50%{ transform:rotate(14deg); }
+  }
+
+  /* sold-out: cart runs in from the left, "loads up" while items drop in, exits right, loops */
+  .cart-floor{
+    position:absolute; left:6%; right:6%; bottom:30%; height:2px;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.12) 15%, rgba(255,255,255,.12) 85%, transparent);
+  }
+  .cart-icon{
+    position:absolute; left:50%; bottom:26%; width:34px; height:34px; margin-left:-17px; color:#fff;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.6)) drop-shadow(0 0 5px rgba(255,45,45,.4));
+    animation:cart-run 4.2s cubic-bezier(.5,0,.25,1) infinite;
+  }
+  .cart-icon svg{ width:100%; height:100%; }
+  @keyframes cart-run{
+    0%{    transform:translateX(-90px); opacity:0; }
+    6%{    opacity:1; }
+    22%{   transform:translateX(0); }
+    74%{   transform:translateX(0); }
+    92%{   transform:translateX(90px); opacity:1; }
+    100%{  transform:translateX(90px); opacity:0; }
+  }
+  .drop-item{
+    position:absolute; left:50%; top:8%; width:15px; height:15px; margin-left:-7.5px;
+    color:#fff; opacity:0;
+    filter:drop-shadow(0 0 4px rgba(255,45,45,.5));
+    animation:item-drop 4.2s ease-in infinite;
+  }
+  .drop-item svg{ width:100%; height:100%; }
+  @keyframes item-drop{
+    0%,20%{   transform:translateY(0) scale(1); opacity:0; }
+    26%{      opacity:1; }
+    46%{      transform:translateY(42px) scale(.55); opacity:0; }
+    100%{     transform:translateY(42px) scale(.55); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .gear-icon, .wrench-icon, .fix-glow{ animation:none; transform:none; }
+    .cart-icon, .drop-item{ animation:none; transform:none; opacity:1; }
+  }
 
   .cat-block{ margin-bottom:6px; }
 

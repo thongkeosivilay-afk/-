@@ -44,6 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ໄອຄອນທີ່ໃຊ້ໃນອນິເມຊັນ 2 ສະຖານະ: "ຢຸດຂາຍຊົ່ວຄາວ" (ແອດມິນປິດເອງ) ແລະ "ສິນຄ້າໝົດ" (ໝົດແທ້)
+  const GEAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.5a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.96 17.85a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H2.5a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.15 6.99a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H8.6a1.7 1.7 0 0 0 1.04-1.56V.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V6.6a1.7 1.7 0 0 0 1.56 1.04h.09a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.04Z"/></svg>`;
+  const WRENCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L2 19l3 3 7.3-7.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2Z"/></svg>`;
+  const BOX_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5Z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>`;
+  const CART_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`;
+
+  // ສະຖານະຂອງສິນຄ້າ: 'ok' ພ້ອມຂາຍ, 'paused' ແອດມິນປິດຂາຍເອງ, 'soldout' ສິນຄ້າໝົດແທ້ໆ
+  function stockState(product, stock) {
+    if (product.paused) return 'paused';
+    if (!(stock > 0)) return 'soldout';
+    return 'ok';
+  }
+
   function mediaHTML(product) {
     if (product.image_url) {
       return `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" class="prod-img">`;
@@ -54,15 +67,66 @@ document.addEventListener('DOMContentLoaded', () => {
       </svg>`;
   }
 
-  function statusHTML(product, stock) {
-    if (product.paused) {
+  // stable pseudo-random 0..-2.5s delay per product id, so cards in the same
+  // grid don't all pulse/rotate in perfect unison
+  function fxDelay(id) {
+    const str = String(id || '');
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return -(h % 250) / 100; // 0 .. -2.5s
+  }
+
+  // ອນິເມຊັນທັບຢູ່ໃນຮູບສິນຄ້າ: ຟັນເຟືອງ+ປະແຈ (ຢຸດຂາຍຊົ່ວຄາວ) ຫຼື ລົດເຂັນ+ກ່ອງຕົກ (ສິນຄ້າໝົດ)
+  function stockFxHTML(state, id) {
+    const d = fxDelay(id);
+    if (state === 'paused') {
+      return `
+        <div class="stock-fx">
+          <div class="fix-glow" style="animation-delay:${d}s;"></div>
+          <div class="fix-icons">
+            <div class="gear-icon" style="animation-delay:${d}s;">${GEAR_SVG}</div>
+            <div class="wrench-icon" style="animation-delay:${d}s;">${WRENCH_SVG}</div>
+          </div>
+        </div>`;
+    }
+    if (state === 'soldout') {
+      return `
+        <div class="stock-fx">
+          <div class="cart-floor"></div>
+          <div class="drop-item" style="animation-delay:${d}s;">${BOX_SVG}</div>
+          <div class="cart-icon" style="animation-delay:${d}s;">${CART_SVG}</div>
+        </div>`;
+    }
+    return '';
+  }
+
+  function outBadgeHTML(state) {
+    if (state === 'paused') return `<div class="out-badge">ຢຸດຂາຍ</div>`;
+    if (state === 'soldout') return `<div class="out-badge">ໝົດແລ້ວ</div>`;
+    return '';
+  }
+
+  function waitingNoteHTML(state) {
+    if (state === 'paused') return `<div class="waiting-note">ກຳລັງປັບປຸງ</div>`;
+    if (state === 'soldout') return `<div class="waiting-note">ລໍຖ້າສະຕ໋ອກ</div>`;
+    return '';
+  }
+
+  function statusHTML(product, stock, state) {
+    if (state === 'paused') {
       const note = product.paused_note ? ` — ${escapeHtml(product.paused_note)}` : '';
       return `<div class="prod-status out"><span class="dot"></span>ຢຸດຂາຍຊົ່ວຄາວ${note}</div>`;
     }
-    if (stock > 0) {
-      return `<div class="prod-status"><span class="dot"></span>ພ້ອມຂາຍ <span class="stock">(ເຫຼືອ ${stock.toLocaleString('en-US')})</span></div>`;
+    if (state === 'soldout') {
+      return `<div class="prod-status out"><span class="dot"></span>ສິນຄ້າໝົດ</div>`;
     }
-    return `<div class="prod-status out"><span class="dot"></span>ບໍ່ພ້ອມຂາຍ</div>`;
+    return `<div class="prod-status"><span class="dot"></span>ພ້ອມຂາຍ <span class="stock">(ເຫຼືອ ${stock.toLocaleString('en-US')})</span></div>`;
+  }
+
+  function buyLabel(state) {
+    if (state === 'paused') return 'ຢຸດຂາຍຊົ່ວຄາວ';
+    if (state === 'soldout') return 'ສິນຄ້າໝົດ';
+    return 'ຊື້ເລີຍ';
   }
 
   function priceHTML(product) {
@@ -75,19 +139,24 @@ document.addEventListener('DOMContentLoaded', () => {
   function cardHTML(product) {
     const stock = window.StorefrontData.productTotalStock(product);
     const buyable = window.StorefrontData.isProductBuyable(product);
+    const state = stockState(product, stock);
+    const mediaClass = state === 'ok' ? 'prod-media' : `prod-media is-${state}`;
     return `
       <article class="prod-card grid-card" data-pid="${escapeHtml(product.id)}">
-        <div class="prod-media">
+        ${outBadgeHTML(state)}
+        <div class="${mediaClass}">
           <span class="hud-corner tl"></span><span class="hud-corner br"></span>
           ${mediaHTML(product)}
+          ${stockFxHTML(state, product.id)}
         </div>
         <div class="prod-body">
           <div class="prod-name">${escapeHtml(product.name || 'ໃສ່ຊື່ສິນຄ້າ')}</div>
           ${priceHTML(product)}
-          ${statusHTML(product, stock)}
+          ${statusHTML(product, stock, state)}
+          ${waitingNoteHTML(state)}
           <button type="button" class="buy-btn" ${buyable ? '' : 'disabled'}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M6 6h15l-1.5 9h-12L6 6Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
-            ຊື້ເລີຍ
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            ${buyLabel(state)}
           </button>
         </div>
       </article>`;
