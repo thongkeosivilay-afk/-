@@ -43,7 +43,7 @@ body{ background:var(--bg); }
 .p-avatar-wrap{ position:relative; z-index:1; margin-bottom:12px; }
 .p-avatar{
   width:78px; height:78px; border-radius:50%;
-  background:conic-gradient(from 220deg,var(--red-deep),#3a0c14,var(--gold),var(--red-deep));
+  background:conic-gradient(from 220deg,var(--red-deep),#3a0c0c,var(--gold),var(--red-deep));
   padding:3px;
 }
 .p-avatar img, .p-avatar .p-avatar-fallback{

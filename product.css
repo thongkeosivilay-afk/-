@@ -69,7 +69,7 @@ body.product-page{ padding-bottom:96px; }
 }
 .opt-card.selected{
   border-color:var(--red);
-  background:linear-gradient(90deg, rgba(255,17,24,.16), rgba(255,17,24,.03));
+  background:linear-gradient(90deg, rgba(255,0,1,.16), rgba(255,0,1,.03));
   box-shadow:0 0 0 1px var(--red) inset;
 }
 .opt-card:disabled{ opacity:.4; }
@@ -120,7 +120,7 @@ hr.div{ border:none; border-top:1px solid var(--card-border); margin:20px 16px 0
   background:linear-gradient(90deg,var(--red),var(--red-deep));
   color:#fff; font-size:15px; font-weight:800;
   padding:14px; border:none; border-radius:12px;
-  box-shadow:0 0 20px rgba(255,17,24,.35);
+  box-shadow:0 0 20px rgba(255,0,1,.35);
 }
 .buy-btn svg{ width:17px; height:17px; }
 .buy-btn:disabled{ opacity:.4; box-shadow:none; }

@@ -5,13 +5,14 @@
    ========================================================= */
 
 :root{
-  --bg:#050505;
-  --bg-raise:#0e0c0e;
+  --bg:#000000;
+  --bg-raise:#0a0a0a;
   --card:#0a0a0a;
-  --card-border:#222222;
-  --red:#ff1118;
-  --red-deep:#b30d14;
-  --red-glow:#ff1118;
+  --card-border:#1e1e1e;
+  --red:#ff0001;
+  --red-deep:#990001;
+  --red-glow:#ff0001;
+  --badge-bg:#170000;
   --gold:#e8b34a;
   --text:#ffffff;
   --text-dim:#999999;
@@ -60,12 +61,12 @@ button, input{ font-family:inherit; }
 .auth-shell::before{
   width:280px; height:280px;
   top:-90px; left:-90px;
-  background:radial-gradient(circle, rgba(232,48,47,.35), transparent 70%);
+  background:radial-gradient(circle, rgba(232,47,47,.35), transparent 70%);
 }
 .auth-shell::after{
   width:320px; height:320px;
   bottom:-110px; right:-100px;
-  background:radial-gradient(circle, rgba(143,15,36,.4), transparent 70%);
+  background:radial-gradient(circle, rgba(143,15,15,.4), transparent 70%);
 }
 
 /* ---------- Back to home ---------- */
@@ -94,7 +95,7 @@ button, input{ font-family:inherit; }
   border-radius:22px;
   background:linear-gradient(150deg,var(--red) 0%,var(--red-deep) 100%);
   box-shadow:
-    0 14px 34px rgba(232,48,47,.45),
+    0 14px 34px rgba(232,47,47,.45),
     inset 0 1px 0 rgba(255,255,255,.35),
     inset 0 -14px 18px rgba(0,0,0,.35);
   transform-style:preserve-3d;
@@ -183,7 +184,7 @@ button, input{ font-family:inherit; }
 }
 .field-input:focus-within{
   border-color:var(--red);
-  box-shadow:0 0 0 3px rgba(232,48,47,.15);
+  box-shadow:0 0 0 3px rgba(232,47,47,.15);
 }
 .field-input svg{ width:17px; height:17px; color:var(--text-faint); flex-shrink:0; }
 .field-input input{
@@ -222,9 +223,9 @@ button, input{ font-family:inherit; }
 .btn-block:active{ transform:translateZ(18px) scale(.97); }
 .btn-block:disabled{ opacity:.65; cursor:not-allowed; }
 .btn-submit{
-  background:linear-gradient(135deg,#ff4d3d,var(--red));
+  background:linear-gradient(135deg,#ff3d3d,var(--red));
   color:#fff;
-  box-shadow:0 10px 26px rgba(232,48,47,.45), inset 0 1px 0 rgba(255,255,255,.25);
+  box-shadow:0 10px 26px rgba(232,47,47,.45), inset 0 1px 0 rgba(255,255,255,.25);
   margin-bottom:18px;
 }
 .btn-submit:hover:not(:disabled){ filter:brightness(1.06); }
@@ -241,7 +242,7 @@ button, input{ font-family:inherit; }
 .btn-discord{
   background:linear-gradient(150deg,#6a72f5,var(--discord));
   color:#fff;
-  box-shadow:0 10px 26px rgba(88,101,242,.4), inset 0 1px 0 rgba(255,255,255,.25), 0 0 0 1px rgba(232,48,47,.15);
+  box-shadow:0 10px 26px rgba(88,101,242,.4), inset 0 1px 0 rgba(255,255,255,.25), 0 0 0 1px rgba(232,47,47,.15);
 }
 .btn-discord:hover:not(:disabled){ filter:brightness(1.08); }
 .btn-discord svg{ width:19px; height:19px; }
@@ -274,7 +275,7 @@ button, input{ font-family:inherit; }
   z-index:50; max-width:88vw;
 }
 .toast.show{ opacity:1; transform:translate(-50%, 0); }
-.toast.error{ border-color:rgba(232,48,47,.5); }
+.toast.error{ border-color:rgba(232,47,47,.5); }
 .toast svg{ width:16px; height:16px; color:var(--gold); flex-shrink:0; }
 .toast.error svg{ color:var(--red-glow); }
 

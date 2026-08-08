@@ -21,7 +21,7 @@
   width:56px; height:56px; border-radius:16px;
   background:linear-gradient(145deg,var(--red),var(--red-deep));
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 0 24px rgba(227,28,61,.55), inset 0 0 0 1px rgba(255,255,255,.1);
+  box-shadow:0 0 24px rgba(227,28,28,.55), inset 0 0 0 1px rgba(255,255,255,.1);
 }
 .login-logo svg{ width:28px; height:28px; }
 .login-title{ font-size:19px; font-weight:800; text-align:center; }
@@ -41,13 +41,13 @@
   font-size:14.5px; font-weight:700; font-family:inherit; cursor:pointer;
   background:linear-gradient(180deg,var(--red-glow),var(--red) 55%,var(--red-deep));
   color:#fff;
-  box-shadow:0 8px 18px -6px rgba(232,48,47,.55), inset 0 1px 0 rgba(255,255,255,.22);
+  box-shadow:0 8px 18px -6px rgba(232,47,47,.55), inset 0 1px 0 rgba(255,255,255,.22);
   transition:transform .15s ease;
 }
 .btn-block:active{ transform:scale(.97); }
 .btn-block.secondary{
   background:linear-gradient(160deg,#151515,#0a0a0a);
-  border:1px solid #222; box-shadow:none;
+  border:1px solid #1e1e1e; box-shadow:none;
 }
 
 .login-error{

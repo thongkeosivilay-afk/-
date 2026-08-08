@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
         + 'box-shadow:0 8px 24px rgba(0,0,0,.4);';
       document.body.appendChild(toast);
     }
-    toast.style.borderColor = isError ? 'rgba(232,48,47,.5)' : 'rgba(255,255,255,.12)';
+    toast.style.borderColor = isError ? 'rgba(232,47,47,.5)' : 'rgba(255,255,255,.12)';
     toast.textContent = message;
     toast.style.opacity = '1';
     toast.style.transform = 'translate(-50%, 0)';
