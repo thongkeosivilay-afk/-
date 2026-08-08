@@ -29,8 +29,8 @@ body.product-page{ padding-bottom:96px; }
 .prod-hero img{ width:100%; height:100%; display:block; object-fit:cover; }
 .prod-hero-placeholder svg{ width:38px; height:38px; color:var(--red); opacity:.3; }
 .hud-corner{ position:absolute; width:14px; height:14px; z-index:2; pointer-events:none; opacity:.8; }
-.hud-corner.tl{ top:10px; left:10px; border-top:2px solid var(--red); border-left:2px solid var(--red); border-radius:3px 0 0 0; filter:drop-shadow(0 0 3px rgba(255,59,59,.5)); }
-.hud-corner.br{ bottom:10px; right:10px; border-bottom:2px solid var(--red); border-right:2px solid var(--red); border-radius:0 0 3px 0; filter:drop-shadow(0 0 3px rgba(255,59,59,.5)); }
+.hud-corner.tl{ top:10px; left:10px; border-top:2px solid var(--red); border-left:2px solid var(--red); border-radius:3px 0 0 0; filter:none; }
+.hud-corner.br{ bottom:10px; right:10px; border-bottom:2px solid var(--red); border-right:2px solid var(--red); border-radius:0 0 3px 0; filter:none; }
 
 .prod-title-wrap{ padding:18px 16px 0; }
 .prod-title{ font-size:22px; font-weight:800; line-height:1.35; }
@@ -69,7 +69,7 @@ body.product-page{ padding-bottom:96px; }
 }
 .opt-card.selected{
   border-color:var(--red);
-  background:linear-gradient(90deg, rgba(255,0,1,.16), rgba(255,0,1,.03));
+  background:rgba(255,0,1,.10);
   box-shadow:0 0 0 1px var(--red) inset;
 }
 .opt-card:disabled{ opacity:.4; }
@@ -117,10 +117,10 @@ hr.div{ border:none; border-top:1px solid var(--card-border); margin:20px 16px 0
 .buy-bar-total .val{ font-size:17px; font-weight:800; color:var(--text); }
 .buy-btn{
   flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
-  background:linear-gradient(90deg,var(--red),var(--red-deep));
+  background:var(--red);
   color:#fff; font-size:15px; font-weight:800;
   padding:14px; border:none; border-radius:12px;
-  box-shadow:0 0 20px rgba(255,0,1,.35);
+  box-shadow:none;
 }
 .buy-btn svg{ width:17px; height:17px; }
 .buy-btn:disabled{ opacity:.4; box-shadow:none; }

@@ -1,9 +1,8 @@
 /* =========================================================
    auth.js — ການເຮັດວຽກຂອງໜ້າ login.html / signup.html
-   1) 3D tilt effect ຂອງກ່ອງບັດ (card) ຕາມຕຳແໜ່ງເມົາສ໌ / ນິ້ວມື
-   2) ປຸ່ມສະແດງ/ເຊື່ອງລະຫັດຜ່ານ
-   3) ກວດຄວາມຖືກຕ້ອງຂອງຟອມ (client-side) + toast ແຈ້ງເຕືອນ
-   4) ປຸ່ມ Discord -> /auth/discord/login (ຕໍ່ກັບ worker ຈິງ)
+   1) ປຸ່ມສະແດງ/ເຊື່ອງລະຫັດຜ່ານ
+   2) ກວດຄວາມຖືກຕ້ອງຂອງຟອມ (client-side) + toast ແຈ້ງເຕືອນ
+   3) ປຸ່ມ Discord -> /auth/discord/login (ຕໍ່ກັບ worker ຈິງ)
 
    ໝາຍເຫດ: ຟອມອີເມວ/ລະຫັດຜ່ານໃນໄຟລ໌ນີ້ຍັງເປັນ client-side ຢ່າງດຽວ
    (ຍັງບໍ່ໄດ້ຕໍ່ກັບ backend ຈິງ) — ໃຫ້ຕໍ່ API ຂອງທ່ານເອງທີ່ຈຸດທີ່ໝາຍ TODO
@@ -18,38 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch((err) => console.error('auth.js: applyStoreBranding failed', err));
   }
 
-  /* ---------- 1) 3D tilt on the auth card ---------- */
-  const card = document.querySelector('.auth-card');
-  const crest = document.querySelector('.auth-crest-inner');
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  if (card && !prefersReducedMotion) {
-    const maxTilt = 6; // degrees, kept subtle on purpose
-
-    const applyTilt = (clientX, clientY) => {
-      const rect = card.getBoundingClientRect();
-      const px = (clientX - rect.left) / rect.width;  // 0..1
-      const py = (clientY - rect.top) / rect.height;  // 0..1
-      const rotateY = (px - 0.5) * maxTilt * 2;
-      const rotateX = (0.5 - py) * maxTilt * 2;
-      card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-      if (crest) crest.style.transform = `rotateX(${rotateX * 0.6}deg) rotateY(${rotateY * 0.6}deg)`;
-    };
-
-    const resetTilt = () => {
-      card.style.transform = 'rotateX(0deg) rotateY(0deg)';
-      if (crest) crest.style.transform = 'rotateX(0deg) rotateY(0deg)';
-    };
-
-    window.addEventListener('mousemove', (e) => applyTilt(e.clientX, e.clientY));
-    window.addEventListener('mouseleave', resetTilt);
-    window.addEventListener('touchmove', (e) => {
-      if (e.touches[0]) applyTilt(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-    window.addEventListener('touchend', resetTilt);
-  }
-
-  /* ---------- 2) Password show/hide toggle ---------- */
+  /* ---------- 1) Password show/hide toggle ---------- */
   document.querySelectorAll('.field-toggle').forEach((btn) => {
     btn.addEventListener('click', () => {
       const input = btn.closest('.field-input').querySelector('input');
@@ -60,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* ---------- 3) Toast helper ---------- */
+  /* ---------- 2) Toast helper ---------- */
   let toastTimer = null;
   function showToast(message, isError = false) {
     let toast = document.querySelector('.toast');
@@ -77,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
     toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
   }
 
-  /* ---------- 4) Discord buttons ---------- */
+  /* ---------- 3) Discord buttons ---------- */
   // ถ้า URL หน้านี้มี ?next=/xxx.html (เช่น มาจากหน้าโปรไฟล์ที่ยังไม่ login) ให้พาไปที่นั่นต่อหลัง login สำเร็จ
   const nextParam = new URLSearchParams(window.location.search).get('next');
   document.querySelectorAll('.btn-discord').forEach((btn) => {
@@ -87,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  /* ---------- 5) Form validation helpers ---------- */
+  /* ---------- 4) Form validation helpers ---------- */
   function setFieldError(fieldEl, message) {
     fieldEl.classList.toggle('has-error', !!message);
     const errEl = fieldEl.querySelector('.field-error');
@@ -96,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  /* ---------- 6) Login form ---------- */
+  /* ---------- 5) Login form ---------- */
   const loginForm = document.querySelector('#login-form');
   if (loginForm) {
     loginForm.addEventListener('submit', (e) => {
@@ -141,7 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ---------- 7) Signup form ---------- */
+  /* ---------- 6) Signup form ---------- */
   const signupForm = document.querySelector('#signup-form');
   if (signupForm) {
     signupForm.addEventListener('submit', (e) => {

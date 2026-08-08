@@ -51,9 +51,9 @@
 .oh-empty-btn{
   display:inline-flex; align-items:center; gap:8px;
   padding:12px 26px; border-radius:13px; border:none; font-family:inherit;
-  font-size:14px; font-weight:800; color:#2a0a0a;
-  background:linear-gradient(90deg,var(--red-glow),#ff7a7a);
-  box-shadow:0 8px 18px -6px rgba(232,47,47,.55), inset 0 1px 0 rgba(255,255,255,.25);
+  font-size:14px; font-weight:800; color:#fff;
+  background:var(--red);
+  box-shadow:none;
 }
 
 /* ---------- Order list ---------- */
@@ -79,7 +79,7 @@
   white-space:nowrap;
 }
 .oh-item-status.completed{ background:rgba(55,214,122,.12); color:#37d67a; border:1px solid rgba(55,214,122,.35); }
-.oh-item-status.failed{ background:rgba(232,47,47,.12); color:var(--red-glow); border:1px solid rgba(232,47,47,.35); }
+.oh-item-status.failed{ background:rgba(255,0,1,.12); color:var(--red-glow); border:1px solid rgba(255,0,1,.35); }
 
 .oh-item-code{
   width:100%; margin-top:4px; display:flex; align-items:center; gap:8px;

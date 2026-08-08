@@ -2,6 +2,8 @@
    auth.css — ສະໄຕລ໌ໜ້າ "ລົງຊື່ເຂົ້າໃຊ້ / ສະໝັກສະມາຊິກ"
    ໃຊ້ຮ່ວມກັນລະຫວ່າງ login.html ແລະ signup.html
    ໂຕນສີ/ຕົວແປອ້າງອີງຈາກ style.css ຂອງໜ້າຫຼັກ ເພື່ອໃຫ້ກົງກັນ
+   ອັບເດດ: ເອົາເອຟເຟັກ 3D ທັງໝົດອອກ (tilt/perspective/preserve-3d/
+   translateZ/glossy sheen) — ໃຊ້ flat design ລ້ວນໆ, ໂຕນສີແດງ #FF0001
    ========================================================= */
 
 :root{
@@ -12,7 +14,6 @@
   --red:#ff0001;
   --red-deep:#990001;
   --red-glow:#ff0001;
-  --badge-bg:#170000;
   --gold:#e8b34a;
   --text:#ffffff;
   --text-dim:#999999;
@@ -36,7 +37,7 @@ body{
 a{ color:inherit; text-decoration:none; }
 button, input{ font-family:inherit; }
 
-/* ---------- Ambient background: soft red glow blobs ---------- */
+/* ---------- Shell ---------- */
 .auth-shell{
   position:relative;
   max-width:480px;
@@ -48,25 +49,6 @@ button, input{ font-family:inherit; }
   justify-content:center;
   padding:32px 22px 40px;
   overflow:hidden;
-}
-.auth-shell::before,
-.auth-shell::after{
-  content:"";
-  position:absolute;
-  border-radius:50%;
-  filter:blur(70px);
-  pointer-events:none;
-  z-index:0;
-}
-.auth-shell::before{
-  width:280px; height:280px;
-  top:-90px; left:-90px;
-  background:radial-gradient(circle, rgba(232,47,47,.35), transparent 70%);
-}
-.auth-shell::after{
-  width:320px; height:320px;
-  bottom:-110px; right:-100px;
-  background:radial-gradient(circle, rgba(143,15,15,.4), transparent 70%);
 }
 
 /* ---------- Back to home ---------- */
@@ -82,38 +64,20 @@ button, input{ font-family:inherit; }
 .auth-back svg{ width:15px; height:15px; }
 .auth-back:hover{ color:var(--text-dim); }
 
-/* ---------- Brand crest: faceted "gem" signature, tilts with pointer ---------- */
+/* ---------- Brand crest (flat, no tilt) ---------- */
 .auth-crest{
   position:relative; z-index:2;
   width:76px; height:76px;
   margin:0 auto 14px;
-  perspective:600px;
 }
 .auth-crest-inner{
   width:100%; height:100%;
   display:flex; align-items:center; justify-content:center;
   border-radius:22px;
-  background:linear-gradient(150deg,var(--red) 0%,var(--red-deep) 100%);
-  box-shadow:
-    0 14px 34px rgba(232,47,47,.45),
-    inset 0 1px 0 rgba(255,255,255,.35),
-    inset 0 -14px 18px rgba(0,0,0,.35);
-  transform-style:preserve-3d;
-  transition:transform .12s ease-out;
+  background:var(--red);
+  box-shadow:none;
   position:relative;
   overflow:hidden;
-}
-.auth-crest-inner::after{
-  /* glossy diagonal sheen */
-  content:"";
-  position:absolute; inset:-40%;
-  background:linear-gradient(115deg, transparent 40%, rgba(255,255,255,.35) 50%, transparent 60%);
-  transform:translateX(-60%);
-  animation:crest-sheen 4.5s ease-in-out infinite;
-}
-@keyframes crest-sheen{
-  0%,60%{ transform:translateX(-60%); }
-  100%{ transform:translateX(60%); }
 }
 .auth-crest svg{ width:36px; height:36px; position:relative; z-index:1; }
 
@@ -133,43 +97,29 @@ button, input{ font-family:inherit; }
   margin-bottom:26px;
 }
 
-/* ---------- The glossy 3D card ---------- */
-.auth-card-wrap{ position:relative; z-index:2; width:100%; perspective:1000px; }
+/* ---------- Card (flat, no tilt) ---------- */
+.auth-card-wrap{ position:relative; z-index:2; width:100%; }
 .auth-card{
-  background:linear-gradient(165deg, rgba(16,16,16,.92), rgba(9,9,9,.95));
+  background:var(--card);
   border:1px solid var(--card-border);
   border-radius:20px;
   padding:26px 22px 24px;
   width:100%;
-  backdrop-filter:blur(6px);
-  box-shadow:
-    0 24px 60px rgba(0,0,0,.55),
-    0 0 0 1px rgba(255,255,255,.03) inset;
-  transform-style:preserve-3d;
-  transition:transform .15s ease-out, box-shadow .15s ease-out;
+  box-shadow:none;
   position:relative;
   overflow:hidden;
-}
-.auth-card::before{
-  /* top glossy sheen strip, like light hitting glass */
-  content:"";
-  position:absolute; top:0; left:0; right:0; height:50%;
-  background:linear-gradient(180deg, rgba(255,255,255,.06), transparent);
-  pointer-events:none;
 }
 .auth-card-title{
   font-size:21px; font-weight:800;
   margin-bottom:6px;
-  transform:translateZ(30px);
 }
 .auth-card-sub{
   color:var(--text-dim); font-size:13px; line-height:1.6;
   margin-bottom:22px;
-  transform:translateZ(20px);
 }
 
 /* ---------- Form fields ---------- */
-.field{ margin-bottom:14px; transform:translateZ(18px); }
+.field{ margin-bottom:14px; }
 .field label{
   display:block; font-size:12.5px; font-weight:700;
   color:var(--text-dim); margin-bottom:7px;
@@ -184,7 +134,7 @@ button, input{ font-family:inherit; }
 }
 .field-input:focus-within{
   border-color:var(--red);
-  box-shadow:0 0 0 3px rgba(232,47,47,.15);
+  box-shadow:0 0 0 3px rgba(255,0,1,.15);
 }
 .field-input svg{ width:17px; height:17px; color:var(--text-faint); flex-shrink:0; }
 .field-input input{
@@ -205,27 +155,26 @@ button, input{ font-family:inherit; }
 .field.has-error .field-input{ border-color:var(--red-glow); }
 .field.has-error .field-error{ display:block; }
 
-.field-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; transform:translateZ(18px); }
+.field-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
 .check-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); }
 .check-row input{ width:15px; height:15px; accent-color:var(--red); }
 .link-muted{ font-size:12.5px; color:var(--text-faint); font-weight:600; }
 .link-muted:hover{ color:var(--red-glow); }
 
-/* ---------- Buttons ---------- */
+/* ---------- Buttons (flat, no gloss/gradient) ---------- */
 .btn-block{
   width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
   padding:14px; border-radius:12px; border:none;
   font-size:15px; font-weight:800; letter-spacing:.2px;
   cursor:pointer;
-  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
-  transform:translateZ(18px);
+  transition:transform .12s ease, filter .12s ease;
 }
-.btn-block:active{ transform:translateZ(18px) scale(.97); }
+.btn-block:active{ transform:scale(.97); }
 .btn-block:disabled{ opacity:.65; cursor:not-allowed; }
 .btn-submit{
-  background:linear-gradient(135deg,#ff3d3d,var(--red));
+  background:var(--red);
   color:#fff;
-  box-shadow:0 10px 26px rgba(232,47,47,.45), inset 0 1px 0 rgba(255,255,255,.25);
+  box-shadow:none;
   margin-bottom:18px;
 }
 .btn-submit:hover:not(:disabled){ filter:brightness(1.06); }
@@ -233,16 +182,16 @@ button, input{ font-family:inherit; }
 .divider{
   display:flex; align-items:center; gap:12px;
   color:var(--text-faint); font-size:12px;
-  margin-bottom:18px; transform:translateZ(15px);
+  margin-bottom:18px;
 }
 .divider::before, .divider::after{
   content:""; flex:1; height:1px; background:var(--card-border);
 }
 
 .btn-discord{
-  background:linear-gradient(150deg,#6a72f5,var(--discord));
+  background:var(--discord);
   color:#fff;
-  box-shadow:0 10px 26px rgba(88,101,242,.4), inset 0 1px 0 rgba(255,255,255,.25), 0 0 0 1px rgba(232,47,47,.15);
+  box-shadow:none;
 }
 .btn-discord:hover:not(:disabled){ filter:brightness(1.08); }
 .btn-discord svg{ width:19px; height:19px; }
@@ -251,7 +200,6 @@ button, input{ font-family:inherit; }
   text-align:center; margin-top:22px;
   font-size:13px; color:var(--text-dim);
   position:relative; z-index:2;
-  transform:translateZ(10px);
 }
 .auth-switch a{ color:var(--red-glow); font-weight:700; }
 .auth-switch a:hover{ text-decoration:underline; }
@@ -268,18 +216,13 @@ button, input{ font-family:inherit; }
   background:var(--card); border:1px solid var(--card-border);
   color:var(--text); font-size:13px; font-weight:600;
   padding:12px 18px; border-radius:12px;
-  box-shadow:0 12px 30px rgba(0,0,0,.5);
+  box-shadow:none;
   display:flex; align-items:center; gap:8px;
   opacity:0; pointer-events:none;
   transition:opacity .25s ease, transform .25s ease;
   z-index:50; max-width:88vw;
 }
 .toast.show{ opacity:1; transform:translate(-50%, 0); }
-.toast.error{ border-color:rgba(232,47,47,.5); }
+.toast.error{ border-color:rgba(255,0,1,.5); }
 .toast svg{ width:16px; height:16px; color:var(--gold); flex-shrink:0; }
 .toast.error svg{ color:var(--red-glow); }
-
-@media (prefers-reduced-motion: reduce){
-  .auth-crest-inner::after{ animation:none; }
-  .auth-card, .auth-crest-inner{ transition:none; }
-}

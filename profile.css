@@ -30,20 +30,15 @@ body{ background:var(--bg); }
 /* ---------- Profile head card ---------- */
 .p-head{
   display:flex; flex-direction:column; align-items:center; text-align:center;
-  background:linear-gradient(165deg, rgba(16,16,16,.92), rgba(9,9,9,.95));
+  background:var(--card);
   border:1px solid var(--card-border); border-radius:20px;
   padding:26px 20px 22px; margin-bottom:16px;
   position:relative; overflow:hidden;
 }
-.p-head::before{
-  content:""; position:absolute; top:0; left:0; right:0; height:50%;
-  background:linear-gradient(180deg, rgba(255,255,255,.06), transparent);
-  pointer-events:none;
-}
 .p-avatar-wrap{ position:relative; z-index:1; margin-bottom:12px; }
 .p-avatar{
   width:78px; height:78px; border-radius:50%;
-  background:conic-gradient(from 220deg,var(--red-deep),#3a0c0c,var(--gold),var(--red-deep));
+  background:var(--red-deep);
   padding:3px;
 }
 .p-avatar img, .p-avatar .p-avatar-fallback{
@@ -102,7 +97,7 @@ body{ background:var(--bg); }
 .p-discord-chip svg{ width:14px; height:14px; }
 .p-connect-btn{
   font-size:12px; font-weight:700; color:#fff;
-  background:linear-gradient(150deg,#6a72f5,#5865f2);
+  background:#5865f2;
   padding:7px 12px; border-radius:9px; border:none;
 }
 
