@@ -93,58 +93,16 @@ document.addEventListener('DOMContentLoaded', () => {
       </article>`;
   }
 
-  // ລະບົບສັ່ງຊື້ຈິງ: ກົດ "ຊື້ເລີຍ" -> POST /api/orders/create (ຮຽກ RPC purchase_product
-  // ຝັ່ງ Worker) ຫັກເງິນ + ອອກລະຫັດ + ບັນທຶກລົງຕາຕະລາງ orders ຈິງ (ເບິ່ງ src/index.js)
-  // ໝາຍເຫດ: ສິນຄ້າແບບມີຫຼາຍໄລຍະເວລາ (duration_enabled) ຍັງບໍ່ມີ UI ໃຫ້ເລືອກໄລຍະຢູ່ໃນ
-  // ໜ້ານີ້ — ຈຶ່ງໃຫ້ຕິດຕໍ່ແອດມິນຜ່ານແຊັດໄປກ່ອນ ຈົນກວ່າຈະເພີ່ມຕົວເລືອກໄລຍະເວລາເຂົ້າມາ
+  // ກົດ "ຊື້ເລີຍ" -> ໄປໜ້າ product.html ເພື່ອເລືອກໄລຍະເວລາ/ຈຳນວນ ແລະ ຢືນຢັນສັ່ງຊື້ຢູ່ນັ້ນ
+  // (ການສັ່ງຊື້ຈິງ + POST /api/orders/create ຄຸມຢູ່ product.js ແທນ)
   function wireBuyButtons(products) {
     grid.querySelectorAll('.prod-card[data-pid] .buy-btn:not([disabled])').forEach((btn) => {
       const card = btn.closest('.prod-card[data-pid]');
       const pid = card ? card.dataset.pid : null;
-      const product = (products || []).find((p) => String(p.id) === String(pid));
-      btn.addEventListener('click', () => handleBuyClick(btn, product));
-    });
-  }
-
-  async function handleBuyClick(btn, product) {
-    if (!product) return;
-
-    if (product.duration_enabled) {
-      alert('ສິນຄ້ານີ້ມີຫຼາຍໄລຍະເວລາໃຫ້ເລືອກ — ກະລຸນາຕິດຕໍ່ແອດມິນຜ່ານປຸ່ມແຊັດ ເພື່ອເລືອກໄລຍະ ແລະ ສັ່ງຊື້.');
-      return;
-    }
-
-    const originalHtml = btn.innerHTML;
-    btn.disabled = true;
-    btn.textContent = 'ກຳລັງສັ່ງຊື້...';
-
-    try {
-      const res = await fetch('/api/orders/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product.id }),
+      btn.addEventListener('click', () => {
+        window.location.href = `product.html?pid=${encodeURIComponent(pid)}&cat=${encodeURIComponent(catIndex)}`;
       });
-      const data = await res.json().catch(() => ({}));
-
-      if (res.status === 401 || data.requireLogin) {
-        window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname + window.location.search);
-        return;
-      }
-      if (!res.ok || !data.ok) {
-        alert(data.error || 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ');
-        btn.disabled = false;
-        btn.innerHTML = originalHtml;
-        return;
-      }
-
-      alert(`ສັ່ງຊື້ສຳເລັດ! ລະຫັດສິນຄ້າຂອງທ່ານ:\n${data.code}\n\nເບິ່ງລາຍການນີ້ໄດ້ອີກຄັ້ງທີ່ "ປະຫວັດການສັ່ງຊື້"`);
-      window.location.reload(); // สต็อก/ยอดเงินเปลี่ยนจริง -> โหลดข้อมูลใหม่ทั้งหน้า
-    } catch (err) {
-      console.error('handleBuyClick failed:', err);
-      alert('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ');
-      btn.disabled = false;
-      btn.innerHTML = originalHtml;
-    }
+    });
   }
 
   function wireSearch(allProducts) {

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ລາຍລະອຽດສິນຄ້າ</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="product.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Noto+Sans+Lao+Looped:wght@600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="product-page">
+<div class="shell">
+
+  <!-- Header (ຄືກັນກັບໜ້າອື່ນໆໃນເວັບ) -->
+  <header>
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 8L5 21H19L21 8L12 2Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 8L12 12L16 8" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </div>
+      <span class="brand-name en"></span>
+    </div>
+    <button type="button" class="login-btn">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.76-3.58-5-8-5Z"/></svg>
+      <span>ລົງຊື່ເຂົ້າໃຊ້</span>
+    </button>
+  </header>
+
+  <!-- Back link -->
+  <a class="page-back" href="index.html#categories" id="backLink">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    ກັບໄປໜ້າຮ້ານ
+  </a>
+
+  <!-- Loading state -->
+  <div class="prod-page-loading" id="loadingState">ກຳລັງໂຫຼດ...</div>
+
+  <!-- Error state (ບໍ່ພົບສິນຄ້າ / ດຶງຂໍ້ມູນບໍ່ສຳເລັດ) -->
+  <div class="prod-page-error" id="errorState" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+    <p id="errorMsg">ບໍ່ພົບສິນຄ້ານີ້</p>
+    <a href="index.html#categories" class="error-back-btn">ກັບໄປໜ້າຮ້ານ</a>
+  </div>
+
+  <!-- Main product content (ຕື່ມດ້ວຍ product.js ຫຼັງໂຫຼດຂໍ້ມູນສຳເລັດ) -->
+  <div id="prodContent" style="display:none;">
+
+    <div class="prod-hero">
+      <span class="hud-corner tl"></span><span class="hud-corner br"></span>
+      <img id="prodImg" src="" alt="" style="display:none;">
+      <div class="prod-hero-placeholder" id="prodImgPlaceholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>
+      </div>
+    </div>
+
+    <div class="prod-title-wrap">
+      <div class="prod-title display-lo" id="prodTitle"></div>
+    </div>
+
+    <div class="badge-row" id="badgeRow"></div>
+
+    <!-- ຕົວເລືອກໄລຍະເວລາ (ສະແດງສະເພາະສິນຄ້າແບບ duration_enabled) -->
+    <div class="section" id="optionsSection" style="display:none;">
+      <div class="section-head">
+        <span class="section-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6Z"/></svg>
+          ຕົວເລືອກສິນຄ້າ
+          <span class="section-count" id="optCount">0</span>
+        </span>
+        <span class="section-selected" id="selectedLabel"></span>
+      </div>
+      <div class="opt-list" id="optList"></div>
+    </div>
+
+    <hr class="div">
+
+    <div class="section">
+      <div class="price-label">ລາຄາ</div>
+      <div class="price-value" id="priceValue">₭ 0</div>
+    </div>
+
+    <div class="section">
+      <div class="price-label" style="margin-bottom:10px;">ຈຳນວນ</div>
+      <div class="qty-row">
+        <button type="button" class="qty-btn" id="qtyMinus">−</button>
+        <span class="qty-value" id="qtyValue">1</span>
+        <button type="button" class="qty-btn" id="qtyPlus">+</button>
+      </div>
+      <div class="stock-note" id="stockNote"></div>
+    </div>
+
+    <div class="buy-bar">
+      <div class="buy-bar-total">
+        <span class="lbl">ລວມທັງໝົດ</span>
+        <span class="val" id="totalValue">₭ 0</span>
+      </div>
+      <button type="button" class="buy-btn" id="buyBtn">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M6 6h15l-1.5 9h-12L6 6Z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span id="buyBtnText">ຊື້ເລີຍ</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="fname en"></div>
+    <div class="fcopy">© 2026 <span class="fcopy-name en"></span> . ເວັບສ້າງໂດຍ BEERTJ . ຄວາມເປັນສ່ວນຕົວ</div>
+  </footer>
+
+  <!-- Chat FAB -->
+  <button class="chat-fab" aria-label="Chat">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+</div>
+<script src="storefront-data.js"></script>
+<script src="product.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
