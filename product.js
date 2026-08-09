@@ -82,8 +82,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     optionsSection.style.display = 'block';
     optCount.textContent = durations.length;
-    optList.innerHTML = durations.map((d, i) => `
-      <button type="button" class="opt-card ${i === selectedIndex ? 'selected' : ''}" data-i="${i}">
+    optList.innerHTML = durations.map((d, i) => {
+      const outOfStock = !(d.stock > 0);
+      return `
+      <button type="button" class="opt-card ${i === selectedIndex ? 'selected' : ''}" data-i="${i}" ${outOfStock ? 'disabled' : ''}>
         <span class="opt-name-wrap">
           <span class="opt-name-line">
             <span class="opt-name">${escapeHtml(product.name)} ${escapeHtml(d.label)}</span>
@@ -93,15 +95,17 @@ document.addEventListener('DOMContentLoaded', () => {
           </span>
           <span class="opt-meta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M3 7 12 3l9 4"/></svg>
-            ສິນຄ້າດິຈິທັນ • ເຫຼືອ ${d.stock}
+            ${outOfStock ? 'ສິນຄ້າດິຈິທັນ • ໝົດແລ້ວ' : `ສິນຄ້າດິຈິທັນ • ເຫຼືອ ${d.stock}`}
           </span>
         </span>
         <span class="opt-price">${formatKip(d.price)}</span>
       </button>
-    `).join('');
+    `;
+    }).join('');
 
     optList.querySelectorAll('.opt-card').forEach((el) => {
       el.addEventListener('click', () => {
+        if (el.disabled) return;
         selectedIndex = Number(el.dataset.i);
         qty = 1;
         renderOptions();

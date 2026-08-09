@@ -3,7 +3,7 @@
    ໃຊ້ຕົວແປສີ/ຟອນຮ່ວມກັບ style.css (:root) — ໂຫຼດ style.css ກ່ອນໄຟລ໌ນີ້ສະເໝີ
    ========================================================= */
 
-body.product-page{ padding-bottom:96px; }
+body.product-page{ padding-bottom:24px; }
 
 .prod-page-loading{
   padding:60px 16px; text-align:center; color:var(--text-faint); font-size:14px;
@@ -104,13 +104,16 @@ hr.div{ border:none; border-top:1px solid var(--card-border); margin:20px 16px 0
 .qty-value{ min-width:44px; text-align:center; font-size:17px; font-weight:800; }
 .stock-note{ font-size:12px; color:var(--text-faint); margin-top:9px; }
 
-/* -------- sticky buy bar -------- */
+/* -------- buy bar: inline in the page flow, right after the stock note
+   (previously position:fixed pinned it to the bottom of the screen —
+   moved to sit naturally in place instead) -------- */
 .buy-bar{
-  position:fixed; left:0; right:0; bottom:0;
-  background:rgba(0,0,0,.88); backdrop-filter:blur(10px);
-  border-top:1px solid var(--card-border);
-  padding:12px 16px calc(12px + env(safe-area-inset-bottom));
-  display:flex; align-items:center; gap:12px; z-index:20;
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:14px;
+  margin-top:16px;
+  padding:14px 16px;
+  display:flex; align-items:center; gap:12px;
 }
 .buy-bar-total{ display:flex; flex-direction:column; gap:1px; }
 .buy-bar-total .lbl{ font-size:11px; color:var(--text-faint); }
