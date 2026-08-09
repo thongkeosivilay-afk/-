@@ -22,6 +22,11 @@
                                       (orders.html)
      GET  /api/account/stats      -> ลูกค้า (ต้อง login) สรุปยอดสั่งซื้อสำเร็จ/ยอดใช้จ่ายรวม
                                       (profile.html)
+     GET  /api/account/reseller-status  -> ลูกค้า (ต้อง login) ดูสถานะตัวแทนของตัวเอง (ถ้ามี)
+                                      อ่านจากตาราง reseller_status ด้วย service_role key (profile.html)
+     POST /api/account/redeem-reseller-key -> ลูกค้า (ต้อง login) กรอกคีย์ตัวแทนที่หน้าโปรไฟล์ ->
+                                      เรียก RPC redeem_reseller_key ด้วย user.id/user.email ของ
+                                      คนที่ login อยู่ (ห้ามรับ user id จาก body เด็ดขาด กันสวมรอย)
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
 
    ---- ระบบแอดมิน ----
@@ -102,6 +107,12 @@ export default {
     }
     if (url.pathname === '/api/account/stats') {
       return handleAccountStats(request, env);
+    }
+    if (url.pathname === '/api/account/reseller-status') {
+      return handleResellerStatusGet(request, env);
+    }
+    if (url.pathname === '/api/account/redeem-reseller-key') {
+      return handleRedeemResellerKey(request, env);
     }
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
@@ -928,6 +939,84 @@ async function handleAccountStats(request, env) {
   } catch (err) {
     console.error('handleAccountStats failed:', err);
     return json({ ordersCompleted: 0, totalSpent: 0 });
+  }
+}
+
+/* ---------- 13) GET /api/account/reseller-status ----------
+   ໜ້າ profile.html ຮຽກຈຸດນີ້ ເພື່ອເບິ່ງວ່າຄົນທີ່ login ຢູ່ ເປັນຕົວແທນຢູ່ບໍ່ (ແລະລະດັບ/ໂຄວຕ້າ/
+   ວັນໝົດອາຍຸ) — ອ່ານຈາກ reseller_status ດ້ວຍ service_role key (ຕາຕະລາງນີ້ບໍ່ໄດ້ເປີດໃຫ້ browser
+   ອ່ານກົງໆ) ຄືນ status: null ຖ້າຍັງບໍ່ເຄີຍ redeem ຄີຍ໌ຕົວແທນເລີຍ */
+async function handleResellerStatusGet(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ ok: true, status: null });
+  }
+
+  try {
+    const rows = await supabaseSelect(env, 'reseller_status', {
+      select: 'is_reseller,duration_type,period_start,period_end,quota_target,discount_percent',
+      user_id: `eq.${user.id}`,
+      limit: '1',
+    });
+    const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    return json({ ok: true, status: row });
+  } catch (err) {
+    console.error('handleResellerStatusGet failed:', err);
+    return json({ ok: true, status: null });
+  }
+}
+
+/* ---------- 14) POST /api/account/redeem-reseller-key ----------
+   ໜ້າ profile.html ຮຽກຈຸດນີ້ ຕອນລູກຄ້າກອກຄີຍ໌ຕົວແທນແລ້ວກົດຢືນຢັນ — ຮຽກ RPC redeem_reseller_key
+   ດ້ວຍ user.id/user.email ຂອງຄົນທີ່ login ຢູ່ຈາກ session cookie ເທົ່ານັ້ນ (ບໍ່ຮັບຄ່າ user id ຈາກ
+   body ເດັດຂາດ ເພື່ອກັນລູກຄ້າສວມຮອຍປົດລັອກລາຄາຕົວແທນໃຫ້ຄົນອື່ນ) */
+async function handleRedeemResellerKey(request, env) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+  }
+
+  let body = {};
+  try { body = await request.json(); } catch { /* code จะเป็น undefined แล้วโดน validate ด้านล่าง */ }
+
+  const code = body.code ? String(body.code).trim().toUpperCase() : null;
+  if (!code) {
+    return json({ error: 'ກະລຸນາໃສ່ຄີຍ໌ຕົວແທນ' }, 400);
+  }
+
+  const ERROR_LABEL = {
+    KEY_NOT_FOUND: 'ບໍ່ພົບຄີຍ໌ນີ້ ກະລຸນາກວດສອບຄີຍ໌ອີກຄັ້ງ',
+    KEY_ALREADY_USED: 'ຄີຍ໌ນີ້ຖືກໃຊ້ໄປແລ້ວ',
+  };
+
+  try {
+    const rows = await supabaseRpcStrict(env, 'redeem_reseller_key', {
+      p_user_id: user.id,
+      p_user_email: user.email || null,
+      p_code: code,
+    });
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return json({
+      ok: true,
+      durationType: row ? row.duration_type : null,
+      periodEnd: row ? row.period_end : null,
+      discountPercent: row ? row.discount_percent : null,
+    });
+  } catch (err) {
+    const msg = String((err && err.message) || '');
+    const matchedKey = Object.keys(ERROR_LABEL).find((key) => msg.includes(key));
+    console.error('handleRedeemResellerKey failed:', err);
+    return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ໃຊ້ຄີຍ໌ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, matchedKey ? 400 : 502);
   }
 }
 
