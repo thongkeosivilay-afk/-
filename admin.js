@@ -179,6 +179,7 @@ async function loadProducts() {
   renderManageList(withStock);
   renderCodeProductSelect(withStock);
   renderCategoryOptions(withStock);
+  renderAgentPriceList(withStock);
   return withStock;
 }
 
@@ -1016,6 +1017,93 @@ function renderResellerKeys(keys) {
       copyKeyCode(code);
     });
   });
+}
+
+// ---------- ແຜງຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ ----------
+function renderAgentPriceList(products) {
+  const list = document.getElementById('agentPriceList');
+  if (!list) return;
+
+  const activeProducts = (products || []).filter(p => !p.archived);
+  if (!activeProducts.length) {
+    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າ — ເພີ່ມສິນຄ້າກ່ອນທີ່ແຖບ "ເພີ່ມສິນຄ້າ"</div>';
+    return;
+  }
+
+  list.innerHTML = activeProducts.map(p => {
+    if (p.duration_enabled) {
+      return `
+      <div class="price-prod-card" data-product-id="${p.id}">
+        <div class="price-prod-name">${(p.name || '').replace(/</g, '&lt;')}</div>
+        <div class="price-dur-list">
+          ${(p.durations || []).map(d => `
+            <div class="price-dur-row" data-duration-id="${d.id}">
+              <span class="price-dur-label">${d.label} <span class="price-dur-base">(ລາຄາປົກກະຕິ ${formatKipAdmin(d.price)})</span></span>
+              <input type="number" class="edit-reseller-price" placeholder="ຫວ່າງ = ໃຊ້ % ສ່ວນຫຼຸດ" value="${d.reseller_price ?? ''}" min="0" step="1">
+            </div>
+          `).join('')}
+        </div>
+        <button type="button" class="gx-submit price-save-btn" style="margin-top:10px;">
+          <span class="gx-spinner"></span>
+          <span class="gx-submit-label">ບັນທຶກລາຄາຕົວແທນ</span>
+        </button>
+      </div>`;
+    }
+    return `
+      <div class="price-prod-card" data-product-id="${p.id}">
+        <div class="price-prod-name">${(p.name || '').replace(/</g, '&lt;')} <span class="price-dur-base">(ລາຄາປົກກະຕິ ${formatKipAdmin(p.price)})</span></div>
+        <div class="price-dur-row" data-single="true">
+          <input type="number" class="edit-reseller-price" placeholder="ຫວ່າງ = ໃຊ້ % ສ່ວນຫຼຸດ" value="${p.reseller_price ?? ''}" min="0" step="1">
+        </div>
+        <button type="button" class="gx-submit price-save-btn" style="margin-top:10px;">
+          <span class="gx-spinner"></span>
+          <span class="gx-submit-label">ບັນທຶກລາຄາຕົວແທນ</span>
+        </button>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.price-prod-card').forEach(card => {
+    card.querySelector('.price-save-btn').addEventListener('click', () => saveAgentPrices(card));
+  });
+}
+
+async function saveAgentPrices(card) {
+  const btn = card.querySelector('.price-save-btn');
+  const productId = card.dataset.productId;
+  const durRows = card.querySelectorAll('.price-dur-row[data-duration-id]');
+
+  setLoading(btn, true);
+  try {
+    if (durRows.length) {
+      for (const row of durRows) {
+        const durationId = row.dataset.durationId;
+        const input = row.querySelector('.edit-reseller-price');
+        const val = input.value.trim();
+        const resellerPrice = val === '' ? null : Number(val);
+        const { error } = await supabaseClient
+          .from('product_durations')
+          .update({ reseller_price: resellerPrice })
+          .eq('id', durationId);
+        if (error) throw error;
+      }
+    } else {
+      const input = card.querySelector('.price-dur-row[data-single="true"] .edit-reseller-price');
+      const val = input.value.trim();
+      const resellerPrice = val === '' ? null : Number(val);
+      const { error } = await supabaseClient
+        .from('products')
+        .update({ reseller_price: resellerPrice })
+        .eq('id', productId);
+      if (error) throw error;
+    }
+    showToast('ບັນທຶກລາຄາຕົວແທນສຳເລັດແລ້ວ');
+    await loadProducts();
+  } catch (err) {
+    console.error(err);
+    showToast('ບັນທຶກບໍ່ສຳເລັດ: ' + err.message);
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 function openSlipLightbox(src) {
