@@ -18,3 +18,10 @@ SUPABASE_URL = "https://ebmambgqghyzrenknkeb.supabase.co"
 # ต้องตั้งแยกด้วยคำสั่ง (รันครั้งเดียว ใส่ค่าตอน prompt ถาม):
 #   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 # เอาค่ามาจาก Supabase Dashboard > Settings > API > service_role (secret)
+
+# ⚠️ DISCORD_WEBHOOK_URL ก็ห้ามใส่ในไฟล์นี้เช่นกัน (เป็น secret ที่ยิงข้อความเข้าห้องได้)
+# ใช้สำหรับแจ้งเตือนเข้า Discord ทุกครั้งที่มีคนล็อกอิน (Discord/อีเมล) หรือเติมเงิน
+# ต้องตั้งแยกด้วยคำสั่ง (รันครั้งเดียว ใส่ค่าตอน prompt ถาม):
+#   wrangler secret put DISCORD_WEBHOOK_URL
+# เอาค่ามาจาก: Discord > ตั้งค่าช่องที่ต้องการ (แนะนำสร้างช่องใหม่ เช่น #alerts) >
+# Edit Channel > Integrations > Webhooks > New Webhook > Copy Webhook URL
