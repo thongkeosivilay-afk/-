@@ -88,16 +88,17 @@ document.addEventListener('DOMContentLoaded', () => {
       <button type="button" class="opt-card ${i === selectedIndex ? 'selected' : ''}" data-i="${i}" ${outOfStock ? 'disabled' : ''}>
         <span class="opt-name-wrap">
           <span class="opt-name-line">
-            <span class="opt-name">${escapeHtml(product.name)} ${escapeHtml(d.label)}</span>
             <span class="opt-check">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
             </span>
+            <span class="opt-name">${escapeHtml(product.name)} ${escapeHtml(d.label)}</span>
           </span>
           <span class="opt-meta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M3 7 12 3l9 4"/></svg>
-            ${outOfStock ? 'ສິນຄ້າດິຈິທັນ • ໝົດແລ້ວ' : `ສິນຄ້າດິຈິທັນ • ເຫຼືອ ${d.stock}`}
+            ${outOfStock ? 'ໝົດແລ້ວ' : `ເຫຼືອ ${d.stock}`}
           </span>
         </span>
+        <span class="opt-divider"></span>
         <span class="opt-price">${formatKip(d.price)}</span>
       </button>
     `;
