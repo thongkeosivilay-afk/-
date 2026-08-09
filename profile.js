@@ -147,6 +147,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Reseller status (ตัวแทน) ----
     await refreshResellerStatus();
+
+    // ---- ถ้าเข้ามาจากลิงก์ #reseller (เมนู "สมัครตัวแทน") ให้เลื่อนไปการ์ดนั้นให้เลย ----
+    if (window.location.hash === '#reseller') {
+      const target = document.getElementById('reseller');
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   })();
 
   /* ---------- Reseller status (ตัวแทน) ---------- */
