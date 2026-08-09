@@ -841,11 +841,7 @@ function renderResellerTiers(tiers) {
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         </button>
       </div>
-      <div class="tier-card-fields ${isLifetime ? 'single' : ''}">
-        <div>
-          <label>ສ່ວນຫຼຸດ (%)</label>
-          <input type="number" class="edit-discount" value="${t.discount_percent ?? 0}" min="0" max="100" step="1">
-        </div>
+      <div class="tier-card-fields single">
         ${!isLifetime ? `
         <div>
           <label>ໂຄວຕ້າຍອດຊື້ (ກີບ) — ຕ້ອງເຮັດໃຫ້ຄົບພາຍໃນໄລຍະ ບໍ່ຄັ້ນຈະຖືກປົດ</label>
@@ -864,10 +860,9 @@ function renderResellerTiers(tiers) {
 async function saveResellerTier(card) {
   const durationType = card.dataset.durationType;
   const btn = card.querySelector('.save-btn');
-  const discountInput = card.querySelector('.edit-discount');
   const quotaInput = card.querySelector('.edit-quota');
 
-  const updates = { discount_percent: Number(discountInput.value) || 0, updated_at: new Date().toISOString() };
+  const updates = { updated_at: new Date().toISOString() };
   if (quotaInput) updates.quota_amount = Number(quotaInput.value) || 0;
 
   btn.disabled = true;
