@@ -35,10 +35,114 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* ---------- Contact modal (popup ຕອນກົດ chat FAB) ----------
+     ດຶງລິ້ງແທ້ຈາກ /api/public/storefront -> store.social (ອິງຄ່າທີ່ແອດມິນຕັ້ງໄວ້ໃນ
+     ຫ້ອງແອດມິນ ຊ່ອງທາງໂຊເຊียล — social_facebook / social_discord / social_line /
+     social_telegram / social_whatsapp). ຊ່ອງທາງໃດແອດມິນຍັງບໍ່ໄດ້ໃສ່ລິ້ງ (null/ຫວ່າງ)
+     ຈະບໍ່ໂຊວ໌ໃນ popup ນີ້ອັດຕະໂນມັດ */
+  const SOCIAL_META = {
+    facebook: {
+      name: 'Facebook', color: '#1877F2',
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7.6h2.55l.38-2.96h-2.93V8.55c0-.86.24-1.44 1.47-1.44h1.57V4.46A20.9 20.9 0 0 0 14.3 4.3c-2.25 0-3.79 1.37-3.79 3.89v2.25H8v2.96h2.51V21h2.99Z"/></svg>',
+    },
+    discord: {
+      name: 'Discord', color: '#5865F2',
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 5.4A17.6 17.6 0 0 0 15.9 4a.06.06 0 0 0-.07.03c-.2.34-.4.79-.56 1.14a16.4 16.4 0 0 0-4.87 0c-.15-.36-.36-.8-.57-1.14A.07.07 0 0 0 9.86 4c-1.4.24-2.75.66-4.02 1.4a.06.06 0 0 0-.03.02C3.1 8.8 2.4 12.1 2.7 15.4a.07.07 0 0 0 .03.05 17.7 17.7 0 0 0 5.3 2.65.07.07 0 0 0 .08-.02c.4-.56.77-1.15 1.08-1.77a.07.07 0 0 0-.04-.1 11.6 11.6 0 0 1-1.67-.79.07.07 0 0 1 0-.12c.11-.08.22-.17.33-.26a.07.07 0 0 1 .07 0c3.5 1.6 7.3 1.6 10.76 0a.07.07 0 0 1 .07 0c.11.09.22.18.33.26a.07.07 0 0 1 0 .12c-.53.31-1.09.57-1.67.79a.07.07 0 0 0-.04.1c.32.62.69 1.21 1.08 1.77a.07.07 0 0 0 .08.02 17.6 17.6 0 0 0 5.32-2.65.07.07 0 0 0 .03-.05c.36-3.8-.6-7.08-2.55-10a.06.06 0 0 0-.03-.03ZM8.68 13.4c-.94 0-1.71-.87-1.71-1.94 0-1.06.76-1.93 1.71-1.93.96 0 1.73.88 1.71 1.93 0 1.07-.76 1.94-1.71 1.94Zm6.65 0c-.94 0-1.71-.87-1.71-1.94 0-1.06.76-1.93 1.71-1.93.96 0 1.73.88 1.71 1.93 0 1.07-.75 1.94-1.71 1.94Z"/></svg>',
+    },
+    line: {
+      name: 'Line', color: '#06C755',
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3C6.48 3 2 6.58 2 11c0 3.95 3.56 7.26 8.37 7.9.33.07.77.22.88.5.1.26.07.66.03.92l-.14.85c-.04.26-.2 1 .87.55 1.07-.46 5.77-3.4 7.87-5.83C21.3 13.85 22 12.5 22 11c0-4.42-4.48-8-10-8Zm-3.9 10.4H6.6a.4.4 0 0 1-.4-.4V8.9c0-.22.18-.4.4-.4s.4.18.4.4v3.7h1.1c.22 0 .4.18.4.4s-.18.4-.4.4Zm2.05 0a.4.4 0 0 1-.4-.4V8.9c0-.22.18-.4.4-.4s.4.18.4.4V13c0 .22-.18.4-.4.4Zm4.75 0a.4.4 0 0 1-.32-.16l-2.03-2.75V13c0 .22-.18.4-.4.4s-.4-.18-.4-.4V8.9c0-.18.11-.33.28-.38a.4.4 0 0 1 .44.14l2.03 2.75V8.9c0-.22.18-.4.4-.4s.4.18.4.4V13c0 .18-.11.33-.28.38a.4.4 0 0 1-.12.02Zm3.7-3.29c.22 0 .4.18.4.4s-.18.4-.4.4h-1.5v.89h1.5c.22 0 .4.18.4.4s-.18.4-.4.4h-1.9a.4.4 0 0 1-.4-.4V8.9c0-.22.18-.4.4-.4h1.9c.22 0 .4.18.4.4s-.18.4-.4.4h-1.5v.81h1.5Z"/></svg>',
+    },
+    telegram: {
+      name: 'Telegram', color: '#26A5E4',
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.4 4.6 2.9 11.8c-.9.36-.9 1.65.03 1.98l4.4 1.53 1.7 5.4c.24.75 1.2.95 1.73.36l2.5-2.8 4.6 3.4c.72.53 1.75.14 1.94-.73l3.13-14.5c.22-1-.75-1.83-1.53-1.34ZM8.9 14.9l-1.2-4 9.6-6.35c.16-.1.33.11.19.24L9.6 12.9l-.22 2Z"/></svg>',
+    },
+    whatsapp: {
+      name: 'WhatsApp', color: '#25D366',
+      icon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4c-.28-.14-1.64-.8-1.9-.9-.25-.09-.44-.14-.62.14-.18.28-.72.9-.88 1.08-.16.18-.32.2-.6.07-.28-.14-1.18-.43-2.24-1.37-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.13-.13.28-.32.42-.48.14-.16.18-.28.28-.46.09-.18.05-.34-.02-.48-.07-.14-.62-1.5-.85-2.05-.22-.53-.45-.46-.62-.47h-.53c-.18 0-.48.07-.73.34-.25.28-.96.94-.96 2.28 0 1.34.98 2.64 1.12 2.82.14.18 1.93 2.95 4.68 4.14.65.28 1.16.45 1.56.58.66.21 1.25.18 1.72.11.53-.08 1.64-.67 1.87-1.32.23-.65.23-1.2.16-1.32-.07-.12-.25-.19-.53-.33Z"/><path d="M12.04 2C6.5 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.08L2 22l5.06-1.33A9.96 9.96 0 0 0 12.04 22C17.6 22 22 17.5 22 12S17.6 2 12.04 2Zm0 18.14c-1.68 0-3.24-.5-4.55-1.35l-.33-.2-3.34.88.9-3.25-.22-.34a8.12 8.12 0 0 1-1.28-4.4c0-4.5 3.68-8.15 8.22-8.15 4.53 0 8.22 3.66 8.22 8.15 0 4.5-3.69 8.15-8.22 8.15Z"/></svg>',
+    },
+  };
+
+  function escHtml(str) {
+    return String(str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+  }
+
+  function contactLinksHTML(social) {
+    const entries = Object.keys(SOCIAL_META)
+      .map((key) => ({ key, ...SOCIAL_META[key], href: social && String(social[key] || '').trim() }))
+      .filter((l) => l.href);
+
+    if (!entries.length) {
+      return `<p class="contact-modal-empty">ຮ້ານຍັງບໍ່ໄດ້ຕັ້ງຄ່າຊ່ອງທາງຕິດຕໍ່ — ເຂົ້າ "ຫ້ອງແອດມິນ &gt; ຊ່ອງທາງໂຊເຊียล" ເພື່ອເພີ່ມລິ້ງ</p>`;
+    }
+
+    return `<div class="contact-modal-links">${entries.map((l) => `
+      <a class="contact-link" href="${escHtml(l.href)}" target="_blank" rel="noopener">
+        <span class="contact-link-icon" style="background:${l.color}">${l.icon}</span>
+        <span class="contact-link-name">${escHtml(l.name)}</span>
+        <svg class="contact-link-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </a>
+    `).join('')}</div>`;
+  }
+
+  let contactModalOverlay = null;
+
+  function buildContactModal(storeName, social) {
+    const name = (storeName || document.querySelector('.brand-name, .brand-name-inline')?.textContent || '').trim() || 'ຮ້ານຄ້າ';
+    const logoImg = document.querySelector('.logo img');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'contact-modal-overlay';
+    overlay.innerHTML = `
+      <div class="contact-modal" role="dialog" aria-modal="true" aria-label="ຊ່ອງທາງຕິດຕໍ່">
+        <button type="button" class="contact-modal-close" id="contactModalClose" aria-label="ປິດ">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+        <div class="contact-modal-logo">
+          ${logoImg ? `<img src="${logoImg.src}" alt="${escHtml(name)}">` : `
+          <svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
+        </div>
+        <h3 class="contact-modal-title">${escHtml(name)}</h3>
+        <p class="contact-modal-sub">ຊ່ອງທາງຕິດຕໍ່ &amp; ໂຊເຊียล</p>
+        ${contactLinksHTML(social)}
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const closeModal = () => {
+      overlay.classList.remove('show');
+      document.body.classList.remove('contact-modal-open');
+    };
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal(); // ກົດພື້ນທີ່ນອກກ່ອງ ໃຫ້ປິດ
+    });
+    overlay.querySelector('#contactModalClose').addEventListener('click', closeModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+    return overlay;
+  }
+
   const chatFab = document.querySelector('.chat-fab');
   if (chatFab) {
-    chatFab.addEventListener('click', () => {
-      window.open('https://discord.com', '_blank', 'noopener');
+    chatFab.addEventListener('click', async () => {
+      if (!contactModalOverlay) {
+        let storeName = null;
+        let social = null;
+        try {
+          // StorefrontData ດຶງ/cache ຈາກ /api/public/storefront ຢູ່ແລ້ວ (storefront-data.js) —
+          // ຮຽກຊ້ຳຢູ່ນີ້ຈະບໍ່ຍິງ request ໃໝ່ຖ້າໜ້ານັ້ນເຄີຍດຶງໄປແລ້ວ
+          const data = await window.StorefrontData.fetchData();
+          storeName = data?.store?.name || null;
+          social = data?.store?.social || null;
+        } catch (err) {
+          console.error('Contact modal: fetchData failed', err);
+        }
+        contactModalOverlay = buildContactModal(storeName, social);
+      }
+      contactModalOverlay.classList.add('show');
+      document.body.classList.add('contact-modal-open');
     });
   }
 
