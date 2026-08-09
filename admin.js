@@ -40,6 +40,7 @@ async function checkAuthAndInit() {
     return;
   }
 
+  currentAdminUser = data.user;
   showAdminApp();
 }
 
@@ -75,6 +76,7 @@ async function showAdminApp() {
 // ============================================
 
 let currentProducts = [];
+let currentAdminUser = null;
 let selectedImageFile = null;
 let currentSiteSettings = {};
 let selectedLogoFile = null;
@@ -790,6 +792,230 @@ async function decideTopup(id, status, card) {
     card.remove();
     loadTopupRequests();
   }, 200);
+}
+
+// ---------- ແຜງລະບົບຕົວແທນ (reseller) ----------
+const RESELLER_TIER_LABELS = { '7d': '7 ມື້', '14d': '14 ມື້', '30d': '30 ມື້', 'lifetime': 'ຖາວອນ' };
+const RESELLER_TIER_ORDER = ['7d', '14d', '30d', 'lifetime'];
+
+let currentResellerTiers = [];
+let currentResellerKeys = [];
+
+function tierLabel(durationType) {
+  return RESELLER_TIER_LABELS[durationType] || durationType;
+}
+
+async function loadResellerTiers() {
+  const { data, error } = await supabaseClient
+    .from('reseller_tiers')
+    .select('*');
+
+  if (error) {
+    console.error(error);
+    document.getElementById('agentTierList').innerHTML = '<div class="empty-note">ໂຫຼດຂໍ້ມູນຜິດພາດ</div>';
+    return;
+  }
+
+  currentResellerTiers = (data || []).sort(
+    (a, b) => RESELLER_TIER_ORDER.indexOf(a.duration_type) - RESELLER_TIER_ORDER.indexOf(b.duration_type)
+  );
+  renderResellerTiers(currentResellerTiers);
+  populateAgentKeyTierSelect(currentResellerTiers);
+}
+
+function renderResellerTiers(tiers) {
+  const list = document.getElementById('agentTierList');
+  if (!tiers.length) {
+    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີລະດັບຕົວແທນ — ກະລຸນາຮັນ SQL schema (reseller-system-v2) ກ່ອນ</div>';
+    return;
+  }
+
+  list.innerHTML = tiers.map(t => {
+    const isLifetime = t.period_days === null;
+    return `
+    <div class="tier-card" data-duration-type="${t.duration_type}">
+      <div class="tier-card-head">
+        <span class="tier-card-title">${tierLabel(t.duration_type)}</span>
+        <button class="icon-btn save-btn" title="ບັນທຶກ">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        </button>
+      </div>
+      <div class="tier-card-fields ${isLifetime ? 'single' : ''}">
+        <div>
+          <label>ສ່ວນຫຼຸດ (%)</label>
+          <input type="number" class="edit-discount" value="${t.discount_percent ?? 0}" min="0" max="100" step="1">
+        </div>
+        ${!isLifetime ? `
+        <div>
+          <label>ໂຄວຕ້າຍອດຊື້ (ກີບ) — ຕ້ອງເຮັດໃຫ້ຄົບພາຍໃນໄລຍະ ບໍ່ຄັ້ນຈະຖືກປົດ</label>
+          <input type="number" class="edit-quota" value="${t.quota_amount ?? 0}" min="0" step="1">
+        </div>` : `
+        <div class="tier-card-lifetime-note">ຖາວອນ — ບໍ່ມີເງື່ອນໄຂໂຄວຕ້າ ໃຊ້ໄດ້ຕະຫຼອດໄປ</div>`}
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.tier-card').forEach(card => {
+    card.querySelector('.save-btn').addEventListener('click', () => saveResellerTier(card));
+  });
+}
+
+async function saveResellerTier(card) {
+  const durationType = card.dataset.durationType;
+  const btn = card.querySelector('.save-btn');
+  const discountInput = card.querySelector('.edit-discount');
+  const quotaInput = card.querySelector('.edit-quota');
+
+  const updates = { discount_percent: Number(discountInput.value) || 0, updated_at: new Date().toISOString() };
+  if (quotaInput) updates.quota_amount = Number(quotaInput.value) || 0;
+
+  btn.disabled = true;
+  const { error } = await supabaseClient
+    .from('reseller_tiers')
+    .update(updates)
+    .eq('duration_type', durationType);
+  btn.disabled = false;
+
+  if (error) {
+    console.error(error);
+    showToast('ບັນທຶກບໍ່ສຳເລັດ: ' + error.message);
+    return;
+  }
+  showToast(`ບັນທຶກລະດັບ ${tierLabel(durationType)} ສຳເລັດແລ້ວ`);
+  loadResellerTiers();
+}
+
+function populateAgentKeyTierSelect(tiers) {
+  const select = document.getElementById('agentKeyTierSelect');
+  if (!select) return;
+  const prevValue = select.value;
+  select.innerHTML = tiers.map(t => `<option value="${t.duration_type}">${tierLabel(t.duration_type)}</option>`).join('');
+  if (prevValue && tiers.some(t => t.duration_type === prevValue)) select.value = prevValue;
+}
+
+async function createResellerKey() {
+  const btn = document.getElementById('agentCreateKeyBtn');
+  const msg = document.getElementById('agentCreateKeyMsg');
+  const select = document.getElementById('agentKeyTierSelect');
+  const durationType = select.value;
+
+  if (!durationType) {
+    setMsg(msg, 'ບໍ່ພົບລະດັບໃຫ້ເລືອກ', 'error');
+    return;
+  }
+
+  setLoading(btn, true);
+  setMsg(msg, 'ກຳລັງສ້າງຄີຍ໌...', 'pending');
+
+  const { data, error } = await supabaseClient.rpc('admin_create_reseller_key', {
+    p_duration_type: durationType,
+    p_created_by: currentAdminUser ? currentAdminUser.username : null,
+  });
+
+  setLoading(btn, false);
+
+  if (error) {
+    console.error(error);
+    setMsg(msg, 'ສ້າງຄີຍ໌ບໍ່ສຳເລັດ: ' + error.message, 'error');
+    return;
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  setMsg(msg, 'ສ້າງຄີຍ໌ສຳເລັດແລ້ວ', 'success');
+
+  const resultBox = document.getElementById('agentNewKeyResult');
+  resultBox.innerHTML = `
+    <div class="new-key-banner">
+      <div>
+        <div class="new-key-banner-label">ຄີຍ໌ໃໝ່ (${tierLabel(row.duration_type)})</div>
+        <div class="new-key-banner-code">${row.code}</div>
+      </div>
+      <button type="button" class="key-copy-btn" id="copyNewKeyBtn" title="ຄັດລອກ">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </button>
+    </div>
+  `;
+  document.getElementById('copyNewKeyBtn').addEventListener('click', () => copyKeyCode(row.code));
+
+  loadResellerKeys();
+}
+
+async function copyKeyCode(code) {
+  try {
+    await navigator.clipboard.writeText(code);
+    showToast('ຄັດລອກຄີຍ໌ແລ້ວ');
+  } catch (err) {
+    console.error(err);
+    showToast('ຄັດລອກບໍ່ສຳເລັດ — ຄີຍ໌ຄື: ' + code);
+  }
+}
+
+async function loadResellerKeys() {
+  const refreshBtn = document.getElementById('agentKeysRefreshBtn');
+  if (refreshBtn) refreshBtn.classList.add('spinning');
+
+  const { data, error } = await supabaseClient
+    .from('reseller_keys')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (refreshBtn) setTimeout(() => refreshBtn.classList.remove('spinning'), 400);
+
+  if (error) {
+    console.error(error);
+    document.getElementById('agentKeysList').innerHTML = '<div class="empty-note">ໂຫຼດຂໍ້ມູນຜິດພາດ</div>';
+    return;
+  }
+
+  currentResellerKeys = data || [];
+  renderResellerKeysOpsStrip(currentResellerKeys);
+  renderResellerKeys(currentResellerKeys);
+}
+
+function renderResellerKeysOpsStrip(keys) {
+  const strip = document.getElementById('agentKeysOpsStrip');
+  const unused = keys.filter(k => k.status === 'unused').length;
+  const used = keys.filter(k => k.status === 'used').length;
+  strip.innerHTML = `
+    <div class="ops-chip"><div class="ops-num">${keys.length}</div><div class="ops-label">ຄີຍ໌ທັງໝົດ</div></div>
+    <div class="ops-chip"><div class="ops-num">${unused}</div><div class="ops-label">ຍັງບໍ່ໄດ້ໃຊ້</div></div>
+    <div class="ops-chip"><div class="ops-num">${used}</div><div class="ops-label">ໃຊ້ແລ້ວ</div></div>
+  `;
+}
+
+function renderResellerKeys(keys) {
+  const list = document.getElementById('agentKeysList');
+  if (!keys.length) {
+    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີຄີຍ໌ — ສ້າງຄີຍ໌ທຳອິດຢູ່ດ້ານເທິງ</div>';
+    return;
+  }
+
+  list.innerHTML = keys.map(k => `
+    <div class="agent-key-row" data-code="${k.code}">
+      <div class="agent-key-main">
+        <span class="agent-key-code">${k.code}</span>
+        <span class="agent-key-meta">
+          ${tierLabel(k.duration_type)} • ${new Date(k.created_at).toLocaleString('lo-LA')}
+          ${k.status === 'used' ? `<br>ໃຊ້ໂດຍ: ${k.used_by || '—'} (${k.used_at ? new Date(k.used_at).toLocaleString('lo-LA') : '—'})` : ''}
+        </span>
+      </div>
+      <div class="agent-key-right">
+        <span class="key-status-tag ${k.status}">${k.status === 'unused' ? 'ຍັງບໍ່ໄດ້ໃຊ້' : 'ໃຊ້ແລ້ວ'}</span>
+        ${k.status === 'unused' ? `
+        <button type="button" class="key-copy-btn" title="ຄັດລອກ">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>` : ''}
+      </div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.agent-key-row .key-copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.closest('.agent-key-row').dataset.code;
+      copyKeyCode(code);
+    });
+  });
 }
 
 function openSlipLightbox(src) {
@@ -1625,6 +1851,13 @@ async function initAdminPanel() {
   const topupRefreshBtn = document.getElementById('topupRefreshBtn');
   if (topupRefreshBtn) topupRefreshBtn.addEventListener('click', loadTopupRequests);
 
+  // ---- reseller / agent ----
+  const agentCreateKeyBtn = document.getElementById('agentCreateKeyBtn');
+  if (agentCreateKeyBtn) agentCreateKeyBtn.addEventListener('click', createResellerKey);
+
+  const agentKeysRefreshBtn = document.getElementById('agentKeysRefreshBtn');
+  if (agentKeysRefreshBtn) agentKeysRefreshBtn.addEventListener('click', loadResellerKeys);
+
   const slipLightbox = document.getElementById('slipLightbox');
   const slipLightboxClose = document.getElementById('slipLightboxClose');
   if (slipLightboxClose) slipLightboxClose.addEventListener('click', closeSlipLightbox);
@@ -1639,6 +1872,8 @@ async function initAdminPanel() {
   await loadSiteSettingsAdmin();
   await loadProducts();
   await loadTopupRequests();
+  await loadResellerTiers();
+  await loadResellerKeys();
 }
 
 // ============================================
