@@ -578,6 +578,7 @@ async function handlePublicStorefront(request, env) {
     const siteSettingsColumns = [
       'store_name', 'tagline', 'announcement_text', 'hero_image',
       'qr_label', 'qr_label_2', 'qr_url', 'qr_url_2',
+      'social_facebook', 'social_discord', 'social_line', 'social_telegram', 'social_whatsapp',
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_name`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_image`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_title`),
@@ -655,6 +656,13 @@ async function handlePublicStorefront(request, env) {
         qrLabel2: settings.qr_label_2 || null,
         qrUrl1: settings.qr_url || null,
         qrUrl2: settings.qr_url_2 || null,
+        social: {
+          facebook: settings.social_facebook || null,
+          discord: settings.social_discord || null,
+          line: settings.social_line || null,
+          telegram: settings.social_telegram || null,
+          whatsapp: settings.social_whatsapp || null,
+        },
       },
       categories,
       stats: {
