@@ -1015,12 +1015,12 @@ function renderResellerKeys(keys) {
   });
 }
 
-// ---------- ຈັດການຕົວແທນ (ລາຍຊື່ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວ + ຍອດຊື້ສະສົມ + ປິດສິດຕົວແທນ) ----------
-// ໝາຍເຫດສຳຄັນ: ໃນລະບົບນີ້ "ການເປັນຕົວແທນ" ບໍ່ໄດ້ແຍກເປັນຕາຕະລາງບັນຊີຕົວແທນຕ່າງຫາກ —
-// ອີງໃສ່ແຖວ reseller_keys ທີ່ຖືກໃຊ້ (status='used') ເປັນຫຼັກຖານວ່າອີເມວນັ້ນເປັນຕົວແທນຢູ່.
-// ການ "ປິດຕົວແທນ" ຈຶ່ງເຮັດໂດຍປ່ຽນ status ຂອງຄີຍ໌ນັ້ນເປັນ 'revoked' — ຖ້າ RPC ຝັ່ງ backend (purchase_product)
-// ອີງໃສ່ status='used' ໃນການໃຫ້ລາຄາຕົວແທນ ການປິດຈະຕັດລາຄາຕົວແທນຂອງຄົນນັ້ນທັນທີ. ຖ້າຖານຂໍ້ມູນມີ
-// CHECK constraint ຈຳກັດຄ່າ status ໄວ້ສະເພາະ 'unused'/'used' ຈະຕ້ອງເພີ່ມຄ່າ 'revoked' ເຂົ້າໄປກ່ອນ (ເບິ່ງຂໍ້ຄວາມແຈ້ງເຕືອນທ້າຍແຊັດ)
+// ---------- ຈັດການຕົວແທນ (ອ່ານ/ແກ້ໄຂຈາກ reseller_status ໂດຍກົງ) ----------
+// ໝາຍເຫດສຳຄັນ: reseller_status (ບໍ່ແມ່ນ reseller_keys) ຄືຕາຕະລາງທີ່ RPC get_effective_price /
+// is_active_reseller ໃຊ້ຕັດສິນວ່າຄົນນີ້ຍັງໄດ້ລາຄາຕົວແທນຢູ່ບໍ່ (ອີງໃສ່ reseller_status.is_reseller)
+// reseller_keys ເປັນແຄ່ປະຫວັດວ່າຄີຍ໌ໃດຖືກ redeem ໄປແລ້ວເທົ່ານັ້ນ ບໍ່ມີຜົນຕໍ່ລາຄາໂດຍກົງ —
+// ດັ່ງນັ້ນ "ປິດຕົວແທນ" ຈຶ່ງຕ້ອງແກ້ reseller_status.is_reseller (ບໍ່ແມ່ນ reseller_keys.status)
+// ຈຶ່ງຈະຕັດລາຄາພິເສດຂອງຄົນນັ້ນໄດ້ຈິງທັນທີ
 let currentAgentAccounts = [];
 let agentAccountsSearchTerm = '';
 
@@ -1029,16 +1029,20 @@ async function loadAgentAccounts() {
   const strip = document.getElementById('agentAccountsOpsStrip');
   if (!list) return;
 
-  // ເອົາຄີຍ໌ທີ່ຖືກໃຊ້ໄປແລ້ວ (used ຫຼື revoked) ແລ້ວຈັດກຸ່ມຕາມ used_by, ຖ້າຄົນດຽວກັນໃຊ້ຫຼາຍຄີຍ໌ ໃຫ້ເອົາລ້າສຸດ
-  const usedKeys = (currentResellerKeys || []).filter(k => k.used_by && (k.status === 'used' || k.status === 'revoked'));
-  const byEmail = new Map();
-  usedKeys.forEach(k => {
-    const key = k.used_by;
-    const existing = byEmail.get(key);
-    if (!existing || new Date(k.used_at) > new Date(existing.used_at)) byEmail.set(key, k);
-  });
+  const { data, error } = await supabaseClient
+    .from('reseller_status')
+    .select('*')
+    .order('updated_at', { ascending: false });
 
-  let accounts = [...byEmail.values()];
+  if (error) {
+    console.error(error);
+    if (strip) strip.innerHTML = '';
+    list.innerHTML = '<div class="empty-note">ໂຫຼດຂໍ້ມູນຜິດພາດ: ' + error.message + '</div>';
+    currentAgentAccounts = [];
+    return;
+  }
+
+  let accounts = data || [];
 
   if (!accounts.length) {
     if (strip) strip.innerHTML = '';
@@ -1047,30 +1051,35 @@ async function loadAgentAccounts() {
     return;
   }
 
-  // ດຶງຍອດຊື້ສະສົມຂອງແຕ່ລະຄົນຈາກຕາຕະລາງ orders (ອີງໃສ່ຖັນ user_email) — ຖ້າຄໍລຳນີ້ບໍ່ມີໃນຖານຂໍ້ມູນ ຈະ fail ແບບບໍ່ພັງໜ້າ
+  // ດຶງຍອດຊື້ສະສົມຂອງແຕ່ລະຄົນຈາກຕາຕະລາງ orders (ອີງໃສ່ user_email) — ຖ້າຄົນນັ້ນຍັງບໍ່ມີອີເມວບັນທຶກໄວ້
+  // (redeem ກ່ອນລະບົບເພີ່ມ user_email ເຂົ້າ reseller_status) ຈະຂ້າມການຄິດຍອດແບບບໍ່ພັງໜ້າ
   let ordersOk = true;
-  accounts = await Promise.all(accounts.map(async (k) => {
+  accounts = await Promise.all(accounts.map(async (s) => {
     let totalSpent = null;
-    try {
-      const { data, error } = await supabaseClient
-        .from('orders')
-        .select('price')
-        .eq('user_email', k.used_by)
-        .eq('status', 'completed');
-      if (error) throw error;
-      totalSpent = (data || []).reduce((sum, o) => sum + (Number(o.price) || 0), 0);
-    } catch (err) {
-      ordersOk = false;
-      console.error('loadAgentAccounts: ດຶງຍອດຂາຍບໍ່ສຳເລັດ', err);
+    if (s.user_email) {
+      try {
+        const { data: odata, error: oerr } = await supabaseClient
+          .from('orders')
+          .select('price')
+          .eq('user_email', s.user_email)
+          .eq('status', 'completed');
+        if (oerr) throw oerr;
+        totalSpent = (odata || []).reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+      } catch (err) {
+        ordersOk = false;
+        console.error('loadAgentAccounts: ດຶງຍອດຂາຍບໍ່ສຳເລັດ', err);
+      }
     }
-    return { ...k, totalSpent };
+    // ຫາລະຫັດຄີຍ໌ທີ່ຄົນນີ້ໃຊ້ (ຖ້າມີ) ມາໂຊວ໌ປະກອບ — ບໍ່ບັງຄັບ, ອີງໃສ່ currentResellerKeys ທີ່ໂຫຼດໄວ້ແລ້ວ
+    const matchedKey = (currentResellerKeys || []).find(k => k.used_by === s.user_id);
+    return { ...s, totalSpent, code: matchedKey ? matchedKey.code : null };
   }));
 
   currentAgentAccounts = accounts;
 
   if (strip) {
-    const active = accounts.filter(a => a.status === 'used').length;
-    const revoked = accounts.filter(a => a.status === 'revoked').length;
+    const active = accounts.filter(a => a.is_reseller).length;
+    const revoked = accounts.filter(a => !a.is_reseller).length;
     strip.innerHTML = `
       <div class="ops-chip"><div class="ops-num">${accounts.length}</div><div class="ops-label">ຕົວແທນທັງໝົດ</div></div>
       <div class="ops-chip"><div class="ops-num">${active}</div><div class="ops-label">ທຳງານຢູ່</div></div>
@@ -1086,7 +1095,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
   if (!list) return;
 
   const term = agentAccountsSearchTerm.trim().toLowerCase();
-  const filtered = term ? accounts.filter(a => (a.used_by || '').toLowerCase().includes(term)) : accounts;
+  const filtered = term ? accounts.filter(a => (a.user_email || '').toLowerCase().includes(term)) : accounts;
 
   if (!filtered.length) {
     list.innerHTML = '<div class="empty-note">ບໍ່ພົບຕົວແທນທີ່ຄົ້ນຫາ</div>';
@@ -1094,14 +1103,15 @@ function renderAgentAccounts(accounts, ordersFailed) {
   }
 
   list.innerHTML = filtered.map(a => {
-    const tier = currentResellerTiers.find(t => t.duration_type === a.duration_type);
-    const isLifetime = tier && tier.period_days === null;
-    const quota = tier ? Number(tier.quota_amount) || 0 : 0;
+    const isLifetime = a.period_end === null;
+    const quota = Number(a.quota_target) || 0;
     const spent = a.totalSpent;
 
     let progressHtml = '';
-    if (ordersFailed || spent === null) {
-      progressHtml = `<div class="agent-acc-note">ບໍ່ສາມາດດຶງຍອດຊື້ສະສົມໄດ້ (ຕາຕະລາງ orders ອາດບໍ່ມີຖັນ user_email)</div>`;
+    if (!a.user_email) {
+      progressHtml = `<div class="agent-acc-note">ບໍ່ມີອີເມວບັນທຶກໄວ້ ຈຶ່ງຄິດຍອດຊື້ສະສົມບໍ່ໄດ້</div>`;
+    } else if (ordersFailed || spent === null) {
+      progressHtml = `<div class="agent-acc-note">ບໍ່ສາມາດດຶງຍອດຊື້ສະສົມໄດ້</div>`;
     } else if (isLifetime || !quota) {
       progressHtml = `<div class="agent-acc-progress-text">ຍອດຊື້ສະສົມ ${formatKipAdmin(spent)} • ${isLifetime ? 'ຖາວອນ ບໍ່ມີເປົ້າ' : 'ບໍ່ໄດ້ຕັ້ງເປົ້າ'}</div>`;
     } else {
@@ -1113,18 +1123,23 @@ function renderAgentAccounts(accounts, ordersFailed) {
         </div>`;
     }
 
-    const isRevoked = a.status === 'revoked';
+    const isRevoked = !a.is_reseller;
+    const emailLabel = a.user_email
+      ? a.user_email.replace(/</g, '&lt;')
+      : `ບໍ່ມີອີເມວ (user_id: ${(a.user_id || '').slice(0, 8)}…)`;
 
     return `
-    <div class="agent-acc-row" data-code="${a.code}" data-email="${(a.used_by || '').replace(/"/g, '&quot;')}">
+    <div class="agent-acc-row" data-user-id="${a.user_id}" data-email="${(a.user_email || '').replace(/"/g, '&quot;')}">
       <div class="agent-acc-main">
-        <div class="agent-acc-email">${(a.used_by || '—').replace(/</g, '&lt;')}</div>
-        <div class="agent-acc-meta">ລະດັບ ${tierLabel(a.duration_type)} • ປົດລັອກ ${a.used_at ? new Date(a.used_at).toLocaleString('lo-LA') : '—'}</div>
+        <div class="agent-acc-email">${emailLabel}</div>
+        <div class="agent-acc-meta">
+          ລະດັບ ${tierLabel(a.duration_type)}${a.code ? ` • ຄີຍ໌ ${a.code}` : ''} • ປົດລັອກ ${a.period_start ? new Date(a.period_start).toLocaleString('lo-LA') : '—'}${a.period_end ? ` • ໝົດອາຍຸ ${new Date(a.period_end).toLocaleString('lo-LA')}` : ''}
+        </div>
         ${progressHtml}
       </div>
       <div class="agent-acc-right">
-        <span class="key-status-tag ${a.status}">${isRevoked ? 'ຖືກປິດແລ້ວ' : 'ທຳງານຢູ່'}</span>
-        <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-code="${a.code}" data-next="${isRevoked ? 'used' : 'revoked'}">
+        <span class="key-status-tag ${isRevoked ? 'revoked' : 'used'}">${isRevoked ? 'ຖືກປິດແລ້ວ' : 'ທຳງານຢູ່'}</span>
+        <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-user-id="${a.user_id}" data-next="${isRevoked ? 'true' : 'false'}">
           ${isRevoked ? 'ເປີດຄືນ' : 'ປິດຕົວແທນ'}
         </button>
       </div>
@@ -1137,29 +1152,29 @@ function renderAgentAccounts(accounts, ordersFailed) {
 }
 
 async function toggleAgentStatus(btn) {
-  const code = btn.dataset.code;
-  const nextStatus = btn.dataset.next;
+  const userId = btn.dataset.userId;
+  const nextIsReseller = btn.dataset.next === 'true';
   const row = btn.closest('.agent-acc-row');
   const email = row ? row.dataset.email : '';
-  const confirmMsg = nextStatus === 'revoked'
-    ? `ຢືນຢັນປິດສິດຕົວແທນຂອງ "${email}"? ລາຄາຕົວແທນຂອງຄົນນີ້ຈະຖືກຕັດ (ຖ້າ backend ອີງໃສ່ status ນີ້)`
-    : `ຢືນຢັນເປີດສິດຕົວແທນຂອງ "${email}" ຄືນ?`;
+  const label = email || userId;
+  const confirmMsg = !nextIsReseller
+    ? `ຢືນຢັນປິດສິດຕົວແທນຂອງ "${label}"? ລາຄາຕົວແທນຂອງຄົນນີ້ຈະຖືກຕັດທັນທີ`
+    : `ຢືນຢັນເປີດສິດຕົວແທນຂອງ "${label}" ຄືນ?`;
   if (!window.confirm(confirmMsg)) return;
 
   btn.disabled = true;
   const { error } = await supabaseClient
-    .from('reseller_keys')
-    .update({ status: nextStatus })
-    .eq('code', code);
+    .from('reseller_status')
+    .update({ is_reseller: nextIsReseller, updated_at: new Date().toISOString() })
+    .eq('user_id', userId);
   btn.disabled = false;
 
   if (error) {
     console.error(error);
-    showToast('ປ່ຽນສະຖານະບໍ່ສຳເລັດ: ' + error.message + ' — ອາດຕ້ອງເພີ່ມຄ່າ "revoked" ເຂົ້າ CHECK constraint ຂອງຖັນ status ກ່ອນ');
+    showToast('ປ່ຽນສະຖານະບໍ່ສຳເລັດ: ' + error.message);
     return;
   }
-  showToast(nextStatus === 'revoked' ? 'ປິດສິດຕົວແທນແລ້ວ' : 'ເປີດສິດຕົວແທນຄືນແລ້ວ');
-  await loadResellerKeys();
+  showToast(nextIsReseller ? 'ເປີດສິດຕົວແທນຄືນແລ້ວ' : 'ປິດສິດຕົວແທນແລ້ວ');
   await loadAgentAccounts();
 }
 

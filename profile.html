@@ -84,6 +84,49 @@
       </div>
     </div>
 
+    <!-- Reseller / agent status + redeem key -->
+    <div class="p-card">
+      <div class="p-card-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        ສະຖານະຕົວແທນ
+      </div>
+
+      <!-- ສະແດງເມື່ອຍັງບໍ່ໄດ້ເປັນຕົວແທນ / ຄີຍ໌ໝົດອາຍຸ / ຖືກປິດແລ້ວ -->
+      <div id="pResellerRedeemBox">
+        <p class="p-note" style="margin-bottom:14px;">ຍັງບໍ່ໄດ້ເປັນຕົວແທນ — ໃສ່ຄີຍ໌ຕົວແທນທີ່ໄດ້ຮັບເພື່ອປົດລັອກລາຄາພິເສດ</p>
+        <form id="pResellerForm" class="p-form" novalidate>
+          <div class="field" id="pResellerCodeField">
+            <label for="pResellerCode">ຄີຍ໌ຕົວແທນ</label>
+            <div class="field-input">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <input id="pResellerCode" type="text" placeholder="ຕົວຢ່າງ RS-XXXX-XXXX" autocomplete="off" style="text-transform:uppercase;">
+            </div>
+            <div class="field-error"></div>
+          </div>
+          <button type="submit" class="btn-block btn-submit" id="pResellerSubmitBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            ໃຊ້ຄີຍ໌
+          </button>
+        </form>
+      </div>
+
+      <!-- ສະແດງເມື່ອເປັນຕົວແທນຢູ່ (is_reseller = true) -->
+      <div id="pResellerActiveBox" style="display:none;">
+        <div class="p-row">
+          <span class="p-row-label">ລະດັບ</span>
+          <span class="p-row-value" id="pResellerTier">—</span>
+        </div>
+        <div class="p-row">
+          <span class="p-row-label">ສ່ວນຫຼຸດ</span>
+          <span class="p-row-value" id="pResellerDiscount">—</span>
+        </div>
+        <div class="p-row">
+          <span class="p-row-label">ໝົດອາຍຸ</span>
+          <span class="p-row-value" id="pResellerExpiry">—</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Change password -->
     <div class="p-card">
       <div class="p-card-title">

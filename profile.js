@@ -144,7 +144,84 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('ດຶງ /api/account/stats ບໍ່ສຳເລັດ', err);
     }
+
+    // ---- Reseller status (ตัวแทน) ----
+    await refreshResellerStatus();
   })();
+
+  /* ---------- Reseller status (ตัวแทน) ---------- */
+  const RESELLER_TIER_LABELS = { '7d': '7 ມື້', '14d': '14 ມື້', '30d': '30 ມື້', 'lifetime': 'ຖາວອນ' };
+
+  async function refreshResellerStatus() {
+    const redeemBox = document.getElementById('pResellerRedeemBox');
+    const activeBox = document.getElementById('pResellerActiveBox');
+    if (!redeemBox || !activeBox) return;
+
+    try {
+      const res = await fetch('/api/account/reseller-status', { cache: 'no-store' });
+      const data = await res.json();
+      const status = data && data.status;
+
+      if (status && status.is_reseller) {
+        redeemBox.style.display = 'none';
+        activeBox.style.display = '';
+        document.getElementById('pResellerTier').textContent = RESELLER_TIER_LABELS[status.duration_type] || status.duration_type || '—';
+        document.getElementById('pResellerDiscount').textContent = status.discount_percent != null ? `${status.discount_percent}%` : '—';
+        document.getElementById('pResellerExpiry').textContent = status.period_end ? formatDate(status.period_end) : 'ຖາວອນ ບໍ່ໝົດອາຍຸ';
+      } else {
+        redeemBox.style.display = '';
+        activeBox.style.display = 'none';
+      }
+    } catch (err) {
+      console.error('ດຶງ /api/account/reseller-status ບໍ່ສຳເລັດ', err);
+    }
+  }
+
+  const resellerForm = document.getElementById('pResellerForm');
+  if (resellerForm) {
+    resellerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const codeField = document.getElementById('pResellerCodeField');
+      const codeInput = document.getElementById('pResellerCode');
+      const code = codeInput.value.trim();
+
+      if (!code) {
+        setFieldError(codeField, 'ກະລຸນາໃສ່ຄີຍ໌ຕົວແທນ');
+        return;
+      }
+      setFieldError(codeField, '');
+
+      const submitBtn = document.getElementById('pResellerSubmitBtn');
+      const originalHtml = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'ກຳລັງກວດສອບ...';
+
+      try {
+        const res = await fetch('/api/account/redeem-reseller-key', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showToast(data.error || 'ໃຊ້ຄີຍ໌ບໍ່ສຳເລັດ', true);
+          return;
+        }
+
+        showToast('ໃຊ້ຄີຍ໌ຕົວແທນສຳເລັດແລ້ວ');
+        resellerForm.reset();
+        await refreshResellerStatus();
+      } catch (err) {
+        console.error('ໃຊ້ຄີຍ໌ຕົວແທນບໍ່ສຳເລັດ', err);
+        showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+      }
+    });
+  }
 
   /* ---------- Change password form ---------- */
   const pwForm = document.getElementById('pPwForm');
