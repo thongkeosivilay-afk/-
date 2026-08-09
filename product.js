@@ -52,6 +52,159 @@ document.addEventListener('DOMContentLoaded', () => {
     errorMsg.textContent = message;
   }
 
+  /* =========================================================
+     Code-receiving sheet — ແທນ alert() ເກົ່າ
+     ຫຼັງສັ່ງຊື້ສຳເລັດ: ໂຊວ໌ລະຫັດ + ນັບຖອຍຫຼັງເດັ້ງໄປ orders.html ອັດຕະໂນມັດ
+     ========================================================= */
+  const csOverlay = document.getElementById('codeSheetOverlay');
+  const csScroll = document.getElementById('codeSheetScroll');
+  let csRedirectTimer = null;
+
+  function csOpen(html) {
+    csScroll.innerHTML = html;
+    csOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function csClose() {
+    if (csRedirectTimer) clearInterval(csRedirectTimer);
+    csOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  csOverlay.addEventListener('click', (e) => { if (e.target === csOverlay) { csClose(); window.location.reload(); } });
+
+  function csSuccessHTML(codes, total) {
+    const multi = codes.length > 1;
+    return `
+      <div class="cs-ok-wrap">
+        <div class="cs-ok-ring">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </div>
+        <div class="cs-ok-title">ສັ່ງຊື້ສຳເລັດ</div>
+        <div class="cs-ok-sub">ລະຫັດຂອງທ່ານພ້ອມໃຊ້ງານແລ້ວ</div>
+      </div>
+      <div class="cs-order-line">
+        <div>
+          <div class="p-name">${escapeHtml(product.name)}${currentDuration() && product.duration_enabled ? ' ' + escapeHtml(currentDuration().label) : ''}</div>
+          <div class="p-meta">${codes.length} ອັນ</div>
+        </div>
+        <div class="p-total en">${formatKip(total)}</div>
+      </div>
+      <div class="cs-stub-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="1.5"/><path d="M3 7 12 3l9 4"/></svg>
+        ລະຫັດສິນຄ້າ${multi ? ` (${codes.length})` : ''}
+      </div>
+      <div class="cs-stub">
+        ${codes.map((c, i) => `
+          <div class="cs-stub-item" style="animation-delay:${i * 0.08}s">
+            <div class="cs-stub-idx">${i + 1}</div>
+            <div class="cs-stub-code en">${escapeHtml(c)}</div>
+            <button type="button" class="cs-copy-btn" data-code="${escapeHtml(c)}" title="ຄັດລອກ">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+      ${multi ? `<button type="button" class="cs-copy-all" id="csCopyAllBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        ຄັດລອກທັງໝົດ
+      </button>` : ''}
+      <div class="cs-warn-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+        ບັນທຶກລະຫັດນີ້ໄວ້ໃຫ້ດີ, ສາມາດເບິ່ງຄືນໄດ້ທີ່ໜ້າ "ປະຫວັດການສັ່ງຊື້" ຕະຫຼອດເວລາ
+      </div>
+      <div class="cs-redirect-note">ກຳລັງໄປໜ້າ "ປະຫວັດການສັ່ງຊື້" ໃນ <span class="n" id="csCountdown">3</span> ວິ...</div>
+      <button type="button" class="cs-cancel-link" id="csCancelBtn">ຍົກເລີກ, ຢູ່ໜ້ານີ້ຕໍ່</button>
+    `;
+  }
+
+  function csErrorHTML(message, partialCodes) {
+    return `
+      <div class="cs-ok-wrap">
+        <div class="cs-err-ring">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </div>
+        <div class="cs-ok-title">ສັ່ງຊື້ບໍ່ສຳເລັດ</div>
+        <div class="cs-ok-sub">${escapeHtml(message)}</div>
+      </div>
+      ${partialCodes && partialCodes.length ? `
+      <div class="cs-stub-label">ລະຫັດທີ່ໄດ້ຮັບກ່ອນຈະຕິດຂັດ (${partialCodes.length})</div>
+      <div class="cs-stub">
+        ${partialCodes.map((c, i) => `
+          <div class="cs-stub-item" style="animation-delay:${i * 0.08}s">
+            <div class="cs-stub-idx">${i + 1}</div>
+            <div class="cs-stub-code en">${escapeHtml(c)}</div>
+          </div>
+        `).join('')}
+      </div>` : ''}
+      <div class="cs-warn-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+        ຖ້າຖືກຫັກເງິນໄປແລ້ວແຕ່ບໍ່ໄດ້ຮັບລະຫັດຄົບ, ກະລຸນາຕິດຕໍ່ແອດມິນພ້ອມແນບໃບຄິວອໍເດີ
+      </div>
+      <div class="cs-actions">
+        <button type="button" class="cs-btn-ghost" id="csCloseBtn">ປິດ</button>
+        ${partialCodes && partialCodes.length ? `<button type="button" class="cs-btn-primary" id="csHistoryBtn">ເບິ່ງປະຫວັດ</button>` : ''}
+      </div>
+    `;
+  }
+
+  function csBindCopyButtons() {
+    csScroll.querySelectorAll('.cs-copy-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const code = btn.dataset.code;
+        try { await navigator.clipboard.writeText(code); } catch (e) {}
+        btn.classList.add('copied');
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+        }, 1400);
+      });
+    });
+    const copyAllBtn = document.getElementById('csCopyAllBtn');
+    if (copyAllBtn) {
+      copyAllBtn.addEventListener('click', async () => {
+        const codes = Array.from(csScroll.querySelectorAll('.cs-stub-code')).map((el) => el.textContent);
+        try { await navigator.clipboard.writeText(codes.join('\n')); } catch (e) {}
+        const original = copyAllBtn.innerHTML;
+        copyAllBtn.classList.add('copied');
+        copyAllBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> ຄັດລອກແລ້ວ`;
+        setTimeout(() => { copyAllBtn.classList.remove('copied'); copyAllBtn.innerHTML = original; }, 1400);
+      });
+    }
+  }
+
+  function showSuccessSheet(codes, total) {
+    csOpen(csSuccessHTML(codes, total));
+    csBindCopyButtons();
+
+    let secondsLeft = 3;
+    const countdownEl = document.getElementById('csCountdown');
+    csRedirectTimer = setInterval(() => {
+      secondsLeft--;
+      if (countdownEl) countdownEl.textContent = secondsLeft;
+      if (secondsLeft <= 0) {
+        clearInterval(csRedirectTimer);
+        window.location.href = 'orders.html';
+      }
+    }, 1000);
+
+    document.getElementById('csCancelBtn').addEventListener('click', () => {
+      clearInterval(csRedirectTimer);
+      csClose();
+      window.location.reload();
+    });
+  }
+
+  function showErrorSheet(message, partialCodes) {
+    csOpen(csErrorHTML(message, partialCodes));
+    document.getElementById('csCloseBtn').addEventListener('click', () => {
+      csClose();
+      window.location.reload();
+    });
+    const historyBtn = document.getElementById('csHistoryBtn');
+    if (historyBtn) historyBtn.addEventListener('click', () => { window.location.href = 'orders.html'; });
+  }
+
   let product = null;
   let durations = [];       // ລາຍການໄລຍະເວລາ (ຫຼືລາຍການດຽວ ຖ້າສິນຄ້າບໍ່ມີໄລຍະເວລາ)
   let selectedIndex = 0;
@@ -174,23 +327,22 @@ document.addEventListener('DOMContentLoaded', () => {
     qtyPlus.disabled = true;
 
     const codes = [];
+    const unitPrice = currentDuration() ? currentDuration().price : 0;
     try {
       for (let i = 0; i < wantQty; i++) {
         buyBtnText.textContent = wantQty > 1 ? `ກຳລັງສັ່ງຊື້... (${i + 1}/${wantQty})` : 'ກຳລັງສັ່ງຊື້...';
         const code = await purchaseOne();
         codes.push(code);
       }
-      alert(`ສັ່ງຊື້ສຳເລັດ! ລະຫັດສິນຄ້າຂອງທ່ານ:\n${codes.join('\n')}\n\nເບິ່ງລາຍການນີ້ໄດ້ອີກຄັ້ງທີ່ "ປະຫວັດການສັ່ງຊື້"`);
-      window.location.reload();
+      showSuccessSheet(codes, unitPrice * codes.length);
     } catch (err) {
       if (err && err.message === '__redirecting__') return;
       console.error('purchase failed:', err);
       if (codes.length) {
-        alert(`ສັ່ງຊື້ໄດ້ ${codes.length}/${wantQty} ອັນ ກ່ອນຈະຕິດຂັດ:\n${codes.join('\n')}\n\nຂໍ້ຜິດພາດ: ${err.message}`);
+        showErrorSheet(`ຊື້ໄດ້ ${codes.length}/${wantQty} ອັນ ກ່ອນຈະຕິດຂັດ — ${err.message}`, codes);
       } else {
-        alert(err.message || 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ');
+        showErrorSheet(err.message || 'ສິນຄ້ານີ້ອາດໝົດສະຕັອກ ຫຼືເກີດຂໍ້ຜິດພາດຊົ່ວຄາວ');
       }
-      window.location.reload();
     }
   });
 
