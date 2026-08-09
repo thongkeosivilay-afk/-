@@ -967,6 +967,7 @@ async function loadResellerKeys() {
   currentResellerKeys = data || [];
   renderResellerKeysOpsStrip(currentResellerKeys);
   renderResellerKeys(currentResellerKeys);
+  loadAgentAccounts();
 }
 
 function renderResellerKeysOpsStrip(keys) {
@@ -993,11 +994,11 @@ function renderResellerKeys(keys) {
         <span class="agent-key-code">${k.code}</span>
         <span class="agent-key-meta">
           ${tierLabel(k.duration_type)} • ${new Date(k.created_at).toLocaleString('lo-LA')}
-          ${k.status === 'used' ? `<br>ໃຊ້ໂດຍ: ${k.used_by || '—'} (${k.used_at ? new Date(k.used_at).toLocaleString('lo-LA') : '—'})` : ''}
+          ${k.status !== 'unused' ? `<br>ໃຊ້ໂດຍ: ${k.used_by || '—'} (${k.used_at ? new Date(k.used_at).toLocaleString('lo-LA') : '—'})` : ''}
         </span>
       </div>
       <div class="agent-key-right">
-        <span class="key-status-tag ${k.status}">${k.status === 'unused' ? 'ຍັງບໍ່ໄດ້ໃຊ້' : 'ໃຊ້ແລ້ວ'}</span>
+        <span class="key-status-tag ${k.status}">${k.status === 'unused' ? 'ຍັງບໍ່ໄດ້ໃຊ້' : (k.status === 'revoked' ? 'ຖືກປິດແລ້ວ' : 'ໃຊ້ແລ້ວ')}</span>
         ${k.status === 'unused' ? `
         <button type="button" class="key-copy-btn" title="ຄັດລອກ">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
@@ -1014,18 +1015,212 @@ function renderResellerKeys(keys) {
   });
 }
 
-// ---------- ແຜງຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ ----------
+// ---------- ຈັດການຕົວແທນ (ລາຍຊື່ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວ + ຍອດຊື້ສະສົມ + ປິດສິດຕົວແທນ) ----------
+// ໝາຍເຫດສຳຄັນ: ໃນລະບົບນີ້ "ການເປັນຕົວແທນ" ບໍ່ໄດ້ແຍກເປັນຕາຕະລາງບັນຊີຕົວແທນຕ່າງຫາກ —
+// ອີງໃສ່ແຖວ reseller_keys ທີ່ຖືກໃຊ້ (status='used') ເປັນຫຼັກຖານວ່າອີເມວນັ້ນເປັນຕົວແທນຢູ່.
+// ການ "ປິດຕົວແທນ" ຈຶ່ງເຮັດໂດຍປ່ຽນ status ຂອງຄີຍ໌ນັ້ນເປັນ 'revoked' — ຖ້າ RPC ຝັ່ງ backend (purchase_product)
+// ອີງໃສ່ status='used' ໃນການໃຫ້ລາຄາຕົວແທນ ການປິດຈະຕັດລາຄາຕົວແທນຂອງຄົນນັ້ນທັນທີ. ຖ້າຖານຂໍ້ມູນມີ
+// CHECK constraint ຈຳກັດຄ່າ status ໄວ້ສະເພາະ 'unused'/'used' ຈະຕ້ອງເພີ່ມຄ່າ 'revoked' ເຂົ້າໄປກ່ອນ (ເບິ່ງຂໍ້ຄວາມແຈ້ງເຕືອນທ້າຍແຊັດ)
+let currentAgentAccounts = [];
+let agentAccountsSearchTerm = '';
+
+async function loadAgentAccounts() {
+  const list = document.getElementById('agentAccountsList');
+  const strip = document.getElementById('agentAccountsOpsStrip');
+  if (!list) return;
+
+  // ເອົາຄີຍ໌ທີ່ຖືກໃຊ້ໄປແລ້ວ (used ຫຼື revoked) ແລ້ວຈັດກຸ່ມຕາມ used_by, ຖ້າຄົນດຽວກັນໃຊ້ຫຼາຍຄີຍ໌ ໃຫ້ເອົາລ້າສຸດ
+  const usedKeys = (currentResellerKeys || []).filter(k => k.used_by && (k.status === 'used' || k.status === 'revoked'));
+  const byEmail = new Map();
+  usedKeys.forEach(k => {
+    const key = k.used_by;
+    const existing = byEmail.get(key);
+    if (!existing || new Date(k.used_at) > new Date(existing.used_at)) byEmail.set(key, k);
+  });
+
+  let accounts = [...byEmail.values()];
+
+  if (!accounts.length) {
+    if (strip) strip.innerHTML = '';
+    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີໃຜໃຊ້ຄີຍ໌ຕົວແທນເລີຍ</div>';
+    currentAgentAccounts = [];
+    return;
+  }
+
+  // ດຶງຍອດຊື້ສະສົມຂອງແຕ່ລະຄົນຈາກຕາຕະລາງ orders (ອີງໃສ່ຖັນ user_email) — ຖ້າຄໍລຳນີ້ບໍ່ມີໃນຖານຂໍ້ມູນ ຈະ fail ແບບບໍ່ພັງໜ້າ
+  let ordersOk = true;
+  accounts = await Promise.all(accounts.map(async (k) => {
+    let totalSpent = null;
+    try {
+      const { data, error } = await supabaseClient
+        .from('orders')
+        .select('price')
+        .eq('user_email', k.used_by)
+        .eq('status', 'completed');
+      if (error) throw error;
+      totalSpent = (data || []).reduce((sum, o) => sum + (Number(o.price) || 0), 0);
+    } catch (err) {
+      ordersOk = false;
+      console.error('loadAgentAccounts: ດຶງຍອດຂາຍບໍ່ສຳເລັດ', err);
+    }
+    return { ...k, totalSpent };
+  }));
+
+  currentAgentAccounts = accounts;
+
+  if (strip) {
+    const active = accounts.filter(a => a.status === 'used').length;
+    const revoked = accounts.filter(a => a.status === 'revoked').length;
+    strip.innerHTML = `
+      <div class="ops-chip"><div class="ops-num">${accounts.length}</div><div class="ops-label">ຕົວແທນທັງໝົດ</div></div>
+      <div class="ops-chip"><div class="ops-num">${active}</div><div class="ops-label">ທຳງານຢູ່</div></div>
+      <div class="ops-chip"><div class="ops-num">${revoked}</div><div class="ops-label">ຖືກປິດແລ້ວ</div></div>
+    `;
+  }
+
+  renderAgentAccounts(currentAgentAccounts, !ordersOk);
+}
+
+function renderAgentAccounts(accounts, ordersFailed) {
+  const list = document.getElementById('agentAccountsList');
+  if (!list) return;
+
+  const term = agentAccountsSearchTerm.trim().toLowerCase();
+  const filtered = term ? accounts.filter(a => (a.used_by || '').toLowerCase().includes(term)) : accounts;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-note">ບໍ່ພົບຕົວແທນທີ່ຄົ້ນຫາ</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(a => {
+    const tier = currentResellerTiers.find(t => t.duration_type === a.duration_type);
+    const isLifetime = tier && tier.period_days === null;
+    const quota = tier ? Number(tier.quota_amount) || 0 : 0;
+    const spent = a.totalSpent;
+
+    let progressHtml = '';
+    if (ordersFailed || spent === null) {
+      progressHtml = `<div class="agent-acc-note">ບໍ່ສາມາດດຶງຍອດຊື້ສະສົມໄດ້ (ຕາຕະລາງ orders ອາດບໍ່ມີຖັນ user_email)</div>`;
+    } else if (isLifetime || !quota) {
+      progressHtml = `<div class="agent-acc-progress-text">ຍອດຊື້ສະສົມ ${formatKipAdmin(spent)} • ${isLifetime ? 'ຖາວອນ ບໍ່ມີເປົ້າ' : 'ບໍ່ໄດ້ຕັ້ງເປົ້າ'}</div>`;
+    } else {
+      const pct = Math.min(100, Math.round((spent / quota) * 100));
+      progressHtml = `
+        <div class="agent-acc-progress">
+          <div class="agent-acc-bar"><div class="agent-acc-bar-fill ${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></div></div>
+          <span class="agent-acc-progress-text">${formatKipAdmin(spent)} / ${formatKipAdmin(quota)} (${pct}%)</span>
+        </div>`;
+    }
+
+    const isRevoked = a.status === 'revoked';
+
+    return `
+    <div class="agent-acc-row" data-code="${a.code}" data-email="${(a.used_by || '').replace(/"/g, '&quot;')}">
+      <div class="agent-acc-main">
+        <div class="agent-acc-email">${(a.used_by || '—').replace(/</g, '&lt;')}</div>
+        <div class="agent-acc-meta">ລະດັບ ${tierLabel(a.duration_type)} • ປົດລັອກ ${a.used_at ? new Date(a.used_at).toLocaleString('lo-LA') : '—'}</div>
+        ${progressHtml}
+      </div>
+      <div class="agent-acc-right">
+        <span class="key-status-tag ${a.status}">${isRevoked ? 'ຖືກປິດແລ້ວ' : 'ທຳງານຢູ່'}</span>
+        <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-code="${a.code}" data-next="${isRevoked ? 'used' : 'revoked'}">
+          ${isRevoked ? 'ເປີດຄືນ' : 'ປິດຕົວແທນ'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.agent-acc-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleAgentStatus(btn));
+  });
+}
+
+async function toggleAgentStatus(btn) {
+  const code = btn.dataset.code;
+  const nextStatus = btn.dataset.next;
+  const row = btn.closest('.agent-acc-row');
+  const email = row ? row.dataset.email : '';
+  const confirmMsg = nextStatus === 'revoked'
+    ? `ຢືນຢັນປິດສິດຕົວແທນຂອງ "${email}"? ລາຄາຕົວແທນຂອງຄົນນີ້ຈະຖືກຕັດ (ຖ້າ backend ອີງໃສ່ status ນີ້)`
+    : `ຢືນຢັນເປີດສິດຕົວແທນຂອງ "${email}" ຄືນ?`;
+  if (!window.confirm(confirmMsg)) return;
+
+  btn.disabled = true;
+  const { error } = await supabaseClient
+    .from('reseller_keys')
+    .update({ status: nextStatus })
+    .eq('code', code);
+  btn.disabled = false;
+
+  if (error) {
+    console.error(error);
+    showToast('ປ່ຽນສະຖານະບໍ່ສຳເລັດ: ' + error.message + ' — ອາດຕ້ອງເພີ່ມຄ່າ "revoked" ເຂົ້າ CHECK constraint ຂອງຖັນ status ກ່ອນ');
+    return;
+  }
+  showToast(nextStatus === 'revoked' ? 'ປິດສິດຕົວແທນແລ້ວ' : 'ເປີດສິດຕົວແທນຄືນແລ້ວ');
+  await loadResellerKeys();
+  await loadAgentAccounts();
+}
+
+
+// ---------- ແທັບໝວດໝູ່ຢູ່ເທິງ "ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ" ----------
+// ຈື່ໝວດໝູ່ທີ່ກຳລັງເລືອກໄວ້ ເພື່ອບໍ່ໃຫ້ຄືນກັບໄປແທັບທຳອິດທຸກຄັ້ງທີ່ໂຫຼດຂໍ້ມູນໃໝ່ (ເຊັ່ນ ຫຼັງບັນທຶກລາຄາ)
+let agentPriceActiveCategory = null;
+let currentAgentPriceProducts = [];
+
 function renderAgentPriceList(products) {
   const list = document.getElementById('agentPriceList');
+  const tabsHost = document.getElementById('agentPriceCatTabs');
   if (!list) return;
 
   const activeProducts = (products || []).filter(p => !p.archived);
+  currentAgentPriceProducts = activeProducts;
+
   if (!activeProducts.length) {
+    if (tabsHost) tabsHost.innerHTML = '';
     list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າ — ເພີ່ມສິນຄ້າກ່ອນທີ່ແຖບ "ເພີ່ມສິນຄ້າ"</div>';
     return;
   }
 
-  list.innerHTML = activeProducts.map(p => {
+  // ໝວດໝູ່ຈິງທີ່ຮ້ານຕັ້ງໄວ້ (category_1_name..4) + ໝວດໝູ່ອື່ນທີ່ອາດຕິດມາກັບສິນຄ້າເກົ່າ — ສະແດງສະເພາະອັນທີ່ມີສິນຄ້າຢູ່ຈິງ
+  const knownNames = getCurrentCategoryNames();
+  const productCats = [...new Set(activeProducts.map(p => (p.category || '').trim()).filter(Boolean))];
+  const orderedNames = [...knownNames, ...productCats.filter(c => !knownNames.includes(c))];
+
+  const catsWithCount = orderedNames
+    .map(name => ({ name, count: activeProducts.filter(p => (p.category || '').trim() === name).length }))
+    .filter(c => c.count > 0);
+
+  if (!catsWithCount.length) {
+    if (tabsHost) tabsHost.innerHTML = '';
+    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າໃນໝວດໝູ່ໃດເລີຍ — ເພີ່ມສິນຄ້າແລ້ວກຳນົດໝວດໝູ່ກ່ອນ</div>';
+    return;
+  }
+
+  if (!agentPriceActiveCategory || !catsWithCount.some(c => c.name === agentPriceActiveCategory)) {
+    agentPriceActiveCategory = catsWithCount[0].name;
+  }
+
+  if (tabsHost) {
+    tabsHost.innerHTML = catsWithCount.map(c => `
+      <div class="agent-cat-tab ${c.name === agentPriceActiveCategory ? 'active' : ''}" data-cat="${c.name.replace(/"/g, '&quot;')}">
+        <span class="agent-cat-name">${c.name}</span>
+        <span class="agent-cat-count">${c.count} ລາຍການ</span>
+      </div>
+    `).join('');
+
+    tabsHost.querySelectorAll('.agent-cat-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        agentPriceActiveCategory = tab.dataset.cat;
+        renderAgentPriceList(currentAgentPriceProducts);
+      });
+    });
+  }
+
+  const shownProducts = activeProducts.filter(p => (p.category || '').trim() === agentPriceActiveCategory);
+
+  list.innerHTML = shownProducts.map(p => {
     if (p.duration_enabled) {
       return `
       <div class="price-prod-card" data-product-id="${p.id}">
@@ -1940,6 +2135,17 @@ async function initAdminPanel() {
 
   const agentKeysRefreshBtn = document.getElementById('agentKeysRefreshBtn');
   if (agentKeysRefreshBtn) agentKeysRefreshBtn.addEventListener('click', loadResellerKeys);
+
+  const agentAccountsRefreshBtn = document.getElementById('agentAccountsRefreshBtn');
+  if (agentAccountsRefreshBtn) agentAccountsRefreshBtn.addEventListener('click', loadAgentAccounts);
+
+  const agentAccountsSearch = document.getElementById('agentAccountsSearch');
+  if (agentAccountsSearch) {
+    agentAccountsSearch.addEventListener('input', (e) => {
+      agentAccountsSearchTerm = e.target.value;
+      renderAgentAccounts(currentAgentAccounts);
+    });
+  }
 
   const slipLightbox = document.getElementById('slipLightbox');
   const slipLightboxClose = document.getElementById('slipLightboxClose');

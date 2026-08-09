@@ -660,6 +660,53 @@
   .price-dur-label{ font-size:12.5px; color:var(--ink-300); flex-shrink:0; }
   .price-dur-row input{ flex:1; min-width:120px; padding:9px 10px; font-size:0.88rem; }
   .price-prod-card .gx-submit{ padding:10px 16px; font-size:0.85rem; min-height:0; }
+
+  .agent-cat-row{ display:flex; gap:8px; overflow-x:auto; margin:2px 0 14px; padding-bottom:2px; }
+  .agent-cat-tab{
+    flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding:9px 14px; border-radius:12px; border:1px solid var(--navy-700); background:var(--navy-800);
+    cursor:pointer; user-select:none; min-width:76px; transition:.15s;
+  }
+  .agent-cat-tab .agent-cat-name{ font-family:var(--gx-font); font-size:11.5px; font-weight:700; color:var(--ink-300); white-space:nowrap; }
+  .agent-cat-tab .agent-cat-count{ font-size:9.5px; color:var(--ink-500); }
+  .agent-cat-tab.active{ border-color:var(--gx-signal-soft); background:var(--gx-signal-dim); }
+  .agent-cat-tab.active .agent-cat-name{ color:#ffdada; }
+  .agent-cat-tab.active .agent-cat-count{ color:#ffb3b3; }
+
+  .search-row-agent{ position:relative; margin-bottom:10px; }
+  .search-row-agent input{
+    width:100%; background:var(--navy-900); border:1px solid var(--navy-700); color:var(--ink-100);
+    border-radius:11px; padding:10px 12px; font-family:var(--gx-font); font-size:12.5px;
+  }
+  .search-row-agent input::placeholder{ color:var(--ink-500); }
+  .search-row-agent input:focus{ outline:none; border-color:var(--gx-signal-soft); }
+
+  .agent-acc-row{
+    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    padding:13px 0; border-bottom:1px solid rgba(255,0,1,0.12); flex-wrap:wrap;
+  }
+  .agent-acc-row:last-child{ border-bottom:none; }
+  .agent-acc-main{ flex:1; min-width:180px; }
+  .agent-acc-email{ font-family:var(--gx-font); font-weight:700; font-size:13.5px; color:var(--shine); word-break:break-all; }
+  .agent-acc-meta{ font-size:11px; color:var(--ink-500); margin-top:2px; }
+  .agent-acc-progress{ margin-top:8px; max-width:280px; }
+  .agent-acc-bar{ height:6px; border-radius:99px; background:var(--navy-700); overflow:hidden; }
+  .agent-acc-bar-fill{ height:100%; background:var(--gx-signal); border-radius:99px; transition:width .3s; }
+  .agent-acc-bar-fill.full{ background:var(--gx-success); }
+  .agent-acc-progress-text{ font-size:10.5px; color:var(--ink-500); margin-top:4px; display:block; }
+  .agent-acc-note{ font-size:10.5px; color:var(--gx-warn); margin-top:4px; }
+  .agent-acc-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; }
+  .agent-acc-toggle-btn{
+    font-family:var(--gx-font); font-size:11px; font-weight:600; padding:7px 12px; border-radius:9px;
+    cursor:pointer; white-space:nowrap;
+    background:rgba(232,49,49,0.12); border:1px solid rgba(232,49,49,0.4); color:var(--gx-danger);
+  }
+  .agent-acc-toggle-btn:hover{ background:rgba(232,49,49,0.2); }
+  .agent-acc-toggle-btn.is-revoked{
+    background:rgba(32,181,106,0.14); border-color:rgba(32,181,106,0.35); color:var(--gx-success);
+  }
+  .agent-acc-toggle-btn:disabled{ opacity:.6; cursor:default; }
+  .key-status-tag.revoked{ background:rgba(232,49,49,0.14); color:var(--gx-danger); border:1px solid rgba(232,49,49,0.35); }
 </style>
 </head>
 <body>
@@ -955,6 +1002,21 @@
       <div id="agentKeysList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
     </div>
 
+    <!-- ---- ສ່ວນຍ່ອຍ 3.5: ຈັດການຕົວແທນ ---- -->
+    <div class="stat-panel" style="margin-top:16px;">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        ຈັດການຕົວແທນ
+        <button type="button" class="mini-refresh" id="agentAccountsRefreshBtn" title="ໂຫຼດຄືນໃໝ່">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        </button>
+      </h3>
+      <p class="panel-sub">ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວ — ເບິ່ງຍອດຊື້ສະສົມທຽບກັບເປົ້າຂອງລະດັບຕົນ ແລະ ປິດສິດຕົວແທນໄດ້ຈາກບ່ອນນີ້</p>
+      <div class="ops-strip" id="agentAccountsOpsStrip"></div>
+      <div class="search-row-agent"><input type="text" id="agentAccountsSearch" placeholder="ຄົ້ນຫາອີເມວ/ຊື່ຕົວແທນ..."></div>
+      <div id="agentAccountsList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+    </div>
+
     <!-- ---- ສ່ວນຍ່ອຍ 4: ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ ---- -->
     <div class="stat-panel" style="margin-top:16px;">
       <h3>
@@ -962,6 +1024,7 @@
         ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ
       </h3>
       <p class="panel-sub">ຕັ້ງລາຄາທີ່ຕ້ອງການໃຫ້ຕົວແທນຊື້ຕໍ່ສິນຄ້າ (ຫຼືຕໍ່ໄລຍະເວລາ) ໄດ້ໂດຍກົງ — ຖ້າເວັ້ນຫວ່າງໄວ້ ລະບົບຈະໃຊ້ສ່ວນຫຼຸດ % ຂອງລະດັບຕົວແທນແທນອັດຕະໂນມັດ (ລາຄານີ້ໃຊ້ຄືກັນທຸກລະດັບ ບໍ່ແຍກຕາມ tier)</p>
+      <div id="agentPriceCatTabs" class="agent-cat-row"></div>
       <div id="agentPriceList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
     </div>
 
