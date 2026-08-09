@@ -228,6 +228,18 @@ async function handleCallback(request, env) {
     expirationTtl: 60 * 60 * 24 * 7, // 7 วัน
   });
 
+  // ---- แจ้งเตือนเข้า Discord: มีคนล็อกอินผ่าน Discord ----
+  await sendDiscordAlert(env, {
+    title: '🔐 ລ໋ອກອິນສຳເລັດ (Discord)',
+    color: 0x5865f2, // สี Discord blurple
+    fields: [
+      { name: 'ຊື່', value: sessionData.username || '-', inline: true },
+      { name: 'ອີເມວ', value: sessionData.email || '-', inline: true },
+      { name: 'Discord ID', value: sessionData.id || '-', inline: true },
+      { name: 'ແອດມິນ?', value: isAdmin ? 'ແມ່ນ ✅' : 'ບໍ່ແມ່ນ', inline: true },
+    ],
+  });
+
   // ---- ปิด session ด้วย cookie แล้วเด้งกลับไปยังปลายทางเดิม (เช่น /admin.html) ----
   const headers = new Headers({ Location: nextPath });
   headers.append(
@@ -355,6 +367,16 @@ async function handlePasswordSignup(request, env) {
     createdAt: Date.now(),
   });
 
+  // ---- แจ้งเตือนเข้า Discord: มีสมาชิกใหม่สมัครด้วยอีเมล ----
+  await sendDiscordAlert(env, {
+    title: '🆕 ສະໝັກສະມາຊິກໃໝ່ (Email)',
+    color: 0xe8b34a, // ทอง
+    fields: [
+      { name: 'ຊື່', value: username || '-', inline: true },
+      { name: 'ອີເມວ', value: email || '-', inline: true },
+    ],
+  });
+
   return jsonWithSession({ ok: true }, sessionId);
 }
 
@@ -403,6 +425,16 @@ async function handlePasswordLogin(request, env) {
     isAdmin: false,
     discordLinked: false,
     createdAt: Date.now(),
+  });
+
+  // ---- แจ้งเตือนเข้า Discord: มีคนล็อกอินผ่านอีเมล ----
+  await sendDiscordAlert(env, {
+    title: '🔐 ລ໋ອກອິນສຳເລັດ (Email)',
+    color: 0x2ecc71, // เขียว
+    fields: [
+      { name: 'ຊື່', value: username || '-', inline: true },
+      { name: 'ອີເມວ', value: authUser.email || email || '-', inline: true },
+    ],
   });
 
   return jsonWithSession({ ok: true }, sessionId);
@@ -489,6 +521,38 @@ function json(data, status) {
       'Cache-Control': 'no-store, no-cache, must-revalidate',
     },
   });
+}
+
+/* ---------- helper: ສົ່ງແຈ້ງເຕືອນເຂົ້າ Discord (webhook) ----------
+   ใช้แจ้งเตือนแอดมินในช่อง Discord ทุกครั้งที่มีคน "ล็อกอิน" (ทั้ง Discord OAuth และ
+   อีเมล/รหัสผ่าน) หรือ "เติมเงิน" (ส่งสลิปเข้ามารออนุมัติ)
+   ต้องตั้งค่า secret ก่อนใช้งาน (รันครั้งเดียว):
+     wrangler secret put DISCORD_WEBHOOK_URL
+   เอา URL มาจาก: ตั้งค่าช่อง Discord > Integrations > Webhooks > New Webhook > Copy
+   Webhook URL
+   ถ้ายังไม่ได้ตั้งค่า (env.DISCORD_WEBHOOK_URL ว่าง) ฟังก์ชันนี้จะข้ามเงียบๆ โดยไม่ทำให้
+   ระบบล็อกอิน/เติมเงินพังไปด้วย (แจ้งเตือนคือ best-effort เสริม ไม่ใช่ core flow) */
+async function sendDiscordAlert(env, { title, description, color, fields }) {
+  if (!env.DISCORD_WEBHOOK_URL) return; // ยังไม่ได้ตั้งค่า -> ข้ามไปเฉยๆ
+
+  const embed = {
+    title,
+    description: description || undefined,
+    color: color || 0xff0001, // แดงโทนร้าน (Dekmash) เป็นค่าเริ่มต้น
+    fields: fields || [],
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    await fetch(env.DISCORD_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] }),
+    });
+  } catch (err) {
+    // อย่าให้การแจ้งเตือนล้มเหลวไปทำให้ login/topup ของลูกค้าพังตาม — log ไว้เฉยๆ
+    console.error('sendDiscordAlert failed:', err);
+  }
 }
 
 /* ---------- 6) /api/public/storefront ----------
@@ -687,6 +751,19 @@ async function handleTopupConfirm(request, env) {
       amount,
       slip_url: slipUrl,
       status: 'pending',
+    });
+
+    // ---- แจ้งเตือนเข้า Discord: มีคนส่งสลิปเติมเงินเข้ามา รอแอดมินตรวจสอบ ----
+    await sendDiscordAlert(env, {
+      title: '💰 ມີການເຕີມເງິນເຂົ້າມາໃໝ່ (ລໍຖ້າກວດສອບ)',
+      color: 0xff0001, // แดง — เด่นชัด ต้องรีบเข้าไปดู
+      description: 'ກົດເຂົ້າໜ້າແອດມິນ (admin.html) ເພື່ອກວດສະລິບ ແລະ ອະນຸມັດ/ປະຕິເສດ',
+      fields: [
+        { name: 'ຜູ້ໃຊ້', value: user.username || '-', inline: true },
+        { name: 'ອີເມວ', value: user.email || '-', inline: true },
+        { name: 'ຈຳນວນເງິນ', value: `${amount.toLocaleString()} ກີບ`, inline: true },
+        { name: 'ສະລິບ', value: `[ເບິ່ງຮູບ](${slipUrl})`, inline: false },
+      ],
     });
 
     return json({ ok: true, id: (rows && rows[0] && rows[0].id) || null });
