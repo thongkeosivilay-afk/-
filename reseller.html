@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ສະໝັກຕົວແທນ</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="auth.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Noto+Sans+Lao+Looped:wght@600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  .rs-main{ padding:0 18px 32px; max-width:480px; margin:0 auto; }
+  .rs-title-row{ display:flex; align-items:center; gap:12px; margin:18px 0 20px; }
+  .rs-back-btn{ width:38px; height:38px; border-radius:12px; background:var(--card); border:1px solid var(--card-border); display:flex; align-items:center; justify-content:center; color:var(--text); cursor:pointer; flex-shrink:0; }
+  .rs-back-btn svg{ width:18px; height:18px; }
+  .rs-card{ background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius); padding:20px; }
+  .rs-card-head{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .rs-card-head svg{ width:20px; height:20px; stroke:var(--red-glow); flex-shrink:0; }
+  .rs-card-head b{ font-size:16.5px; color:var(--text); }
+  .rs-sub{ font-size:12.5px; color:var(--text-faint); line-height:1.6; margin-bottom:18px; }
+  .rs-result{ display:flex; flex-direction:column; gap:10px; }
+  .rs-result-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--card-border); font-size:13.5px; color:var(--text-dim); }
+  .rs-result-row:last-child{ border-bottom:none; padding-bottom:0; }
+  .rs-result-row b{ color:var(--text); font-weight:700; }
+  .rs-need-login{ text-align:center; padding:30px 10px; }
+  .rs-need-login p{ font-size:13.5px; color:var(--text-faint); margin:10px 0 18px; line-height:1.6; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="brand">
+      <div class="logo has-custom-logo">
+        <img src="assets/logo.png" alt="logo">
+      </div>
+      <span class="brand-name en"></span>
+    </div>
+    <button type="button" class="login-btn">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.76-3.58-5-8-5Z"/></svg>
+      <span>ລົງຊື່ເຂົ້າໃຊ້</span>
+    </button>
+  </header>
+
+  <main class="rs-main">
+    <div class="rs-title-row">
+      <button type="button" class="rs-back-btn" onclick="window.location.href='index.html'" aria-label="ກັບໄປໜ້າຫຼັກ">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <h1 class="display-lo" style="font-size:20px;">ສະໝັກຕົວແທນ</h1>
+    </div>
+
+    <!-- ຍັງບໍ່ໄດ້ login -->
+    <div class="rs-card rs-need-login" id="rsNeedLogin" style="display:none;">
+      <p>ກະລຸນາລົງຊື່ເຂົ້າໃຊ້ກ່ອນ ຈຶ່ງຈະໃຊ້ຄີຍ໌ຕົວແທນໄດ້</p>
+      <button type="button" class="btn-block btn-submit" id="rsGoLoginBtn">ລົງຊື່ເຂົ້າໃຊ້</button>
+    </div>
+
+    <!-- ຟອມໃສ່ຄີຍ໌ -->
+    <div class="rs-card" id="rsFormCard">
+      <div class="rs-card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
+        <b>ໃສ່ຄີຍ໌ຕົວແທນ</b>
+      </div>
+      <p class="rs-sub">ໃສ່ຄີຍ໌ຕົວແທນທີ່ໄດ້ຮັບ ເພື່ອປົດລັອກລາຄາພິເສດ</p>
+      <form id="rsForm" class="p-form" novalidate>
+        <div class="field" id="rsCodeField">
+          <label for="rsCode">ຄີຍ໌ຕົວແທນ</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input id="rsCode" type="text" placeholder="ຕົວຢ່າງ RS-XXXX-XXXX" autocomplete="off" style="text-transform:uppercase;">
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <button type="submit" class="btn-block btn-submit" id="rsSubmitBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          ໃຊ້ຄີຍ໌
+        </button>
+      </form>
+    </div>
+
+    <!-- ຜົນລັບຫຼັງໃຊ້ຄີຍ໌ສຳເລັດ -->
+    <div class="rs-card" id="rsResultCard" style="display:none;">
+      <div class="rs-card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <b>ສະໝັກຕົວແທນສຳເລັດແລ້ວ</b>
+      </div>
+      <div class="rs-result">
+        <div class="rs-result-row"><span>ລະດັບ</span><b id="rsResultTier">—</b></div>
+        <div class="rs-result-row"><span>ສ່ວນຫຼຸດ</span><b id="rsResultDiscount">—</b></div>
+        <div class="rs-result-row"><span>ໝົດອາຍຸ</span><b id="rsResultExpiry">—</b></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <footer>
+    <div class="fname en"></div>
+    <div class="fcopy">© 2026 <span class="fcopy-name en"></span> . ເວັບສ້າງໂດຍ BEERTJ . ຄວາມເປັນສ່ວນຕົວ</div>
+  </footer>
+
+  <button class="chat-fab" aria-label="Chat">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </button>
+
+</div>
+<script src="storefront-data.js"></script>
+<script src="script.js"></script>
+<script src="reseller.js"></script>
+</body>
+</html>
