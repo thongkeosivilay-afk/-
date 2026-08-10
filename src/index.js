@@ -28,6 +28,9 @@
      POST /api/account/redeem-reseller-key -> ลูกค้า (ต้อง login) กรอกคีย์ตัวแทนที่หน้า reseller.html ->
                                       เรียก RPC redeem_reseller_key ด้วย user.id/user.email ของ
                                       คนที่ login อยู่ (ห้ามรับ user id จาก body เด็ดขาด กันสวมรอย)
+     GET  /api/account/reseller-dashboard -> ลูกค้า (ต้อง login + เป็นตัวแทนอยู่แล้ว) ดึงสรุปยอด
+                                      จริง (โควตาเทียบเป้า/ยอดวันนี้/ยอดสะสม) จาก orders + topup_requests
+                                      + wallets มาให้หน้า reseller.html แสดงเป็นแดชบอร์ด
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
 
    ---- ระบบแอดมิน ----
@@ -59,7 +62,7 @@
    ========================================================= */
 
 // อีเมล Discord ที่อนุญาตให้เข้าห้องแอดมินได้ (เพิ่มได้หลายคนโดยเติมในลิสต์นี้)
-const ADMIN_EMAILS = ['bhchhhyggg@gmail.com', 'nuanmm12233@gmail.com'];
+const ADMIN_EMAILS = ['bhchhhyggg@gmail.com', 'wevn25990@gmail.com'];
 
 const SUPABASE_PROXY_PREFIX = '/api/admin/supabase';
 
@@ -114,6 +117,9 @@ export default {
     }
     if (url.pathname === '/api/account/redeem-reseller-key') {
       return handleRedeemResellerKey(request, env);
+    }
+    if (url.pathname === '/api/account/reseller-dashboard') {
+      return handleResellerDashboard(request, env);
     }
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
@@ -1019,6 +1025,103 @@ async function handleRedeemResellerKey(request, env) {
     const matchedKey = Object.keys(ERROR_LABEL).find((key) => msg.includes(key));
     console.error('handleRedeemResellerKey failed:', err);
     return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ໃຊ້ຄີຍ໌ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, matchedKey ? 400 : 502);
+  }
+}
+
+/* ---------- 15) GET /api/account/reseller-dashboard ----------
+   ໜ້າ reseller.html ຮຽກຈຸດນີ້ ຫຼັງຈາກຮູ້ແລ້ວວ່າຄົນທີ່ login ຢູ່ເປັນຕົວແທນ (is_reseller = true)
+   ເພື່ອເອົາຂໍ້ມູນສະຫຼຸບຈິງມາໂຊວ໌ (ໂຄວຕ້າ/ຍອດມື້ນີ້/ຍອດສະສົມ) — ຄິດໄລ່ຈາກ orders + topup_requests
+   + wallets ຈິງຂອງ user ຄົນນັ້ນ (ອ່ານດ້ວຍ service_role key ຄືກັນກັບຈຸດອື່ນ, ບໍ່ໄດ້ໃຫ້ browser
+   ຮ້ອງ Supabase ຕົງໆ) ອີງເຂດເວລາ UTC+7 (ລາວ/ໄທ) ໃນການຕັດ "ມື້ນີ້"/"ເດືອນນີ້" */
+async function handleResellerDashboard(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ ok: true, isReseller: false });
+  }
+
+  try {
+    const statusRows = await supabaseSelect(env, 'reseller_status', {
+      select: 'is_reseller,duration_type,period_start,period_end,quota_target,discount_percent',
+      user_id: `eq.${user.id}`,
+      limit: '1',
+    });
+    const status = Array.isArray(statusRows) && statusRows[0] ? statusRows[0] : null;
+
+    if (!status || !status.is_reseller) {
+      return json({ ok: true, isReseller: false });
+    }
+
+    // ---- ຄິດຂອບເຂດ "ມື້ນີ້" ແລະ "ເດືອນນີ້" ອີງເຂດເວລາ UTC+7 ----
+    const TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
+    const localNow = new Date(Date.now() + TZ_OFFSET_MS);
+    const startOfDayUtc = new Date(
+      Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate()) - TZ_OFFSET_MS
+    ).toISOString();
+    const startOfMonthUtc = new Date(
+      Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), 1) - TZ_OFFSET_MS
+    ).toISOString();
+
+    const [ordersRows, topupRows, walletRows] = await Promise.all([
+      supabaseSelect(env, 'orders', {
+        select: 'price,status,created_at',
+        user_id: `eq.${user.id}`,
+        status: 'eq.completed',
+        limit: '10000',
+      }),
+      supabaseSelect(env, 'topup_requests', {
+        select: 'amount,status,created_at',
+        user_id: `eq.${user.id}`,
+        status: 'eq.approved',
+        limit: '10000',
+      }),
+      supabaseSelect(env, 'wallets', {
+        select: 'balance',
+        user_id: `eq.${user.id}`,
+        limit: '1',
+      }),
+    ]);
+
+    const orders = ordersRows || [];
+    const topups = topupRows || [];
+    const balance = (walletRows && walletRows[0] && Number(walletRows[0].balance)) || 0;
+
+    const isOnOrAfter = (iso, boundaryIso) => typeof iso === 'string' && iso >= boundaryIso;
+
+    const todayOrders = orders.filter((o) => isOnOrAfter(o.created_at, startOfDayUtc));
+    const monthOrders = orders.filter((o) => isOnOrAfter(o.created_at, startOfMonthUtc));
+    const todayTopups = topups.filter((t) => isOnOrAfter(t.created_at, startOfDayUtc));
+
+    const sumPrice = (rows) => rows.reduce((s, r) => s + (Number(r.price) || 0), 0);
+    const sumAmount = (rows) => rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+
+    return json({
+      ok: true,
+      isReseller: true,
+      durationType: status.duration_type,
+      periodEnd: status.period_end,
+      quotaTarget: Number(status.quota_target) || 0,
+      discountPercent: status.discount_percent,
+      monthPurchase: sumPrice(monthOrders),
+      today: {
+        topup: sumAmount(todayTopups),
+        purchase: sumPrice(todayOrders),
+        ordersCount: todayOrders.length,
+        balance,
+      },
+      cumulative: {
+        totalTopup: sumAmount(topups),
+        totalPurchase: sumPrice(orders),
+        ordersCount: orders.length,
+      },
+    });
+  } catch (err) {
+    console.error('handleResellerDashboard failed:', err);
+    return json({ error: 'ດຶງຂໍ້ມູນຕົວແທນບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
   }
 }
 
