@@ -318,6 +318,18 @@
     display:flex;align-items:center;justify-content:center;
     box-shadow:0 3px 10px -3px rgba(255,20,90,0.55);
   }
+  .cat-enable-row{
+    display:flex; align-items:center; justify-content:flex-end; gap:7px;
+    margin:0 0 10px;
+  }
+  .cat-enable-row .pause-toggle-label{ margin:0; font-size:0.78rem; }
+  .cat-enable-row .cat-enable-state{
+    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px;
+    border:1px solid rgba(120,255,150,0.35); background:rgba(120,255,150,0.1); color:#3ecb63;
+  }
+  .cat-enable-row .cat-enable-state.is-off{
+    border-color:rgba(255,0,1,0.35); background:rgba(255,0,1,0.08); color:var(--gx-danger);
+  }
   .cat-img-row{ display:flex; align-items:stretch; gap:8px; margin-top:8px; }
   .drop-zone.cat-img-drop{ flex:1; padding:10px; font-size:11.5px; }
   .drop-zone.cat-img-drop img{ max-height:90px; border-radius:10px; }
@@ -1149,6 +1161,10 @@
       <p style="font-size:12px;color:var(--ink-500);margin:0 0 10px;">ໜ້າຮ້ານຈິງມີ 4 ກາຕູນໝວດໝູ່ຄົງທີ່ — ຕັ້ງຊື່ ແລະ ເລືອກຮູບໃຫ້ຄົບທັງ 4 ໝວດ — ຮູບພາບອັບໂຫລດ+ບັນທຶກອັດຕະໂນມັດທັນທີ, ສ່ວນຊື່ພິມແລ້ວກົດ "ຢືນຢັນ" ຂ້າງໆຊ່ອງນັ້ນເລີຍ (ຫຼືກົດ Enter) ບໍ່ຕ້ອງເລື່ອນລົງໄປລຸ່ມສຸດ</p>
     <div class="gx-field cat-field-group cat-numbered">
       <span class="cat-num-badge">1</span>
+      <div class="cat-enable-row">
+        <span class="cat-enable-state" id="catEnableState1">ເປີດ</span>
+        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled1" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+      </div>
       <label>ໝວດໝູ່ 1 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
       <div class="gx-input-wrap cat-name-row"><input type="text" id="catName1" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm1">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg1"></div>
       <label style="margin-top:10px;">ໝວດໝູ່ 1 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
@@ -1166,6 +1182,10 @@
     </div>
     <div class="gx-field cat-field-group cat-numbered">
       <span class="cat-num-badge">2</span>
+      <div class="cat-enable-row">
+        <span class="cat-enable-state" id="catEnableState2">ເປີດ</span>
+        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled2" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+      </div>
       <label>ໝວດໝູ່ 2 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
       <div class="gx-input-wrap cat-name-row"><input type="text" id="catName2" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm2">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg2"></div>
       <label style="margin-top:10px;">ໝວດໝູ່ 2 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
@@ -1183,6 +1203,10 @@
     </div>
     <div class="gx-field cat-field-group cat-numbered">
       <span class="cat-num-badge">3</span>
+      <div class="cat-enable-row">
+        <span class="cat-enable-state" id="catEnableState3">ເປີດ</span>
+        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled3" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+      </div>
       <label>ໝວດໝູ່ 3 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
       <div class="gx-input-wrap cat-name-row"><input type="text" id="catName3" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm3">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg3"></div>
       <label style="margin-top:10px;">ໝວດໝູ່ 3 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
@@ -1200,6 +1224,10 @@
     </div>
     <div class="gx-field cat-field-group cat-numbered">
       <span class="cat-num-badge">4</span>
+      <div class="cat-enable-row">
+        <span class="cat-enable-state" id="catEnableState4">ເປີດ</span>
+        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled4" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+      </div>
       <label>ໝວດໝູ່ 4 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
       <div class="gx-input-wrap cat-name-row"><input type="text" id="catName4" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm4">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg4"></div>
       <label style="margin-top:10px;">ໝວດໝູ່ 4 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>

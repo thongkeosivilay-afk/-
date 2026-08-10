@@ -280,6 +280,47 @@ async function saveSingleCategoryField(i, field, inputId, btnId, msgId) {
   }
 }
 
+// ອັບເດດ badge ຂໍ້ຄວາມ "ເປີດ"/"ປິດ" ຂ້າງໆ toggle ຂອງແຕ່ລະໝວດໝູ່
+function updateCategoryEnableStateLabel(i, isEnabled) {
+  const stateEl = document.getElementById(`catEnableState${i}`);
+  if (!stateEl) return;
+  stateEl.textContent = isEnabled ? 'ເປີດ' : 'ປິດ';
+  stateEl.classList.toggle('is-off', !isEnabled);
+}
+
+// ---------- ປຸ່ມເປີດ/ປິດ ໝວດໝູ່ (category_{i}_enabled) — ບັນທຶກທັນທີທີ່ກົດ ----------
+// ປິດ = ໝວດໝູ່ນັ້ນ (ພ້ອມສິນຄ້າທັງໝົດຢູ່ໃນນັ້ນ) ຈະຫາຍໄປຈາກໜ້າຮ້ານຈິງທັນທີ (ໜ້າຫຼັກ, ໜ້າ
+// ໝວດໝູ່ (category.html), ແລະ ຈະເປີດ product.html ຂອງສິນຄ້ານັ້ນກົງໆບໍ່ໄດ້ນຳ — ຄຸມຝັ່ງ Worker
+// ໃນ /api/public/storefront ໂດຍກົງ, ບໍ່ແມ່ນແຄ່ເຊື່ອງດ້ວຍ CSS)
+async function saveCategoryEnabled(i, isEnabled) {
+  const input = document.getElementById(`catEnabled${i}`);
+  try {
+    await ensureSiteSettingsRow();
+    const { error } = await supabaseClient
+      .from(SITE_SETTINGS_TABLE)
+      .update({ [`category_${i}_enabled`]: isEnabled, updated_at: new Date().toISOString() })
+      .eq('id', SITE_SETTINGS_ID);
+    if (error) throw error;
+    updateCategoryEnableStateLabel(i, isEnabled);
+    await loadSiteSettingsAdmin();
+  } catch (err) {
+    console.error(err);
+    if (input) input.checked = !isEnabled; // ບັນທຶກບໍ່ສຳເລັດ -> ຄືນຄ່າ checkbox ກັບຄືນ
+    updateCategoryEnableStateLabel(i, !isEnabled);
+    alert('ບັນທຶກບໍ່ສຳເລັດ: ' + (err.message || 'ລອງໃໝ່ອີກຄັ້ງ'));
+  }
+}
+
+function initCategoryEnabledToggles() {
+  for (let i = 1; i <= 4; i++) {
+    const input = document.getElementById(`catEnabled${i}`);
+    if (input && !input.dataset.bound) {
+      input.dataset.bound = '1';
+      input.addEventListener('change', () => saveCategoryEnabled(i, input.checked));
+    }
+  }
+}
+
 function initCategoryTitleDescConfirmButtons() {
   for (let i = 1; i <= 4; i++) {
     const titleBtn = document.getElementById(`catTitleConfirm${i}`);
@@ -1418,6 +1459,13 @@ function loadSiteSettingsIntoForm(settings) {
       settings[`category_${i}_image`],
       'ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)'
     );
+    // ເປີດ/ປິດ ໝວດໝູ່ນີ້ (category_{i}_enabled) — ຄ່າເລີ່ມຕົ້ນ = ເປີດ ຖ້າຍັງບໍ່ເຄີຍຕັ້ງ (null/undefined)
+    const enabledInputEl = document.getElementById(`catEnabled${i}`);
+    if (enabledInputEl && document.activeElement !== enabledInputEl) {
+      const isEnabled = settings[`category_${i}_enabled`] !== false;
+      enabledInputEl.checked = isEnabled;
+      updateCategoryEnableStateLabel(i, isEnabled);
+    }
   }
 
   fillDropzonePreview('logoDropZone', 'logoDropZoneText', 'logoInput', settings.logo_url);
@@ -1749,6 +1797,7 @@ function initSiteSettingsPanel() {
   initPromoPopupDropzone();
   initCategoryNameConfirmButtons();
   initCategoryTitleDescConfirmButtons();
+  initCategoryEnabledToggles();
 
   const saveStoreNameBtn = document.getElementById('saveStoreNameBtn');
   if (saveStoreNameBtn) {
