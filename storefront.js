@@ -127,12 +127,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ກ່ອງ "ພື້ນທີ່ໃສ່ຮູບໂປຣໂມຊັ່ນ" — ຖ້າແອດມິນອັບໂຫລດຮູບ Hero ໄວ້ (store.heroImage) ໃຫ້ໂຊວ໌ຮູບນັ້ນແທນ placeholder
+  function renderHeroPromo(data) {
+    const promoEl = document.querySelector('.promo');
+    if (!promoEl) return;
+    const heroImage = data && data.store && data.store.heroImage;
+    if (!heroImage) return; // ຍັງບໍ່ໄດ້ໃສ່ຮູບ -> ປ່ອຍ placeholder ເດີມໄວ້
+    promoEl.classList.add('has-image');
+    promoEl.innerHTML = `<img src="${escapeHtml(heroImage)}" alt="ໂປຣໂມຊັ່ນ">`;
+  }
+
   window.StorefrontData.fetchData()
     .then((data) => {
       const { name } = window.StorefrontData.applyStoreBranding(data.store);
       document.title = `${name} — ຮ້ານເກມອອນລາຍ`;
       renderCategories(data);
       updateStats(data);
+      renderHeroPromo(data);
     })
     .catch(() => {
       // ດຶງຂໍ້ມູນບໍ່ສຳເລັດ (ເຊັ່ນ Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase secret) — ປ່ອຍ markup ຄ່າເລີ່ມຕົ້ນ
