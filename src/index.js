@@ -21,10 +21,11 @@
      GET  /api/orders/history     -> ลูกค้า (ต้อง login) ดึงประวัติการสั่งซื้อของตัวเองเท่านั้น
                                       (orders.html)
      GET  /api/account/stats      -> ลูกค้า (ต้อง login) สรุปยอดสั่งซื้อสำเร็จ/ยอดใช้จ่ายรวม
-                                      (profile.html)
+                                      (ยังไม่มีหน้าเรียกใช้จริงตอนนี้ เก็บ endpoint ไว้เผื่อทำหน้าบัญชีทีหลัง)
      GET  /api/account/reseller-status  -> ลูกค้า (ต้อง login) ดูสถานะตัวแทนของตัวเอง (ถ้ามี)
-                                      อ่านจากตาราง reseller_status ด้วย service_role key (profile.html)
-     POST /api/account/redeem-reseller-key -> ลูกค้า (ต้อง login) กรอกคีย์ตัวแทนที่หน้าโปรไฟล์ ->
+                                      อ่านจากตาราง reseller_status ด้วย service_role key (เผื่อใช้ทีหลัง —
+                                      reseller.html ตอนนี้ไม่ได้เรียก เพราะแค่ให้กรอกคีย์อย่างเดียว)
+     POST /api/account/redeem-reseller-key -> ลูกค้า (ต้อง login) กรอกคีย์ตัวแทนที่หน้า reseller.html ->
                                       เรียก RPC redeem_reseller_key ด้วย user.id/user.email ของ
                                       คนที่ login อยู่ (ห้ามรับ user id จาก body เด็ดขาด กันสวมรอย)
      อื่นๆ ทั้งหมด                 -> ส่งต่อให้ env.ASSETS (ไฟล์ static เดิม)
@@ -912,8 +913,8 @@ async function handleOrdersHistory(request, env) {
 }
 
 /* ---------- 12) GET /api/account/stats ----------
-   ໜ້າ profile.html (profile.js) ຮຽກຈຸດນີ້ ເພື່ອໂຊວ໌ "ຈຳນວນສັ່ງຊື້ສຳເລັດ" + "ຍອດຊື້ລວມ"
-   ໃນໜ້າໂປຣໄຟລ໌ — ເດີມ endpoint ນີ້ບໍ່ມີຢູ່ຈິງ (profile.js fetch ແລ້ວໄດ້ 404 ຄືນຄ່າ 0
+   ຍັງບໍ່ມີໜ້າໃດເອີ້ນໃຊ້ຢູ່ຕອນນີ້ (ໜ້າໂປຣໄຟລ໌ເກົ່າຖືກລຶບອອກໄປແລ້ວ) — ເກັບ endpoint ນີ້ໄວ້ເຜື່ອ
+   ພາຍຫຼັງເຮັດໜ້າບັນຊີຄືນມາ. ເດີມ endpoint ນີ້ບໍ່ມີຢູ່ຈິງ (fetch ແລ້ວໄດ້ 404 ຄືນຄ່າ 0
    ຕະຫຼອດ) ຕອນນີ້ຄິດໄລ່ຈາກຕາຕະລາງ orders ຈິງຂອງລູກຄ້າຄົນນັ້ນ */
 async function handleAccountStats(request, env) {
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
@@ -943,7 +944,7 @@ async function handleAccountStats(request, env) {
 }
 
 /* ---------- 13) GET /api/account/reseller-status ----------
-   ໜ້າ profile.html ຮຽກຈຸດນີ້ ເພື່ອເບິ່ງວ່າຄົນທີ່ login ຢູ່ ເປັນຕົວແທນຢູ່ບໍ່ (ແລະລະດັບ/ໂຄວຕ້າ/
+   ຍັງບໍ່ມີໜ້າໃດເອີ້ນໃຊ້ຢູ່ຕອນນີ້ (ເກັບໄວ້ເຜື່ອພາຍຫຼັງ) — ໃຊ້ເບິ່ງວ່າຄົນທີ່ login ຢູ່ ເປັນຕົວແທນຢູ່ບໍ່ (ແລະລະດັບ/ໂຄວຕ້າ/
    ວັນໝົດອາຍຸ) — ອ່ານຈາກ reseller_status ດ້ວຍ service_role key (ຕາຕະລາງນີ້ບໍ່ໄດ້ເປີດໃຫ້ browser
    ອ່ານກົງໆ) ຄືນ status: null ຖ້າຍັງບໍ່ເຄີຍ redeem ຄີຍ໌ຕົວແທນເລີຍ */
 async function handleResellerStatusGet(request, env) {
@@ -972,7 +973,7 @@ async function handleResellerStatusGet(request, env) {
 }
 
 /* ---------- 14) POST /api/account/redeem-reseller-key ----------
-   ໜ້າ profile.html ຮຽກຈຸດນີ້ ຕອນລູກຄ້າກອກຄີຍ໌ຕົວແທນແລ້ວກົດຢືນຢັນ — ຮຽກ RPC redeem_reseller_key
+   ໜ້າ reseller.html ຮຽກຈຸດນີ້ ຕອນລູກຄ້າກອກຄີຍ໌ຕົວແທນແລ້ວກົດຢືນຢັນ — ຮຽກ RPC redeem_reseller_key
    ດ້ວຍ user.id/user.email ຂອງຄົນທີ່ login ຢູ່ຈາກ session cookie ເທົ່ານັ້ນ (ບໍ່ຮັບຄ່າ user id ຈາກ
    body ເດັດຂາດ ເພື່ອກັນລູກຄ້າສວມຮອຍປົດລັອກລາຄາຕົວແທນໃຫ້ຄົນອື່ນ) */
 async function handleRedeemResellerKey(request, env) {
