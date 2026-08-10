@@ -774,7 +774,7 @@ async function decideTopup(id, status, card) {
     if (req && req.user_id) {
       const { error: walletError } = await supabaseClient.rpc('increment_wallet_balance', {
         p_user_id: req.user_id,
-        p_amount: req.amount
+        p_amount: Math.round(req.amount / 1000)
       });
       if (walletError) {
         console.error(walletError);
