@@ -4,6 +4,8 @@
    Route ที่มี:
      GET  /auth/discord/login     -> เด้งไปหน้า Discord authorize (รับ ?next= ปลายทางหลังล็อกอินสำเร็จ)
      GET  /auth/discord/callback  -> Discord เด้งกลับมาที่นี่พร้อม ?code=
+     GET  /auth/google/login      -> เด้งไปหน้า Google consent (รับ ?next= เหมือนกัน)
+     GET  /auth/google/callback   -> Google เด้งกลับมาที่นี่พร้อม ?code=
      GET  /auth/logout            -> ล้าง session cookie
      GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user (รวมสถานะ isAdmin)
      POST /api/auth/signup        -> สมัครสมาชิกด้วยอีเมล/รหัสผ่าน (ผ่าน Supabase Auth Admin API)
@@ -75,6 +77,12 @@ export default {
     }
     if (url.pathname === '/auth/discord/callback') {
       return handleCallback(request, env);
+    }
+    if (url.pathname === '/auth/google/login') {
+      return handleGoogleLogin(request, env);
+    }
+    if (url.pathname === '/auth/google/callback') {
+      return handleGoogleCallback(request, env);
     }
     if (url.pathname === '/auth/logout') {
       return handleLogout();
@@ -269,6 +277,127 @@ async function handleCallback(request, env) {
   );
   headers.append('Set-Cookie', 'oauth_state=; Path=/; Max-Age=0'); // ล้าง state cookie ทิ้ง
   headers.append('Set-Cookie', 'oauth_next=; Path=/; Max-Age=0'); // ล้าง next cookie ทิ้ง
+
+  return new Response(null, { status: 302, headers });
+}
+
+/* ---------- 2.5) /auth/google/login ----------
+   ทำงานแบบเดียวกับ /auth/discord/login เป๊ะๆ: สร้าง "state" กัน CSRF,
+   เก็บไว้ใน cookie ชั่วคราว แล้วเด้งผู้ใช้ไปหน้า consent ของ Google */
+async function handleGoogleLogin(request, env) {
+  const state = crypto.randomUUID();
+  const url = new URL(request.url);
+  const redirectUri = `${url.origin}/auth/google/callback`;
+
+  let next = url.searchParams.get('next') || '/';
+  if (!next.startsWith('/')) next = '/';
+
+  const params = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: 'openid email profile', // ขอ email มาด้วยเพื่อไว้เช็คสิทธิ์แอดมิน เหมือนฝั่ง Discord
+    state,
+    access_type: 'online',
+    prompt: 'select_account', // บังคับให้เลือกบัญชีทุกครั้ง กันกรณีเบราว์เซอร์จำบัญชี Google ไว้หลายอัน
+  });
+
+  const headers = new Headers({
+    Location: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`,
+  });
+  headers.append(
+    'Set-Cookie',
+    `oauth_state=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`
+  );
+  headers.append(
+    'Set-Cookie',
+    `oauth_next=${encodeURIComponent(next)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=600`
+  );
+
+  return new Response(null, { status: 302, headers });
+}
+
+/* ---------- 2.6) /auth/google/callback ----------
+   Google ส่ง ?code=...&state=... กลับมาที่นี่
+   ขั้นตอน: ตรวจ state -> แลก code เป็น token -> ดึงข้อมูลผู้ใช้จาก userinfo endpoint
+   -> สร้าง session (ใช้ helper createSession ตัวเดียวกับ email login เพื่อลดโค้ดซ้ำ) */
+async function handleGoogleCallback(request, env) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get('code');
+  const state = url.searchParams.get('state');
+  const savedState = getCookie(request, 'oauth_state');
+
+  if (!code || !state || state !== savedState) {
+    return new Response(
+      'ການລ໋ອກອິນລົ້ມເຫຼວ: state ບໍ່ກົງກັນ (ອາດຖືກ CSRF ຫຼືເປີດລິ້ງເກົ່າ)',
+      { status: 400 }
+    );
+  }
+
+  const redirectUri = `${url.origin}/auth/google/callback`;
+  const nextPath = getCookie(request, 'oauth_next') || '/';
+
+  // ---- แลก code เป็น access_token (ต้องทำฝั่ง server เท่านั้น เพราะใช้ client_secret) ----
+  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+    }),
+  });
+
+  if (!tokenRes.ok) {
+    const errText = await tokenRes.text();
+    console.error('Google token exchange failed:', errText);
+    return new Response('ແລກ token ກັບ Google ບໍ່ສຳເລັດ', { status: 502 });
+  }
+  const tokenData = await tokenRes.json();
+
+  // ---- ใช้ access_token ดึงข้อมูลผู้ใช้ ----
+  const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${tokenData.access_token}` },
+  });
+  const googleUser = await userRes.json();
+
+  // ---- เช็คสิทธิ์แอดมิน: ใช้ ADMIN_EMAILS ลิสต์เดียวกับฝั่ง Discord ----
+  const isAdmin =
+    !!googleUser.email &&
+    googleUser.email_verified === true &&
+    ADMIN_EMAILS.some(e => e.toLowerCase() === googleUser.email.toLowerCase());
+
+  const sessionId = await createSession(env, {
+    id: googleUser.sub,
+    username: googleUser.name || (googleUser.email || '').split('@')[0],
+    email: googleUser.email || null,
+    avatar: googleUser.picture || null,
+    isAdmin,
+    discordLinked: false,
+    googleLinked: true,
+    createdAt: Date.now(),
+  });
+
+  // ---- แจ้งเตือนเข้า Discord: มีคนล็อกอินผ่าน Google ----
+  await sendDiscordAlert(env, {
+    title: '🔐 ລ໋ອກອິນສຳເລັດ (Google)',
+    color: 0x4285f4, // สี Google blue
+    fields: [
+      { name: 'ຊື່', value: googleUser.name || '-', inline: true },
+      { name: 'ອີເມວ', value: googleUser.email || '-', inline: true },
+      { name: 'ແອດມິນ?', value: isAdmin ? 'ແມ່ນ ✅' : 'ບໍ່ແມ່ນ', inline: true },
+    ],
+  });
+
+  const headers = new Headers({ Location: nextPath });
+  headers.append(
+    'Set-Cookie',
+    `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`
+  );
+  headers.append('Set-Cookie', 'oauth_state=; Path=/; Max-Age=0');
+  headers.append('Set-Cookie', 'oauth_next=; Path=/; Max-Age=0');
 
   return new Response(null, { status: 302, headers });
 }
