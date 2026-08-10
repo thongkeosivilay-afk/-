@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const titleEl = document.querySelector('#cat-title');
   const descEl = document.querySelector('#cat-desc');
+  const breadcrumbCurrent = document.querySelector('#breadcrumbCurrent');
   const grid = document.querySelector('#prod-grid');
   const emptyEl = document.querySelector('#empty-state');
   const searchBox = document.querySelector('.search-box');
@@ -208,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const { name } = window.StorefrontData.applyStoreBranding(data.store);
       if (titleEl) { titleEl.textContent = category.name; titleEl.classList.remove('is-loading'); }
+      if (breadcrumbCurrent) breadcrumbCurrent.textContent = category.name;
       if (descEl) {
         descEl.textContent = (category.desc && String(category.desc).trim()) || SLOT_DESC[catIndex] || '';
         descEl.classList.remove('is-loading');

@@ -781,13 +781,68 @@
 
   .cat-block{ margin-bottom:6px; }
 
-  /* ---------- Category listing page (category.html) ---------- */
-  .page-back{
-    display:inline-flex; align-items:center; gap:6px;
-    padding:16px 20px 0; font-size:13.5px; color:var(--text-dim); font-weight:600;
+  /* ---------- Back button + Breadcrumb nav (category.html / product.html) ----------
+     Minimal Premium: บ่มีพื้นหลัง/ไม่ใช่สี่เหลี่ยม, ลูกศร+ข้อความสีเทา,
+     hover/แตะ -> ลูกศรเลื่อนซ้าย 4px + สีขาว, กด -> ยุบลงเล็กน้อย + แสงแดงจางฟุ้งรอบปุ่ม */
+  .page-nav{
+    display:flex; align-items:center; gap:12px;
+    padding:16px 20px 0;
+    white-space:nowrap; overflow-x:auto;
+    -ms-overflow-style:none; scrollbar-width:none;
   }
-  .page-back svg{ width:16px; height:16px; }
-  .page-back:active{ opacity:.7; }
+  .page-nav::-webkit-scrollbar{ display:none; }
+
+  .page-back{
+    flex:0 0 auto;
+    display:inline-flex; align-items:center; gap:6px;
+    background:transparent; border:none;
+    padding:5px 3px; border-radius:8px;
+    font-size:13.5px; color:var(--text-dim); font-weight:600;
+    -webkit-tap-highlight-color:transparent;
+    transition:color .2s ease, transform .12s ease, box-shadow .25s ease;
+  }
+  .page-back .pb-arrow{
+    display:inline-flex;
+    transition:transform .2s cubic-bezier(.4,0,.2,1);
+  }
+  .page-back svg{ width:16px; height:16px; display:block; }
+  .page-back:hover{ color:var(--text); }
+  .page-back:hover .pb-arrow{ transform:translateX(-4px); }
+  .page-back:active{
+    transform:scale(.94);
+    box-shadow:0 0 0 8px rgba(255,0,1,.10), 0 0 18px rgba(255,0,1,.25);
+  }
+  .page-back:focus-visible{ outline:none; box-shadow:0 0 0 3px rgba(255,0,1,.25); }
+
+  .page-nav-divider{ flex:0 0 auto; width:1px; height:15px; background:var(--card-border); }
+
+  .breadcrumb{
+    flex:1 1 auto; min-width:0;
+    display:inline-flex; align-items:center; gap:6px;
+    font-size:12.5px; color:var(--text-faint);
+  }
+  .breadcrumb a{
+    color:var(--text-faint); text-decoration:none;
+    display:inline-flex; align-items:center; gap:5px; white-space:nowrap;
+    transition:color .2s ease;
+  }
+  .breadcrumb a:hover{ color:var(--text-dim); }
+  .breadcrumb a svg{ width:12.5px; height:12.5px; flex-shrink:0; }
+  .breadcrumb .bc-sep{ color:var(--card-border); font-size:11px; flex-shrink:0; }
+  .breadcrumb .bc-current{
+    color:var(--text); font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  /* ---------- Page transition (fade เบาๆ ตอนสลับหน้า) ----------
+     ควบคุมโดย script.js: เติม/ถอด class บน <html> ---- */
+  body{ transition:opacity .22s cubic-bezier(.4,0,.2,1), transform .22s cubic-bezier(.4,0,.2,1); }
+  html.pt-loading body{ opacity:0; transform:translateY(6px); }
+  html.pt-leaving body{ opacity:0; transform:translateY(-6px); }
+  @media (prefers-reduced-motion: reduce){
+    body{ transition:none !important; }
+    html.pt-loading body, html.pt-leaving body{ opacity:1 !important; transform:none !important; }
+  }
 
   .cat-page-head{ padding:14px 20px 4px; position:relative; z-index:1; }
   .cat-page-title{

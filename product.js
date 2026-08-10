@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorMsg = document.getElementById('errorMsg');
   const prodContent = document.getElementById('prodContent');
   const backLink = document.getElementById('backLink');
+  const breadcrumbCatSep = document.getElementById('breadcrumbCatSep');
+  const breadcrumbCatLink = document.getElementById('breadcrumbCatLink');
+  const breadcrumbCurrent = document.getElementById('breadcrumbCurrent');
 
   const prodImg = document.getElementById('prodImg');
   const prodImgPlaceholder = document.getElementById('prodImgPlaceholder');
@@ -368,6 +371,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
       document.title = `${product.name} — ${name}`;
       prodTitle.textContent = product.name || '';
+      if (breadcrumbCurrent) breadcrumbCurrent.textContent = product.name || '';
+
+      // ---- Breadcrumb ระดับกลาง (หมวดหมู่): เอาชื่อหมวดจริงจาก ?cat= ถ้ามี ไม่งั้นใช้ product.category ----
+      const catIndexParam = params.get('cat');
+      const categoryFromIndex = catIndexParam
+        ? window.StorefrontData.categoryByIndex(data, Number(catIndexParam))
+        : null;
+      const breadcrumbCatName = (categoryFromIndex && categoryFromIndex.name) || product.category || '';
+      if (breadcrumbCatName && breadcrumbCatLink && breadcrumbCatSep) {
+        breadcrumbCatLink.textContent = breadcrumbCatName;
+        breadcrumbCatLink.href = catIndexParam
+          ? `category.html?cat=${encodeURIComponent(catIndexParam)}`
+          : 'index.html#categories';
+        breadcrumbCatLink.style.display = '';
+        breadcrumbCatSep.style.display = '';
+      }
 
       if (product.image_url) {
         prodImg.src = product.image_url;

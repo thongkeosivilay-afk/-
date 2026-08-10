@@ -12,6 +12,49 @@ window.addEventListener('pageshow', (event) => {
   }
 });
 
+// ---- Page transition (fade เบาๆ ตอนสลับหน้า) ----
+// เติม class 'pt-loading' บน <html> ทันที (ก่อน paint) แล้วถอดออกหลัง DOM พร้อม
+// -> body ถูกซ่อนด้วย opacity:0 ตอนเริ่มโหลด แล้ว fade เข้ามาเอง (ดู CSS ใน style.css)
+// ตอนคลิกลิงก์ภายในเว็บเดียวกัน (a[href] same-origin) จะ fade ออกก่อนค่อยเปลี่ยนหน้าจริง
+// กัน "กระพริบ/ตัดฉับ" ตอนสลับหน้า ให้ความรู้สึกลื่นไหลแบบ SPA แม้เป็น MPA จริงๆ
+// (bfcache: บังคับ reload ไปแล้วด้านบน จึงไม่ต้องจัดการ pt-loading ค้างตอนกดย้อนกลับซ้ำ)
+(function initPageTransition() {
+  const root = document.documentElement;
+  root.classList.add('pt-loading');
+
+  function reveal() {
+    requestAnimationFrame(() => root.classList.remove('pt-loading'));
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    reveal();
+  } else {
+    document.addEventListener('DOMContentLoaded', reveal);
+  }
+
+  const TRANSITION_MS = 180;
+
+  document.addEventListener('click', (e) => {
+    if (e.defaultPrevented || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+    const a = e.target.closest('a[href]');
+    if (!a) return;
+    if (a.target && a.target !== '' && a.target !== '_self') return;
+    if (a.hasAttribute('download')) return;
+
+    let url;
+    try { url = new URL(a.href, window.location.href); } catch { return; }
+    if (url.origin !== window.location.origin) return; // ลิงก์นอกเว็บ -> ปล่อยไปตามปกติ
+
+    // อยู่หน้าเดิม แค่เลื่อนไป anchor (#...) -> ไม่ต้อง fade ทั้งหน้า
+    if (url.pathname === window.location.pathname && url.hash) return;
+
+    e.preventDefault();
+    root.classList.add('pt-leaving');
+    setTimeout(() => { window.location.href = a.href; }, TRANSITION_MS);
+  });
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
 
   // ໝາຍເຫດ: ການສ້າງກາຕູນສິນຄ້າ (.prod-card[data-pid]) ແລະ ປຸ່ມຊື້ຂອງມັນ ຕອນນີ້ຄຸມ
