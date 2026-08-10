@@ -64,7 +64,7 @@
    ========================================================= */
 
 // อีเมล Discord ที่อนุญาตให้เข้าห้องแอดมินได้ (เพิ่มได้หลายคนโดยเติมในลิสต์นี้)
-const ADMIN_EMAILS = ['bhchhhyggg@gmail.com', 'wevn25990@gmail.com'];
+const ADMIN_EMAILS = ['bhchhhyggg@gmail.com', 'nuanmm12233@gmail.com'];
 
 const SUPABASE_PROXY_PREFIX = '/api/admin/supabase';
 
