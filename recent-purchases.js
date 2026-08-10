@@ -54,9 +54,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         <div class="rp-info">
           <div class="rp-name">${escapeHtml(item.productName)}</div>
           ${buyerRow}
-          <div class="rp-time">${escapeHtml(timeAgoLabel(item.createdAt))}</div>
+          <div class="rp-time" data-created="${escapeHtml(item.createdAt || '')}">${escapeHtml(timeAgoLabel(item.createdAt))}</div>
         </div>
       </div>`;
+  }
+
+  // ອັບເດດ "X ນາທີກ່ອນ" ໃຫ້ຍັງເປັນປັດຈຸບັນຢູ່ສະເໝີໂດຍບໍ່ຕ້ອງໂຫລດໜ້າໃໝ່
+  function refreshTimeLabels() {
+    track.querySelectorAll('.rp-time[data-created]').forEach((el) => {
+      const iso = el.getAttribute('data-created');
+      if (iso) el.textContent = timeAgoLabel(iso);
+    });
   }
 
   function initCarousel(items) {
@@ -68,16 +76,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     track.innerHTML = html;
     carousel.style.display = '';
 
-    const SPEED_PX_PER_SEC = 40; // ຢູ່ໃນຊ່ວງ 30-50 ຕາມທີ່ຮ້ອງຂໍ
+    const SPEED_PX_PER_SEC = 90; // ເລື່ອນໄວຂຶ້ນ
     let oneSetWidth = 0;
     let offset = 0;
-    let isDragging = false;
-    let dragStartX = 0;
-    let dragStartOffset = 0;
-    let lastTs = null;
-    let resumeTimer = null;
-    let autoPaused = false;
     let rafId = null;
+    let lastTs = null;
 
     function measure() {
       const cards = track.children;
@@ -102,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const dt = Math.min(0.05, (ts - lastTs) / 1000); // clamp กัน dt กระโดดตอนสลับแท็บ/lag
       lastTs = ts;
 
-      if (!isDragging && !autoPaused && oneSetWidth > 0) {
+      if (oneSetWidth > 0) {
         offset += SPEED_PX_PER_SEC * dt;
         normalizeOffset();
         applyTransform();
@@ -110,35 +113,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       rafId = requestAnimationFrame(tick);
     }
 
-    function pointerDown(clientX) {
-      isDragging = true;
-      autoPaused = true;
-      carousel.classList.add('dragging');
-      dragStartX = clientX;
-      dragStartOffset = offset;
-      if (resumeTimer) clearTimeout(resumeTimer);
-    }
-    function pointerMove(clientX) {
-      if (!isDragging) return;
-      const dx = clientX - dragStartX;
-      offset = dragStartOffset - dx;
-      normalizeOffset();
-      applyTransform();
-    }
-    function pointerUp() {
-      if (!isDragging) return;
-      isDragging = false;
-      carousel.classList.remove('dragging');
-      resumeTimer = setTimeout(() => { autoPaused = false; }, 600);
-    }
-
-    carousel.addEventListener('mousedown', (e) => { pointerDown(e.clientX); e.preventDefault(); });
-    window.addEventListener('mousemove', (e) => pointerMove(e.clientX));
-    window.addEventListener('mouseup', pointerUp);
-    carousel.addEventListener('touchstart', (e) => pointerDown(e.touches[0].clientX), { passive: true });
-    carousel.addEventListener('touchmove', (e) => pointerMove(e.touches[0].clientX), { passive: true });
-    carousel.addEventListener('touchend', pointerUp);
-    carousel.addEventListener('touchcancel', pointerUp);
+    // ປິດການລາກ/ກົດເລື່ອນດ້ວຍມື — ໄຫຼອັດຕະໂນມັດຢ່າງດຽວ, ຫ້າມຜູ້ໃຊ້ຂັດຈັງຫວະ
+    carousel.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+    carousel.addEventListener('mousedown', (e) => e.preventDefault());
+    carousel.addEventListener('dragstart', (e) => e.preventDefault());
 
     // ຢຸດ rAF ຕອນແທັບບໍ່ visible ແລ້ວຄ່ອຍເລີ່ມໃໝ່ຕອນກັບມາ -> ກັນ dt ໃຫຍ່ຜິດປົກກະຕິເຮັດໃຫ້ກະໂດດ
     document.addEventListener('visibilitychange', () => {
@@ -164,6 +142,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       measure();
       rafId = requestAnimationFrame(tick);
     });
+
+    setInterval(refreshTimeLabels, 30000); // ອັບເດດປ້າຍເວລາທຸກ 30 ວິນາທີ
   }
 
   try {
