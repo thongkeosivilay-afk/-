@@ -94,6 +94,9 @@ export default {
     if (url.pathname === '/api/public/storefront') {
       return handlePublicStorefront(request, env);
     }
+    if (url.pathname === '/api/public/recent-purchases') {
+      return handleRecentPurchases(request, env);
+    }
     if (url.pathname === '/api/topup/create') {
       return handleTopupCreate(request, env);
     }
@@ -698,6 +701,64 @@ async function handlePublicStorefront(request, env) {
   } catch (err) {
     console.error('handlePublicStorefront failed:', err);
     return json({ error: 'ດຶງຂໍ້ມູນຮ້ານບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+  }
+}
+
+/* ---------- 6b) GET /api/public/recent-purchases ----------
+   ໜ້າແຮກ (index.html -> recent-purchases.js) ໃຊ້ຈຸດນີ້ ເພື່ອໂຊວ໌ແຖບ "ສິນຄ້າທີ່ຊື້ລ່າສຸດ"
+   ດຶງແຖວລ່າສຸດຈິງຈາກຕາຕະລາງ orders (ຮຽງ created_at desc) ຈາກນັ້ນ:
+     - ຊື່ຮູບສິນຄ້າ: orders ບໍ່ມີຄອລັມ image_url ຂອງມັນເອງ, ຈຶ່ງ join ກັບ products ດ້ວຍ
+       product_name (ຄອລັມນີ້ orders ມີແທ້ ເບິ່ງ handleOrdersHistory) ເອົາ image_url ມາໃສ່
+       — ຖ້າສິນຄ້ານັ້ນຖືກລຶບ/ປ່ຽນຊື່ໄປແລ້ວ ຈະບໍ່ມີຮູບ (null, ຝັ່ງ frontend ຈະໂຊວ໌ໄອຄອນແທນ)
+     - ຊື່ຜູ້ຊື້: ບໍ່ມີຕາຕະລາງ users/profiles ໃນລະບົບນີ້ (ເບິ່ງ getSessionUser -> ມາຈາກ Discord
+       ຕອນ login, ບໍ່ໄດ້ບັນທຶກລົງ Supabase) ມີແຕ່ orders.user_email ເທົ່ານັ້ນທີ່ພໍໃຊ້ໄດ້ —
+       ຈຶ່ງເອົາ local-part ຂອງອີເມວ (ກ່ອນ @) ມາປິດບັງບາງສ່ວນ (3 ໂຕທຳອິດ + ***) ກ່ອນສົ່ງອອກ
+       ໄປ browser (ບໍ່ສົ່ງອີເມວເຕັມອອກໄປເດັດຂາດ, ນີ້ເປັນ public endpoint ບໍ່ຕ້ອງ login ອ່ານໄດ້)
+   ເປັນ public/GET ອย่างเดียว (ไม่ต้อง login) เพราะเป็นข้อมูลโชว์หน้าร้านทั่วไปเหมือน storefront */
+async function handleRecentPurchases(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' },
+      500
+    );
+  }
+
+  const LIMIT = 20;
+
+  function maskLocalPart(email) {
+    const local = String(email || '').split('@')[0] || '';
+    if (!local) return null;
+    const visible = local.slice(0, 3);
+    return (visible || local.slice(0, 1) || '?') + '***';
+  }
+
+  try {
+    const [orderRows, products] = await Promise.all([
+      supabaseSelect(env, 'orders', {
+        select: 'product_name,user_email,status,created_at',
+        status: 'eq.completed',
+        order: 'created_at.desc',
+        limit: String(LIMIT),
+      }),
+      supabaseSelect(env, 'products', {
+        select: 'name,image_url',
+      }),
+    ]);
+
+    const imageByProductName = new Map((products || []).map((p) => [p.name, p.image_url || null]));
+
+    const items = (orderRows || []).map((o) => ({
+      productName: o.product_name || 'ສິນຄ້າ',
+      image: imageByProductName.get(o.product_name) || null,
+      buyer: maskLocalPart(o.user_email),
+      createdAt: o.created_at,
+    }));
+
+    return json({ ok: true, items });
+  } catch (err) {
+    console.error('handleRecentPurchases failed:', err);
+    return json({ error: 'ດຶງລາຍການສິນຄ້າຊື້ລ່າສຸດບໍ່ສຳເລັດ' }, 502);
   }
 }
 
