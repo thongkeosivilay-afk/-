@@ -107,6 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       formCard.style.display = 'none';
       resultCard.style.display = '';
+      resultCard.classList.add('is-reseller');
+      document.querySelector('header')?.classList.add('is-reseller');
+      document.querySelector('.logo')?.classList.add('is-reseller');
       showToast('ໃຊ້ຄີຍ໌ຕົວແທນສຳເລັດແລ້ວ');
     } catch (err) {
       console.error('ໃຊ້ຄີຍ໌ຕົວແທນບໍ່ສຳເລັດ', err);

@@ -139,7 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const price = window.StorefrontData.productDisplayPrice(product, resellerInfo);
     if (price === null) return `<div class="prod-price todo">₭ 0</div>`;
     const tag = resellerInfo.isReseller ? '<span class="prod-price-reseller-tag">ຕົວແທນ</span>' : '';
-    return `<div class="prod-price">${window.StorefrontData.formatKip(price)}${tag}</div>`;
+    const priceClass = resellerInfo.isReseller ? 'prod-price is-reseller-glow' : 'prod-price';
+    return `<div class="${priceClass}">${window.StorefrontData.formatKip(price)}${tag}</div>`;
   }
 
   function cardHTML(product) {
@@ -147,8 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const buyable = window.StorefrontData.isProductBuyable(product);
     const state = stockState(product, stock);
     const mediaClass = state === 'ok' ? 'prod-media' : `prod-media is-${state}`;
+    const cardClass = resellerInfo.isReseller ? 'prod-card grid-card is-reseller' : 'prod-card grid-card';
     return `
-      <article class="prod-card grid-card" data-pid="${escapeHtml(product.id)}">
+      <article class="${cardClass}" data-pid="${escapeHtml(product.id)}">
         <div class="${mediaClass}">
           ${mediaBodyHTML(product, state, product.id)}
         </div>

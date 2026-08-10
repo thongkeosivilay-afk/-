@@ -277,12 +277,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     selectedLabel.textContent = d && product.duration_enabled ? d.label : '';
     priceValue.textContent = formatKip(price);
+    priceValue.classList.toggle('is-reseller-glow', resellerActive);
     priceValue.nextElementSibling?.classList?.contains('reseller-price-tag') && priceValue.nextElementSibling.remove();
     if (resellerActive) {
       const tag = document.createElement('span');
       tag.className = 'reseller-price-tag';
       tag.textContent = 'ລາຄາຕົວແທນ';
-      tag.style.cssText = 'display:inline-block;margin-left:8px;font-size:11px;font-weight:700;color:var(--green,#2ecc71);border:1px solid var(--green,#2ecc71);border-radius:6px;padding:2px 7px;vertical-align:middle;';
+      tag.style.cssText = 'display:inline-block;margin-left:8px;font-size:11px;font-weight:700;color:var(--red-glow,#ff0001);border:1px solid var(--red-glow,#ff0001);border-radius:6px;padding:2px 7px;vertical-align:middle;text-shadow:0 0 6px rgba(255,0,1,.5);';
       priceValue.insertAdjacentElement('afterend', tag);
     }
     totalValue.textContent = formatKip(price * qty);
@@ -414,6 +415,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       resellerActive = true;
+      document.querySelector('.prod-hero')?.classList.add('is-reseller');
       renderOptions();
       renderSummary();
     } catch (err) {

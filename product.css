@@ -28,6 +28,17 @@ body.product-page{ padding-bottom:24px; }
 }
 .prod-hero img{ width:100%; height:100%; display:block; object-fit:cover; }
 .prod-hero-placeholder svg{ width:38px; height:38px; color:var(--red); opacity:.3; }
+
+/* ໂໝດຕົວແທນ — glow ແດງຄ້າງໄວ້ຮອບຮູບ (ໃຊ້ໂຕນສີເດີມ, ບໍ່ໃສ່ສີໃໝ່) */
+.prod-hero.is-reseller{
+  border-color:rgba(255,0,1,.5);
+  box-shadow:0 0 0 1px rgba(255,0,1,.2), 0 16px 32px -16px rgba(255,0,1,.55);
+  animation:reseller-pulse 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce){
+  .prod-hero.is-reseller{ animation:none; }
+}
+.price-value.is-reseller-glow{ filter:drop-shadow(0 0 9px rgba(255,0,1,.6)); }
 .hud-corner{ position:absolute; width:14px; height:14px; z-index:2; pointer-events:none; opacity:.8; }
 .hud-corner.tl{ top:10px; left:10px; border-top:2px solid var(--red); border-left:2px solid var(--red); border-radius:3px 0 0 0; filter:none; }
 .hud-corner.br{ bottom:10px; right:10px; border-bottom:2px solid var(--red); border-right:2px solid var(--red); border-radius:0 0 3px 0; filter:none; }

@@ -526,8 +526,9 @@
   .prod-price .from{ font-size:11px; color:var(--text-faint); font-weight:500; -webkit-text-fill-color:var(--text-faint); }
   .prod-price-reseller-tag{
     display:inline-block; margin-left:6px; font-size:10px; font-weight:700;
-    color:var(--green); -webkit-text-fill-color:var(--green);
-    border:1px solid var(--green); border-radius:5px; padding:1px 5px; vertical-align:middle;
+    color:var(--red-glow); -webkit-text-fill-color:var(--red-glow);
+    border:1px solid var(--red-glow); border-radius:5px; padding:1px 5px; vertical-align:middle;
+    text-shadow:0 0 6px rgba(255,0,1,.5);
   }
 
   /* thin divider so price/name and stock/button read as two distinct groups */
@@ -556,6 +557,43 @@
   .buy-btn svg{ width:15px; height:15px; flex-shrink:0; }
   .buy-btn:active{ transform:scale(.96); box-shadow:0 4px 12px -6px rgba(255,0,1,.5), inset 0 1px 0 rgba(255,255,255,.18); }
   .buy-btn:disabled{ background:rgba(255,255,255,.08); color:var(--text-faint); opacity:1; box-shadow:none; }
+
+  /* =========================================================
+     ໂໝດ "ຕົວແທນ" (Reseller Active Glow) — ໃຊ້ glow ສີແດງດຽວກັນກັບຕອນ hover
+     ກາຕູນທີ່ມີຢູ່ແລ້ວທົ່ວເວັບ ແຕ່ໃຫ້ "ຄ້າງໄວ້" ຕະຫຼອດເມື່ອຄົນນັ້ນ login ເປັນຕົວແທນ —
+     ບໍ່ໃຊ້ສີໃໝ່ໃດໆ ນອກເໜືອຈາກໂຕນສີເດີມຂອງເວັບ (--red / --red-glow / --red-deep)
+     ໃສ່ໂດຍ JS: header.is-reseller / .logo.is-reseller / .login-btn.is-reseller /
+     .acct-dd-badge.is-reseller / .prod-card.is-reseller / .prod-price.is-reseller-glow
+     ========================================================= */
+  header.is-reseller{
+    border-bottom:1px solid rgba(255,0,1,.4);
+    box-shadow:0 10px 24px -14px rgba(255,0,1,.5);
+  }
+  .logo.is-reseller{
+    box-shadow:0 0 0 2px rgba(255,0,1,.35), 0 0 18px rgba(255,0,1,.55);
+  }
+  .login-btn.is-reseller{
+    box-shadow:0 0 16px rgba(255,0,1,.6), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .acct-dd-badge.is-reseller{
+    box-shadow:0 0 10px rgba(255,0,1,.45);
+  }
+
+  .prod-card.is-reseller{
+    border-color:rgba(255,0,1,.55);
+    box-shadow:0 0 0 1px rgba(255,0,1,.2), 0 14px 30px -14px rgba(255,0,1,.55);
+    animation:reseller-pulse 2.6s ease-in-out infinite;
+  }
+  @keyframes reseller-pulse{
+    0%,100%{ box-shadow:0 0 0 1px rgba(255,0,1,.2), 0 14px 30px -14px rgba(255,0,1,.55); }
+    50%{ box-shadow:0 0 0 1px rgba(255,0,1,.4), 0 14px 34px -12px rgba(255,0,1,.8); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .prod-card.is-reseller{ animation:none; }
+  }
+  .prod-price.is-reseller-glow{
+    filter:drop-shadow(0 0 8px rgba(255,0,1,.65));
+  }
 
   /* ---------- Product card v4: ສະຖານະ "ປັບປຸງ / ລໍຖ້າອັບເດດ" (admin ປິດຂາຍເອງ) ---------- */
   .prod-media.is-paused{

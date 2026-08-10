@@ -193,6 +193,11 @@ document.addEventListener('DOMContentLoaded', () => {
     wrap.appendChild(loginBtn);
 
     loginBtn.classList.add('is-authed');
+    if (user.isReseller) {
+      loginBtn.classList.add('is-reseller');
+      document.querySelector('header')?.classList.add('is-reseller');
+      document.querySelector('.logo')?.classList.add('is-reseller');
+    }
     loginBtn.innerHTML = '';
     loginBtn.type = 'button';
     loginBtn.setAttribute('aria-haspopup', 'true');
@@ -210,7 +215,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const badgeHtml = user.isAdmin
       ? `<span class="acct-dd-badge is-admin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/></svg> ADMIN</span>`
-      : `<span class="acct-dd-badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> ຜູ້ໃຊ້</span>`;
+      : user.isReseller
+        ? `<span class="acct-dd-badge is-reseller"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg> ຕົວແທນ</span>`
+        : `<span class="acct-dd-badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> ຜູ້ໃຊ້</span>`;
 
     const adminLinkHtml = user.isAdmin
       ? `<a class="acct-dd-link" href="admin.html" role="menuitem">
@@ -317,10 +324,22 @@ document.addEventListener('DOMContentLoaded', () => {
         // อนุมัติการเติมเงินไปแล้วก็ตาม -> ตอนนี้ใช้ค่าจาก data.user.balance ตรงๆ
         const balance = data.user.balance || 0;
 
+        // ---- เช็คสถานะตัวแทนควบคู่ไปด้วย (ไม่บล็อกการเรนเดอร์เมนูบัญชี) ----
+        // ใช้ StorefrontData.fetchResellerInfo() ตัวเดียวกับที่ category.js/product.js ใช้
+        // เพื่อไม่ยิง request ซ้ำ (มัน cache promise ไว้อยู่แล้ว)
+        let isReseller = false;
+        try {
+          const rsInfo = window.StorefrontData ? await window.StorefrontData.fetchResellerInfo() : null;
+          isReseller = !!(rsInfo && rsInfo.isReseller);
+        } catch (err) {
+          console.error('ດຶງສະຖານະຕົວແທນ (header) ບໍ່ສຳເລັດ', err);
+        }
+
         renderAccountMenu(loginBtn, {
           username: data.user.username,
           avatar: data.user.avatar,
           isAdmin: data.user.isAdmin,
+          isReseller,
           balance,
         });
       } else {

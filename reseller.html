@@ -15,6 +15,8 @@
   .rs-back-btn{ width:38px; height:38px; border-radius:12px; background:var(--card); border:1px solid var(--card-border); display:flex; align-items:center; justify-content:center; color:var(--text); cursor:pointer; flex-shrink:0; }
   .rs-back-btn svg{ width:18px; height:18px; }
   .rs-card{ background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius); padding:20px; }
+  .rs-card.is-reseller{ border-color:rgba(255,0,1,.5); box-shadow:0 0 0 1px rgba(255,0,1,.2), 0 16px 32px -16px rgba(255,0,1,.55); animation:reseller-pulse 2.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce){ .rs-card.is-reseller{ animation:none; } }
   .rs-card-head{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
   .rs-card-head svg{ width:20px; height:20px; stroke:var(--red-glow); flex-shrink:0; }
   .rs-card-head b{ font-size:16.5px; color:var(--text); }
