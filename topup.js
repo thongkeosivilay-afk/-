@@ -20,8 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const methods = document.querySelectorAll('.topup-method');
   const bankTitle = document.querySelector('#topupBankTitle');
   const bankDesc = document.querySelector('#topupBankDesc');
-  const amountInput = document.querySelector('#topupAmountInput');
+  const presetsBox = document.querySelector('#topupPresets');
   const presets = document.querySelectorAll('.topup-preset');
+  const firstPreset = document.querySelector('.topup-preset.first');
+  const pickerHint = document.querySelector('#topupPickerHint');
+  const sumValueEl = document.querySelector('#topupSumValue');
   const createQrBtn = document.querySelector('#topupCreateQrBtn');
 
   const backToAmountBtn = document.querySelector('#topupBackToAmount');
@@ -30,6 +33,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const uploadLabel = document.querySelector('#topupUploadLabel');
   const slipInput = document.querySelector('#topupSlipInput');
   const slipName = document.querySelector('#topupSlipName');
+  const uploadIcon = document.querySelector('#topupUploadIcon');
+  const uploadPreviewImg = document.querySelector('#topupUploadPreviewImg');
   const confirmBtn = document.querySelector('#topupConfirmBtn');
 
   const refEl = document.querySelector('#topupRef');
@@ -132,21 +137,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function setAmount(val) {
     selectedAmount = Math.max(0, Number(val) || 0);
-    amountInput.value = selectedAmount || '';
     presets.forEach((p) => {
       p.classList.toggle('active', Number(p.dataset.amount) === selectedAmount);
     });
-    createQrBtn.disabled = selectedAmount < 1000;
+    if (selectedAmount > 0) {
+      sumValueEl.textContent = selectedAmount.toLocaleString('de-DE') + ' ₭';
+      sumValueEl.classList.add('picked');
+    } else {
+      sumValueEl.textContent = '— ₭';
+      sumValueEl.classList.remove('picked');
+    }
+    createQrBtn.disabled = selectedAmount < 1;
   }
 
-  amountInput.addEventListener('input', (e) => setAmount(e.target.value));
+  // ---- ปุ่ม ₭20 ตัวแรกโชว์ตัวเดียวก่อน พอกดแล้วตัวเลือกที่เหลือค่อยๆ โผล่ออกมาทีละใบ ----
+  let presetsRevealed = false;
+  function revealOtherPresets() {
+    if (presetsRevealed) return;
+    presetsRevealed = true;
+    if (pickerHint) pickerHint.classList.add('gone');
+    if (presetsBox) presetsBox.classList.add('expanded');
+    const rest = Array.from(presets).filter((p) => p !== firstPreset);
+    rest.forEach((p, i) => {
+      setTimeout(() => p.classList.add('shown'), 90 * (i + 1));
+    });
+  }
+
+  if (firstPreset) {
+    firstPreset.addEventListener('click', () => {
+      setAmount(firstPreset.dataset.amount);
+      revealOtherPresets();
+    });
+  }
   presets.forEach((p) => {
-    p.addEventListener('click', () => setAmount(p.dataset.amount));
+    if (p === firstPreset) return;
+    p.addEventListener('click', () => {
+      if (!presetsRevealed) return; // ยังไม่โผล่มา กดไม่ได้ (มองไม่เห็นอยู่แล้ว)
+      setAmount(p.dataset.amount);
+    });
   });
 
   /* ---------- Step 1 -> Step 2: ສ້າງ QR ---------- */
   createQrBtn.addEventListener('click', async () => {
-    if (selectedAmount < 1000) return;
+    if (selectedAmount < 1) return;
 
     createQrBtn.disabled = true;
     const originalHtml = createQrBtn.innerHTML;
@@ -208,10 +241,21 @@ document.addEventListener('DOMContentLoaded', () => {
       uploadLabel.classList.add('has-file');
       slipName.textContent = file.name;
       confirmBtn.disabled = false;
+      if (uploadPreviewImg) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          uploadPreviewImg.src = e.target.result;
+          uploadPreviewImg.classList.add('show');
+          if (uploadIcon) uploadIcon.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+      }
     } else {
       uploadLabel.classList.remove('has-file');
       slipName.textContent = 'ກົດເພື່ອເລືອກຮູບສະລິບ';
       confirmBtn.disabled = true;
+      if (uploadPreviewImg) uploadPreviewImg.classList.remove('show');
+      if (uploadIcon) uploadIcon.style.display = '';
     }
   });
 

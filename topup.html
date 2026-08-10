@@ -40,14 +40,16 @@
       <p class="topup-label">ເລືອກວິທີເຕີມເງິນ</p>
       <div class="topup-methods" id="topupMethods">
         <button type="button" class="topup-method active" data-bank="1">
-          <div class="topup-method-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <div class="topup-method-icon has-logo">
+            <img src="assets/bcelone-logo.png" alt="BCEL One">
           </div>
           <div>
             <div class="topup-method-name" id="topupMethodName1">ກຳລັງໂຫຼດ...</div>
             <div class="topup-method-sub">ໂອນຜ່ານທະນາຄານນີ້</div>
           </div>
-          <svg class="topup-method-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+          <div class="topup-method-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
         </button>
         <button type="button" class="topup-method" data-bank="2" id="topupMethod2" style="display:none;">
           <div class="topup-method-icon">
@@ -57,14 +59,16 @@
             <div class="topup-method-name" id="topupMethodName2">ທະນາຄານ ການຄ້າຕ່າງປະເທດ</div>
             <div class="topup-method-sub">ໂອນຜ່ານທະນາຄານນີ້</div>
           </div>
-          <svg class="topup-method-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+          <div class="topup-method-check">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </div>
         </button>
       </div>
 
       <div class="topup-card">
         <div class="topup-card-head">
-          <div class="topup-card-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+          <div class="topup-card-icon has-logo">
+            <img src="assets/bcelone-logo.png" alt="BCEL One">
           </div>
           <div class="topup-card-head-text">
             <b id="topupBankTitle">ໂອນ QR ທະນາຄານ ພັດທະນາລາວ</b>
@@ -72,26 +76,31 @@
           </div>
         </div>
 
-        <p class="topup-label" style="margin-bottom:8px;">ຈຳນວນເງິນ (ກີບ)</p>
-        <div class="topup-amount-box">
-          <span class="cur">₭</span>
-          <input type="number" id="topupAmountInput" placeholder="0" min="0" inputmode="numeric">
+        <div class="topup-amount-summary">
+          <div class="sum-label">ຈຳນວນເງິນທີ່ເລືອກ</div>
+          <div class="sum-value" id="topupSumValue">— ₭</div>
         </div>
 
-        <div class="topup-presets" id="topupPresets">
-          <button type="button" class="topup-preset" data-amount="20000">20,000 ₭</button>
-          <button type="button" class="topup-preset" data-amount="50000">50,000 ₭</button>
-          <button type="button" class="topup-preset" data-amount="100000">100,000 ₭</button>
-          <button type="button" class="topup-preset" data-amount="200000">200,000 ₭</button>
-          <button type="button" class="topup-preset" data-amount="500000">500,000 ₭</button>
-          <button type="button" class="topup-preset" data-amount="1000000">1,000,000 ₭</button>
+        <div class="topup-picker-wrap">
+          <div class="topup-picker-hint" id="topupPickerHint">
+            <span>ແຕະ ₭20 ເພື່ອເບິ່ງຕົວເລືອກທັງໝົດ</span>
+            <span class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+          </div>
+          <div class="topup-presets" id="topupPresets">
+            <button type="button" class="topup-preset first" data-amount="20"><span class="cur">₭</span>20</button>
+            <button type="button" class="topup-preset" data-amount="50"><span class="cur">₭</span>50</button>
+            <button type="button" class="topup-preset" data-amount="100"><span class="cur">₭</span>100</button>
+            <button type="button" class="topup-preset" data-amount="200"><span class="cur">₭</span>200</button>
+            <button type="button" class="topup-preset" data-amount="500"><span class="cur">₭</span>500</button>
+            <button type="button" class="topup-preset wide" data-amount="1000000"><span class="cur">₭</span>1,000,000</button>
+          </div>
         </div>
 
         <button type="button" class="topup-submit" id="topupCreateQrBtn" disabled>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>
           ສ້າງ QR ໂອນເງິນ
         </button>
-        <p class="topup-note">ຂັ້ນຕ່ຳ 1,000 ₭ · ອັບໂຫຼດສະລິບຫຼັງໂອນເພື່ອຢືນຢັນ</p>
+        <p class="topup-note">ແຕະ ₭20 ເພື່ອເບິ່ງທຸກຕົວເລືອກ ຫຼື ເລືອກຍອດເງິນ ແລ້ວກົດສ້າງ QR</p>
       </div>
 
       <div class="topup-guide">
@@ -111,17 +120,26 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
 
-      <div class="topup-card" style="text-align:center; margin-bottom:22px;">
-        <p class="topup-label" style="text-align:center;">ຍອດທີ່ຕ້ອງໂອນ</p>
-        <div style="font-size:24px; font-weight:800; color:var(--red-glow); margin-bottom:16px;" id="topupPayAmount">0 ₭</div>
-        <div class="topup-qr-box" id="topupQrBox">[ QR ຮັບເງິນ ]</div>
-        <p style="font-size:12px; color:var(--text-faint);">ສະແກນ QR ດ້ານເທິງດ້ວຍແອັບທະນາຄານ ແລ້ວໂອນຕາມຍອດທີ່ລະບຸໃຫ້ຖືກຕ້ອງ</p>
+      <div class="topup-card topup-pay-amount-card" style="margin-bottom:20px;">
+        <div class="lbl">ຍອດທີ່ຕ້ອງໂອນ</div>
+        <div class="val" id="topupPayAmount">0 ₭</div>
+      </div>
+
+      <div class="topup-card" style="margin-bottom:22px;">
+        <div class="topup-qr-frame">
+          <div class="topup-qr-box" id="topupQrBox">[ QR ຮັບເງິນ ]</div>
+          <div class="corner tl"></div><div class="corner tr"></div>
+          <div class="corner bl"></div><div class="corner br"></div>
+          <div class="scanline"></div>
+        </div>
+        <p class="topup-qr-hint">ສະແກນ QR ດ້ານເທິງດ້ວຍແອັບທະນາຄານ ແລ້ວໂອນຕາມຍອດທີ່ລະບຸໃຫ້ຖືກຕ້ອງ</p>
       </div>
 
       <p class="topup-label">ອັບໂຫຼດສະລິບການໂອນ</p>
       <label class="topup-upload" id="topupUploadLabel">
         <input type="file" accept="image/*" id="topupSlipInput" style="display:none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <img class="topup-upload-preview" id="topupUploadPreviewImg" alt="">
+        <svg id="topupUploadIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <div class="fname" id="topupSlipName">ກົດເພື່ອເລືອກຮູບສະລິບ</div>
         <div class="fhint">ຮອງຮັບ JPG, PNG</div>
       </label>
