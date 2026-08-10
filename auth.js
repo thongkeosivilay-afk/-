@@ -45,12 +45,18 @@ document.addEventListener('DOMContentLoaded', () => {
     toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
   }
 
-  /* ---------- 3) Discord buttons ---------- */
+  /* ---------- 3) Discord / Google buttons ---------- */
   // ถ้า URL หน้านี้มี ?next=/xxx.html (เช่น มาจากหน้าโปรไฟล์ที่ยังไม่ login) ให้พาไปที่นั่นต่อหลัง login สำเร็จ
   const nextParam = new URLSearchParams(window.location.search).get('next');
   document.querySelectorAll('.btn-discord').forEach((btn) => {
     btn.addEventListener('click', () => {
       const url = '/auth/discord/login' + (nextParam ? `?next=${encodeURIComponent(nextParam)}` : '');
+      window.location.href = url;
+    });
+  });
+  document.querySelectorAll('.btn-google').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const url = '/auth/google/login' + (nextParam ? `?next=${encodeURIComponent(nextParam)}` : '');
       window.location.href = url;
     });
   });

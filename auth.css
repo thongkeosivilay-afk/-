@@ -197,6 +197,16 @@ button, input{ font-family:inherit; }
 .btn-discord:hover:not(:disabled){ filter:brightness(1.08); }
 .btn-discord svg{ width:19px; height:19px; }
 
+.btn-google{
+  background:#fff;
+  color:#3c4043;
+  box-shadow:none;
+  border:1px solid var(--card-border);
+  margin-top:10px;
+}
+.btn-google:hover:not(:disabled){ filter:brightness(.97); }
+.btn-google svg{ width:19px; height:19px; }
+
 .auth-switch{
   text-align:center; margin-top:22px;
   font-size:13px; color:var(--text-dim);

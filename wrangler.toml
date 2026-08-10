@@ -20,8 +20,16 @@ SUPABASE_URL = "https://ebmambgqghyzrenknkeb.supabase.co"
 # เอาค่ามาจาก Supabase Dashboard > Settings > API > service_role (secret)
 
 # ⚠️ DISCORD_WEBHOOK_URL ก็ห้ามใส่ในไฟล์นี้เช่นกัน (เป็น secret ที่ยิงข้อความเข้าห้องได้)
-# ใช้สำหรับแจ้งเตือนเข้า Discord ทุกครั้งที่มีคนล็อกอิน (Discord/อีเมล) หรือเติมเงิน
+# ใช้สำหรับแจ้งเตือนเข้า Discord ทุกครั้งที่มีคนล็อกอิน (Discord/อีเมล/Google) หรือเติมเงิน
 # ต้องตั้งแยกด้วยคำสั่ง (รันครั้งเดียว ใส่ค่าตอน prompt ถาม):
 #   wrangler secret put DISCORD_WEBHOOK_URL
 # เอาค่ามาจาก: Discord > ตั้งค่าช่องที่ต้องการ (แนะนำสร้างช่องใหม่ เช่น #alerts) >
 # Edit Channel > Integrations > Webhooks > New Webhook > Copy Webhook URL
+
+# GOOGLE_CLIENT_ID ไม่ใช่ข้อมูลลับ ใส่ในนี้ได้เลย (เอามาจาก Google Cloud Console
+# หลังสร้าง OAuth client ID แบบ "Web application" — ดูขั้นตอนเต็มในคู่มือที่แชท)
+GOOGLE_CLIENT_ID = "620349289612-isokg8k03lvgtmvj7r66hliql6d35rcs.apps.googleusercontent.com"
+
+# ⚠️ GOOGLE_CLIENT_SECRET ห้ามใส่ในไฟล์นี้เด็ดขาด (จะเข้า git ทันที) ตั้งแยกด้วยคำสั่ง:
+#   wrangler secret put GOOGLE_CLIENT_SECRET
+# เอาค่ามาจากหน้าเดียวกับ GOOGLE_CLIENT_ID ใน Google Cloud Console
