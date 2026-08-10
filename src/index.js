@@ -58,8 +58,8 @@
    Endpoint นี้เป็น public (GET อย่างเดียว, ไม่ต้อง login) เพราะเป็นข้อมูลที่ลูกค้าทุกคนควรเห็นอยู่แล้ว
    ========================================================= */
 
-// อีเมล Discord ที่อนุญาตให้เข้าห้องแอดมินได้
-const ADMIN_EMAIL = 'bhchhhyggg@gmail.com';
+// อีเมล Discord ที่อนุญาตให้เข้าห้องแอดมินได้ (เพิ่มได้หลายคนโดยเติมในลิสต์นี้)
+const ADMIN_EMAILS = ['bhchhhyggg@gmail.com', 'nuanmm12233@gmail.com'];
 
 const SUPABASE_PROXY_PREFIX = '/api/admin/supabase';
 
@@ -216,11 +216,11 @@ async function handleCallback(request, env) {
     verified: discordUser.verified,
   }));
 
-  // ---- เช็คสิทธิ์แอดมิน: อีเมล Discord ต้องตรงกับ ADMIN_EMAIL และต้องยืนยันแล้ว ----
+  // ---- เช็คสิทธิ์แอดมิน: อีเมล Discord ต้องอยู่ใน ADMIN_EMAILS และต้องยืนยันแล้ว ----
   const isAdmin =
     !!discordUser.email &&
     discordUser.verified === true &&
-    discordUser.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    ADMIN_EMAILS.some(e => e.toLowerCase() === discordUser.email.toLowerCase());
 
   // ---- สร้าง session แล้วเก็บลง KV (อายุ 7 วัน) ----
   const sessionId = crypto.randomUUID();
