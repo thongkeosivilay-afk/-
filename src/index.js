@@ -705,6 +705,39 @@ async function sendDiscordAlert(env, { title, description, color, fields }) {
   }
 }
 
+/* ---------- helper: ນັບຈຳນວນສະມາຊິກທີ່ສະໝັກຈິງ (ຜູ້ໃຊ້ງານ) ----------
+   ໃຊ້ Supabase Auth Admin API (GET /auth/v1/admin/users) ນັບຈຳນວນບັນຊີທັງໝົດ —
+   ນີ້ນັບສະເພາະບັນຊີທີ່ຖືກສ້າງຜ່ານ /api/auth/signup (ອີເມວ/ລະຫັດຜ່ານ) ຫຼື ຜ່ານ
+   ຫນ້າແອດມິນ ເນື່ອງຈາກລະບົບ Google/Discord login ຂອງເວັບນີ້ບໍ່ໄດ້ບັນທຶກຜູ້ໃຊ້ລົງຖານ
+   ຂໍ້ມູນຖາວອນ (ໃຊ້ແຕ່ session ຊົ່ວຄາວໃນ KV ອາຍຸ 7 ວັນ) — ຖ້າຢາກໃຫ້ນັບຄົນທີ່ login
+   ຜ່ານ Google/Discord ດ້ວຍ ຕ້ອງເພີ່ມການບັນທຶກລົງຕາຕະລາງແຍກຕ່າງຫາກ (ບອກໄດ້ທີ່ແຊັດ)
+   per_page=1000: ພຽງພໍສຳລັບຮ້ານຂະໜາດນ້ອຍ-ກາງ, ຖ້າສະມາຊິກເກີນ 1000 ຄົນຄ່ອຍປັບເປັນ
+   ແບບແບ່ງໜ້າ (pagination) ຕໍ່ໄປ */
+async function getRegisteredUserCount(env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return 0;
+  try {
+    const res = await fetch(
+      `${env.SUPABASE_URL}/auth/v1/admin/users?per_page=1000`,
+      {
+        headers: {
+          apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      }
+    );
+    if (!res.ok) {
+      console.error('getRegisteredUserCount failed:', await res.text());
+      return 0;
+    }
+    const data = await res.json();
+    const users = Array.isArray(data) ? data : (data.users || []);
+    return users.length;
+  } catch (err) {
+    console.error('getRegisteredUserCount error:', err);
+    return 0;
+  }
+}
+
 /* ---------- 6) /api/public/storefront ----------
    ดึงหมวดหมู่ (category_1..4 name/image จาก site_settings) + สินค้า (products ที่ไม่ถูก
    archived) + สต็อกจริงของแต่ละชิ้น (ผ่าน RPC product_stock / product_duration_stock —
@@ -736,7 +769,7 @@ async function handlePublicStorefront(request, env) {
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_desc`),
     ];
 
-    const [settingsRows, products, durations] = await Promise.all([
+    const [settingsRows, products, durations, userCount] = await Promise.all([
       supabaseSelect(env, 'site_settings', {
         select: siteSettingsColumns.join(','),
         id: 'eq.1',
@@ -752,6 +785,7 @@ async function handlePublicStorefront(request, env) {
         select: 'id,product_id,label,price,reseller_price,sort_order',
         order: 'sort_order.asc',
       }),
+      getRegisteredUserCount(env),
     ]);
 
     const settings = settingsRows[0] || {};
@@ -824,6 +858,7 @@ async function handlePublicStorefront(request, env) {
       stats: {
         productCount: productsWithStock.length,
         totalStock,
+        userCount,
       },
       products: productsWithStock,
     });
