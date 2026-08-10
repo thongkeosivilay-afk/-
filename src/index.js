@@ -767,6 +767,7 @@ async function handlePublicStorefront(request, env) {
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_image`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_title`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_desc`),
+      ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_tag`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_enabled`),
     ];
 
@@ -825,6 +826,7 @@ async function handlePublicStorefront(request, env) {
         image: settings[`category_${idx}_image`] || null,
         title: (settings[`category_${idx}_title`] || '').trim() || null,
         desc: (settings[`category_${idx}_desc`] || '').trim() || null,
+        tag: (settings[`category_${idx}_tag`] || '').trim() || null,
         enabled: settings[`category_${idx}_enabled`] !== false,
       };
     });
