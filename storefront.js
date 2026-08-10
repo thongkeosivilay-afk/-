@@ -114,11 +114,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateStats(data) {
     const statCards = document.querySelectorAll('.stat-card');
     // ລຳດັບກາຕູນສະຖິຕິໃນ index.html: [0] ຜູ້ໃຊ້ງານ, [1] ສິນຄ້າ, [2] ຄັງສິນຄ້າ, [3] ຂາຍແລ້ວ
-    // ອັບເດດສະເພາະ "ສິນຄ້າ" ແລະ "ຄັງສິນຄ້າ" ໃຫ້ເປັນຕົວເລກຈິງຕາມທີ່ຮ້ອງຂໍ
+    const userStatValue = statCards[0]?.querySelector('.stat-value');
     const productStatValue = statCards[1]?.querySelector('.stat-value');
     const stockStatValue = statCards[2]?.querySelector('.stat-value');
 
     // .stat-value ຮູບແບບ: "0<span class="unit">...</span>" -> text node ທຳອິດຄືຕົວເລກ
+    if (userStatValue && userStatValue.firstChild) {
+      userStatValue.firstChild.textContent = (data.stats.userCount || 0).toLocaleString('en-US');
+    }
     if (productStatValue && productStatValue.firstChild) {
       productStatValue.firstChild.textContent = data.stats.productCount.toLocaleString('en-US');
     }
