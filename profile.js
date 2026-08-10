@@ -9,7 +9,7 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   function formatKip(n) {
-    return Number(n || 0).toLocaleString('th-TH');
+    return Number(n || 0).toLocaleString('de-DE');
   }
   function formatDate(iso) {
     if (!iso) return '—';

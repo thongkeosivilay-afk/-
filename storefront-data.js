@@ -42,7 +42,7 @@
   }
 
   function formatKip(amount) {
-    return `₭ ${Number(amount || 0).toLocaleString('en-US')}`;
+    return `₭ ${Number(amount || 0).toLocaleString('de-DE')}`;
   }
 
   /* ---------- ราคาตัวแทน (reseller pricing) ----------
@@ -73,6 +73,7 @@
     const base = Number(basePrice) || 0;
     if (!resellerInfo || !resellerInfo.isReseller) return base;
     if (resellerPrice !== null && resellerPrice !== undefined && resellerPrice !== '') {
+      // resellerPrice ຄືລາຄາສຸດທ້າຍທີ່ຕົວແທນຈ່າຍໂດຍກົງ (ບໍ່ແມ່ນຈຳນວນທີ່ລົດ)
       return Number(resellerPrice);
     }
     return Math.round(base * (1 - (resellerInfo.discountPercent || 0) / 100));

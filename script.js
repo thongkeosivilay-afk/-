@@ -182,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return String(str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
   }
   function acctFormatKip(n) {
-    return Number(n || 0).toLocaleString('th-TH') + ' ₭';
+    return Number(n || 0).toLocaleString('de-DE') + ' ₭';
   }
 
   function renderAccountMenu(loginBtn, user) {

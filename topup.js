@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentTopupId = null;
 
   function formatKip(n) {
-    return Number(n || 0).toLocaleString('th-TH') + ' ₭';
+    return Number(n || 0).toLocaleString('de-DE') + ' ₭';
   }
 
   function updateBankText() {

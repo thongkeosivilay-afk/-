@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const statAmountEl = document.querySelector('#thStatAmount');
 
   function formatKip(n) {
-    return Number(n || 0).toLocaleString('th-TH') + ' ₭';
+    return Number(n || 0).toLocaleString('de-DE') + ' ₭';
   }
 
   function formatDate(iso) {
