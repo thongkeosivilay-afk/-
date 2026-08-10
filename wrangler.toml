@@ -28,7 +28,7 @@ SUPABASE_URL = "https://ebmambgqghyzrenknkeb.supabase.co"
 
 # GOOGLE_CLIENT_ID ไม่ใช่ข้อมูลลับ ใส่ในนี้ได้เลย (เอามาจาก Google Cloud Console
 # หลังสร้าง OAuth client ID แบบ "Web application" — ดูขั้นตอนเต็มในคู่มือที่แชท)
-GOOGLE_CLIENT_ID = "620349289612-4j9cntrj5nv9dhu29opd80ju9r41j5pi.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = "620349289612-aid93aaoq2l9pssscrt4g3nqnmnau1jl.apps.googleusercontent.com"
 
 # ⚠️ GOOGLE_CLIENT_SECRET ห้ามใส่ในไฟล์นี้เด็ดขาด (จะเข้า git ทันที) ตั้งแยกด้วยคำสั่ง:
 #   wrangler secret put GOOGLE_CLIENT_SECRET
