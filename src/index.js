@@ -605,12 +605,12 @@ async function handlePublicStorefront(request, env) {
       }),
       // archived เป็น null ได้ (แถวเก่าก่อนมีคอลัมน์นี้) จึงต้องรวม is.null ด้วย ไม่ใช่แค่ eq.false
       supabaseSelect(env, 'products', {
-        select: 'id,name,category,price,image_url,duration_enabled,paused,paused_note,created_at',
+        select: 'id,name,category,price,reseller_price,image_url,duration_enabled,paused,paused_note,created_at',
         or: '(archived.is.null,archived.eq.false)',
         order: 'created_at.desc',
       }),
       supabaseSelect(env, 'product_durations', {
-        select: 'id,product_id,label,price,sort_order',
+        select: 'id,product_id,label,price,reseller_price,sort_order',
         order: 'sort_order.asc',
       }),
     ]);
@@ -623,7 +623,7 @@ async function handlePublicStorefront(request, env) {
       const ownDurations = (durations || []).filter((d) => d.product_id === p.id);
       const durationsWithStock = await Promise.all(ownDurations.map(async (d) => {
         const dStock = await supabaseRpc(env, 'product_duration_stock', { p_duration_id: d.id });
-        return { id: d.id, label: d.label, price: d.price, stock: dStock ?? 0 };
+        return { id: d.id, label: d.label, price: d.price, resellerPrice: d.reseller_price, stock: dStock ?? 0 };
       }));
 
       return {
@@ -631,6 +631,7 @@ async function handlePublicStorefront(request, env) {
         name: p.name,
         category: p.category,
         price: p.price,
+        resellerPrice: p.reseller_price,
         image_url: p.image_url,
         duration_enabled: !!p.duration_enabled,
         paused: !!p.paused,
