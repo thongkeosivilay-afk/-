@@ -1116,6 +1116,30 @@
       </div>
     </div>
 
+    <!-- Popup ໂປຣໂມຊັ່ນ (ໂຊວ໌ຕອນເປີດໜ້າຫຼັກ) -->
+    <div class="stat-panel">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        Popup ໂປຣໂມຊັ່ນ (ໂຊວ໌ຕອນເປີດໜ້າຫຼັກ)
+      </h3>
+      <p style="font-size:12px;color:var(--ink-500);margin:0 0 10px;">ຮູບນີ້ຈະໂຊວ໌ເປັນ popup ທັນທີທີ່ລູກຄ້າເປີດໜ້າຫຼັກ (ຄືປ້າຍໂຄສະນາເຕັມໜ້າຈໍ) — ຂະໜາດແນະນຳ: ຮູບແນວຕັ້ງ ອັດຕາສ່ວນປະມານ 3:4 (ເຊັ່ນ 900×1200px) ລູກຄ້າສາມາດປິດ ຫຼື ກົດ "ບໍ່ໂຊວ໌ອີກ 1 ຊົ່ວໂມງ" ໄດ້ເອງ</p>
+      <label class="pause-toggle-label" style="margin-bottom:14px;">
+        <input type="checkbox" id="promoPopupEnabled">
+        ເປີດໃຊ້ງານ popup ນີ້
+      </label>
+      <div class="gx-field cat-field-group">
+        <label>ຮູບໂປຣໂມຊັ່ນ</label>
+        <div class="cat-img-row">
+          <div class="drop-zone cat-img-drop" id="promoPopupImageDropZone">
+            <span id="promoPopupImageDropZoneText">ແຕະເພື່ອເລືອກຮູບ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+            <input type="file" id="promoPopupImageInput" accept="image/*">
+          </div>
+          <button type="button" class="cat-img-remove-btn" id="promoPopupImageRemoveBtn" title="ລຶບຮູບ, ປິດ popup ນີ້ໄປ">ລຶບຮູບ</button>
+        </div>
+        <div class="gx-msg" id="promoPopupImageMsg"></div>
+      </div>
+    </div>
+
     <!-- ຊື່ + ຮູບປະຈຳໝວດໝູ່ 1-10 -->
     <div class="stat-panel">
       <h3>

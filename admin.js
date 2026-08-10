@@ -1428,6 +1428,16 @@ function loadSiteSettingsIntoForm(settings) {
     settings.hero_image,
     'ແຕະເພື່ອເລືອກຮູບ hero ໜ້າຫຼັກ (ອັບໂຫລດອັດຕະໂນມັດ)'
   );
+
+  const promoPopupEnabledInput = document.getElementById('promoPopupEnabled');
+  if (promoPopupEnabledInput && document.activeElement !== promoPopupEnabledInput) {
+    promoPopupEnabledInput.checked = !!settings.promo_popup_enabled;
+  }
+  resetDropzoneIfEmpty(
+    'promoPopupImageDropZone', 'promoPopupImageDropZoneText', 'promoPopupImageInput',
+    settings.promo_popup_image,
+    'ແຕະເພື່ອເລືອກຮູບໂປຣໂມຊັ່ນ (ອັບໂຫລດອັດຕະໂນມັດ)'
+  );
 }
 
 async function loadSiteSettingsAdmin() {
@@ -1640,12 +1650,103 @@ function initHeroImageDropzone() {
   }
 }
 
+// ---------- ຮູບ popup ໂປຣໂມຊັ່ນ (ໂຊວ໌ຕອນເປີດໜ້າຫຼັກ) — ຄືກັນກັບຮູບ hero (ອັບໂຫລດ+ບັນທຶກອັດຕະໂນມັດທັນທີ) ----------
+function initPromoPopupDropzone() {
+  const zoneId = 'promoPopupImageDropZone';
+  const textId = 'promoPopupImageDropZoneText';
+  const inputId = 'promoPopupImageInput';
+  const removeId = 'promoPopupImageRemoveBtn';
+  const msgId = 'promoPopupImageMsg';
+
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  const removeBtn = document.getElementById(removeId);
+  const msg = document.getElementById(msgId);
+  if (!zone || !input) return;
+
+  input.addEventListener('change', async () => {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      zone.classList.add('has-image');
+      const textEl = document.getElementById(textId);
+      if (textEl) textEl.remove();
+      let img = zone.querySelector('img');
+      if (!img) { img = document.createElement('img'); zone.insertBefore(img, input); }
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    if (msg) setMsg(msg, 'ກຳລັງອັບໂຫລດ...', 'pending');
+    try {
+      const url = await uploadSiteAsset(file, 'promo-popup');
+      await ensureSiteSettingsRow();
+      const { error } = await supabaseClient
+        .from(SITE_SETTINGS_TABLE)
+        .update({ promo_popup_image: url, updated_at: new Date().toISOString() })
+        .eq('id', SITE_SETTINGS_ID);
+      if (error) throw error;
+      if (msg) setMsg(msg, 'ບັນທຶກຮູບ popup ໂປຣໂມຊັ່ນສຳເລັດແລ້ວ ✓', 'success');
+      await loadSiteSettingsAdmin();
+    } catch (err) {
+      console.error(err);
+      if (msg) setMsg(msg, 'ອັບໂຫລດບໍ່ສຳເລັດ: ' + (err.message || 'ລອງໃໝ່ອີກຄັ້ງ'), 'error');
+    } finally {
+      input.value = '';
+    }
+  });
+
+  if (removeBtn) {
+    removeBtn.addEventListener('click', async () => {
+      if (!confirm('ລຶບຮູບ popup ໂປຣໂມຊັ່ນນີ້ອອກ?')) return;
+      if (msg) setMsg(msg, 'ກຳລັງລຶບ...', 'pending');
+      try {
+        await ensureSiteSettingsRow();
+        const { error } = await supabaseClient
+          .from(SITE_SETTINGS_TABLE)
+          .update({ promo_popup_image: null, updated_at: new Date().toISOString() })
+          .eq('id', SITE_SETTINGS_ID);
+        if (error) throw error;
+        if (msg) setMsg(msg, 'ລຶບຮູບແລ້ວ', 'success');
+        await loadSiteSettingsAdmin();
+      } catch (err) {
+        console.error(err);
+        if (msg) setMsg(msg, 'ລຶບບໍ່ສຳເລັດ: ' + (err.message || 'ລອງໃໝ່ອີກຄັ້ງ'), 'error');
+      }
+    });
+  }
+
+  const enabledInput = document.getElementById('promoPopupEnabled');
+  if (enabledInput) {
+    enabledInput.addEventListener('change', async () => {
+      const nextEnabled = enabledInput.checked;
+      try {
+        await ensureSiteSettingsRow();
+        const { error } = await supabaseClient
+          .from(SITE_SETTINGS_TABLE)
+          .update({ promo_popup_enabled: nextEnabled, updated_at: new Date().toISOString() })
+          .eq('id', SITE_SETTINGS_ID);
+        if (error) throw error;
+        if (msg) setMsg(msg, nextEnabled ? 'ເປີດໃຊ້ງານ popup ແລ້ວ ✓' : 'ປິດ popup ນີ້ແລ້ວ', 'success');
+        await loadSiteSettingsAdmin();
+      } catch (err) {
+        console.error(err);
+        enabledInput.checked = !nextEnabled; // ບັນທຶກບໍ່ສຳເລັດ -> ຄືນຄ່າ checkbox ກັບຄືນ
+        if (msg) setMsg(msg, 'ບັນທຶກບໍ່ສຳເລັດ: ' + (err.message || 'ລອງໃໝ່ອີກຄັ້ງ'), 'error');
+      }
+    });
+  }
+}
+
 function initSiteSettingsPanel() {
   setupSiteImageDropzone('logoDropZone', 'logoDropZoneText', 'logoInput', (f) => { selectedLogoFile = f; });
   setupSiteImageDropzone('qrDropZone', 'qrDropZoneText', 'qrInput', (f) => { selectedQrFile = f; });
   setupSiteImageDropzone('qrDropZone2', 'qrDropZoneText2', 'qrInput2', (f) => { selectedQrFile2 = f; });
   initCategoryImageDropzones();
   initHeroImageDropzone();
+  initPromoPopupDropzone();
   initCategoryNameConfirmButtons();
   initCategoryTitleDescConfirmButtons();
 
