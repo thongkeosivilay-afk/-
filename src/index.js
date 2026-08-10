@@ -597,6 +597,7 @@ async function handlePublicStorefront(request, env) {
       'store_name', 'tagline', 'announcement_text', 'hero_image',
       'qr_label', 'qr_label_2', 'qr_url', 'qr_url_2',
       'social_facebook', 'social_discord', 'social_line', 'social_telegram', 'social_whatsapp',
+      'promo_popup_enabled', 'promo_popup_image',
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_name`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_image`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_title`),
@@ -681,6 +682,10 @@ async function handlePublicStorefront(request, env) {
           line: settings.social_line || null,
           telegram: settings.social_telegram || null,
           whatsapp: settings.social_whatsapp || null,
+        },
+        promoPopup: {
+          enabled: !!settings.promo_popup_enabled,
+          image: settings.promo_popup_image || null,
         },
       },
       categories,
