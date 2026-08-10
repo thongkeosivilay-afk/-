@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ຮູບແມ່ນອັນທີ່ດຶງມາຈິງ (ຊື່ ແລະ ຮູບ ດຶງຈິງ, ຄຳອະທິບາຍໃຊ້ຄ່າເລີ່ມຕົ້ນ ເພາະບໍ່ມີໃນຖານຂໍ້ມູນ)
   const SLOT_DECOR = {
     1: {
-      tagIcon: '<path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/>',
+      tagIcon: '<rect x="6" y="2" width="12" height="20" rx="2.2"/><circle cx="12" cy="5" r=".6" fill="currentColor" stroke="none"/><path d="M10 19h4"/>',
       tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງ PC',
       bigTitle: '',
       desc: '',
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
       desc: '',
     },
     3: {
-      tagIcon: '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 18h6"/>',
+      tagIcon: '<path d="M9 4c.5-1 1.5-1 2 0M11 4c.5-1 1.5-1 2 0M13 4c.5-1 1.5-1 2 0"/><circle cx="13" cy="7" r="2.3"/><path d="M15.2 7.3l2 .4-1.6 1.3z"/><path d="M12.6 9.2v1.2"/><path d="M6 20c-.6-3.2.6-6.4 3-8.2 1.6-1.2 3.6-1.8 5.6-1.4 2.6.5 4.6 2.7 4.9 5.4"/><path d="M6 20h12"/><path d="M17.8 13.4c2-.4 3.6-1.8 4.4-3.6"/><path d="M9.5 20l-.6 2.4M9.5 20l1 2M14 20l-.6 2.4M14 20l1 2"/>',
       tagText: 'ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື',
       bigTitle: '',
       desc: '',
@@ -53,10 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
       bigTitle: `CAT${category.index}`,
       desc: '',
     };
-    // ໃຊ້ຫົວຂໍ້/ຄຳອະທິບາຍທີ່ແອດມິນຕັ້ງເອງ (category_{i}_title / category_{i}_desc) ຖ້າມີ —
-    // ຖ້າຍັງບໍ່ໄດ້ຕັ້ງ ໃຫ້ໃຊ້ຄ່າເລີ່ມຕົ້ນເກົ່າຈາກ SLOT_DECOR ຄືເດີມ
+    // ໃຊ້ຫົວຂໍ້/ຄຳອະທິບາຍ/ຂໍ້ຄວາມປ້າຍນ້ອຍ ທີ່ແອດມິນຕັ້ງເອງ (category_{i}_title / category_{i}_desc /
+    // category_{i}_tag) ຖ້າມີ — ຖ້າຍັງບໍ່ໄດ້ຕັ້ງ ໃຫ້ໃຊ້ຄ່າເລີ່ມຕົ້ນເກົ່າຈາກ SLOT_DECOR ຄືເດີມ
     const bigTitle = (category.title && String(category.title).trim()) || decor.bigTitle;
     const desc = (category.desc && String(category.desc).trim()) || decor.desc;
+    const tagText = (category.tag && String(category.tag).trim()) || decor.tagText;
 
     const mediaHTML = category.image
       ? `<img src="${escapeHtml(category.image)}" alt="${escapeHtml(category.name)}">`
@@ -72,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="cat-banner-bg"></div>
           <div class="cat-banner-media${category.image ? ' has-image' : ''}">${mediaHTML}</div>
           <div class="cat-banner-content">
-            <div class="cat-tag-row"><span class="accent-bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${decor.tagIcon}</svg>${decor.tagText}</div>
+            <div class="cat-tag-row"><span class="accent-bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${decor.tagIcon}</svg>${escapeHtml(tagText)}</div>
             <div class="cat-big-title display-en en">${escapeHtml(bigTitle)}</div>
                       </div>
           <div class="cat-click"><span class="dot"></span>Click Here!</div>

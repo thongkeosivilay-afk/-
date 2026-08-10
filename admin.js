@@ -323,6 +323,19 @@ function initCategoryEnabledToggles() {
 
 function initCategoryTitleDescConfirmButtons() {
   for (let i = 1; i <= 4; i++) {
+    const tagBtn = document.getElementById(`catTagConfirm${i}`);
+    if (tagBtn && !tagBtn.dataset.bound) {
+      tagBtn.dataset.bound = '1';
+      tagBtn.addEventListener('click', () => saveSingleCategoryField(i, 'tag', `catTag${i}`, `catTagConfirm${i}`, `catTagMsg${i}`));
+    }
+    const tagInput = document.getElementById(`catTag${i}`);
+    if (tagInput && !tagInput.dataset.bound) {
+      tagInput.dataset.bound = '1';
+      tagInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveSingleCategoryField(i, 'tag', `catTag${i}`, `catTagConfirm${i}`, `catTagMsg${i}`); }
+      });
+    }
+
     const titleBtn = document.getElementById(`catTitleConfirm${i}`);
     if (titleBtn && !titleBtn.dataset.bound) {
       titleBtn.dataset.bound = '1';
@@ -1445,6 +1458,10 @@ function loadSiteSettingsIntoForm(settings) {
     const nameInputEl = document.getElementById(`catName${i}`);
     if (nameInputEl && document.activeElement !== nameInputEl) {
       nameInputEl.value = settings[`category_${i}_name`] || '';
+    }
+    const tagInputEl = document.getElementById(`catTag${i}`);
+    if (tagInputEl && document.activeElement !== tagInputEl) {
+      tagInputEl.value = settings[`category_${i}_tag`] || '';
     }
     const titleInputEl = document.getElementById(`catTitle${i}`);
     if (titleInputEl && document.activeElement !== titleInputEl) {
