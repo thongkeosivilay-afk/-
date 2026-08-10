@@ -767,6 +767,7 @@ async function handlePublicStorefront(request, env) {
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_image`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_title`),
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_desc`),
+      ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_enabled`),
     ];
 
     const [settingsRows, products, durations, userCount] = await Promise.all([
@@ -814,14 +815,9 @@ async function handlePublicStorefront(request, env) {
       };
     }));
 
-    const totalStock = productsWithStock.reduce((sum, p) => {
-      const pStock = p.duration_enabled
-        ? p.durations.reduce((s, d) => s + (d.stock || 0), 0)
-        : (p.stock || 0);
-      return sum + pStock;
-    }, 0);
-
-    const categories = Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => {
+    // category_{i}_enabled ຄ່າເລີ່ມຕົ້ນ = ເປີດ (true) ຖ້າແອດມິນຍັງບໍ່ເຄີຍປິດ/ຄອລັມຍັງເປັນ null
+    // (ແຖວເກົ່າກ່ອນມີຄອລັມນີ້) — ຕ້ອງເປັນ false ຢ່າງຈະແຈ້ງເທົ່ານັ້ນຈຶ່ງຈະຖືວ່າ "ປິດ"
+    const allCategories = Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => {
       const idx = i + 1;
       return {
         index: idx,
@@ -829,8 +825,29 @@ async function handlePublicStorefront(request, env) {
         image: settings[`category_${idx}_image`] || null,
         title: (settings[`category_${idx}_title`] || '').trim() || null,
         desc: (settings[`category_${idx}_desc`] || '').trim() || null,
+        enabled: settings[`category_${idx}_enabled`] !== false,
       };
     });
+
+    // ໝວດໝູ່ທີ່ຖືກປິດ -> ບໍ່ສົ່ງກັບໄປໃນ categories[] (ບໍ່ໂຊວ໌ກາຕູນຢູ່ໜ້າຫຼັກ/category.html)
+    // ແລະ ສິນຄ້າທີ່ຢູ່ໃນໝວດນັ້ນກໍ່ຖືກຕັດອອກຈາກ products[] ນຳ (ບໍ່ໂຊວ໌ໃສ່ບ່ອນໃດເລີຍ ລວມທັງ
+    // ການເປີດ product.html?pid= ຊື່ໆ ເພາະ product.js ຄົ້ນຫາຈາກ products[] ດຽວກັນນີ້)
+    const categories = allCategories.filter((c) => c.enabled);
+    const disabledCategoryNames = new Set(
+      allCategories.filter((c) => !c.enabled).map((c) => c.name)
+    );
+    const visibleProductsWithStock = disabledCategoryNames.size
+      ? productsWithStock.filter((p) => !disabledCategoryNames.has((p.category || '').trim()))
+      : productsWithStock;
+
+    // ຄັງ/ຈຳນວນສິນຄ້າທີ່ໂຊວ໌ໃນສະຖິຕິໜ້າຮ້ານ ຄິດສະເພາະສິນຄ້າທີ່ຍັງເບິ່ງເຫັນໄດ້ (ຕັດສິນຄ້າ
+    // ໃນໝວດທີ່ຖືກປິດອອກ) ໃຫ້ຕົງກັບສິ່ງທີ່ລູກຄ້າເຫັນຈິງໆ
+    const totalStock = visibleProductsWithStock.reduce((sum, p) => {
+      const pStock = p.duration_enabled
+        ? p.durations.reduce((s, d) => s + (d.stock || 0), 0)
+        : (p.stock || 0);
+      return sum + pStock;
+    }, 0);
 
     return json({
       store: {
@@ -856,11 +873,11 @@ async function handlePublicStorefront(request, env) {
       },
       categories,
       stats: {
-        productCount: productsWithStock.length,
+        productCount: visibleProductsWithStock.length,
         totalStock,
         userCount,
       },
-      products: productsWithStock,
+      products: visibleProductsWithStock,
     });
   } catch (err) {
     console.error('handlePublicStorefront failed:', err);
