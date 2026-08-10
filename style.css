@@ -524,6 +524,11 @@
     filter:drop-shadow(0 0 5px rgba(255,0,1,.4));
   }
   .prod-price .from{ font-size:11px; color:var(--text-faint); font-weight:500; -webkit-text-fill-color:var(--text-faint); }
+  .prod-price-reseller-tag{
+    display:inline-block; margin-left:6px; font-size:10px; font-weight:700;
+    color:var(--green); -webkit-text-fill-color:var(--green);
+    border:1px solid var(--green); border-radius:5px; padding:1px 5px; vertical-align:middle;
+  }
 
   /* thin divider so price/name and stock/button read as two distinct groups */
   .prod-body::after{

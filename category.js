@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (!grid || !window.StorefrontData) return;
 
+  // ຄ່າຮາຄາຕົວແທນ (ຖ້າມີ) — ອັບເດດຫຼັງໂຫຼດ, ຄ່າເລີ່ມຕົ້ນ = ບໍ່ແມ່ນຕົວແທນ (ໂຊວ໌ຮາຄາປົກກະຕິກ່ອນ)
+  let resellerInfo = { isReseller: false, discountPercent: 0 };
+
   // ຄຳອະທິບາຍປະຈຳຊ່ອງ (ຄ່າສຳຮອງ) — ໃຊ້ພຽງຖ້າແອດມິນຍັງບໍ່ໄດ້ຕັ້ງຄ່າ category_{i}_desc ເອງ
   const SLOT_DESC = {
     1: '',
@@ -133,9 +136,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function priceHTML(product) {
-    const price = window.StorefrontData.productDisplayPrice(product);
+    const price = window.StorefrontData.productDisplayPrice(product, resellerInfo);
     if (price === null) return `<div class="prod-price todo">₭ 0</div>`;
-    return `<div class="prod-price">${window.StorefrontData.formatKip(price)}</div>`;
+    const tag = resellerInfo.isReseller ? '<span class="prod-price-reseller-tag">ຕົວແທນ</span>' : '';
+    return `<div class="prod-price">${window.StorefrontData.formatKip(price)}${tag}</div>`;
   }
 
   function cardHTML(product) {
@@ -220,6 +224,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       wireBuyButtons(products);
       wireSearch(products);
+
+      // ---- ยิงเช็คราคาตัวแทนต่อ (ไม่บล็อกการเรนเดอร์ครั้งแรก) ถ้าเป็นตัวแทนค่อยเรนเดอร์การ์ดใหม่ ----
+      window.StorefrontData.fetchResellerInfo().then((info) => {
+        if (!info.isReseller) return;
+        resellerInfo = info;
+        grid.innerHTML = products.map(cardHTML).join('');
+        wireBuyButtons(products);
+        wireSearch(products);
+      });
     })
     .catch(() => {
       if (titleEl) { titleEl.textContent = 'ໝວດໝູ່ສິນຄ້າ'; titleEl.classList.remove('is-loading'); }

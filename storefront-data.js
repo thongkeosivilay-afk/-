@@ -45,17 +45,51 @@
     return `₭ ${Number(amount || 0).toLocaleString('en-US')}`;
   }
 
+  /* ---------- ราคาตัวแทน (reseller pricing) ----------
+     ดึงสถานะตัวแทนของคนที่ login อยู่ (GET /api/account/reseller-status) แค่ครั้งเดียวต่อ
+     session แล้วนำสูตรเดียวกับ RPC get_effective_price ของฝั่ง Supabase มาคิดราคาที่จะโชว์
+     บนการ์ดสินค้า/หน้ารายละเอียด: มี reseller_price เฉพาะตัวไหม -> ใช้เลย, ไม่มี -> เอา
+     ราคาปกติ x (1 - discount_percent/100) ปัดเศษ ถ้าไม่ใช่ตัวแทนหรือยังไม่ login คืนราคาปกติ */
+  let resellerInfoPromise = null;
+  function fetchResellerInfo(force) {
+    if (!resellerInfoPromise || force) {
+      resellerInfoPromise = fetch('/api/account/reseller-status', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          const status = data && data.status;
+          if (status && status.is_reseller) {
+            return { isReseller: true, discountPercent: Number(status.discount_percent) || 0 };
+          }
+          return { isReseller: false, discountPercent: 0 };
+        })
+        .catch(() => ({ isReseller: false, discountPercent: 0 }));
+    }
+    return resellerInfoPromise;
+  }
+
+  // basePrice + resellerPrice (คอลัมน์เฉพาะสินค้า/ระยะเวลานั้น, อาจเป็น null) + resellerInfo
+  // ({isReseller, discountPercent} จาก fetchResellerInfo()) -> ราคาที่จะโชว์จริง
+  function effectivePrice(basePrice, resellerPrice, resellerInfo) {
+    const base = Number(basePrice) || 0;
+    if (!resellerInfo || !resellerInfo.isReseller) return base;
+    if (resellerPrice !== null && resellerPrice !== undefined && resellerPrice !== '') {
+      return Number(resellerPrice);
+    }
+    return Math.round(base * (1 - (resellerInfo.discountPercent || 0) / 100));
+  }
+
   // ລາຄາທີ່ຈະໂຊວ໌ໃນກາຕູນ: ສິນຄ້າທຳມະດາ = price ຂອງມັນເລີຍ,
   // ສິນຄ້າແບບມີໄລຍະເວລາ (duration_enabled) = ລາຄາຕ່ຳສຸດໃນບັນດາໄລຍະທີ່ຕັ້ງໄວ້ (null ຖ້າຍັງບໍ່ຕັ້ງລາຄາໃດເລີຍ)
-  function productDisplayPrice(product) {
+  // resellerInfo (optional): ถ้าส่งมา จะคำนวณเป็นราคาตัวแทนแทนราคาปกติ (ดู effectivePrice ด้านบน)
+  function productDisplayPrice(product, resellerInfo) {
     if (!product) return null;
     if (product.duration_enabled) {
       const prices = (product.durations || [])
-        .map((d) => Number(d.price))
+        .map((d) => effectivePrice(d.price, d.resellerPrice, resellerInfo))
         .filter((n) => Number.isFinite(n) && n > 0);
       return prices.length ? Math.min(...prices) : null;
     }
-    return Number(product.price) || 0;
+    return effectivePrice(product.price, product.resellerPrice, resellerInfo);
   }
 
   // ສະຕັອກລວມທີ່ຈະໂຊວ໌: ສິນຄ້າແບບມີໄລຍະເວລາ = ລວມສະຕັອກທຸກໄລຍະ, ທຳມະດາ = stock ຂອງມັນເລີຍ
@@ -124,6 +158,8 @@
 
   global.StorefrontData = {
     fetchData,
+    fetchResellerInfo,
+    effectivePrice,
     formatKip,
     productDisplayPrice,
     productTotalStock,

@@ -209,6 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let durations = [];       // ລາຍການໄລຍະເວລາ (ຫຼືລາຍການດຽວ ຖ້າສິນຄ້າບໍ່ມີໄລຍະເວລາ)
   let selectedIndex = 0;
   let qty = 1;
+  let resellerActive = false; // true ຫຼັງຈາກ applyResellerPricing() ພົບວ່າຄົນນີ້ເປັນຕົວແທນ
 
   function formatKip(n) { return window.StorefrontData.formatKip(n); }
 
@@ -276,6 +277,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     selectedLabel.textContent = d && product.duration_enabled ? d.label : '';
     priceValue.textContent = formatKip(price);
+    priceValue.nextElementSibling?.classList?.contains('reseller-price-tag') && priceValue.nextElementSibling.remove();
+    if (resellerActive) {
+      const tag = document.createElement('span');
+      tag.className = 'reseller-price-tag';
+      tag.textContent = 'ລາຄາຕົວແທນ';
+      tag.style.cssText = 'display:inline-block;margin-left:8px;font-size:11px;font-weight:700;color:var(--green,#2ecc71);border:1px solid var(--green,#2ecc71);border-radius:6px;padding:2px 7px;vertical-align:middle;';
+      priceValue.insertAdjacentElement('afterend', tag);
+    }
     totalValue.textContent = formatKip(price * qty);
     qtyValue.textContent = qty;
 
@@ -371,12 +380,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (backCat) backLink.href = `category.html?cat=${encodeURIComponent(backCat)}`;
 
       if (product.duration_enabled) {
-        durations = (product.durations || []).map((d) => ({ id: d.id, label: d.label, price: d.price, stock: d.stock || 0 }));
+        durations = (product.durations || []).map((d) => ({ id: d.id, label: d.label, price: d.price, resellerPrice: d.resellerPrice, stock: d.stock || 0 }));
         // ເລືອກໄລຍະທຳອິດທີ່ຍັງມີສະຕັອກເປັນຄ່າເລີ່ມຕົ້ນ (ຖ້າມີ)
         const firstInStock = durations.findIndex((d) => d.stock > 0);
         selectedIndex = firstInStock >= 0 ? firstInStock : 0;
       } else {
-        durations = [{ id: null, label: null, price: Number(product.price) || 0, stock: product.stock || 0 }];
+        durations = [{ id: null, label: null, price: Number(product.price) || 0, resellerPrice: product.resellerPrice, stock: product.stock || 0 }];
         selectedIndex = 0;
       }
 
@@ -386,9 +395,29 @@ document.addEventListener('DOMContentLoaded', () => {
       renderBadges();
       renderOptions();
       renderSummary();
+
+      // ---- เช็คว่าคนที่ login อยู่เป็นตัวแทนไหม ถ้าใช่ คำนวณราคาตัวแทนมาทับราคาปกติ ----
+      applyResellerPricing();
     })
     .catch((err) => {
       console.error('product.js: fetchData failed', err);
       showError('ດຶງຂໍ້ມູນສິນຄ້າບໍ່ສຳເລັດ, ກະລຸນາໂຫຼດໜ້ານີ້ໃໝ່ພາຍຫຼັງ');
     });
+
+  async function applyResellerPricing() {
+    try {
+      const info = await window.StorefrontData.fetchResellerInfo();
+      if (!info.isReseller) return;
+
+      durations.forEach((d) => {
+        d.price = window.StorefrontData.effectivePrice(d.price, d.resellerPrice, info);
+      });
+
+      resellerActive = true;
+      renderOptions();
+      renderSummary();
+    } catch (err) {
+      console.error('product.js: ດຶງລາຄາຕົວແທນບໍ່ສຳເລັດ', err);
+    }
+  }
 });
