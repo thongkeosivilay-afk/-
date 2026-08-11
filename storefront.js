@@ -112,23 +112,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // ນັບຕົວເລກແບບ "ໄຕ່ຂຶ້ນ" 0 -> ຄ່າຈິງ (ໃຊ້ requestAnimationFrame + easing ໃຫ້ນຸ້ມນວນ,
+  // ຄວາມໄວປັບຕາມຂະໜາດຕົວເລກເລັກນ້ອຍ ແຕ່ບໍ່ໃຫ້ໄວເກີນໄປ ຕາມທີ່ຂໍໄວ້ "ບໍ່ຕ້ອງໄວຫຼາຍ")
+  function animateCount(el, target, { duration = 1400, delay = 0 } = {}) {
+    if (!el || !el.firstChild) return;
+    const textNode = el.firstChild;
+    const endVal = Math.max(0, Math.round(Number(target) || 0));
+    if (endVal === 0) {
+      textNode.textContent = '0';
+      return;
+    }
+    const start = performance.now() + delay;
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    function tick(now) {
+      const elapsed = now - start;
+      if (elapsed < 0) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      const progress = Math.min(elapsed / duration, 1);
+      const current = Math.round(endVal * easeOutCubic(progress));
+      textNode.textContent = current.toLocaleString('en-US');
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        textNode.textContent = endVal.toLocaleString('en-US');
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
   function updateStats(data) {
     const statCards = document.querySelectorAll('.stat-card');
     // ລຳດັບກາຕູນສະຖິຕິໃນ index.html: [0] ຜູ້ໃຊ້ງານ, [1] ສິນຄ້າ, [2] ຄັງສິນຄ້າ, [3] ຂາຍແລ້ວ
     const userStatValue = statCards[0]?.querySelector('.stat-value');
     const productStatValue = statCards[1]?.querySelector('.stat-value');
     const stockStatValue = statCards[2]?.querySelector('.stat-value');
+    const soldStatValue = statCards[3]?.querySelector('.stat-value');
 
-    // .stat-value ຮູບແບບ: "0<span class="unit">...</span>" -> text node ທຳອິດຄືຕົວເລກ
-    if (userStatValue && userStatValue.firstChild) {
-      userStatValue.firstChild.textContent = (data.stats.userCount || 0).toLocaleString('en-US');
-    }
-    if (productStatValue && productStatValue.firstChild) {
-      productStatValue.firstChild.textContent = data.stats.productCount.toLocaleString('en-US');
-    }
-    if (stockStatValue && stockStatValue.firstChild) {
-      stockStatValue.firstChild.textContent = data.stats.totalStock.toLocaleString('en-US');
-    }
+    // ນັບໄຕ່ຂຶ້ນທັງ 4 ກາຕູນພ້ອມກັນ (delay ໄລຍະສັ້ນໆລະຫວ່າງແຕ່ລະກາຕູນ ໃຫ້ເບິ່ງເປັນຈັງຫວະ)
+    animateCount(userStatValue, data.stats.userCount || 0, { delay: 0 });
+    animateCount(productStatValue, data.stats.productCount || 0, { delay: 80 });
+    animateCount(stockStatValue, data.stats.totalStock || 0, { delay: 160 });
+    animateCount(soldStatValue, data.stats.totalSold || 0, { delay: 240 });
   }
 
   // ກ່ອງ "ພື້ນທີ່ໃສ່ຮູບໂປຣໂມຊັ່ນ" — ຖ້າແອດມິນອັບໂຫລດຮູບ Hero ໄວ້ (store.heroImage) ໃຫ້ໂຊວ໌ຮູບນັ້ນແທນ placeholder
