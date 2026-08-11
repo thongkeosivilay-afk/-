@@ -2006,6 +2006,11 @@ async function initAdminPanel() {
   function openAccordion(targetId) {
     accSwitches.forEach((sw) => sw.classList.toggle('open', sw.dataset.target === targetId));
     accPanels.forEach((p) => p.classList.toggle('open', p.id === targetId));
+    // ໃຫ້ກາດ d2-fn-card ທີ່ກົງກັນ (ຢູ່ໃນ D2 dashboard) ໄດ້ອະນິເມຊັນ "ເປີດ" ນຳ
+    // (ລູກສອນໝຸນ + ຂອບຕິດສີ) ເວລາ panelAdd ຖືກເປີດຄ້າງໄວ້ຕັ້ງແຕ່ໂຫລດໜ້າ
+    document.querySelectorAll('.d2-fn-card[data-goto]').forEach((c) => {
+      c.classList.toggle('d2-open', c.dataset.goto === targetId);
+    });
     syncAllSwitchHeights();
   }
 
@@ -2382,9 +2387,14 @@ function d2GoToPanel(targetId) {
   const sw = document.querySelector(`.switch[data-target="${targetId}"]`);
   const allSwitches = document.querySelectorAll('.switch[data-target]');
   const allPanels = document.querySelectorAll('.panel-content');
+  // ກາດ d2-fn-card ທັງໝົດ (ເພີ່ມສິນຄ້າ, ຈັດການສິນຄ້າ, ເຕີມລະຫັດ, ຄຳຂໍເຕີມເງິນ, ຕົວແທນ, ຕັ້ງຄ່າ)
+  // ຕ້ອງມີອະນິເມຊັນ "ເປີດ" (ລູກສອນໝຸນ + ຂອບຕິດສີ) ຄືກັນໝົດ ບໍ່ແມ່ນສະເພາະອັນດຽວ
+  const allCards = document.querySelectorAll('.d2-fn-card[data-goto]');
+  const card = document.querySelector(`.d2-fn-card[data-goto="${targetId}"]`);
   if (!sw) return;
   const willOpen = !sw.classList.contains('open');
   allSwitches.forEach((s) => s.classList.toggle('open', willOpen && s === sw));
+  allCards.forEach((c) => c.classList.toggle('d2-open', willOpen && c === card));
   allPanels.forEach((p) => p.classList.toggle('open', willOpen && p.id === targetId));
   syncAllSwitchHeights();
   if (willOpen) {

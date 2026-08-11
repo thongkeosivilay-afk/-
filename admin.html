@@ -804,8 +804,12 @@
   .d2-fn-card{
     background:var(--gx-panel,#111); border:1px solid rgba(255,0,1,0.16); border-radius:14px;
     display:flex; align-items:center; gap:11px; padding:12px 11px; cursor:pointer;
+    transition:border-color .25s ease, transform .15s ease;
   }
   .d2-fn-card:active{ transform:scale(.99); }
+  /* ອະນິເມຊັນ "ເປີດ" ຂອງກາດ — ໃຫ້ຮູ້ສຶກຄືກັບ .fn-card.expanded ໃນ demo:
+     ຂອບກາດຕິດສີ + ລູກສອນໝຸນ 180° + ປ່ຽນສີ ຕອນ switch ຂອງມັນຖືກເປີດ */
+  .d2-fn-card.d2-open{ border-color:var(--rail-color, rgba(255,0,1,0.5)); }
   .d2-fn-icon{ width:36px; height:36px; border-radius:11px; flex-shrink:0; background:var(--rail-color,#ff0001); display:flex; align-items:center; justify-content:center; }
   .d2-fn-icon svg{ width:16px; height:16px; stroke:#fff; }
   .d2-fn-text{ flex:1; min-width:0; }
@@ -816,8 +820,13 @@
   .d2-fn-badge.d2-warn{ background:rgba(255,176,32,0.14); color:#ffb020; }
   .d2-fn-badge.d2-urgent{ background:rgba(255,0,1,0.14); color:#ff6767; }
   .d2-fn-desc{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-top:2px; line-height:1.4; }
-  .d2-fn-arrow{ width:24px; height:24px; border-radius:8px; flex-shrink:0; background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; color:var(--gx-ink-dim,#9a9694); }
+  .d2-fn-arrow{
+    width:24px; height:24px; border-radius:8px; flex-shrink:0; background:rgba(255,255,255,0.04);
+    display:flex; align-items:center; justify-content:center; color:var(--gx-ink-dim,#9a9694);
+    transition:transform .3s cubic-bezier(.2,.85,.25,1), color .25s ease, background .25s ease;
+  }
   .d2-fn-arrow svg{ width:11px; height:11px; stroke:currentColor; }
+  .d2-fn-card.d2-open .d2-fn-arrow{ transform:rotate(180deg); color:var(--rail-color, #ff0001); background:rgba(255,0,1,0.1); }
 
   /* ---- ເອົາ list ເມນູເກົ່າ (switch-head) ແລະ ops-strip ເກົ່າອອກ — ຊ້ຳກັບ D2 dashboard ດ້ານເທິງແລ້ວ ---- */
   .switch-head{ display:none !important; }
