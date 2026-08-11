@@ -656,7 +656,9 @@
     filter:drop-shadow(0 0 8px rgba(255,0,1,.65));
   }
 
-  /* ---------- Product card v4: ສະຖານະ "ປັບປຸງ / ລໍຖ້າອັບເດດ" (admin ປິດຂາຍເອງ) ---------- */
+  /* ---------- Product card v5: ສະຖານະ "ປັບປຸງ / ລໍຖ້າອັບເດດ" (admin ປິດຂາຍເອງ)
+     ໂຕນອຳພັນ (gold) = ບໍ່ແມ່ນຂາຍໝົດ ແຕ່ແອດມິນປິດໄວ້ຊົ່ວຄາວ, ຟັນເຟືອງ+ປະແຈ ໝູນ
+     ພ້ອມແຖບໂຫລດຄືບໜ້າ ໃຫ້ຮູ້ສຶກວ່າ "ກຳລັງເຮັດວຽກຢູ່" ບໍ່ແມ່ນຄ້າງ ---------- */
   .prod-media.is-paused{
     background:linear-gradient(165deg,#131313,#090909);
     flex-direction:column; gap:8px; padding:18px 12px;
@@ -684,99 +686,63 @@
   }
   .paused-title{ font-size:13px; font-weight:800; color:var(--gold); text-align:center; }
   .paused-sub{ font-size:11px; color:var(--text-faint); font-weight:500; text-align:center; }
+  .paused-bar{
+    width:70%; height:3px; border-radius:99px; overflow:hidden;
+    background:rgba(255,255,255,.08); margin-top:2px;
+  }
+  .paused-bar i{
+    display:block; height:100%; width:40%; border-radius:99px;
+    background:linear-gradient(90deg,var(--gold),#fff3d0);
+    animation:paused-bar-fill 2.4s ease-in-out infinite;
+  }
+  @keyframes paused-bar-fill{
+    0%{ transform:translateX(-100%); }
+    100%{ transform:translateX(250%); }
+  }
   @media (prefers-reduced-motion: reduce){
-    .paused-icon .gear, .paused-icon .wrench{ animation:none; }
+    .paused-icon .gear, .paused-icon .wrench, .paused-bar i{ animation:none; }
   }
 
-  /* ---------- Product card v4: ສະຖານະ "ສິນຄ້າໝົດ" (ຂາຍໝົດຈິງໆ) —
-     hologram/glitch "signal lost", ເຂົ້າກັບ vibe ຮ້ານເກມ/ແຮັກສີແດງ-ດຳ ---------- */
+  /* ---------- Product card v5: ສະຖານະ "ສິນຄ້າໝົດ" (ຂາຍໝົດຈິງໆ) —
+     "ນິລະໄພປິດຜະນຶກ": ໂບ hazard-tape ສີແດງພາດມຸມ + ໄອຄອນລັອກ, ອ່ານໄວ ຊັດເຈນ,
+     ບໍ່ຈໍ້າຈີ້ເທົ່າ glitch/hologram ຮູບແບບເກົ່າ ---------- */
   .prod-media.is-soldout{
-    background:radial-gradient(circle at 50% 40%, rgba(255,0,1,.08), transparent 65%), linear-gradient(165deg,#100909,#080505);
+    background:linear-gradient(165deg,#120909,#070404);
     position:relative; overflow:hidden;
   }
-  .prod-media.is-soldout::before{
-    content:""; position:absolute; inset:0; pointer-events:none; z-index:1;
-    background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) 1px, transparent 1px, transparent 3px);
-    mix-blend-mode:overlay; opacity:.55;
-  }
+  .prod-media.is-soldout::before,
   .prod-media.is-soldout::after{ content:none; }
-  .scan-bar{
-    position:absolute; left:0; right:0; height:2px; z-index:2;
-    background:linear-gradient(90deg, transparent, rgba(255,28,28,.95), transparent);
-    box-shadow:0 0 10px 2px rgba(255,0,1,.55);
-    animation:scan-move 2.8s ease-in-out infinite;
+  .soldout-ribbon{
+    position:absolute; top:14px; left:-34px; width:150px; padding:3px 0; z-index:3;
+    background:repeating-linear-gradient(-45deg, var(--red-deep) 0 8px, #1a0a0a 8px 16px);
+    transform:rotate(-38deg); text-align:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.5);
   }
-  @keyframes scan-move{
-    0%{   top:-6%;  opacity:0; }
-    8%{   opacity:1; }
-    50%{  top:104%; opacity:1; }
-    58%{  opacity:0; }
-    100%{ top:104%; opacity:0; }
+  .soldout-ribbon span{
+    font-size:9.5px; font-weight:700; letter-spacing:.12em; color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.6);
   }
   .soldout-wrap{
     position:relative; z-index:2; display:flex; flex-direction:column;
-    align-items:center; gap:7px; width:100%; height:100%;
+    align-items:center; gap:6px; width:100%; height:100%;
     justify-content:center; padding:14px;
-    animation:hologram-jitter 4.6s infinite;
   }
-  @keyframes hologram-jitter{
-    0%,91%,100%{ transform:translate(0,0); filter:none; }
-    92%{ transform:translate(-2px,0); }
-    93%{ transform:translate(2px,0); filter:hue-rotate(25deg); }
-    94%{ transform:translate(-1px,1px); }
-    95%{ transform:translate(1px,-1px); filter:none; }
-    96%{ transform:translate(0,0); }
+  .soldout-lock{
+    width:34px; height:34px; color:var(--text-dim);
+    animation:soldout-lock-shake 5s linear infinite;
   }
-  .soldout-icon-wrap{ position:relative; width:46px; height:40px; }
-  .soldout-icon{
-    width:100%; height:100%; color:var(--red-glow);
-    filter:drop-shadow(0 0 9px rgba(255,0,1,.6));
-    animation:hologram-flicker 3s infinite;
-  }
-  @keyframes hologram-flicker{
-    0%,100%{ opacity:.85; } 4%{ opacity:.28; } 6%{ opacity:.85; }
-    47%{ opacity:.85; } 49%{ opacity:.22; } 51%{ opacity:.85; }
-    73%{ opacity:.45; } 75%{ opacity:.85; }
-  }
-  .ember{
-    position:absolute; width:4px; height:4px; border-radius:50%;
-    background:radial-gradient(circle, #ff8a4a, var(--red) 65%, transparent);
-    box-shadow:0 0 6px 1px rgba(255,0,1,.8);
-    bottom:6px; opacity:0;
-    animation:ember-rise 3.4s ease-in infinite;
-  }
-  @keyframes ember-rise{
-    0%{   transform:translateY(0) scale(1);    opacity:0; }
-    12%{  opacity:1; }
-    75%{  opacity:.5; }
-    100%{ transform:translateY(-42px) scale(.25); opacity:0; }
+  @keyframes soldout-lock-shake{
+    0%,88%{ transform:rotate(0deg); }
+    92%{ transform:rotate(-14deg); }
+    96%{ transform:rotate(10deg); }
+    100%{ transform:rotate(0deg); }
   }
   .soldout-title{
-    position:relative; font-size:14px; font-weight:900; letter-spacing:.05em;
-    color:#fff; text-shadow:0 0 10px rgba(255,0,1,.5);
-  }
-  .soldout-title::before,
-  .soldout-title::after{
-    content:"ໝົດແລ້ວ"; position:absolute; left:0; top:0; width:100%; background:inherit;
-  }
-  .soldout-title::before{ color:var(--red-glow); clip-path:inset(0 0 55% 0); animation:glitch-a 2.6s infinite linear alternate-reverse; }
-  .soldout-title::after{ color:#2ad4ff; clip-path:inset(55% 0 0 0); animation:glitch-b 3.1s infinite linear alternate-reverse; }
-  @keyframes glitch-a{
-    0%{ transform:translate(0,0); } 20%{ transform:translate(-2px,1px); }
-    40%{ transform:translate(2px,-1px); } 60%{ transform:translate(-1px,0); }
-    80%{ transform:translate(1px,1px); } 100%{ transform:translate(0,0); }
-  }
-  @keyframes glitch-b{
-    0%{ transform:translate(0,0); } 25%{ transform:translate(2px,-1px); }
-    50%{ transform:translate(-2px,1px); } 75%{ transform:translate(1px,-1px); }
-    100%{ transform:translate(0,0); }
+    font-size:12.5px; font-weight:800; color:var(--text-dim); margin-top:2px;
   }
   .soldout-sub{ font-size:10.5px; color:var(--text-faint); font-weight:500; text-align:center; }
   @media (prefers-reduced-motion: reduce){
-    .scan-bar, .soldout-wrap, .soldout-icon, .ember, .soldout-title::before, .soldout-title::after{
-      animation:none !important;
-    }
-    .ember{ opacity:0; }
+    .soldout-lock{ animation:none; }
   }
 
   .cat-block{ margin-bottom:6px; }

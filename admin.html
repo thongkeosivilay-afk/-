@@ -190,7 +190,10 @@
   .switch.open .switch-chevron{ transform:rotate(180deg); color:var(--gx-signal); border-color:rgba(255,0,1,0.5); }
 
   .switch-body{ max-height:0; overflow:hidden; transition:max-height .45s cubic-bezier(.2,.85,.25,1); }
-  .switch.open .switch-body{ max-height:4000px; }
+  /* ຄ່ານີ້ເປັນແຄ່ fallback (ໃນກໍລະນີ JS ຍັງບໍ່ທັນຮັນ/browser ບໍ່ຮອງຮັບ ResizeObserver) —
+     ໂຕຫຼັກ JS (syncSwitchHeight ໃນ admin.js) ຈະຕັ້ງ max-height ຕາມຄວາມສູງເນື້ອຫາຈິງ
+     ໃຫ້ເອງ, ຄ່ານີ້ຈຶ່ງຕ້ອງໃຫຍ່ພໍທີ່ຈະບໍ່ຕັດເນື້ອຫາໜ້າ "ຕັ້ງຄ່າຮ້ານ" (4 ໝວດໝູ່) ຖ້າ JS ບໍ່ທັນຮັນ */
+  .switch.open .switch-body{ max-height:20000px; }
   .switch-body-inner{ padding:2px 16px 18px; border-top:1px dashed rgba(255,0,1,0.18); margin:0 16px; padding-top:16px; }
   .switch-body-inner:empty{ border-top:none; padding-top:0; }
 

@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ໄອຄອນທີ່ໃຊ້ໃນອນິເມຊັນ 2 ສະຖານະ: "ຢຸດຂາຍຊົ່ວຄາວ" (ແອດມິນປິດເອງ) ແລະ "ສິນຄ້າໝົດ" (ໝົດແທ້)
   const GEAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V19.5a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.96 17.85a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.04H2.5a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.15 6.99a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H8.6a1.7 1.7 0 0 0 1.04-1.56V.5a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.04 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V6.6a1.7 1.7 0 0 0 1.56 1.04h.09a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.04Z"/></svg>`;
   const WRENCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L2 19l3 3 7.3-7.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2Z"/></svg>`;
-  const BOX_SVG = `<svg class="soldout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 8L12 3.5 4 8"/><path d="M4 8v9l8 4.5 8-4.5V8"/><path d="M4 8l8 4.5 8-4.5"/><path d="M12 12.5V21"/></svg>`;
+  const LOCK_SVG = `<svg class="soldout-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
   const CART_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`;
 
   // ສະຖານະຂອງສິນຄ້າ: 'ok' ພ້ອມຂາຍ, 'paused' ແອດມິນປິດຂາຍເອງ, 'soldout' ສິນຄ້າໝົດແທ້ໆ
@@ -80,9 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return -(h % 250) / 100; // 0 .. -2.5s
   }
 
-  // ບໍລິເວນຮູບສິນຄ້າ (v4): "ພ້ອມຂາຍ" ໂຊວ໌ຮູບ/ໄອຄອນປົກກະຕິ,
-  // "ປັບປຸງ" ໂຊວ໌ໄອຄອນຟັນເຟືອງ+ປະແຈກາງກ່ອງ (ບໍ່ມີຮູບສິນຄ້າ),
-  // "ໝົດ" ໂຊວ໌ ໂຮໂລແກຣມສັນຍານຂາດ (scan-bar + glitch + ປະກາຍໄຟ)
+  // ບໍລິເວນຮູບສິນຄ້າ (v5): "ພ້ອມຂາຍ" ໂຊວ໌ຮູບ/ໄອຄອນປົກກະຕິ,
+  // "ປັບປຸງ" ໂຊວ໌ໄອຄອນຟັນເຟືອງ+ປະແຈກາງກ່ອງ + ແຖບໂຫລດຄືບໜ້າ (ບໍ່ມີຮູບສິນຄ້າ),
+  // "ໝົດ" ໂຊວ໌ ໂບ hazard-tape "SOLD OUT" ພາດມຸມ + ໄອຄອນລັອກ (ນິລະໄພປິດຜະນຶກ)
   function mediaBodyHTML(product, state, id) {
     const d = fxDelay(id);
     if (state === 'paused') {
@@ -92,18 +92,14 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="wrench" style="animation-delay:${d * 0.4}s;">${WRENCH_SVG}</div>
         </div>
         <div class="paused-title">ປັບປຸງ / ລໍຖ້າອັບເດດ</div>
-        <div class="paused-sub">${product.paused_note ? escapeHtml(product.paused_note) : 'ກຳລັງສ້ອມແປງ..'}</div>`;
+        <div class="paused-sub">${product.paused_note ? escapeHtml(product.paused_note) : 'ກຳລັງສ້ອມແປງ..'}</div>
+        <div class="paused-bar"><i style="animation-delay:${d}s;"></i></div>`;
     }
     if (state === 'soldout') {
       return `
-        <div class="scan-bar" style="animation-delay:${d}s;"></div>
-        <div class="soldout-wrap" style="animation-delay:${d}s;">
-          <div class="soldout-icon-wrap">
-            ${BOX_SVG}
-            <span class="ember" style="left:6px; animation-delay:${d}s;"></span>
-            <span class="ember" style="left:20px; animation-delay:${d - 1.1}s;"></span>
-            <span class="ember" style="left:34px; animation-delay:${d - 2.2}s;"></span>
-          </div>
+        <div class="soldout-ribbon"><span>SOLD OUT</span></div>
+        <div class="soldout-wrap">
+          ${LOCK_SVG}
           <div class="soldout-title">ໝົດແລ້ວ</div>
           <div class="soldout-sub">ລໍຖ້າຮອບຕໍ່ໄປ</div>
         </div>`;

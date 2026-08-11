@@ -11,6 +11,46 @@
    ========================================================= */
 
 // ============================================
+// ແກ້ບັກ: ກ່ອງຕັ້ງຄ່າ (.switch-body) ເລື່ອນລົງບໍ່ສຸດ/ເນື້ອຫາຖືກຕັດ
+// ສາເຫດເດີມ: .switch.open .switch-body ໃຊ້ max-height ຄົງທີ່ 4000px (CSS) ເປັນຕົວກຳນົດ
+// ຄວາມສູງສຸດ ຮ່ວມກັບ overflow:hidden — ພໍເນື້ອຫາຈິງ (ເຊັ່ນ ໜ້າ "ຕັ້ງຄ່າຮ້ານ" ທີ່ມີ 4
+// ໝວດໝູ່ ແຕ່ລະໝວດມີຫຼາຍຊ່ອງກອກ+ຮູບ) ສູງກວ່າ 4000px ເນື້ອຫາສ່ວນທີ່ເກີນມາຈະຖືກ overflow:hidden
+// ຕັດຖິ້ມໄປເລີຍ ເຮັດໃຫ້ເລື່ອນຈໍລົງແນວໃດກໍ່ບໍ່ເຫັນສ່ວນທ້າຍ (ປຸ່ມ "ຢືນຢັນ" ອັນສຸດທ້າຍຄ້າງຄາ)
+// ວິທີແກ້: ຄຳນວນ max-height ຈິງຈາກ scrollHeight ຂອງເນື້ອຫາດ້ວຍ JS ທຸກຄັ້ງທີ່ເປີດ/ເນື້ອຫາປ່ຽນ
+// ຂະໜາດ (ອັບໂຫລດຮູບ, ຂໍ້ຄວາມ error ໂຜ່) ແທນທີ່ຈະອີງຄ່າຄົງທີ່ຈາກ CSS ຢ່າງດຽວ
+function syncSwitchHeight(sw) {
+  if (!sw) return;
+  const body = sw.querySelector('.switch-body');
+  const inner = sw.querySelector('.switch-body-inner');
+  if (!body || !inner) return;
+  if (sw.classList.contains('open')) {
+    // +40px ກັນຂອບ/margin ຄາດເຄື່ອນເລັກນ້ອຍລະຫວ່າງບຣາວເຊີ
+    body.style.maxHeight = (inner.scrollHeight + 40) + 'px';
+  } else {
+    body.style.maxHeight = '0px';
+  }
+}
+
+function syncAllSwitchHeights() {
+  document.querySelectorAll('.switch[data-target]').forEach(syncSwitchHeight);
+}
+
+// ຄອຍເບິ່ງທຸກ .switch-body-inner: ຖ້າຂະໜາດເນື້ອຫາຂ້າງໃນປ່ຽນ (ອັບໂຫລດຮູບ, ຂໍ້ຄວາມ error
+// ໂຜ່ຂຶ້ນ, ເພີ່ມ/ລຶບຊ່ອງກອກ ດ້ວຍ JS) ໃຫ້ຄຳນວນ max-height ໃໝ່ທັນທີ ຖ້າກ່ອງນັ້ນກຳລັງເປີດຢູ່
+function initSwitchHeightObserver() {
+  if (!window.ResizeObserver) return;
+  document.querySelectorAll('.switch[data-target]').forEach((sw) => {
+    const inner = sw.querySelector('.switch-body-inner');
+    if (!inner || sw.dataset.roBound) return;
+    sw.dataset.roBound = '1';
+    const ro = new ResizeObserver(() => {
+      if (sw.classList.contains('open')) syncSwitchHeight(sw);
+    });
+    ro.observe(inner);
+  });
+}
+
+// ============================================
 // ພາກ 1: ການລ໋ອກອິນ/ກວດສິດແອດມິນ ດ້ວຍ Discord (ຂອງເວັບໃໝ່)
 // ============================================
 function goToDiscordLogin() {
@@ -1962,6 +2002,7 @@ async function initAdminPanel() {
   function openAccordion(targetId) {
     accSwitches.forEach((sw) => sw.classList.toggle('open', sw.dataset.target === targetId));
     accPanels.forEach((p) => p.classList.toggle('open', p.id === targetId));
+    syncAllSwitchHeights();
   }
 
   accSwitches.forEach((sw) => {
@@ -1981,6 +2022,8 @@ async function initAdminPanel() {
   // เปิดกล่องแรกที่ถูกตั้งเป็น .switch.open ไว้ใน HTML ตั้งแต่ต้น (panelAdd)
   const initialOpen = document.querySelector('.switch.open[data-target]');
   if (initialOpen) openAccordion(initialOpen.dataset.target);
+
+  initSwitchHeightObserver();
 
   // ---- tabs (ເລື່ອນຊ້າຍ-ຂວາໄດ້, ຮອງຮັບຈຳນວນແທັບບໍ່ຈຳກັດ) ----
   const tabs = document.querySelectorAll('.gx-tab3');
@@ -2336,8 +2379,13 @@ function d2GoToPanel(targetId) {
   const willOpen = !sw.classList.contains('open');
   allSwitches.forEach((s) => s.classList.toggle('open', willOpen && s === sw));
   allPanels.forEach((p) => p.classList.toggle('open', willOpen && p.id === targetId));
+  syncAllSwitchHeights();
   if (willOpen) {
-    requestAnimationFrame(() => sw.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+    requestAnimationFrame(() => {
+      // ຄຳນວນຄວາມສູງອີກຄັ້ງຫຼັງ layout ຈິງ (ຮູບ/ຟອນ Lao ໂຫລດແລ້ວ) ກັນຄ່າຄາດເຄື່ອນ
+      syncSwitchHeight(sw);
+      sw.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
   }
 }
 
@@ -2360,6 +2408,7 @@ function d2RelocatePanels() {
 
 function initD2Dashboard() {
   d2RelocatePanels();
+  initSwitchHeightObserver();
 
   document.querySelectorAll('.d2-fn-card[data-goto]').forEach((card) => {
     if (card.dataset.bound) return;
