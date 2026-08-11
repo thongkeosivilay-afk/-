@@ -729,12 +729,7 @@ function renderTopupList(requests) {
             ຂະຫຍາຍ
           </div>
         </div>` : ''}
-      <div class="ai-verify-box" id="aiBox-${r.id}"></div>
       <div class="topup-actions-row">
-        <button class="topup-btn ai-verify">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg>
-          ກວດສອບດ້ວຍ AI
-        </button>
         <button class="topup-btn approve">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           ຢືນຢັນ
@@ -755,56 +750,7 @@ function renderTopupList(requests) {
     const id = card.dataset.id;
     card.querySelector('.approve').addEventListener('click', () => decideTopup(id, 'approved', card));
     card.querySelector('.reject').addEventListener('click', () => decideTopup(id, 'rejected', card));
-    const aiBtn = card.querySelector('.ai-verify');
-    if (aiBtn) aiBtn.addEventListener('click', () => runAiVerifyTopup(id, card, aiBtn));
   });
-}
-
-async function runAiVerifyTopup(id, card, btn) {
-  const box = document.getElementById(`aiBox-${id}`);
-  const req = currentTopupRequests.find(r => r.id === id);
-  const imageUrl = req ? req.slip_url : '';
-  const amount = req ? req.amount : '';
-
-  if (!imageUrl) {
-    showToast('ບໍ່ພົບຮູບສະລິບ');
-    return;
-  }
-
-  btn.disabled = true;
-  const originalHtml = btn.innerHTML;
-  btn.textContent = 'ກຳລັງກວດສອບ...';
-  box.innerHTML = '';
-
-  try {
-    const res = await fetch('/api/verify-slip', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageUrl, expectedAmount: amount })
-    });
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      box.innerHTML = `<div class="ai-result ai-warn">⚠️ ${data.error || 'ກວດສອບບໍ່ສຳເລັດ'}</div>`;
-      return;
-    }
-
-    const okMatch = data.matches_expected && !data.suspicious && data.is_slip;
-    const cls = okMatch ? 'ai-ok' : 'ai-warn';
-    box.innerHTML = `
-      <div class="ai-result ${cls}">
-        <div>${data.is_slip ? '✅ ຄືສະລິບ' : '❓ ບໍ່ແນ່ໃຈວ່າແມ່ນສະລິບ'}</div>
-        <div>ຍອດທີ່ AI ອ່ານໄດ້: ${data.amount != null ? formatKipAdmin(data.amount) : '—'} (${data.matches_expected ? 'ກົງກັບຍອດ' : 'ບໍ່ກົງກັບຍອດ'})</div>
-        ${data.suspicious ? '<div>⚠️ ມີສັນຍານຜິດປົກກະຕິ ກະລຸນາກວດຄືນດ້ວຍຕາ</div>' : ''}
-        ${data.note ? `<div class="ai-note">${data.note}</div>` : ''}
-      </div>`;
-  } catch (err) {
-    console.error(err);
-    box.innerHTML = `<div class="ai-result ai-warn">⚠️ ເຊື່ອມຕໍ່ AI ບໍ່ໄດ້</div>`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = originalHtml;
-  }
 }
 
 async function decideTopup(id, status, card) {
@@ -2350,7 +2296,7 @@ async function initAdminPanel() {
   await loadResellerTiers();
   await loadResellerKeys();
   await loadD2Totals();
-  await loadD2SevenDay();
+  await loadD2PeriodCarousel();
 }
 
 // ============================================
@@ -2358,8 +2304,8 @@ async function initAdminPanel() {
 // ============================================
 let d2AllTimeTopup = null;
 let d2AllTimeOrders = null;
-let d2SevenDayNow = null;
-let d2SevenDayPrev = null;
+let d2Periods = [];      // [...ຮອບເກົ່າ (ແຊ່ແຂງ), ຮອບປັດຈຸບັນ (ຍັງນັບຢູ່)] — ອັນສຸດທ້າຍສະເໝີເປັນ "ຮອບປັດຈຸບັນ"
+let d2ViewIndex = 0;     // index ຂອງ slide ທີ່ກຳລັງເບິ່ງຢູ່ໃນ carousel
 
 function d2FormatKip(n) {
   return Number(n || 0).toLocaleString('de-DE');
@@ -2387,12 +2333,34 @@ function d2GoToPanel(targetId) {
   const allSwitches = document.querySelectorAll('.switch[data-target]');
   const allPanels = document.querySelectorAll('.panel-content');
   if (!sw) return;
-  allSwitches.forEach((s) => s.classList.toggle('open', s === sw));
-  allPanels.forEach((p) => p.classList.toggle('open', p.id === targetId));
-  requestAnimationFrame(() => sw.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  const willOpen = !sw.classList.contains('open');
+  allSwitches.forEach((s) => s.classList.toggle('open', willOpen && s === sw));
+  allPanels.forEach((p) => p.classList.toggle('open', willOpen && p.id === targetId));
+  if (willOpen) {
+    requestAnimationFrame(() => sw.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+  }
+}
+
+// ---- ຍ້າຍ .switch (ຟອມ/ເນື້ອຫາຈິງ) ຈາກ #deck ດ້ານລຸ່ມ ມາຢູ່ໃຕ້ກາດຂອງມັນເອງໃນ D2 dashboard ໂດຍກົງ ----
+// ແກ້ບັກ: ກ່ອນໜ້ານີ້ ກົດກາດແລ້ວເນື້ອຫາໄປໂຜ່ຢູ່ລຸ່ມສຸດຂອງໜ້າ (ຢູ່ໃນ #deck ເກົ່າ) ເຮັດໃຫ້ຄືກັບກະໂດດຫນີ
+// ດຽວນີ້ຍ້າຍ .switch ແຕ່ລະອັນມາຕໍ່ທ້າຍກາດຂອງມັນເລີຍ, ກົດແລ້ວເນື້ອຫາເລື່ອນລົງມາໂຜ່ຕໍ່ໜ້າກາດທັນທີ
+function d2RelocatePanels() {
+  document.querySelectorAll('.d2-fn-card[data-goto]').forEach((card) => {
+    const target = card.dataset.goto;
+    const sw = document.querySelector(`.switch[data-target="${target}"]`);
+    if (sw && card.parentElement) {
+      card.parentElement.insertBefore(sw, card.nextSibling);
+    }
+  });
+  const deck = document.getElementById('deck');
+  if (deck && !deck.querySelector('.switch')) {
+    deck.style.display = 'none';
+  }
 }
 
 function initD2Dashboard() {
+  d2RelocatePanels();
+
   document.querySelectorAll('.d2-fn-card[data-goto]').forEach((card) => {
     if (card.dataset.bound) return;
     card.dataset.bound = '1';
@@ -2400,18 +2368,44 @@ function initD2Dashboard() {
   });
 
   const recheckBtn = document.getElementById('d2ChRecheckBtn');
+  const prevBtn = document.getElementById('d2ChPrevBtn');
+  const nextBtn = document.getElementById('d2ChNextBtn');
+  const track = document.getElementById('d2ChTrack');
+
+  if (prevBtn && !prevBtn.dataset.bound) {
+    prevBtn.dataset.bound = '1';
+    prevBtn.addEventListener('click', () => {
+      if (d2ViewIndex > 0) { d2ViewIndex--; renderD2ChCarousel(false); }
+    });
+  }
+  if (nextBtn && !nextBtn.dataset.bound) {
+    nextBtn.dataset.bound = '1';
+    nextBtn.addEventListener('click', () => {
+      if (d2ViewIndex < d2Periods.length - 1) { d2ViewIndex++; renderD2ChCarousel(false); }
+    });
+  }
+  if (track && !track.dataset.bound) {
+    track.dataset.bound = '1';
+    let touchStartX = null;
+    track.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend', (e) => {
+      if (touchStartX == null) return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) > 40) {
+        if (dx < 0 && d2ViewIndex < d2Periods.length - 1) { d2ViewIndex++; renderD2ChCarousel(false); }
+        else if (dx > 0 && d2ViewIndex > 0) { d2ViewIndex--; renderD2ChCarousel(false); }
+      }
+      touchStartX = null;
+    });
+  }
   if (recheckBtn && !recheckBtn.dataset.bound) {
     recheckBtn.dataset.bound = '1';
     recheckBtn.addEventListener('click', async () => {
+      if (d2ViewIndex !== d2Periods.length - 1) return; // ຕ້ອງຢູ່ຮອບປັດຈຸບັນກ່ອນຈຶ່ງນັບໃໝ່ໄດ້
       recheckBtn.classList.add('d2-spinning');
       recheckBtn.disabled = true;
-      await Promise.all([loadD2Totals(), loadD2SevenDay()]);
+      await recountD2Period();
       recheckBtn.classList.remove('d2-spinning');
-      recheckBtn.disabled = false;
-      const lastCheckEl = document.getElementById('d2ChLastCheck');
-      if (lastCheckEl) {
-        lastCheckEl.textContent = 'ກວດສອບລ່າສຸດ: ' + new Date().toLocaleTimeString('lo-LA', { hour: '2-digit', minute: '2-digit' });
-      }
     });
   }
 }
@@ -2448,66 +2442,173 @@ async function loadD2Totals() {
   if (ordersEl) ordersEl.textContent = d2AllTimeOrders === null ? 'ຜິດພາດ' : d2FormatKip(d2AllTimeOrders);
 }
 
-// ---- ຍອດເຕີມເງິນອະນຸມັດ 7 ວັນລ່າສຸດ ທຽບກັບ 7 ວັນກ່ອນໜ້ານັ້ນ (ຄິດຈາກ created_at ຈິງ, ບໍ່ໄດ້ fix goal) ----
-async function loadD2SevenDay() {
-  const now = new Date();
-  const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const d14 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+// ---- ຮອບ "ຍອດເຕີມເງິນອະນຸມັດ" ແບບ carousel: ຮອບເກົ່າ (ແຊ່ແຂງໄວ້ໃນ topup_period_snapshots) + ຮອບປັດຈຸບັນ (ນັບຈາກ topup_period_start_at ຫາດຽວນີ້) ----
+const TOPUP_SNAPSHOT_TABLE = 'topup_period_snapshots';
 
+async function loadD2PeriodCarousel() {
+  const track = document.getElementById('d2ChTrack');
+  if (!track) return;
+
+  // 1) ຈຸດເລີ່ມຕົ້ນຂອງຮອບປັດຈຸບັນ — ຖ້າຍັງບໍ່ເຄີຍກົດ "ນັບຍອດໃໝ່" ເລີຍ ໃຫ້ໃຊ້ 7 ວັນຍ້ອນຫຼັງ ຄືເກົ່າ
+  let periodStart;
   try {
-    const [{ data: cur, error: curErr }, { data: prev, error: prevErr }] = await Promise.all([
-      supabaseClient.from('topup_requests').select('amount').eq('status', 'approved').gte('created_at', d7.toISOString()),
-      supabaseClient.from('topup_requests').select('amount').eq('status', 'approved').gte('created_at', d14.toISOString()).lt('created_at', d7.toISOString()),
-    ]);
-    if (curErr) throw curErr;
-    if (prevErr) throw prevErr;
-    d2SevenDayNow = d2SumSane(cur);
-    d2SevenDayPrev = d2SumSane(prev);
+    const { data: settings, error } = await supabaseClient
+      .from(SITE_SETTINGS_TABLE)
+      .select('topup_period_start_at')
+      .eq('id', SITE_SETTINGS_ID)
+      .maybeSingle();
+    if (error) throw error;
+    periodStart = settings && settings.topup_period_start_at
+      ? new Date(settings.topup_period_start_at)
+      : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
   } catch (err) {
-    console.error('D2: ໂຫຼດຍອດ 7 ວັນບໍ່ສຳເລັດ', err);
-    d2SevenDayNow = null;
-    d2SevenDayPrev = null;
+    console.error('D2: ໂຫຼດຈຸດເລີ່ມຕົ້ນຮອບບໍ່ສຳເລັດ', err);
+    periodStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  }
+  d2CurrentPeriodStart = periodStart;
+
+  // 2) ຮອບເກົ່າທີ່ແຊ່ແຂງໄວ້ແລ້ວ
+  let snapshots = [];
+  try {
+    const { data, error } = await supabaseClient
+      .from(TOPUP_SNAPSHOT_TABLE)
+      .select('id, label, amount, period_start, period_end')
+      .order('created_at', { ascending: true });
+    if (error) throw error;
+    snapshots = data || [];
+  } catch (err) {
+    console.error('D2: ໂຫຼດຮອບເກົ່າບໍ່ສຳເລັດ (ອາດຍັງບໍ່ໄດ້ສ້າງຕາຕະລາງ topup_period_snapshots)', err);
+    snapshots = [];
   }
 
-  const valueEl = document.getElementById('d2ChValue');
-  const subEl = document.getElementById('d2ChSub');
-  const prevEl = document.getElementById('d2ChPrev');
-  const badgeEl = document.getElementById('d2ChBadge');
-  if (!valueEl) return;
+  // 3) ຮອບປັດຈຸບັນ — ນັບຈາກ periodStart ຫາດຽວນີ້
+  let liveAmount = 0;
+  try {
+    const { data: cur, error: curErr } = await supabaseClient
+      .from('topup_requests')
+      .select('amount')
+      .eq('status', 'approved')
+      .gte('created_at', periodStart.toISOString());
+    if (curErr) throw curErr;
+    liveAmount = d2SumSane(cur);
+  } catch (err) {
+    console.error('D2: ໂຫຼດຍອດຮອບປັດຈຸບັນບໍ່ສຳເລັດ', err);
+    liveAmount = null;
+  }
 
-  if (d2SevenDayNow === null) {
-    valueEl.innerHTML = 'ຜິດພາດ';
-    subEl.textContent = 'ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ';
+  const lastSnapshotAmount = snapshots.length ? snapshots[snapshots.length - 1].amount : null;
+
+  d2Periods = [
+    ...snapshots.map((s, i) => ({
+      label: s.label,
+      value: Number(s.amount) || 0,
+      prev: i > 0 ? Number(snapshots[i - 1].amount) || 0 : null,
+      live: false,
+    })),
+    {
+      label: `${periodStart.toLocaleDateString('en-GB')} — ${new Date().toLocaleDateString('en-GB')}`,
+      value: liveAmount,
+      prev: lastSnapshotAmount,
+      live: true,
+    },
+  ];
+  d2ViewIndex = d2Periods.length - 1;
+  renderD2ChCarousel(true);
+}
+
+function d2ChSlideHtml(p) {
+  let badgeHtml = '<span class="d2-ch-badge d2-flat">—</span>';
+  if (p.value === null) {
+    badgeHtml = '<span class="d2-ch-badge d2-down">ຜິດພາດ</span>';
+  } else if (!p.live) {
+    badgeHtml = '<span class="d2-ch-badge d2-reset">ຮອບເກົ່າ</span>';
+  } else if (p.prev != null) {
+    if (p.prev === 0 && p.value === 0) {
+      badgeHtml = '<span class="d2-ch-badge d2-flat">ບໍ່ມີການເຕີມເງິນ</span>';
+    } else if (p.prev === 0) {
+      badgeHtml = '<span class="d2-ch-badge d2-up">ຂຶ້ນໃໝ່</span>';
+    } else {
+      const pct = Math.round(((p.value - p.prev) / p.prev) * 100);
+      if (pct > 0) badgeHtml = `<span class="d2-ch-badge d2-up">▲ ${pct}%</span>`;
+      else if (pct < 0) badgeHtml = `<span class="d2-ch-badge d2-down">▼ ${Math.abs(pct)}%</span>`;
+      else badgeHtml = '<span class="d2-ch-badge d2-flat">ເທົ່າເກົ່າ</span>';
+    }
+  }
+  return `
+    <div class="d2-ch-slide">
+      <div class="d2-ch-head">
+        <div>
+          <div class="d2-ch-title">ຍອດເຕີມເງິນອະນຸມັດ ${p.live ? '(ຮອບປັດຈຸບັນ)' : '(ຍ້ອນຫຼັງ)'}</div>
+          <div class="d2-ch-sub">${p.label}</div>
+        </div>
+        ${badgeHtml}
+      </div>
+      <div class="d2-ch-value">${p.value === null ? 'ຜິດພາດ' : d2FormatKip(p.value)}<span>ກີບ</span></div>
+      <div class="d2-ch-prev">${p.prev != null ? `ທຽບກັບຮອບກ່ອນໜ້າ: ${d2FormatKip(p.prev)} ກີບ` : 'ຮອບທຳອິດ — ບໍ່ມີຂໍ້ມູນປຽບທຽບ'}</div>
+    </div>`;
+}
+
+function renderD2ChCarousel(instant) {
+  const track = document.getElementById('d2ChTrack');
+  const dotsEl = document.getElementById('d2ChDots');
+  const prevBtn = document.getElementById('d2ChPrevBtn');
+  const nextBtn = document.getElementById('d2ChNextBtn');
+  const recheckBtn = document.getElementById('d2ChRecheckBtn');
+  const recheckLabel = document.getElementById('d2ChRecheckLabel');
+  if (!track || !d2Periods.length) return;
+
+  track.innerHTML = d2Periods.map(d2ChSlideHtml).join('');
+  if (instant) track.style.transition = 'none';
+  track.style.transform = `translateX(-${d2ViewIndex * 100}%)`;
+  if (instant) requestAnimationFrame(() => { track.style.transition = ''; });
+
+  if (dotsEl) {
+    dotsEl.innerHTML = d2Periods.map((_, i) =>
+      `<span class="d2-ch-dot${i === d2ViewIndex ? ' active' : ''}"></span>`).join('');
+  }
+  if (prevBtn) prevBtn.disabled = d2ViewIndex === 0;
+  if (nextBtn) nextBtn.disabled = d2ViewIndex === d2Periods.length - 1;
+  const onLive = d2ViewIndex === d2Periods.length - 1;
+  if (recheckBtn) recheckBtn.disabled = !onLive;
+  if (recheckLabel) recheckLabel.textContent = onLive ? 'ນັບຍອດໃໝ່' : 'ກັບໄປຮອບປັດຈຸບັນເພື່ອນັບໃໝ່';
+}
+
+// ---- ກົດ "ນັບຍອດໃໝ່": ແຊ່ແຂງຍອດຮອບປັດຈຸບັນເປັນປະຫວັດ ແລ້ວເລີ່ມນັບຮອບໃໝ່ຈາກ 0 (ບໍ່ແຕະຂໍ້ມູນ topup_requests ຈິງ) ----
+let d2CurrentPeriodStart = null;
+
+async function recountD2Period() {
+  const live = d2Periods[d2Periods.length - 1];
+  if (!live || live.value === null) {
+    showToast('ໂຫຼດຍອດປັດຈຸບັນບໍ່ສຳເລັດ ລອງໃໝ່ພາຍຫຼັງ');
     return;
   }
+  const now = new Date();
+  try {
+    const { error: insertErr } = await supabaseClient
+      .from(TOPUP_SNAPSHOT_TABLE)
+      .insert({
+        label: live.label,
+        amount: live.value,
+        period_start: (d2CurrentPeriodStart || now).toISOString(),
+        period_end: now.toISOString(),
+      });
+    if (insertErr) throw insertErr;
 
-  valueEl.innerHTML = d2FormatKip(d2SevenDayNow) + '<span>ກີບ</span>';
-  subEl.textContent = `${d7.toLocaleDateString('en-GB')} — ${now.toLocaleDateString('en-GB')}`;
+    await ensureSiteSettingsRow();
+    const { error: updateErr } = await supabaseClient
+      .from(SITE_SETTINGS_TABLE)
+      .update({ topup_period_start_at: now.toISOString(), updated_at: now.toISOString() })
+      .eq('id', SITE_SETTINGS_ID);
+    if (updateErr) throw updateErr;
 
-  if (d2SevenDayPrev !== null && prevEl) {
-    prevEl.textContent = `ທຽບກັບ 7 ວັນກ່ອນໜ້າ: ${d2FormatKip(d2SevenDayPrev)} ກີບ`;
-  }
-
-  if (badgeEl && d2SevenDayPrev !== null) {
-    if (d2SevenDayPrev === 0 && d2SevenDayNow === 0) {
-      badgeEl.textContent = 'ບໍ່ມີການເຕີມເງິນ';
-      badgeEl.className = 'd2-ch-badge d2-flat';
-    } else if (d2SevenDayPrev === 0) {
-      badgeEl.textContent = 'ຂຶ້ນໃໝ່';
-      badgeEl.className = 'd2-ch-badge d2-up';
-    } else {
-      const pct = Math.round(((d2SevenDayNow - d2SevenDayPrev) / d2SevenDayPrev) * 100);
-      if (pct > 0) {
-        badgeEl.textContent = `▲ ${pct}%`;
-        badgeEl.className = 'd2-ch-badge d2-up';
-      } else if (pct < 0) {
-        badgeEl.textContent = `▼ ${Math.abs(pct)}%`;
-        badgeEl.className = 'd2-ch-badge d2-down';
-      } else {
-        badgeEl.textContent = 'ເທົ່າເກົ່າ';
-        badgeEl.className = 'd2-ch-badge d2-flat';
-      }
+    await loadD2PeriodCarousel();
+    const lastCheckEl = document.getElementById('d2ChLastCheck');
+    if (lastCheckEl) {
+      lastCheckEl.textContent = 'ນັບຍອດໃໝ່ລ່າສຸດ: ' + now.toLocaleTimeString('lo-LA', { hour: '2-digit', minute: '2-digit' });
     }
+  } catch (err) {
+    console.error(err);
+    showToast('ນັບຍອດໃໝ່ບໍ່ສຳເລັດ — ກວດວ່າໄດ້ແລ່ນ topup_period_recount_setup.sql ໃນ Supabase ແລ້ວ');
   }
 }
 

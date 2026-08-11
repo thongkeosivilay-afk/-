@@ -448,13 +448,6 @@
     color:#fff; box-shadow:0 4px 14px -4px rgba(232,57,90,0.55);
   }
   .topup-btn.reject:hover{ box-shadow:0 4px 20px -3px rgba(232,57,90,0.7); }
-  .topup-btn.ai-verify{ background:rgba(120,140,255,0.14); color:#9cabff; border:1px solid rgba(120,140,255,0.35); }
-  .ai-verify-box{ margin:10px 0; }
-  .ai-result{ font-size:12.5px; line-height:1.6; padding:10px 12px; border-radius:10px; background:rgba(255,255,255,0.04); }
-  .ai-result.ai-ok{ border:1px solid rgba(32,181,106,0.35); color:#2ecc71; }
-  .ai-result.ai-warn{ border:1px solid rgba(255,196,0,0.35); color:#ff6b6b; }
-  .ai-note{ margin-top:4px; opacity:0.7; }
-
   /* ===== slip lightbox (fullscreen viewer) ===== */
   .slip-lightbox{
     position:fixed; inset:0; z-index:80; background:rgba(8,6,16,0.92);
@@ -736,9 +729,13 @@
   .d2-sum-unit{ font-size:9.5px; color:var(--gx-ink-dim,#9a9694); margin-top:1px; }
 
   .d2-challenge-card{
+    position:relative;
     background:linear-gradient(180deg, rgba(124,92,255,0.09), rgba(124,92,255,0.02));
     border:1px solid rgba(124,92,255,0.35); border-radius:20px; padding:14px 14px 12px; margin-bottom:14px;
+    overflow:hidden;
   }
+  .d2-ch-track{ display:flex; transition:transform .38s cubic-bezier(.22,.9,.3,1); }
+  .d2-ch-slide{ flex:0 0 100%; min-width:100%; }
   .d2-ch-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
   .d2-ch-title{ font-weight:700; font-size:13px; }
   .d2-ch-sub{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-top:3px; }
@@ -746,11 +743,22 @@
   .d2-ch-badge.d2-up{ background:rgba(35,197,94,0.14); color:#23c55e; }
   .d2-ch-badge.d2-down{ background:rgba(255,0,1,0.14); color:#ff6767; }
   .d2-ch-badge.d2-flat{ background:rgba(255,255,255,0.06); color:#a9a6a3; }
+  .d2-ch-badge.d2-reset{ background:rgba(124,92,255,0.16); color:#c9bfff; }
   .d2-ch-value{ font-weight:700; font-size:28px; line-height:1; margin-bottom:4px; }
   .d2-ch-value span{ font-size:12px; color:var(--gx-ink-dim,#9a9694); font-weight:600; margin-left:5px; }
   .d2-ch-prev{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-bottom:10px; }
+  .d2-ch-nav{ display:flex; align-items:center; gap:8px; }
+  .d2-ch-arrow{
+    flex-shrink:0; width:38px; height:38px; border-radius:12px;
+    background:rgba(124,92,255,0.1); border:1px solid rgba(124,92,255,.35); color:#c9bfff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition:opacity .15s ease, transform .12s ease;
+  }
+  .d2-ch-arrow:active{ transform:scale(0.92); }
+  .d2-ch-arrow:disabled{ opacity:.25; cursor:default; pointer-events:none; }
+  .d2-ch-arrow svg{ width:16px; height:16px; stroke:currentColor; }
   .d2-ch-recheck-btn{
-    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
     background:rgba(124,92,255,0.14); border:1px solid rgba(124,92,255,.4); color:#c9bfff;
     font-weight:600; font-size:12.5px; padding:10px; border-radius:14px; cursor:pointer;
   }
@@ -759,6 +767,9 @@
   .d2-ch-recheck-btn.d2-spinning svg{ animation:d2spin .6s linear; }
   @keyframes d2spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
   .d2-ch-lastcheck{ text-align:center; font-size:10px; color:var(--gx-ink-dim,#9a9694); margin-top:8px; }
+  .d2-ch-dots{ display:flex; justify-content:center; gap:5px; margin-top:10px; }
+  .d2-ch-dot{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.15); transition:background .2s ease, width .2s ease; }
+  .d2-ch-dot.active{ background:#c9bfff; width:14px; border-radius:3px; }
 
   .d2-attn{
     background:linear-gradient(180deg, rgba(255,0,1,0.07), rgba(255,0,1,0.02));
@@ -894,20 +905,21 @@
     </div>
 
     <div class="d2-challenge-card">
-      <div class="d2-ch-head">
-        <div>
-          <div class="d2-ch-title">ຍອດເຕີມເງິນອະນຸມັດ 7 ວັນລ່າສຸດ</div>
-          <div class="d2-ch-sub" id="d2ChSub">ກຳລັງໂຫຼດ...</div>
-        </div>
-        <span class="d2-ch-badge d2-flat" id="d2ChBadge">—</span>
+      <div class="d2-ch-track" id="d2ChTrack"><!-- ໃສ່ໂດຍ JS --></div>
+      <div class="d2-ch-nav">
+        <button type="button" class="d2-ch-arrow" id="d2ChPrevBtn" title="ເບິ່ງຮອບກ່ອນໜ້າ">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button type="button" class="d2-ch-recheck-btn" id="d2ChRecheckBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+          <span id="d2ChRecheckLabel">ນັບຍອດໃໝ່</span>
+        </button>
+        <button type="button" class="d2-ch-arrow" id="d2ChNextBtn" title="ກັບໄປຮອບປັດຈຸບັນ">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
       </div>
-      <div class="d2-ch-value" id="d2ChValue">0<span>ກີບ</span></div>
-      <div class="d2-ch-prev" id="d2ChPrev">ທຽບກັບ 7 ວັນກ່ອນໜ້າ: —</div>
-      <button type="button" class="d2-ch-recheck-btn" id="d2ChRecheckBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
-        <span>ຣີເຊັກຍອດຕອນນີ້</span>
-      </button>
       <div class="d2-ch-lastcheck" id="d2ChLastCheck">ຍັງບໍ່ເຄີຍເຊັກ</div>
+      <div class="d2-ch-dots" id="d2ChDots"></div>
     </div>
 
     <div class="d2-attn">
@@ -1327,23 +1339,6 @@
         <span class="gx-submit-label">ບັນທຶກຄຳອະທິບາຍ</span>
       </button>
       <div class="gx-msg" id="taglineMsg"></div>
-    </div>
-
-    <!-- ຂໍ້ຄວາມປະກາດ -->
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v3a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1Z"/><path d="M17 8a5 5 0 0 1 0 8"/></svg>
-        ຂໍ້ຄວາມປະກາດ (ແລ່ນຂວາໄປຊ້າຍ)
-      </h3>
-      <div class="gx-field">
-        <label>ຂໍ້ຄວາມນີ້ຈະເລື່ອນຈາກຂວາໄປຊ້າຍໃນໜ້າຫຼັກ ແລ້ວວົນຊ້ຳໄປເລື່ອຍໆ</label>
-        <div class="gx-input-wrap"><input type="text" id="settingAnnouncement" placeholder="ຕົວຢ່າງ: ໂປຣໂມຊັ່ນພິເສດເດືອນນີ້ ສ່ວນຫຼຸດ 10%!"></div>
-      </div>
-      <button type="button" class="gx-submit" id="saveAnnouncementBtn">
-        <span class="gx-spinner"></span>
-        <span class="gx-submit-label">ບັນທຶກຂໍ້ຄວາມປະກາດ</span>
-      </button>
-      <div class="gx-msg" id="announcementMsg"></div>
     </div>
 
     <!-- ຮູບ hero ໜ້າຫຼັກ -->
