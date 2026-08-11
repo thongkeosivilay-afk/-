@@ -159,6 +159,25 @@ hr.div{ border:none; border-top:1px solid var(--card-border); margin:20px 16px 0
 .buy-btn svg{ width:17px; height:17px; }
 .buy-btn:disabled{ opacity:.4; box-shadow:none; }
 
+/* -------- product description (below buy bar) --------
+   white-space:pre-wrap ຮັກສາການຂຶ້ນແຖວໃໝ່ທີ່ຜູ້ຂາຍພິມໄວ້,
+   overflow-wrap/word-break ບັງຄັບໃຫ້ຄຳ/ລິ້ງທີ່ຍາວຫຼາຍຫັກລົງແຖວໃໝ່
+   ແທນທີ່ຈະດັນກ່ອງລົ້ນຈໍ (ບັນຫາທີ່ພິມຂໍ້ຄວາມຍາວແລ້ວລົ້ນອອກຂ້າງ) */
+.prod-desc-section{ padding-bottom:22px; }
+.prod-desc-box{
+  background:var(--card);
+  border:1px solid var(--card-border);
+  border-radius:14px;
+  padding:14px 16px;
+  font-size:13.5px;
+  line-height:1.7;
+  color:var(--text-dim);
+  white-space:pre-wrap;
+  overflow-wrap:break-word;
+  word-break:break-word;
+}
+.prod-desc-box.is-empty{ color:var(--text-faint); }
+
 /* =========================================================
    Code-receiving sheet (ຊີດຮັບລະຫັດຫຼັງສັ່ງຊື້ສຳເລັດ/ບໍ່ສຳເລັດ)
    ແທນທີ່ alert() ເກົ່າ — ໃຊ້ໂຕນສີ/radius ຮ່ວມກັບ :root ຂອງ style.css

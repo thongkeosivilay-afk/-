@@ -464,6 +464,9 @@ function renderManageList(products) {
         <div class="gx-input-wrap pause-note-wrap" style="display:${p.paused ? 'block' : 'none'};margin-bottom:4px;">
           <input type="text" class="edit-paused-note" value="${(p.paused_note || '').replace(/"/g, '&quot;')}" placeholder="ລາຍລະອຽດ ເຊັ່ນ: ສະຕັອກໝົດ ຈະເປີດຂາຍຄືນ 20:00">
         </div>
+        <div class="gx-input-wrap" style="margin-bottom:4px;">
+          <textarea class="edit-description" rows="3" placeholder="ລາຍລະອຽດສິນຄ້າ (ສະແດງໃຕ້ປຸ່ມຊື້ເລີຍ)" style="resize:vertical;min-height:60px;">${(p.description || '').replace(/</g, '&lt;')}</textarea>
+        </div>
         <div class="prod-meta-row">
           <span class="prod-stock">${p.duration_enabled ? 'ມີໄລຍະເວລາ' : `ຄົງເຫຼືອ ${p.stock} ລະຫັດ`}</span>
           <div class="prod-actions">
@@ -577,12 +580,13 @@ async function saveProduct(id, row) {
   const price = parseFloat(row.querySelector('.edit-price').value) || 0;
   const paused = row.querySelector('.edit-paused').checked;
   const pausedNote = row.querySelector('.edit-paused-note').value.trim();
+  const description = row.querySelector('.edit-description').value.trim();
   if (!name) return;
 
   btn.style.color = 'var(--ink-500)';
   const { error } = await supabaseClient
     .from('products')
-    .update({ name, price, paused, paused_note: paused ? (pausedNote || null) : null })
+    .update({ name, price, paused, paused_note: paused ? (pausedNote || null) : null, description: description || null })
     .eq('id', id);
   if (error) {
     console.error(error);
@@ -591,7 +595,7 @@ async function saveProduct(id, row) {
   }
   showToast('ບັນທຶກສຳເລັດ');
   const p = currentProducts.find(x => x.id === id);
-  if (p) { p.name = name; p.price = price; p.paused = paused; p.paused_note = paused ? pausedNote : null; }
+  if (p) { p.name = name; p.price = price; p.paused = paused; p.paused_note = paused ? pausedNote : null; p.description = description; }
   loadProducts();
 }
 
@@ -2140,6 +2144,7 @@ async function initAdminPanel() {
     const categorySelect = document.getElementById('pCategorySelect').value;
     const category = categorySelect || 'ໝວດໝູ່ສິນຄ້າ';
     const price = parseFloat(document.getElementById('pPrice').value) || 0;
+    const description = document.getElementById('pDescription').value.trim();
     const durationEnabled = document.getElementById('pDurationEnabled').checked;
 
     let durationRows = [];
@@ -2203,7 +2208,8 @@ async function initAdminPanel() {
           name, category,
           price: durationEnabled ? 0 : price,
           image_url: imageUrl,
-          duration_enabled: durationEnabled
+          duration_enabled: durationEnabled,
+          description: description || null
         })
         .select()
         .single();
@@ -2233,6 +2239,7 @@ async function initAdminPanel() {
 
       setMsg(msg, 'ເພີ່ມສິນຄ້າສຳເລັດແລ້ວ', 'success');
       addForm.reset();
+      document.getElementById('pDescription').value = '';
       pDurationEnabled.checked = false;
       durationOptionsWrap.style.display = 'none';
       basePriceField.style.display = 'block';

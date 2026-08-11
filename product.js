@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const stockNote = document.getElementById('stockNote');
   const buyBtn = document.getElementById('buyBtn');
   const buyBtnText = document.getElementById('buyBtnText');
+  const prodDescBox = document.getElementById('prodDescBox');
 
   if (!window.StorefrontData || !pid) {
     showError('ບໍ່ພົບສິນຄ້ານີ້ (ລິ້ງບໍ່ຖືກຕ້ອງ)');
@@ -393,6 +394,12 @@ document.addEventListener('DOMContentLoaded', () => {
         prodImg.alt = product.name || '';
         prodImg.style.display = 'block';
         prodImgPlaceholder.style.display = 'none';
+      }
+
+      const descText = (product.description || '').trim();
+      if (prodDescBox) {
+        prodDescBox.textContent = descText || 'ບໍ່ມີລາຍລະອຽດສິນຄ້າ';
+        prodDescBox.classList.toggle('is-empty', !descText);
       }
 
       // ໝາຍເຫດ: ຄ່າກັບໄປ — ຖ້າມາຈາກ category.html?cat=N ໃຫ້ກັບໄປໝວດນັ້ນເລີຍ ບໍ່ແມ່ນໜ້າຫຼັກ
