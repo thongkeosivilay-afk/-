@@ -9,7 +9,10 @@
      GET  /auth/logout            -> ล้าง session cookie
      GET  /api/me                 -> เช็คว่า login อยู่ไหม คืนข้อมูล user (รวมสถานะ isAdmin)
      POST /api/auth/signup        -> สมัครสมาชิกด้วยอีเมล/รหัสผ่าน (ผ่าน Supabase Auth Admin API)
-     POST /api/auth/login         -> ล็อกอินด้วยอีเมล/รหัสผ่าน (ผ่าน Supabase Auth token endpoint)
+     POST /api/auth/login         -> ล็อกอินด้วยอีเมล/รหัสผ่าน (ผ่าน Supabase Auth token endpoint,
+                                      จำกัดจำนวนครั้งที่ลองผิดต่ออีเมลกัน brute-force)
+     POST /api/account/change-password -> ลูกค้า (ต้อง login ด้วยอีเมล/รหัสผ่าน) เปลี่ยนรหัสผ่าน
+                                      ต้องส่ง currentPassword มา verify กับ Supabase ก่อนเสมอ
      ALL  /api/admin/supabase/*   -> proxy ไป Supabase จริง ด้วย service_role key (ดูรายละเอียดด้านล่าง)
      GET  /api/public/storefront  -> ข้อมูลหน้าร้านสาธารณะ (หมวดหมู่/สินค้า/สต็อกจริง) ดูรายละเอียดด้านล่าง
      POST /api/topup/create       -> ลูกค้า (ต้อง login) เริ่มรายการเติมเงิน คืน topupId ชั่วคราว
@@ -95,6 +98,9 @@ export default {
     }
     if (url.pathname === '/api/auth/login' && request.method === 'POST') {
       return handlePasswordLogin(request, env);
+    }
+    if (url.pathname === '/api/account/change-password' && request.method === 'POST') {
+      return handleChangePassword(request, env);
     }
     if (url.pathname.startsWith(SUPABASE_PROXY_PREFIX + '/')) {
       return handleSupabaseProxy(request, env, url);
@@ -224,14 +230,6 @@ async function handleCallback(request, env) {
     headers: { Authorization: `Bearer ${tokenData.access_token}` },
   });
   const discordUser = await userRes.json();
-
-  // ---- DEBUG ชั่วคราว: ดูค่าจริงที่ Discord ส่งกลับมา (ลบทิ้งหลังแก้ปัญหาเสร็จ) ----
-  console.log('[DEBUG discordUser]', JSON.stringify({
-    id: discordUser.id,
-    username: discordUser.username,
-    email: discordUser.email,
-    verified: discordUser.verified,
-  }));
 
   // ---- เช็คสิทธิ์แอดมิน: อีเมล Discord ต้องอยู่ใน ADMIN_EMAILS และต้องยืนยันแล้ว ----
   const isAdmin =
@@ -435,7 +433,11 @@ async function handleMe(request, env) {
     }
   }
 
-  return json({ loggedIn: true, user: { ...sessionUser, balance } });
+  // hasPassword: ໜ້າໂປຣໄຟລ໌ໃຊ້ຄ່ານີ້ຕັດສິນວ່າຈະໂຊວ໌ຟອມ "ຕັ້ງລະຫັດຜ່ານ" (ບັນຊີ Discord/Google
+  // ລ້ວນໆ) ຫຼື "ປ່ຽນລະຫັດຜ່ານ" (ຕ້ອງໃສ່ລະຫັດເກົ່າກ່ອນ, ບັນຊີອີເມວ/ລະຫັດຜ່ານ) — ເບິ່ງ
+  // handleChangePassword ດ້ານລຸ່ມ
+  const hasPassword = !!sessionUser.passwordAuth;
+  return json({ loggedIn: true, user: { ...sessionUser, balance, hasPassword } });
 }
 
 /* ---------- helper: อ่าน session cookie -> ผู้ใช้ปัจจุบัน (หรือ null) ---------- */
@@ -514,6 +516,7 @@ async function handlePasswordSignup(request, env) {
     avatar: null,
     isAdmin: false,
     discordLinked: false,
+    passwordAuth: true, // ບັນຊີນີ້ມີລະຫັດຜ່ານແທ້ (ໃຊ້ບອກ hasPassword ໃນ /api/me ສຳລັບໜ້າໂປຣໄຟລ໌)
     createdAt: Date.now(),
   });
 
@@ -546,6 +549,14 @@ async function handlePasswordLogin(request, env) {
   const password = body.password || '';
   if (!email || !password) return json({ error: 'ກະລຸນາໃສ່ອີເມວ ແລະ ລະຫັດຜ່ານ' }, 400);
 
+  // ---- ຄວາມປອດໄພ: ຈຳກັດຈຳນວນຄັ້ງທີ່ພະຍາຍາມລ໋ອກອິນຜິດ (ກັນ brute-force ເດົາລະຫັດຜ່ານ) ----
+  // ນັບແຍກຕາມອີເມວ (ບໍ່ແມ່ນ IP ເພາະ Worker ນີ້ບໍ່ໄດ້ເກັບ IP ໄວ້ໃນ KV ຢູ່ແລ້ວ) ໃຊ້
+  // env.SESSIONS KV ດຽວກັນ (ບໍ່ຕ້ອງເພີ່ມ binding ໃໝ່) key ແຍກ namespace ຄື "loginlimit:"
+  const limited = await isRateLimited(env, `loginlimit:${email}`, 8, 15 * 60);
+  if (limited) {
+    return json({ error: 'ພະຍາຍາມລ໋ອກອິນຜິດຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 15 ນາທີແລ້ວລອງໃໝ່' }, 429);
+  }
+
   // ---- ກວດອີເມວ/ລະຫັດຜ່ານຜ່ານ Supabase Auth token endpoint ----
   const tokenRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
     method: 'POST',
@@ -559,6 +570,7 @@ async function handlePasswordLogin(request, env) {
   const tokenData = await tokenRes.json().catch(() => ({}));
 
   if (!tokenRes.ok) {
+    await bumpRateLimit(env, `loginlimit:${email}`, 15 * 60);
     return json({ error: 'ອີເມວ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ' }, 400);
   }
 
@@ -574,6 +586,7 @@ async function handlePasswordLogin(request, env) {
     avatar: null,
     isAdmin: false,
     discordLinked: false,
+    passwordAuth: true,
     createdAt: Date.now(),
   });
 
@@ -588,6 +601,104 @@ async function handlePasswordLogin(request, env) {
   });
 
   return jsonWithSession({ ok: true }, sessionId);
+}
+
+/* ---------- 4.6) POST /api/account/change-password ----------
+   ໜ້າໂປຣໄຟລ໌ (profile.js) ຮຽກຈຸດນີ້ — ກ່ອນໜ້ານີ້ route ນີ້ບໍ່ມີຢູ່ຈິງເລີຍ (frontend ຮຽກແລ້ວ
+   ໄດ້ 404 ຕະຫຼອດ, ຟີເจอร์ "ปั่นรหัสผ่าน" ไม่เคยทำงานได้จริง — ผู้ใช้ที่รหัสผ่านหลุด/สงสัยว่าโดน
+   ขโมย session ไม่มีทางเปลี่ยนรหัสผ่านได้เลย)
+   ---- ຂໍ້ຈຳກັດ: ໃຊ້ໄດ້ສະເພາະບັນຊີທີ່ສະໝັກດ້ວຍອີເມວ/ລະຫັດຜ່ານ (passwordAuth: true) ເທົ່ານັ້ນ ----
+   ບັນຊີ Discord/Google login ບໍ່ໄດ້ຜູກກັບຜູ້ໃຊ້ Supabase Auth ຈິງເລີຍ (id ທີ່ໃຊ້ຢູ່ໃນລະບົບນີ້
+   ຄື Discord snowflake / Google sub, ບໍ່ແມ່ນ Supabase auth uid) ຈຶ່ງບໍ່ມີບັນຊີໃຫ້ "ຕັ້ງລະຫັດຜ່ານ"
+   ໃສ່ໄດ້ຈິງດ້ວຍ API ນີ້ — ຖ້າຈະເຮັດຟີเจอร์ນັ້ນຕ້ອງອອກແບບການຜູກບັນຊີ (account linking) ເພີ່ມ
+   ຕ່າງຫາກ (ບອກໄດ້ທີ່ແຊັດຖ້າຢາກເຮັດຕໍ່) ຕອນນີ້ຄືນ error ຊັດເຈນແທນທີ່ຈະປ່ອຍ 404 ງ່ຽງໆ
+   ---- ຄວາມປອດໄພ: ຕ້ອງ verify currentPassword ຈິງກັບ Supabase ກ່ອນສະເໝີ (ຄືກັນກັບ login ປົກກະຕິ)
+   ຫ້າມເຊື່ອ session cookie ຢ່າງດຽວແລ້ວປ່ຽນລະຫັດຜ່ານເລີຍ ເພາະຖ້າ session ຫຼຸດ (ເຊັ່ນ ລືມ log out
+   ຄອມສາທາລະນະ) ຄົນອື່ນຈະບໍ່ສາມາດຍຶດບັນຊີຖາວອນໄດ້ດ້ວຍການປ່ຽນລະຫັດຜ່ານທັບໂດຍບໍ່ຮູ້ລະຫັດເກົ່າ */
+async function handleChangePassword(request, env) {
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'ລະບົບຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase (SUPABASE_SERVICE_ROLE_KEY)' }, 500);
+  }
+  if (!user.passwordAuth || !user.email) {
+    return json({ error: 'ບັນຊີນີ້ລ໋ອກອິນດ້ວຍ Discord/Google, ຍັງບໍ່ຮອງຮັບການຕັ້ງລະຫັດຜ່ານ' }, 400);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400);
+  }
+
+  const currentPassword = body.currentPassword || '';
+  const newPassword = body.newPassword || '';
+  if (!currentPassword) {
+    return json({ error: 'ກະລຸນາໃສ່ລະຫັດຜ່ານປັດຈຸບັນ' }, 400);
+  }
+  if (newPassword.length < 6) {
+    return json({ error: 'ລະຫັດຜ່ານໃໝ່ຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ' }, 400);
+  }
+
+  const limited = await isRateLimited(env, `pwchangelimit:${user.id}`, 8, 15 * 60);
+  if (limited) {
+    return json({ error: 'ພະຍາຍາມຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 15 ນາທີແລ້ວລອງໃໝ່' }, 429);
+  }
+
+  // ---- ຂັ້ນທີ 1: verify ວ່າ currentPassword ຖືກຕ້ອງແທ້ (ຍິງ token endpoint ຄືກັນກັບ login) ----
+  const verifyRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+    },
+    body: JSON.stringify({ email: user.email, password: currentPassword }),
+  });
+  if (!verifyRes.ok) {
+    await bumpRateLimit(env, `pwchangelimit:${user.id}`, 15 * 60);
+    return json({ error: 'ລະຫັດຜ່ານປັດຈຸບັນບໍ່ຖືກຕ້ອງ' }, 400);
+  }
+
+  // ---- ຂັ້ນທີ 2: ອັບເດດລະຫັດຜ່ານຈິງດ້ວຍ Supabase Auth Admin API (service_role, ຝັ່ງ Worker ເທົ່ານັ້ນ) ----
+  const updateRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${user.id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({ password: newPassword }),
+  });
+  if (!updateRes.ok) {
+    const errText = await updateRes.text();
+    console.error('handleChangePassword: update failed', updateRes.status, errText);
+    return json({ error: 'ປ່ຽນລະຫັດຜ່ານບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+  }
+
+  await sendDiscordAlert(env, {
+    title: '🔑 ມີການປ່ຽນລະຫັດຜ່ານບັນຊີ',
+    color: 0xf39c12,
+    fields: [{ name: 'ອີເມວ', value: user.email || '-', inline: true }],
+  });
+
+  return json({ ok: true });
+}
+
+/* ---------- helper: rate limit ແບບງ່າຍໆດ້ວຍ KV (ນັບຈຳນວນຄັ້ງພາຍໃນຊ່ວງເວລາ windowSeconds) ----------
+   ບໍ່ແມ່ນ atomic ຮ້ອຍເປີເຊັນ (KV read-then-write ມີ race ນ້ອຍໆໄດ້ຖ້າຍິງພ້ອມກັນຫຼາຍຫົວ) ແຕ່ພຽງພໍ
+   ສຳລັບກັນ brute-force ທົ່ວໄປ (ບໍ່ໄດ້ອອກແບບມາຮັບການໂຈມຕີລະດັບ botnet ຂະໜາດໃຫຍ່) */
+async function isRateLimited(env, key, maxAttempts, windowSeconds) {
+  const raw = await env.SESSIONS.get(key);
+  const count = raw ? Number(raw) || 0 : 0;
+  return count >= maxAttempts;
+}
+async function bumpRateLimit(env, key, windowSeconds) {
+  const raw = await env.SESSIONS.get(key);
+  const count = raw ? Number(raw) || 0 : 0;
+  await env.SESSIONS.put(key, String(count + 1), { expirationTtl: windowSeconds });
 }
 
 /* ---------- helper: ສ້າງ session ໃໝ່ (KV + cookie) ໃຊ້ຮ່ວມກັນທັງ Discord ແລະ ອີເມວ/ລະຫັດຜ່ານ ---------- */
@@ -1043,10 +1154,25 @@ async function handleTopupConfirm(request, env) {
   if (!(slip instanceof File) || slip.size === 0) {
     return json({ error: 'ກະລຸນາອັບໂຫຼດຮູບສະລິບກ່ອນ' }, 400);
   }
+  // ---- ຄວາມປອດໄພ: ຈຳກັດໃຫ້ອັບໂຫຼດໄດ້ສະເພາະຮູບພາບ ແລະ ຂະໜາດບໍ່ໃຫຍ່ເກີນໄປ ----
+  // slip.type ມາຈາກ browser ຂອງລູກຄ້າ (ບໍ່ໜ້າເຊື່ອຖື 100%) ແຕ່ ext ໃນຊື່ໄຟລ໌ຍິ່ງບໍ່ຄວນເຊື່ອ
+  // ຖ້າບໍ່ກັ່ນຕອງເລີຍ ລູກຄ້າສາມາດອັບໂຫຼດໄຟລ໌ໃດກໍ່ໄດ້ (ເຊັ່ນ .html) ຂຶ້ນ storage bucket ທີ່
+  // ເປັນ public ຢູ່ (topup-slips) ແລ້ວແຊຣ໌ລິ້ງນັ້ນອອກໄປໄດ້ — ຈຳກັດ MIME type ໄວ້ກັນໄວ້ກ່ອນ
+  const ALLOWED_SLIP_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+  const MAX_SLIP_BYTES = 8 * 1024 * 1024; // 8MB
+  if (slip.type && !ALLOWED_SLIP_TYPES.has(slip.type)) {
+    return json({ error: 'ຮອງຮັບສະເພາະໄຟລ໌ຮູບພາບ (jpg/png/webp/gif) ເທົ່ານັ້ນ' }, 400);
+  }
+  if (slip.size > MAX_SLIP_BYTES) {
+    return json({ error: 'ໄຟລ໌ຮູບໃຫຍ່ເກີນໄປ (ຈຳກັດ 8MB)' }, 400);
+  }
 
   try {
+    const SAFE_EXT_BY_TYPE = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
     const extMatch = /\.([a-zA-Z0-9]{1,8})$/.exec(slip.name || '');
-    const ext = extMatch ? extMatch[1] : 'jpg';
+    const rawExt = extMatch ? extMatch[1].toLowerCase() : null;
+    const ext = SAFE_EXT_BY_TYPE[slip.type]
+      || (rawExt && /^(jpg|jpeg|png|webp|gif)$/.test(rawExt) ? rawExt : 'jpg');
     const objectPath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
     const slipUrl = await uploadToSupabaseStorage(env, 'topup-slips', objectPath, slip);
@@ -1285,6 +1411,12 @@ async function handleRedeemResellerKey(request, env) {
     return json({ error: 'ກະລຸນາໃສ່ຄີຍ໌ຕົວແທນ' }, 400);
   }
 
+  // ---- ຄວາມປອດໄພ: ຈຳກັດຈຳນວນຄັ້ງທີ່ລອງໃສ່ຄີຍ໌ຕົວແທນຕໍ່ຜູ້ໃຊ້ (ກັນ brute-force ເດົາຄີຍ໌) ----
+  const limited = await isRateLimited(env, `resellerkeylimit:${user.id}`, 10, 15 * 60);
+  if (limited) {
+    return json({ error: 'ລອງໃສ່ຄີຍ໌ຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 15 ນາທີແລ້ວລອງໃໝ່' }, 429);
+  }
+
   const ERROR_LABEL = {
     KEY_NOT_FOUND: 'ບໍ່ພົບຄີຍ໌ນີ້ ກະລຸນາກວດສອບຄີຍ໌ອີກຄັ້ງ',
     KEY_ALREADY_USED: 'ຄີຍ໌ນີ້ຖືກໃຊ້ໄປແລ້ວ',
@@ -1306,6 +1438,9 @@ async function handleRedeemResellerKey(request, env) {
   } catch (err) {
     const msg = String((err && err.message) || '');
     const matchedKey = Object.keys(ERROR_LABEL).find((key) => msg.includes(key));
+    if (matchedKey === 'KEY_NOT_FOUND') {
+      await bumpRateLimit(env, `resellerkeylimit:${user.id}`, 15 * 60);
+    }
     console.error('handleRedeemResellerKey failed:', err);
     return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ໃຊ້ຄີຍ໌ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, matchedKey ? 400 : 502);
   }
