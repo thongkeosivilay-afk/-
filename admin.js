@@ -180,6 +180,7 @@ async function loadProducts() {
   renderCodeProductSelect(withStock);
   renderCategoryOptions(withStock);
   renderAgentPriceList(withStock);
+  renderD2Dashboard();
   return withStock;
 }
 
@@ -698,6 +699,7 @@ async function loadTopupRequests() {
   currentTopupRequests = data || [];
   appendTopupOpsChip(currentTopupRequests.length);
   renderTopupList(currentTopupRequests);
+  renderD2Dashboard();
 }
 
 function renderTopupList(requests) {
@@ -1142,6 +1144,7 @@ async function loadAgentAccounts() {
   }
 
   renderAgentAccounts(currentAgentAccounts, !ordersOk);
+  renderD2Dashboard();
 }
 
 function renderAgentAccounts(accounts, ordersFailed) {
@@ -2339,12 +2342,236 @@ async function initAdminPanel() {
   }
 
   initSiteSettingsPanel();
+  initD2Dashboard();
 
   await loadSiteSettingsAdmin();
   await loadProducts();
   await loadTopupRequests();
   await loadResellerTiers();
   await loadResellerKeys();
+  await loadD2Totals();
+  await loadD2SevenDay();
+}
+
+// ============================================
+// D2 DASHBOARD — ໜ້າສະຫຼຸບຫຼັກ (KPI, ຍອດລວມ, 7 ວັນ, ແຈ້ງເຕືອນ, ນຳທາງ) — ຕໍ່ຂໍ້ມູນຈິງທັງໝົດ
+// ============================================
+let d2AllTimeTopup = null;
+let d2AllTimeOrders = null;
+let d2SevenDayNow = null;
+let d2SevenDayPrev = null;
+
+function d2FormatKip(n) {
+  return Number(n || 0).toLocaleString('de-DE');
+}
+
+// ---- ນຳທາງ: ກົດກາດ d2-fn-card ແລ້ວເປີດ accordion ຈິງທີ່ຢູ່ລຸ່ມໜ້າ (ໃຊ້ #panelXxx ດຽວກັນ) ----
+function d2GoToPanel(targetId) {
+  const sw = document.querySelector(`.switch[data-target="${targetId}"]`);
+  const allSwitches = document.querySelectorAll('.switch[data-target]');
+  const allPanels = document.querySelectorAll('.panel-content');
+  if (!sw) return;
+  allSwitches.forEach((s) => s.classList.toggle('open', s === sw));
+  allPanels.forEach((p) => p.classList.toggle('open', p.id === targetId));
+  requestAnimationFrame(() => sw.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+}
+
+function initD2Dashboard() {
+  document.querySelectorAll('.d2-fn-card[data-goto]').forEach((card) => {
+    if (card.dataset.bound) return;
+    card.dataset.bound = '1';
+    card.addEventListener('click', () => d2GoToPanel(card.dataset.goto));
+  });
+
+  const recheckBtn = document.getElementById('d2ChRecheckBtn');
+  if (recheckBtn && !recheckBtn.dataset.bound) {
+    recheckBtn.dataset.bound = '1';
+    recheckBtn.addEventListener('click', async () => {
+      recheckBtn.classList.add('d2-spinning');
+      recheckBtn.disabled = true;
+      await Promise.all([loadD2Totals(), loadD2SevenDay()]);
+      recheckBtn.classList.remove('d2-spinning');
+      recheckBtn.disabled = false;
+      const lastCheckEl = document.getElementById('d2ChLastCheck');
+      if (lastCheckEl) {
+        lastCheckEl.textContent = 'ກວດສອບລ່າສຸດ: ' + new Date().toLocaleTimeString('lo-LA', { hour: '2-digit', minute: '2-digit' });
+      }
+    });
+  }
+}
+
+// ---- ຍອດລວມນັບແຕ່ເປີດຮ້ານ: ຍອດເຕີມເງິນທີ່ອະນຸມັດແລ້ວທັງໝົດ + ຈຳນວນອໍເດີສຳເລັດທັງໝົດ ----
+async function loadD2Totals() {
+  try {
+    const { data: topups, error: topupErr } = await supabaseClient
+      .from('topup_requests')
+      .select('amount')
+      .eq('status', 'approved');
+    if (topupErr) throw topupErr;
+    d2AllTimeTopup = (topups || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  } catch (err) {
+    console.error('D2: ໂຫຼດຍອດເຕີມເງິນລວມບໍ່ສຳເລັດ', err);
+    d2AllTimeTopup = null;
+  }
+
+  try {
+    const { count, error: ordersErr } = await supabaseClient
+      .from('orders')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'completed');
+    if (ordersErr) throw ordersErr;
+    d2AllTimeOrders = count ?? 0;
+  } catch (err) {
+    console.error('D2: ໂຫຼດຈຳນວນອໍເດີສຳເລັດບໍ່ສຳເລັດ', err);
+    d2AllTimeOrders = null;
+  }
+
+  const topupEl = document.getElementById('d2SumTopup');
+  if (topupEl) topupEl.textContent = d2AllTimeTopup === null ? 'ຜິດພາດ' : d2FormatKip(d2AllTimeTopup);
+  const ordersEl = document.getElementById('d2SumOrders');
+  if (ordersEl) ordersEl.textContent = d2AllTimeOrders === null ? 'ຜິດພາດ' : d2FormatKip(d2AllTimeOrders);
+}
+
+// ---- ຍອດເຕີມເງິນອະນຸມັດ 7 ວັນລ່າສຸດ ທຽບກັບ 7 ວັນກ່ອນໜ້ານັ້ນ (ຄິດຈາກ created_at ຈິງ, ບໍ່ໄດ້ fix goal) ----
+async function loadD2SevenDay() {
+  const now = new Date();
+  const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const d14 = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+  try {
+    const [{ data: cur, error: curErr }, { data: prev, error: prevErr }] = await Promise.all([
+      supabaseClient.from('topup_requests').select('amount').eq('status', 'approved').gte('created_at', d7.toISOString()),
+      supabaseClient.from('topup_requests').select('amount').eq('status', 'approved').gte('created_at', d14.toISOString()).lt('created_at', d7.toISOString()),
+    ]);
+    if (curErr) throw curErr;
+    if (prevErr) throw prevErr;
+    d2SevenDayNow = (cur || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    d2SevenDayPrev = (prev || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  } catch (err) {
+    console.error('D2: ໂຫຼດຍອດ 7 ວັນບໍ່ສຳເລັດ', err);
+    d2SevenDayNow = null;
+    d2SevenDayPrev = null;
+  }
+
+  const valueEl = document.getElementById('d2ChValue');
+  const subEl = document.getElementById('d2ChSub');
+  const prevEl = document.getElementById('d2ChPrev');
+  const badgeEl = document.getElementById('d2ChBadge');
+  if (!valueEl) return;
+
+  if (d2SevenDayNow === null) {
+    valueEl.innerHTML = 'ຜິດພາດ';
+    subEl.textContent = 'ໂຫຼດຂໍ້ມູນບໍ່ສຳເລັດ';
+    return;
+  }
+
+  valueEl.innerHTML = d2FormatKip(d2SevenDayNow) + '<span>ກີບ</span>';
+  subEl.textContent = `${d7.toLocaleDateString('en-GB')} — ${now.toLocaleDateString('en-GB')}`;
+
+  if (d2SevenDayPrev !== null && prevEl) {
+    prevEl.textContent = `ທຽບກັບ 7 ວັນກ່ອນໜ້າ: ${d2FormatKip(d2SevenDayPrev)} ກີບ`;
+  }
+
+  if (badgeEl && d2SevenDayPrev !== null) {
+    if (d2SevenDayPrev === 0 && d2SevenDayNow === 0) {
+      badgeEl.textContent = 'ບໍ່ມີການເຕີມເງິນ';
+      badgeEl.className = 'd2-ch-badge d2-flat';
+    } else if (d2SevenDayPrev === 0) {
+      badgeEl.textContent = 'ຂຶ້ນໃໝ່';
+      badgeEl.className = 'd2-ch-badge d2-up';
+    } else {
+      const pct = Math.round(((d2SevenDayNow - d2SevenDayPrev) / d2SevenDayPrev) * 100);
+      if (pct > 0) {
+        badgeEl.textContent = `▲ ${pct}%`;
+        badgeEl.className = 'd2-ch-badge d2-up';
+      } else if (pct < 0) {
+        badgeEl.textContent = `▼ ${Math.abs(pct)}%`;
+        badgeEl.className = 'd2-ch-badge d2-down';
+      } else {
+        badgeEl.textContent = 'ເທົ່າເກົ່າ';
+        badgeEl.className = 'd2-ch-badge d2-flat';
+      }
+    }
+  }
+}
+
+// ---- KPI + badge + ແຈ້ງເຕືອນ: ຄິດຈາກ currentProducts / currentTopupRequests / currentAgentAccounts ທີ່ໂຫຼດໄວ້ແລ້ວ ----
+function renderD2Dashboard() {
+  if (!document.getElementById('d2KpiProducts')) return;
+
+  const products = currentProducts || [];
+  const topups = currentTopupRequests || [];
+  const agents = currentAgentAccounts || [];
+
+  const totalStock = products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
+  const activeProducts = products.filter(p => !p.archived);
+  const outOfStock = activeProducts.filter(p => !p.paused && (Number(p.stock) || 0) <= 0);
+  const activeAgents = agents.filter(a => a.is_reseller).length;
+
+  const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  setText('d2KpiProducts', products.length);
+  setText('d2KpiStock', totalStock);
+  setText('d2KpiTopup', topups.length);
+  setText('d2KpiAgents', activeAgents);
+
+  setText('d2BadgeManage', `${products.length} ລາຍການ`);
+  setText('d2BadgeAgent', `${activeAgents} ທຳງານຢູ່`);
+
+  const codesBadge = document.getElementById('d2BadgeCodes');
+  if (codesBadge) {
+    codesBadge.textContent = outOfStock.length ? `${outOfStock.length} ໝົດສະຕັອກ` : 'ພຽງພໍ';
+    codesBadge.className = 'd2-fn-badge ' + (outOfStock.length ? 'd2-urgent' : 'd2-ok');
+  }
+  const topupBadgeEl = document.getElementById('d2BadgeTopup');
+  if (topupBadgeEl) {
+    topupBadgeEl.textContent = topups.length ? `${topups.length} ລໍຖ້າ` : 'ບໍ່ມີລໍຖ້າ';
+    topupBadgeEl.className = 'd2-fn-badge ' + (topups.length ? 'd2-warn' : 'd2-ok');
+  }
+
+  // ---- ແຈ້ງເຕືອນ ----
+  const alerts = [];
+  if (outOfStock.length) {
+    alerts.push({
+      sev: 'high',
+      text: `${outOfStock.length} ສິນຄ້າໝົດສະຕັອກແລ້ວ`,
+      sub: 'ລູກຄ້າກົດຊື້ບໍ່ໄດ້ຕອນນີ້',
+      goto: 'panelCodes',
+    });
+  }
+  if (topups.length) {
+    const oldest = topups.reduce((o, r) => (!o || new Date(r.created_at) < new Date(o.created_at)) ? r : o, null);
+    const waitMin = oldest ? Math.max(0, Math.round((Date.now() - new Date(oldest.created_at).getTime()) / 60000)) : 0;
+    alerts.push({
+      sev: 'mid',
+      text: `${topups.length} ຄຳຂໍເຕີມເງິນລໍຖ້າກວດສອບ`,
+      sub: oldest ? `ລໍຖ້າດົນສຸດ ${waitMin} ນາທີ` : '',
+      goto: 'panelTopup',
+    });
+  }
+
+  const attnCountEl = document.getElementById('d2AttnCount');
+  const attnListEl = document.getElementById('d2AttnList');
+  if (attnCountEl) attnCountEl.textContent = alerts.length;
+  if (attnListEl) {
+    if (!alerts.length) {
+      attnListEl.innerHTML = `<div class="d2-attn-empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> ທຸກຢ່າງຮຽບຮ້ອຍດີ — ບໍ່ມີສິ່ງທີ່ຕ້ອງດຳເນີນການດ່ວນ</div>`;
+    } else {
+      attnListEl.innerHTML = alerts.map((a) => `
+        <div class="d2-attn-row" data-goto="${a.goto}">
+          <span class="d2-attn-dot d2-sev-${a.sev}"></span>
+          <div class="d2-attn-body">
+            <div class="d2-attn-text">${a.text}</div>
+            <div class="d2-attn-sub">${a.sub}</div>
+          </div>
+          <span class="d2-attn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span>
+        </div>
+      `).join('');
+      attnListEl.querySelectorAll('.d2-attn-row[data-goto]').forEach((row) => {
+        row.addEventListener('click', () => d2GoToPanel(row.dataset.goto));
+      });
+    }
+  }
 }
 
 // ============================================

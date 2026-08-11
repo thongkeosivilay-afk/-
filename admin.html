@@ -719,6 +719,91 @@
   }
   .agent-acc-toggle-btn:disabled{ opacity:.6; cursor:default; }
   .key-status-tag.revoked{ background:rgba(232,49,49,0.14); color:var(--gx-danger); border:1px solid rgba(232,49,49,0.35); }
+
+  /* ================= D2 DASHBOARD (ໜ້າສະຫຼຸບຫຼັກ — ຕໍ່ຂໍ້ມູນຈິງ) ================= */
+  .d2-board{ margin-bottom:18px; }
+  .d2-kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
+  .d2-kpi{ background:var(--gx-panel,#111); border:1px solid rgba(255,0,1,0.16); border-radius:16px; padding:12px 8px; text-align:center; }
+  .d2-kpi-num{ font-weight:700; font-size:21px; line-height:1; }
+  .d2-kpi-label{ font-size:9.5px; color:var(--gx-ink-dim,#9a9694); margin-top:5px; line-height:1.35; }
+
+  .d2-sum-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+  .d2-sum-card{ background:var(--gx-panel,#111); border:1px solid rgba(255,0,1,0.16); border-radius:18px; padding:14px; }
+  .d2-sum-card.d2-acc-green{ border-color:rgba(35,197,94,.28); }
+  .d2-sum-card.d2-acc-violet{ border-color:rgba(124,92,255,.28); }
+  .d2-sum-label{ font-size:10px; color:var(--gx-ink-dim,#9a9694); line-height:1.4; }
+  .d2-sum-value{ font-weight:700; font-size:20px; line-height:1.1; margin-top:4px; }
+  .d2-sum-unit{ font-size:9.5px; color:var(--gx-ink-dim,#9a9694); margin-top:1px; }
+
+  .d2-challenge-card{
+    background:linear-gradient(180deg, rgba(124,92,255,0.09), rgba(124,92,255,0.02));
+    border:1px solid rgba(124,92,255,0.35); border-radius:20px; padding:14px 14px 12px; margin-bottom:14px;
+  }
+  .d2-ch-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .d2-ch-title{ font-weight:700; font-size:13px; }
+  .d2-ch-sub{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-top:3px; }
+  .d2-ch-badge{ flex-shrink:0; font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+  .d2-ch-badge.d2-up{ background:rgba(35,197,94,0.14); color:#23c55e; }
+  .d2-ch-badge.d2-down{ background:rgba(255,0,1,0.14); color:#ff6767; }
+  .d2-ch-badge.d2-flat{ background:rgba(255,255,255,0.06); color:#a9a6a3; }
+  .d2-ch-value{ font-weight:700; font-size:28px; line-height:1; margin-bottom:4px; }
+  .d2-ch-value span{ font-size:12px; color:var(--gx-ink-dim,#9a9694); font-weight:600; margin-left:5px; }
+  .d2-ch-prev{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-bottom:10px; }
+  .d2-ch-recheck-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:rgba(124,92,255,0.14); border:1px solid rgba(124,92,255,.4); color:#c9bfff;
+    font-weight:600; font-size:12.5px; padding:10px; border-radius:14px; cursor:pointer;
+  }
+  .d2-ch-recheck-btn:disabled{ opacity:.55; cursor:not-allowed; }
+  .d2-ch-recheck-btn svg{ width:14px; height:14px; stroke:currentColor; }
+  .d2-ch-recheck-btn.d2-spinning svg{ animation:d2spin .6s linear; }
+  @keyframes d2spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+  .d2-ch-lastcheck{ text-align:center; font-size:10px; color:var(--gx-ink-dim,#9a9694); margin-top:8px; }
+
+  .d2-attn{
+    background:linear-gradient(180deg, rgba(255,0,1,0.07), rgba(255,0,1,0.02));
+    border:1px solid rgba(255,0,1,0.4); border-radius:20px; padding:14px 12px 6px; margin-bottom:16px;
+  }
+  .d2-attn-head{ display:flex; align-items:center; gap:9px; margin-bottom:10px; }
+  .d2-attn-head svg{ width:16px; height:16px; stroke:var(--gx-signal,#ff0001); flex-shrink:0; }
+  .d2-attn-title{ font-weight:700; font-size:13px; }
+  .d2-attn-count{ margin-left:auto; background:var(--gx-signal,#ff0001); color:#fff; font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:20px; }
+  .d2-attn-row{ display:flex; align-items:center; gap:11px; padding:10px 6px; border-radius:12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .d2-attn-row:last-child{ border-bottom:none; }
+  .d2-attn-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 4px currentColor; }
+  .d2-attn-dot.d2-sev-high{ background:#ff0001; color:rgba(255,0,1,0.18); }
+  .d2-attn-dot.d2-sev-mid{ background:#ffb020; color:rgba(255,176,32,0.18); }
+  .d2-attn-body{ flex:1; min-width:0; }
+  .d2-attn-text{ font-size:12.5px; font-weight:600; line-height:1.4; }
+  .d2-attn-sub{ font-size:10.8px; color:var(--gx-ink-dim,#9a9694); margin-top:2px; }
+  .d2-attn-arrow{ width:24px; height:24px; border-radius:8px; flex-shrink:0; background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; color:var(--gx-ink-dim,#9a9694); }
+  .d2-attn-arrow svg{ width:11px; height:11px; stroke:currentColor; }
+  .d2-attn-empty{ display:flex; align-items:center; gap:9px; padding:12px 6px; color:#23c55e; font-size:12.5px; font-weight:600; }
+  .d2-attn-empty svg{ width:16px; height:16px; stroke:#23c55e; }
+
+  .d2-cat-group{ margin-bottom:16px; }
+  .d2-cat-head{ display:flex; align-items:center; gap:9px; padding:0 4px; margin-bottom:8px; }
+  .d2-cat-swatch{ width:24px; height:24px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .d2-cat-swatch svg{ width:13px; height:13px; stroke:#fff; }
+  .d2-cat-name{ font-weight:700; font-size:11.5px; letter-spacing:.5px; text-transform:uppercase; }
+  .d2-cat-cards{ display:flex; flex-direction:column; gap:7px; }
+  .d2-fn-card{
+    background:var(--gx-panel,#111); border:1px solid rgba(255,0,1,0.16); border-radius:14px;
+    display:flex; align-items:center; gap:11px; padding:12px 11px; cursor:pointer;
+  }
+  .d2-fn-card:active{ transform:scale(.99); }
+  .d2-fn-icon{ width:36px; height:36px; border-radius:11px; flex-shrink:0; background:var(--rail-color,#ff0001); display:flex; align-items:center; justify-content:center; }
+  .d2-fn-icon svg{ width:16px; height:16px; stroke:#fff; }
+  .d2-fn-text{ flex:1; min-width:0; }
+  .d2-fn-title-row{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .d2-fn-title{ font-weight:700; font-size:13px; }
+  .d2-fn-badge{ font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:20px; flex-shrink:0; letter-spacing:.2px; }
+  .d2-fn-badge.d2-ok{ background:rgba(255,255,255,0.06); color:#a9a6a3; }
+  .d2-fn-badge.d2-warn{ background:rgba(255,176,32,0.14); color:#ffb020; }
+  .d2-fn-badge.d2-urgent{ background:rgba(255,0,1,0.14); color:#ff6767; }
+  .d2-fn-desc{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-top:2px; line-height:1.4; }
+  .d2-fn-arrow{ width:24px; height:24px; border-radius:8px; flex-shrink:0; background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; color:var(--gx-ink-dim,#9a9694); }
+  .d2-fn-arrow svg{ width:11px; height:11px; stroke:currentColor; }
 </style>
 </head>
 <body>
@@ -780,6 +865,154 @@
   </div>
 
   <div class="ops-strip" id="opsStrip"></div>
+
+  <!-- ============ D2 DASHBOARD — ໜ້າສະຫຼຸບ (ຕໍ່ຂໍ້ມູນຈິງ) ============ -->
+  <div class="d2-board">
+
+    <div class="d2-kpi-row">
+      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiProducts">—</div><div class="d2-kpi-label">ສິນຄ້າ<br>ທັງໝົດ</div></div>
+      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiStock">—</div><div class="d2-kpi-label">ລະຫັດ<br>ຄົງເຫຼືອ</div></div>
+      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiTopup">—</div><div class="d2-kpi-label">ຄຳຂໍເຕີມເງິນ<br>ລໍຖ້າ</div></div>
+      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiAgents">—</div><div class="d2-kpi-label">ຕົວແທນ<br>ທຳງານຢູ່</div></div>
+    </div>
+
+    <div class="d2-sum-row">
+      <div class="d2-sum-card d2-acc-green">
+        <div class="d2-sum-label">ຍອດເຕີມເງິນທັງໝົດ</div>
+        <div class="d2-sum-value" id="d2SumTopup">—</div>
+        <div class="d2-sum-unit">ກີບ ⋅ ນັບແຕ່ເປີດຮ້ານ</div>
+      </div>
+      <div class="d2-sum-card d2-acc-violet">
+        <div class="d2-sum-label">ຄຳສັ່ງຊື້ສຳເລັດທັງໝົດ</div>
+        <div class="d2-sum-value" id="d2SumOrders">—</div>
+        <div class="d2-sum-unit">ລາຍການ ⋅ ນັບແຕ່ເປີດຮ້ານ</div>
+      </div>
+    </div>
+
+    <div class="d2-challenge-card">
+      <div class="d2-ch-head">
+        <div>
+          <div class="d2-ch-title">ຍອດເຕີມເງິນອະນຸມັດ 7 ວັນລ່າສຸດ</div>
+          <div class="d2-ch-sub" id="d2ChSub">ກຳລັງໂຫຼດ...</div>
+        </div>
+        <span class="d2-ch-badge d2-flat" id="d2ChBadge">—</span>
+      </div>
+      <div class="d2-ch-value" id="d2ChValue">0<span>ກີບ</span></div>
+      <div class="d2-ch-prev" id="d2ChPrev">ທຽບກັບ 7 ວັນກ່ອນໜ້າ: —</div>
+      <button type="button" class="d2-ch-recheck-btn" id="d2ChRecheckBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+        <span>ຣີເຊັກຍອດຕອນນີ້</span>
+      </button>
+      <div class="d2-ch-lastcheck" id="d2ChLastCheck">ຍັງບໍ່ເຄີຍເຊັກ</div>
+    </div>
+
+    <div class="d2-attn">
+      <div class="d2-attn-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+        <span class="d2-attn-title">ຕ້ອງດຳເນີນການ</span>
+        <span class="d2-attn-count" id="d2AttnCount">0</span>
+      </div>
+      <div id="d2AttnList"></div>
+    </div>
+
+    <!-- ໝວດ: ຄັງສິນຄ້າ -->
+    <div class="d2-cat-group" style="--rail-color:var(--black-400,#ff0001);">
+      <div class="d2-cat-head">
+        <div class="d2-cat-swatch" style="background:var(--black-400,#ff0001);">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
+        </div>
+        <div class="d2-cat-name">ຄັງສິນຄ້າ</div>
+      </div>
+      <div class="d2-cat-cards">
+        <div class="d2-fn-card" data-goto="panelAdd">
+          <div class="d2-fn-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <div class="d2-fn-text">
+            <div class="d2-fn-title-row"><span class="d2-fn-title">ເພີ່ມສິນຄ້າ</span></div>
+            <div class="d2-fn-desc">ສ້າງລາຍການສິນຄ້າໃໝ່ໃຫ້ໂຊວ໌ໃນໜ້າຮ້ານ</div>
+          </div>
+          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+        <div class="d2-fn-card" data-goto="panelManage">
+          <div class="d2-fn-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></div>
+          <div class="d2-fn-text">
+            <div class="d2-fn-title-row"><span class="d2-fn-title">ຈັດການສິນຄ້າ</span><span class="d2-fn-badge d2-ok" id="d2BadgeManage">—</span></div>
+            <div class="d2-fn-desc">ແກ້ໄຂ, ຢຸດຂາຍຊົ່ວຄາວ ຫຼືລຶບສິນຄ້າ</div>
+          </div>
+          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+        <div class="d2-fn-card" data-goto="panelCodes">
+          <div class="d2-fn-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+          <div class="d2-fn-text">
+            <div class="d2-fn-title-row"><span class="d2-fn-title">ເຕີມລະຫັດ</span><span class="d2-fn-badge d2-urgent" id="d2BadgeCodes">—</span></div>
+            <div class="d2-fn-desc">ເພີ່ມສະຕັອກລະຫັດໃຫ້ສິນຄ້າແຕ່ລະລາຍການ</div>
+          </div>
+          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ໝວດ: ການເງິນ -->
+    <div class="d2-cat-group" style="--rail-color:#ffb020;">
+      <div class="d2-cat-head">
+        <div class="d2-cat-swatch" style="background:#ffb020;">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
+        </div>
+        <div class="d2-cat-name">ການເງິນ</div>
+      </div>
+      <div class="d2-cat-cards">
+        <div class="d2-fn-card" data-goto="panelTopup">
+          <div class="d2-fn-icon" style="background:#ffb020;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="d2-fn-text">
+            <div class="d2-fn-title-row"><span class="d2-fn-title">ຄຳຂໍເຕີມເງິນ</span><span class="d2-fn-badge d2-warn" id="d2BadgeTopup">—</span></div>
+            <div class="d2-fn-desc">ກວດສະລິບໂອນເງິນ ແລ້ວກົດອະນຸມັດ ຫຼືປະຕິເສດ</div>
+          </div>
+          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ໝວດ: ຕົວແທນຈຳໜ່າຍ -->
+    <div class="d2-cat-group" style="--rail-color:#7c5cff;">
+      <div class="d2-cat-head">
+        <div class="d2-cat-swatch" style="background:#7c5cff;">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="d2-cat-name">ຕົວແທນຈຳໜ່າຍ</div>
+      </div>
+      <div class="d2-cat-cards">
+        <div class="d2-fn-card" data-goto="panelAgent">
+          <div class="d2-fn-icon" style="background:#7c5cff;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="d2-fn-text">
+            <div class="d2-fn-title-row"><span class="d2-fn-title">ລະບົບຕົວແທນ</span><span class="d2-fn-badge d2-ok" id="d2BadgeAgent">—</span></div>
+            <div class="d2-fn-desc">ຄີຍ໌ປົດລັອກ, ລາຄາພິເສດ ແລະ ຈັດການຕົວແທນ</div>
+          </div>
+          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ໝວດ: ຕັ້ງຄ່າ -->
+    <div class="d2-cat-group" style="--rail-color:#2a2a2a;">
+      <div class="d2-cat-head">
+        <div class="d2-cat-swatch" style="background:#2a2a2a;">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+        </div>
+        <div class="d2-cat-name">ຕັ້ງຄ່າ</div>
+      </div>
+      <div class="d2-cat-cards">
+        <div class="d2-fn-card" data-goto="panelSettings">
+          <div class="d2-fn-icon" style="background:#2a2a2a;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82"/></svg></div>
+          <div class="d2-fn-text">
+            <div class="d2-fn-title-row"><span class="d2-fn-title">ຕັ້ງຄ່າຮ້ານ</span></div>
+            <div class="d2-fn-desc">ໂລໂກ້, ໝວດໝູ່, QR ຮັບເງິນ ແລະ ຊ່ອງທາງໂຊເຊียล</div>
+          </div>
+          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <!-- /D2 DASHBOARD -->
 
   <div class="deck" id="deck">
     <div class="switch open" data-target="panelAdd">
