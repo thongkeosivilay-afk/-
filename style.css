@@ -1064,6 +1064,37 @@
   .topup-preset.active .cur{ color:var(--tu-red); }
   .topup-preset:active{ transform:scale(.95); }
 
+  /* ---- custom amount input ---- */
+  .topup-custom-divider{
+    display:flex; align-items:center; gap:10px; margin:14px 0 12px; color:var(--text-faint);
+    font-size:11px; letter-spacing:.05em;
+  }
+  .topup-custom-divider::before, .topup-custom-divider::after{
+    content:''; flex:1; height:1px; background:var(--card-border);
+  }
+  .topup-custom-wrap{
+    display:flex; align-items:center; gap:8px;
+    border:1px solid var(--card-border); border-radius:13px; background:rgba(255,255,255,.02);
+    padding:0 16px; height:56px; transition:border-color .2s ease, box-shadow .2s ease;
+  }
+  .topup-custom-wrap:focus-within{
+    border-color:var(--tu-red); box-shadow:0 0 0 3px rgba(255,0,1,.12);
+  }
+  .topup-custom-cur{ font-family:var(--tu-font-num); font-size:16px; font-weight:700; color:var(--text-faint); }
+  .topup-custom-input{
+    flex:1; min-width:0; border:none; outline:none; background:transparent;
+    font-family:var(--tu-font-num); font-size:18px; font-weight:800; color:var(--text);
+    letter-spacing:.02em;
+  }
+  .topup-custom-input::placeholder{ color:var(--text-faint); font-weight:700; }
+  .topup-custom-suffix{
+    font-family:var(--tu-font-num); font-size:18px; font-weight:800; color:var(--text-faint);
+    pointer-events:none; user-select:none;
+  }
+  .topup-custom-hint{
+    font-size:10.5px; color:var(--text-faint); margin:8px 2px 0; line-height:1.5;
+  }
+
   .topup-submit{
     width:100%; padding:15px; border-radius:13px; border:none; font-family:inherit;
     font-size:14.5px; font-weight:800; color:#fff;

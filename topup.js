@@ -184,6 +184,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* ---------- ช่องพิมพ์จำนวนเงินเอง ----------
+     ผู้ใช้พิมพ์ได้แค่ตัวเลข (ถือเป็นหน่วย "พัน") ตัวต่อท้าย ".000" ถูกตรึงไว้ใน UI เสมอ
+     เมื่อคำนวณจริง setAmount() จะคูณ 1000 ให้อัตโนมัติ (เหมือนปุ่ม preset ทุกปุ่ม)
+     จึงรับประกันว่ายอดเงินจริงลงท้ายด้วย 000 เสมอ ไม่มีทางพิมพ์เศษสตางค์เข้ามาได้ */
+  const customAmountInput = document.querySelector('#topupCustomAmount');
+  if (customAmountInput) {
+    const MAX_DIGITS = 6; // ป้องกันพิมพ์ยอดเงินสูงเกินจริง (สูงสุด 999,999K)
+
+    customAmountInput.addEventListener('input', () => {
+      let digits = customAmountInput.value.replace(/[^0-9]/g, '');
+      if (digits.length > 1) digits = digits.replace(/^0+/, '') || '0'; // ตัดเลข 0 นำหน้าทิ้ง
+      if (digits.length > MAX_DIGITS) digits = digits.slice(0, MAX_DIGITS);
+      customAmountInput.value = digits;
+
+      if (digits === '' || digits === '0') {
+        setAmount(0);
+        return;
+      }
+      setAmount(digits);
+    });
+
+    customAmountInput.addEventListener('focus', () => {
+      revealOtherPresets();
+    });
+  }
+
   /* ---------- Step 1 -> Step 2: ສ້າງ QR ---------- */
   createQrBtn.addEventListener('click', async () => {
     if (selectedAmount < 1) return;
