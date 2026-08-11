@@ -76,8 +76,14 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   const QR_IMAGES = { 1: null, 2: null };
 
+  // ปุ่มพรีเซ็ตเก็บ "จำนวนแสดงผลแบบย่อ" ไว้ใน data-amount (หน่วย: พันกีบ, ดูป้าย K บนปุ่ม)
+  // ส่วน selectedAmount ที่ใช้จริงทั้งหมด (ยอดที่ต้องโอน / ยอดที่ส่งให้ backend / ยอดที่เติมเข้ากระเป๋า)
+  // ต้องเป็นจำนวนเงินกีบจริงเสมอ (ย่อ x 1000) กันลูกค้าโอนเงินผิดจำนวนจากที่เห็นบนจอ
+  const DISPLAY_UNIT = 1000;
+
   let selectedBank = 1;
-  let selectedAmount = 0;
+  let selectedDisplayAmount = 0; // ค่าย่อที่ตรงกับ data-amount ของปุ่ม (ใช้เทียบ active state เท่านั้น)
+  let selectedAmount = 0;        // ยอดเงินจริง (กีบ) — ใช้แสดงผล/ส่ง backend ทุกจุด
   let selectedSlip = null;
   let currentTopupId = null;
 
@@ -136,9 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   function setAmount(val) {
-    selectedAmount = Math.max(0, Number(val) || 0);
+    selectedDisplayAmount = Math.max(0, Number(val) || 0);
+    selectedAmount = selectedDisplayAmount * DISPLAY_UNIT; // แปลงเป็นยอดเงินจริงทันที
     presets.forEach((p) => {
-      p.classList.toggle('active', Number(p.dataset.amount) === selectedAmount);
+      p.classList.toggle('active', Number(p.dataset.amount) === selectedDisplayAmount);
     });
     if (selectedAmount > 0) {
       sumValueEl.textContent = selectedAmount.toLocaleString('de-DE') + ' ₭';
