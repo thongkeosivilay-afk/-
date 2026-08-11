@@ -70,6 +70,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+  // ---- ຄວາມປອດໄພ: ?next= ມາຈາກ URL (ຜູ້ໃຊ້ຄວບຄຸມໄດ້) ຫ້າມເອົາໄປໃສ່ window.location.href
+  // ກົງໆ ບໍ່ດັ່ງນັ້ນຄົນຮ້າຍສາມາດປ້ອນ ?next=https://evil-site.com ແລ້ວສົ່ງລິ້ງໃຫ້ເຫຍື່ອກົດ —
+  // ຫຼັງ login/signup ສຳເລັດ (ຜ່ານໜ້າ login.html ຂອງເຮົາຈິງ, ເບິ່ງໜ້າ URL ຖືກຕ້ອງໝົດ) ຈະຖືກ
+  // ເດ້ງອອກໄປເວັບປອມທັນທີ (open redirect -> ໃຊ້ phishing ຕໍ່ໄດ້) ຈຶ່ງຕ້ອງຮັບສະເພາະ path
+  // ພາຍໃນເວັບຕົວເອງ (ຂຶ້ນຕົ້ນດ້ວຍ "/" ຢ່າງດຽວ, ບໍ່ໃຫ້ຂຶ້ນຕົ້ນດ້ວຍ "//" ເພາະ browser ຈະຕີຄວາມ
+  // ເປັນ protocol-relative URL ໄປໂດເມນອື່ນໄດ້ຄືກັນ) — ໃຊ້ helper ດຽວກັນນີ້ທັງ login ແລະ signup
+  function safeNextPath(raw) {
+    if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return '/';
+    return raw;
+  }
+
   /* ---------- 5) Login form ---------- */
   const loginForm = document.querySelector('#login-form');
   if (loginForm) {
@@ -102,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(async (res) => {
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ');
-          const next = new URLSearchParams(window.location.search).get('next') || '/';
+          const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
           window.location.href = next;
         })
         .catch((err) => {
@@ -164,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(async (res) => {
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ');
-          const next = new URLSearchParams(window.location.search).get('next') || '/';
+          const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
           window.location.href = next;
         })
         .catch((err) => {

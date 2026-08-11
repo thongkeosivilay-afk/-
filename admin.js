@@ -18,6 +18,20 @@
 // ຕັດຖິ້ມໄປເລີຍ ເຮັດໃຫ້ເລື່ອນຈໍລົງແນວໃດກໍ່ບໍ່ເຫັນສ່ວນທ້າຍ (ປຸ່ມ "ຢືນຢັນ" ອັນສຸດທ້າຍຄ້າງຄາ)
 // ວິທີແກ້: ຄຳນວນ max-height ຈິງຈາກ scrollHeight ຂອງເນື້ອຫາດ້ວຍ JS ທຸກຄັ້ງທີ່ເປີດ/ເນື້ອຫາປ່ຽນ
 // ຂະໜາດ (ອັບໂຫລດຮູບ, ຂໍ້ຄວາມ error ໂຜ່) ແທນທີ່ຈະອີງຄ່າຄົງທີ່ຈາກ CSS ຢ່າງດຽວ
+// ============================================
+// ຄວາມປອດໄພ: escape ຄ່າທີ່ມາຈາກລູກຄ້າ (email/username/ຂໍ້ຄວາມອື່ນໆ) ກ່ອນໃສ່ໃນ innerHTML
+// ເພື່ອກັນ stored XSS — ຄ່າພວກນີ້ລູກຄ້າເປັນຄົນກອກເອງຕອນສະໝັກ/ນຳໃຊ້ເວັບ (ບໍ່ແມ່ນ trusted input)
+// ແລ້ວຫ້ອງແອດມິນ (session ສິດສູງ ເຂົ້າເຖິງ Supabase ໄດ້ໝົດ) ເປັນຄົນ render ຄືນ ຖ້າບໍ່ escape
+// ລູກຄ້າ 1 ຄົນສາມາດຝັງ <script>/onerror= ໄວ້ໃນອີເມວແລ້ວມັນຈະຮັນໃນ browser ຂອງແອດມິນທັນທີ
+function escapeHtmlAdmin(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function syncSwitchHeight(sw) {
   if (!sw) return;
   const body = sw.querySelector('.switch-body');
@@ -759,7 +773,7 @@ function renderTopupList(requests) {
         <div>
           <div class="topup-amount">${formatKipAdmin(r.amount)}</div>
           <div class="topup-meta">
-            ${r.user_email ? r.user_email : (r.email || 'ບໍ່ມີອີເມວ')}<br>
+            ${r.user_email ? escapeHtmlAdmin(r.user_email) : escapeHtmlAdmin(r.email || 'ບໍ່ມີອີເມວ')}<br>
             <span class="ref">${new Date(r.created_at).toLocaleString('lo-LA')}</span>
           </div>
         </div>
@@ -1172,11 +1186,11 @@ function renderAgentAccounts(accounts, ordersFailed) {
 
     const isRevoked = !a.is_reseller;
     const emailLabel = a.user_email
-      ? a.user_email.replace(/</g, '&lt;')
-      : `ບໍ່ມີອີເມວ (user_id: ${(a.user_id || '').slice(0, 8)}…)`;
+      ? escapeHtmlAdmin(a.user_email)
+      : `ບໍ່ມີອີເມວ (user_id: ${escapeHtmlAdmin((a.user_id || '').slice(0, 8))}…)`;
 
     return `
-    <div class="agent-acc-row" data-user-id="${a.user_id}" data-email="${(a.user_email || '').replace(/"/g, '&quot;')}">
+    <div class="agent-acc-row" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}">
       <div class="agent-acc-main">
         <div class="agent-acc-email">${emailLabel}</div>
         <div class="agent-acc-meta">
