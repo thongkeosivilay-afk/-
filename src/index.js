@@ -738,6 +738,37 @@ async function getRegisteredUserCount(env) {
   }
 }
 
+/* ---------- helper: ນັບຈຳນວນອໍເດີທີ່ຂາຍສຳເລັດແລ້ວ (ຂາຍແລ້ວ) ----------
+   ໃຊ້ Supabase "count=exact" ຜ່ານ header Prefer + Range ແທນການດຶງແຖວທັງໝົດມາ .length
+   (ຖ້າອໍເດີເກີນ 1000 ແຖວ ຈະນັບຜິດຖ້າໃຊ້ວິທີເກົ່າ) ນັບສະເພາະ status = completed ເພື່ອໃຫ້
+   ຕົງກັບ "ຂາຍແລ້ວ" ຈິງ (ບໍ່ນັບອໍເດີທີ່ຍົກເລີກ/ຄ້າງຈ່າຍ) */
+async function getSoldCount(env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return 0;
+  try {
+    const url = new URL(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/orders`);
+    url.searchParams.set('select', 'id');
+    url.searchParams.set('status', 'eq.completed');
+    const res = await fetch(url.toString(), {
+      headers: {
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+        Prefer: 'count=exact',
+        Range: '0-0',
+      },
+    });
+    if (!res.ok && res.status !== 206) {
+      console.error('getSoldCount failed:', await res.text());
+      return 0;
+    }
+    const range = res.headers.get('content-range'); // ຮູບແບບ "0-0/135"
+    const total = range ? Number(range.split('/')[1]) : NaN;
+    return Number.isFinite(total) ? total : 0;
+  } catch (err) {
+    console.error('getSoldCount error:', err);
+    return 0;
+  }
+}
+
 /* ---------- 6) /api/public/storefront ----------
    ดึงหมวดหมู่ (category_1..4 name/image จาก site_settings) + สินค้า (products ที่ไม่ถูก
    archived) + สต็อกจริงของแต่ละชิ้น (ผ่าน RPC product_stock / product_duration_stock —
@@ -771,7 +802,7 @@ async function handlePublicStorefront(request, env) {
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_enabled`),
     ];
 
-    const [settingsRows, products, durations, userCount] = await Promise.all([
+    const [settingsRows, products, durations, userCount, totalSold] = await Promise.all([
       supabaseSelect(env, 'site_settings', {
         select: siteSettingsColumns.join(','),
         id: 'eq.1',
@@ -788,6 +819,7 @@ async function handlePublicStorefront(request, env) {
         order: 'sort_order.asc',
       }),
       getRegisteredUserCount(env),
+      getSoldCount(env),
     ]);
 
     const settings = settingsRows[0] || {};
@@ -879,6 +911,7 @@ async function handlePublicStorefront(request, env) {
         productCount: visibleProductsWithStock.length,
         totalStock,
         userCount,
+        totalSold,
       },
       products: visibleProductsWithStock,
     });
