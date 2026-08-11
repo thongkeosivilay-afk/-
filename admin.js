@@ -2365,6 +2365,22 @@ function d2FormatKip(n) {
   return Number(n || 0).toLocaleString('de-DE');
 }
 
+// ຂໍ້ມູນ topup_requests ບາງແຖວອາດເປັນຂໍ້ມູນທົດລອງ/ພິມຜິດ (ຕົວເລກໃຫຍ່ຜິດປົກກະຕິ) — ຕັດອອກຈາກຍອດລວມ
+// ບໍ່ໃຫ້ໜ້າສະຫຼຸບໂຊວ໌ຕົວເລກເພັ້ຍນ. ຄ່າສູງສຸດທີ່ຮັບໄດ້ຕັ້ງໄວ້ 100,000,000 ກີບ/ລາຍການ (ປັບໄດ້ຖ້າຮ້ານໃຫຍ່ກວ່ານີ້)
+const D2_MAX_SANE_AMOUNT = 100000000;
+function d2SumSane(rows) {
+  let sum = 0;
+  for (const r of (rows || [])) {
+    const n = Number(r.amount);
+    if (!Number.isFinite(n) || n < 0 || n > D2_MAX_SANE_AMOUNT) {
+      console.warn('D2: ຂ້າມແຖວ topup_requests ຄ່າຜິດປົກກະຕິ (ຕິດຂອງ), amount=', r.amount);
+      continue;
+    }
+    sum += n;
+  }
+  return sum;
+}
+
 // ---- ນຳທາງ: ກົດກາດ d2-fn-card ແລ້ວເປີດ accordion ຈິງທີ່ຢູ່ລຸ່ມໜ້າ (ໃຊ້ #panelXxx ດຽວກັນ) ----
 function d2GoToPanel(targetId) {
   const sw = document.querySelector(`.switch[data-target="${targetId}"]`);
@@ -2408,7 +2424,7 @@ async function loadD2Totals() {
       .select('amount')
       .eq('status', 'approved');
     if (topupErr) throw topupErr;
-    d2AllTimeTopup = (topups || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    d2AllTimeTopup = d2SumSane(topups);
   } catch (err) {
     console.error('D2: ໂຫຼດຍອດເຕີມເງິນລວມບໍ່ສຳເລັດ', err);
     d2AllTimeTopup = null;
@@ -2445,8 +2461,8 @@ async function loadD2SevenDay() {
     ]);
     if (curErr) throw curErr;
     if (prevErr) throw prevErr;
-    d2SevenDayNow = (cur || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    d2SevenDayPrev = (prev || []).reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    d2SevenDayNow = d2SumSane(cur);
+    d2SevenDayPrev = d2SumSane(prev);
   } catch (err) {
     console.error('D2: ໂຫຼດຍອດ 7 ວັນບໍ່ສຳເລັດ', err);
     d2SevenDayNow = null;
