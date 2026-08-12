@@ -53,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const WRENCH_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L2 19l3 3 7.3-7.3a4 4 0 0 0 5.4-5.4l-2.8 2.8-2-2Z"/></svg>`;
   const LOCK_SVG = `<svg class="soldout-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
   const CART_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`;
+  // ໄອຄອນເປວໄຟ ໃຊ້ໃນປ້າຍ "ຂາຍແລ້ວ" — SVG ລ້ວນ, ບໍ່ໃຊ້ emoji
+  const FLAME_SVG = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3-2 4-2 7a3 3 0 0 0 6 0c2 2 3 4 3 6.5A7 7 0 1 1 8 15.5c0-2 1-3 2-4.5.5 1 1.5 1.5 2 1 1-1 0-2.5-1-4.5C10 5.5 11 3.5 12 2Z"/></svg>`;
 
   // ສະຖານະຂອງສິນຄ້າ: 'ok' ພ້ອມຂາຍ, 'paused' ແອດມິນປິດຂາຍເອງ, 'soldout' ສິນຄ້າໝົດແທ້ໆ
   function stockState(product, stock) {
@@ -140,21 +142,47 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<div class="${priceClass}">${window.StorefrontData.formatKip(price)}${tag}</div>`;
   }
 
-  function cardHTML(product) {
+  // ຫາສິນຄ້າທີ່ "ຂາຍດີສຸດ" ໃນລາຍການທີ່ກຳລັງໂຊວ໌ (soldCount ສູງສຸດ ແລະ ຕ້ອງ > 0 ຈຶ່ງຈະຕິດປ້າຍ) —
+  // ຄິດແຍກຕໍ່ໜ້າ/ຕໍ່ໝວດ ບໍ່ແມ່ນຕາຍຕົວທັງຮ້ານ, ຖ້າຂາຍທຽບກັນ 0 ໝົດຈະບໍ່ມີໃຜຕິດຕາປັ໊ມ
+  function findTopSellerId(products) {
+    let topId = null;
+    let topCount = 0;
+    products.forEach((p) => {
+      const c = Number(p.soldCount) || 0;
+      if (c > topCount) { topCount = c; topId = p.id; }
+    });
+    return topId;
+  }
+
+  function soldTagHTML(product) {
+    const count = Number(product.soldCount) || 0;
+    if (count <= 0) return '';
+    return `<div class="prod-sold-tag">${FLAME_SVG}ຂາຍແລ້ວ ${count.toLocaleString('en-US')} ອັນ</div>`;
+  }
+
+  function cardHTML(product, topSellerId) {
     const stock = window.StorefrontData.productTotalStock(product);
     const buyable = window.StorefrontData.isProductBuyable(product);
     const state = stockState(product, stock);
     const mediaClass = state === 'ok' ? 'prod-media' : `prod-media is-${state}`;
-    const cardClass = resellerInfo.isReseller ? 'prod-card grid-card is-reseller' : 'prod-card grid-card';
+    const isTopSeller = topSellerId && product.id === topSellerId;
+    const cardClass = [
+      'prod-card', 'grid-card',
+      resellerInfo.isReseller ? 'is-reseller' : '',
+      isTopSeller ? 'is-top-seller' : '',
+    ].filter(Boolean).join(' ');
+    const stampHTML = isTopSeller ? `<div class="prod-stamp">ຂາຍດີ!</div>` : '';
     return `
       <article class="${cardClass}" data-pid="${escapeHtml(product.id)}">
         <div class="${mediaClass}">
+          ${stampHTML}
           ${mediaBodyHTML(product, state, product.id)}
         </div>
         <div class="prod-body">
           <div class="prod-name">${escapeHtml(product.name || 'ໃສ່ຊື່ສິນຄ້າ')}</div>
           ${priceHTML(product)}
           ${statusHTML(product, stock, state)}
+          ${soldTagHTML(product)}
           <button type="button" class="buy-btn" ${buyable ? '' : 'disabled'}>
             ${buyIconHTML(state)}
             ${buyLabel(state)}
@@ -219,7 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      grid.innerHTML = products.map(cardHTML).join('');
+      const topSellerId = findTopSellerId(products);
+      grid.innerHTML = products.map((p) => cardHTML(p, topSellerId)).join('');
       if (emptyEl) emptyEl.style.display = 'none';
 
       wireBuyButtons(products);
@@ -229,7 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
       window.StorefrontData.fetchResellerInfo().then((info) => {
         if (!info.isReseller) return;
         resellerInfo = info;
-        grid.innerHTML = products.map(cardHTML).join('');
+        grid.innerHTML = products.map((p) => cardHTML(p, topSellerId)).join('');
         wireBuyButtons(products);
         wireSearch(products);
       });
