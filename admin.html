@@ -1,1629 +1,766 @@
 <!DOCTYPE html>
+
 <html lang="lo">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>ຫ້ອງແອດມິນ — 𝐃𝐄𝐊 𝐌𝐀𝐒𝐇 𝐒𝐇𝐎𝐏</title>
-<link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="admin.css">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-  /* ===== ຄ່າສີ/ຟອນພື້ນຖານ ທີ່ຫ້ອງແອດມິນເອົາມາຈາກເວັບເກົ່າ (scope ສະເພາະໜ້ານີ້ ບໍ່ກະທົບໜ້າອື່ນ) ===== */
-  :root{
-    --navy-950:#000000;
-    --navy-900:#0a0a0a;
-    --navy-800:#141414;
-    --navy-700:#222222;
-    --black-500:#990001;
-    --black-400:#ff0001;
-    --black-300:#ff4141;
-    --shine:#ffffff;
-    --shine-dim:#ff4d4d;
-    --ink-100:#eef2fb;
-    --ink-300:#aab4c8;
-    --ink-500:#78839b;
-    --green-500:#22c55e;
-  }
-  .ambient-glow{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
-  .ambient-glow .orb{ position:absolute; border-radius:50%; filter:blur(60px); opacity:0.55; will-change:transform; }
-  .ambient-glow .orb-gold{ width:340px;height:340px; top:-60px;left:-80px; background:radial-gradient(circle, rgba(255,120,150,0.55), transparent 70%); animation:driftA 22s ease-in-out infinite; }
-  .ambient-glow .orb-navy{ width:400px;height:400px; top:20%;right:-140px; background:radial-gradient(circle, rgba(255,0,1,0.30), transparent 70%); animation:driftB 26s ease-in-out infinite; }
-  .ambient-glow .orb-gold-soft{ width:260px;height:260px; bottom:5%;left:10%; background:radial-gradient(circle, rgba(255,150,180,0.5), transparent 70%); animation:driftC 30s ease-in-out infinite; }
-  @keyframes driftA{ 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(40px,60px) scale(1.08);} 66%{transform:translate(-20px,30px) scale(0.95);} }
-  @keyframes driftB{ 0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-50px,80px) scale(1.12);} }
-  @keyframes driftC{ 0%,100%{transform:translate(0,0) scale(1);} 40%{transform:translate(30px,-40px) scale(1.1);} 70%{transform:translate(-30px,-10px) scale(0.9);} }
-  @media (prefers-reduced-motion: reduce){ .ambient-glow .orb{animation:none;} }
+<link href="style.css" rel="stylesheet"/>
+<link href="admin.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&amp;family=Rajdhani:wght@500;600;700&amp;family=Chakra+Petch:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 
-  .toast{
-    position:fixed;left:50%;bottom:24px;transform:translate(-50%, 20px);
-    background:rgba(20,10,16,0.75);border:1px solid rgba(255,0,1,0.35);
-    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-    color:var(--ink-100);padding:12px 20px;border-radius:14px;
-    font-size:13.5px;opacity:0;transition:opacity .25s ease, transform .25s ease;
-    pointer-events:none;z-index:200;
-  }
-  .toast.show{opacity:1;transform:translate(-50%, 0);}
-
-  .back-row{ display:flex;align-items:center;gap:10px; margin-bottom:22px; }
-  .back-btn{
-    width:40px;height:40px;border-radius:13px;
-    border:1px solid rgba(255,0,1,0.3);
-    background:rgba(255,0,1,0.09);
-    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-    color:var(--shine-dim);font-size:18px;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer; transition:transform .15s ease, border-color .2s ease;
-  }
-  .back-btn:hover{border-color:rgba(255,0,1,0.6);}
-  .back-btn:active{transform:scale(0.92);}
-  .back-btn svg{width:18px;height:18px;stroke:currentColor;}
-  .page-title{font-size:19px;font-weight:800;margin:0;}
-
-  :root{
-    --gx-signal:#ff0001;
-    --gx-signal-soft:rgba(255,0,1,0.35);
-    --gx-signal-dim:rgba(255,0,1,0.16);
-    --gx-danger:#e83131;
-    --gx-success:#2ecc71;
-    --gx-warn:#e8b34a;
-    --gx-violet:#7c5cff;
-    --gx-violet-dim:rgba(124,92,255,0.18);
-    --gx-cyan:#28e0d6;
-    --gx-font:'Chakra Petch', 'Noto Sans Lao', sans-serif;
-  }
-
-  .gx-grid{
-    position:fixed;inset:0;z-index:0;pointer-events:none;
-    background-image:
-      linear-gradient(rgba(255,0,1,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,0,1,0.05) 1px, transparent 1px);
-    background-size:34px 34px;
-    -webkit-mask-image:radial-gradient(ellipse 70% 55% at 50% 20%, #000 0%, transparent 75%);
-            mask-image:radial-gradient(ellipse 70% 55% at 50% 20%, #000 0%, transparent 75%);
-    opacity:0.8;
-  }
-  .gx-scanline{
-    position:fixed;left:0;right:0;height:140px;z-index:1;pointer-events:none;
-    background:linear-gradient(180deg, transparent, rgba(255,0,1,0.04) 45%, rgba(255,0,1,0.07) 50%, rgba(255,0,1,0.04) 55%, transparent);
-    animation:gxScan 7s linear infinite;
-  }
-  @keyframes gxScan{ 0%{top:-140px;} 100%{top:100vh;} }
-  @media (prefers-reduced-motion: reduce){ .gx-scanline{animation:none;display:none;} }
-
-  .wrap{position:relative;z-index:2;}
-  .back-btn{transition:border-color .2s ease, box-shadow .2s ease, transform .15s ease;}
-  .back-btn:hover{border-color:var(--gx-signal-soft);box-shadow:0 0 0 3px var(--gx-signal-dim);}
-  .back-btn:active{transform:scale(0.94);}
-  .page-title{font-family:var(--gx-font);letter-spacing:0.4px;}
-
-  /* ===== gate: shown while checking admin access ===== */
-  #gate{ text-align:center; padding:70px 10px; color:var(--ink-300); font-size:13.5px; }
-  #gate .gx-spinner-lg{
-    width:34px;height:34px;border-radius:50%;margin:0 auto 16px;
-    border:3px solid rgba(255,0,1,0.15); border-top-color:var(--gx-signal);
-    animation:gxSpin .8s linear infinite;
-  }
-  @keyframes gxSpin{ to{transform:rotate(360deg);} }
-
-  #adminApp{ display:none; }
-
-  /* ===== status strip — signature element: a live "operations" readout ===== */
-  .ops-strip{
-    display:flex; gap:10px; margin:6px 0 18px; overflow-x:auto; padding-bottom:2px;
-  }
-  .ops-chip{
-    flex-shrink:0; display:flex; flex-direction:column; gap:2px;
-    padding:12px 16px; border-radius:17px;
-    background:#0d0d0d;
-    border:1px solid rgba(255,0,1,0.2);
-    box-shadow:none;
-    min-width:100px;
-    animation:chipIn .3s ease both;
-  }
-  .ops-chip.topup-chip{ border-color:rgba(255,176,32,0.35); }
-  .ops-chip.topup-chip .ops-num{ color:var(--gx-warn); }
-  @keyframes chipIn{ from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
-  .ops-chip .ops-num{ font-family:var(--gx-font); font-weight:700; font-size:19px; color:var(--ink-100); }
-  .ops-chip .ops-label{ font-size:10.5px; color:var(--ink-500); letter-spacing:0.4px; }
-
-  /* ===== dashboard nav — "control deck" accordion switches (flat, ເປີດເທື່ອລະອັນ) ===== */
-  .deck{
-    position:relative; z-index:1;
-    display:flex; flex-direction:column; gap:14px;
-    margin-bottom:22px;
-  }
-  .switch{
-    position:relative;
-    border-radius:24px;
-    background:#0d0d0d;
-    border:1px solid rgba(255,0,1,0.22);
-    box-shadow:none;
-    transition:transform .3s cubic-bezier(.2,.9,.25,1), box-shadow .3s ease, border-color .3s ease;
-  }
-  @media (hover:hover){
-    .switch:hover{ transform:translateY(-2px); }
-  }
-  .switch.open{
-    border-color:rgba(255,0,1,0.65);
-    box-shadow:none;
-  }
-  .switch-head{
-    position:relative; z-index:1;
-    display:flex; align-items:center; gap:14px;
-    padding:16px 16px;
-    cursor:pointer; -webkit-tap-highlight-color:transparent;
-    border-radius:24px;
-  }
-  .switch-icon{
-    width:48px;height:48px;border-radius:15px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    background:#141414;
-    border:1px solid rgba(255,0,1,0.2);
-    box-shadow:none;
-    transition:background .3s ease, box-shadow .3s ease;
-  }
-  .switch-icon svg{ width:22px;height:22px;stroke:var(--ink-300); transition:stroke .3s ease; }
-  .switch.open .switch-icon{
-    background:var(--black-500);
-    box-shadow:0 0 0 4px rgba(255,0,1,0.14);
-  }
-  .switch.open .switch-icon svg{ stroke:#fff; }
-  .switch-text{ flex:1; min-width:0; }
-  .dash-title{ font-weight:700; font-size:14px; letter-spacing:0.2px; color:var(--ink-100); font-family:var(--gx-font); }
-  .dash-desc{ font-size:11px; line-height:1.45; color:var(--ink-500); font-family:'Noto Sans Lao', sans-serif; letter-spacing:0; margin-top:3px; }
-  .switch-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
-  .tab-badge{
-    background:var(--gx-danger);color:#fff;font-size:9.5px;font-weight:700;
-    padding:3px 9px;border-radius:20px;line-height:1.4;
-    box-shadow:0 0 0 2px rgba(10,8,20,0.45);
-  }
-  .switch-chevron{
-    width:32px;height:32px;border-radius:10px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,0.03); border:1px solid rgba(255,0,1,0.18);
-    color:var(--ink-500);
-    transition:transform .35s cubic-bezier(.2,.9,.25,1), color .3s ease, border-color .3s ease;
-  }
-  .switch-chevron svg{ width:15px;height:15px;stroke:currentColor; }
-  .switch.open .switch-chevron{ transform:rotate(180deg); color:var(--gx-signal); border-color:rgba(255,0,1,0.5); }
-
-  .switch-body{ max-height:0; overflow:hidden; transition:max-height .45s cubic-bezier(.2,.85,.25,1); }
-  /* ຄ່ານີ້ເປັນແຄ່ fallback (ໃນກໍລະນີ JS ຍັງບໍ່ທັນຮັນ/browser ບໍ່ຮອງຮັບ ResizeObserver) —
-     ໂຕຫຼັກ JS (syncSwitchHeight ໃນ admin.js) ຈະຕັ້ງ max-height ຕາມຄວາມສູງເນື້ອຫາຈິງ
-     ໃຫ້ເອງ, ຄ່ານີ້ຈຶ່ງຕ້ອງໃຫຍ່ພໍທີ່ຈະບໍ່ຕັດເນື້ອຫາໜ້າ "ຕັ້ງຄ່າຮ້ານ" (4 ໝວດໝູ່) ຖ້າ JS ບໍ່ທັນຮັນ */
-  .switch.open .switch-body{ max-height:20000px; }
-  .switch-body-inner{ padding:2px 16px 18px; border-top:1px dashed rgba(255,0,1,0.18); margin:0 16px; padding-top:16px; }
-  .switch-body-inner:empty{ border-top:none; padding-top:0; }
-
-  .switch-placeholder{
-    display:flex; align-items:center; gap:10px;
-    font-size:12px; color:var(--ink-500); line-height:1.6;
-    background:rgba(255,255,255,0.03); border:1px solid rgba(255,0,1,0.16);
-    border-radius:14px; padding:12px 14px;
-  }
-  .switch-placeholder svg{ width:18px;height:18px;stroke:var(--gx-violet); flex-shrink:0; }
-
-  /* ===== accordion content boxes (ຢູ່ນອກ .switch, ຄຸມແຍກຕາມ id ດ້ວຍ JS) ===== */
-  .panel-content{ display:none; }
-  .panel-content.open{ display:block; }
-
-  /* ===== static card (no rotating border, for content-heavy panels) ===== */
-  .stat-panel{
-    border-radius:22px;
-    background:#0d0d0d;
-    border:1px solid rgba(255,0,1,0.18);
-    box-shadow:none;
-    padding:20px 18px;margin-bottom:16px;
-  }
-  .stat-panel h3{
-    font-family:var(--gx-font); font-size:14.5px; margin:0 0 6px;
-    display:flex;align-items:center;gap:8px;color:var(--ink-100);
-  }
-  .stat-panel h3 svg{width:16px;height:16px;stroke:var(--gx-signal);flex-shrink:0;}
-  .stat-panel .panel-sub{
-    font-size:11.8px; color:var(--ink-500); line-height:1.55; margin:0 0 14px;
-    font-family:'Noto Sans Lao', sans-serif; letter-spacing:0;
-  }
-
-  .mini-refresh{
-    margin-left:auto;width:28px;height:28px;border-radius:8px;flex-shrink:0;
-    border:1px solid rgba(255,0,1,0.25); background:rgba(255,0,1,0.05);
-    color:var(--ink-300); display:flex;align-items:center;justify-content:center;
-    cursor:pointer; transition:color .2s ease, border-color .2s ease;
-  }
-  .mini-refresh:hover{ color:var(--shine-dim); border-color:var(--gx-signal-soft); }
-  .mini-refresh svg{ width:14px;height:14px;stroke:currentColor; }
-  .mini-refresh.spinning svg{ animation:gxSpin .6s linear; }
-
-  /* fields reused from login.html */
-  .gx-field{margin-bottom:14px;}
-  .gx-field label{
-    display:flex;align-items:center;gap:6px;
-    margin-bottom:6px;font-size:11.5px;color:var(--ink-300);
-    font-family:var(--gx-font);letter-spacing:0.5px;text-transform:uppercase;
-  }
-  .gx-input-wrap input, .gx-input-wrap textarea, .gx-input-wrap select{
-    width:100%;padding:12px 14px;border-radius:12px;
-    border:1px solid rgba(255,0,1,0.25);
-    background:rgba(255,255,255,0.96);color:#161a2c;font-size:0.95rem;
-    font-family:'Noto Sans Lao', sans-serif;
-    transition:border-color .2s ease, box-shadow .2s ease;
-  }
-  .gx-input-wrap textarea{resize:vertical;min-height:96px;line-height:1.5;}
-  .gx-input-wrap input::placeholder, .gx-input-wrap textarea::placeholder{color:var(--ink-500);}
-  .gx-input-wrap input:focus, .gx-input-wrap textarea:focus, .gx-input-wrap select:focus{
-    outline:none;border-color:var(--gx-signal);
-    box-shadow:0 0 0 3px var(--gx-signal-dim);
-  }
-  .gx-row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-
-  .gx-submit{
-    position:relative;overflow:hidden;
-    width:100%;margin-top:6px;border:none;border-radius:14px;padding:13px;
-    background:var(--black-500);
-    color:var(--shine);font-weight:700;font-size:14.5px;
-    font-family:var(--gx-font);letter-spacing:0.5px;
-    border:1px solid rgba(255,0,1,0.35);
-    box-shadow:none;
-    cursor:pointer;transition:transform .15s ease, box-shadow .2s ease;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-  }
-  .gx-submit:hover{box-shadow:none;}
-  .gx-submit:active{transform:scale(0.98);}
-  .gx-submit:disabled{opacity:.6;cursor:default;}
-  .gx-submit.danger{ border-color:rgba(232,57,90,0.4); }
-  .gx-spinner{
-    width:15px;height:15px;border-radius:50%;
-    border:2px solid rgba(232,232,238,0.25); border-top-color:var(--shine);
-    animation:gxSpin .7s linear infinite; display:none;
-  }
-  .gx-submit.loading .gx-spinner{display:inline-block;}
-  .gx-submit.loading .gx-submit-label{opacity:.6;}
-
-  .gx-msg{
-    display:flex;align-items:center;gap:7px;justify-content:center;
-    margin-top:12px;font-size:13px;min-height:1.4em;
-    opacity:0;transform:translateY(-4px);
-    transition:opacity .25s ease, transform .25s ease;
-  }
-  .gx-msg.show{opacity:1;transform:translateY(0);}
-  .gx-msg.error{color:var(--gx-danger);}
-  .gx-msg.success{color:var(--gx-success);}
-  .gx-msg.pending{color:var(--ink-300);}
-
-  /* ===== image dropzone ===== */
-  .drop-zone{
-    border:1.5px dashed rgba(255,0,1,0.35); border-radius:14px;
-    padding:18px; text-align:center; cursor:pointer;
-    color:var(--ink-500); font-size:12.5px;
-    transition:border-color .2s ease, background .2s ease;
-    position:relative; overflow:hidden;
-  }
-  .drop-zone:hover{ border-color:var(--gx-signal-soft); background:rgba(255,0,1,0.04); }
-  .drop-zone.has-image{ padding:0; border-style:solid; }
-  .drop-zone img{ width:100%; max-height:200px; object-fit:cover; display:block; border-radius:12px; }
-  .drop-zone input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; }
-
-  /* ===== ຮູບປະຈຳໝວດໝູ່ (1-10) ===== */
-  .cat-field-group{
-    position:relative;
-    padding:14px 12px 12px; margin-bottom:12px;
-    border:1px solid rgba(255,0,1,0.16); border-radius:16px;
-    background:#0d0d0d;
-  }
-  .cat-field-group.cat-numbered{ padding-left:44px; }
-  .cat-field-group .cat-num-badge{
-    position:absolute; top:14px; left:12px; width:22px;height:22px;border-radius:8px;
-    background:var(--black-500);
-    color:#fff; font-family:var(--gx-font); font-weight:700; font-size:11.5px;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 3px 10px -3px rgba(255,20,90,0.55);
-  }
-  .cat-enable-row{
-    display:flex; align-items:center; justify-content:flex-end; gap:7px;
-    margin:0 0 10px;
-  }
-  .cat-enable-row .pause-toggle-label{ margin:0; font-size:0.78rem; }
-  .cat-enable-row .cat-enable-state{
-    font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:20px;
-    border:1px solid rgba(120,255,150,0.35); background:rgba(120,255,150,0.1); color:#3ecb63;
-  }
-  .cat-enable-row .cat-enable-state.is-off{
-    border-color:rgba(255,0,1,0.35); background:rgba(255,0,1,0.08); color:var(--gx-danger);
-  }
-  .cat-img-row{ display:flex; align-items:stretch; gap:8px; margin-top:8px; }
-  .drop-zone.cat-img-drop{ flex:1; padding:10px; font-size:11.5px; }
-  .drop-zone.cat-img-drop img{ max-height:90px; border-radius:10px; }
-  .cat-img-remove-btn{
-    flex-shrink:0; border:1px solid rgba(255,0,1,0.35); background:transparent;
-    color:var(--gx-danger); border-radius:10px; padding:0 12px; font-size:12px;
-    cursor:pointer; white-space:nowrap;
-  }
-  .cat-img-remove-btn:hover{ background:rgba(255,0,1,0.08); }
-
-  /* ===== ຢືນຢັນຊື່ໝວດໝູ່ ແຍກແຕ່ລະອັນ (ບໍ່ຕ້ອງເລື່ອນລົງໄປກົດປຸ່ມລວມ) ===== */
-  .cat-name-row{ display:flex; align-items:stretch; gap:8px; }
-  .cat-name-row input{ flex:1; min-width:0; }
-  .cat-name-confirm-btn{
-    flex-shrink:0; border:1px solid rgba(255,0,1,0.4);
-    background:var(--black-500);
-    color:var(--shine); border-radius:10px; padding:0 16px; font-size:12.5px;
-    font-weight:700; font-family:var(--gx-font); letter-spacing:0.3px;
-    cursor:pointer; white-space:nowrap; transition:box-shadow .2s ease, transform .15s ease;
-  }
-  .cat-name-confirm-btn:hover{ box-shadow:0 0 14px -4px var(--gx-signal-soft); }
-  .cat-name-confirm-btn:active{ transform:scale(0.96); }
-  .cat-name-confirm-btn.loading{ opacity:.6; cursor:default; pointer-events:none; }
-  .cat-name-msg{ margin-top:6px; justify-content:flex-start; font-size:12px; }
-
-  /* ===== product management list ===== */
-  .prod-row{
-    display:flex; gap:12px; align-items:flex-start;
-    padding:14px 0; border-bottom:1px solid rgba(255,0,1,0.12);
-  }
-  .prod-row:last-child{ border-bottom:none; }
-  .prod-thumb{
-    width:56px;height:56px;border-radius:10px;flex-shrink:0;
-    background:rgba(255,0,1,0.04); border:1px solid rgba(255,0,1,0.18);
-    object-fit:cover;
-  }
-  .prod-fields{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
-  .prod-fields .gx-row2 input{ width:100%; min-width:0; padding:9px 10px; font-size:0.88rem; }
-  .prod-meta-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .prod-stock{ font-size:11px; color:var(--ink-500); white-space:nowrap; }
-  .prod-actions{ display:flex; gap:8px; }
-  .icon-btn{
-    width:34px;height:34px;border-radius:9px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(255,0,1,0.05); border:1px solid rgba(255,0,1,0.22);
-    color:var(--ink-300); cursor:pointer; transition:all .15s ease;
-  }
-  .icon-btn:hover{ border-color:var(--gx-signal-soft); color:var(--shine-dim); }
-  .icon-btn.save-btn:hover{ border-color:rgba(32,181,106,0.5); color:var(--gx-success); }
-  .icon-btn.del-btn:hover{ border-color:rgba(232,57,90,0.5); color:var(--gx-danger); }
-  .icon-btn.hard-del-btn{ border-color:rgba(232,57,90,0.35); color:var(--gx-danger); }
-  .icon-btn.hard-del-btn:hover{ border-color:var(--gx-danger); background:rgba(232,57,90,0.12); color:var(--gx-danger); }
-  .icon-btn svg{ width:15px;height:15px;stroke:currentColor; }
-  .empty-note{ text-align:center; color:var(--ink-500); font-size:13px; padding:24px 0; }
-
-  select#codeProductSelect{ appearance:none; -webkit-appearance:none; }
-
-  /* ===== top-up requests panel ===== */
-  .topup-card{
-    border-radius:16px;
-    background:linear-gradient(165deg, rgba(255,0,1,0.07), rgba(255,0,1,0.015));
-    border:1px solid rgba(255,0,1,0.18);
-    padding:16px;margin-bottom:14px;
-    position:relative;overflow:hidden;
-    animation:topupIn .35s ease both;
-  }
-  @keyframes topupIn{ from{opacity:0;transform:translateY(8px);} to{opacity:1;transform:translateY(0);} }
-  .topup-card::before{
-    content:'';position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg, transparent, var(--gx-signal-soft), transparent);
-  }
-  .topup-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:10px; }
-  .topup-amount{ font-family:var(--gx-font); font-weight:700; font-size:21px; color:var(--shine); }
-  .topup-meta{ font-size:11.5px; color:var(--ink-500); line-height:1.6; margin-top:2px; }
-  .topup-meta .ref{ color:var(--ink-300); }
-  .topup-status-tag{
-    flex-shrink:0; font-size:10.5px; padding:4px 11px; border-radius:20px;
-    font-family:var(--gx-font); font-weight:600; letter-spacing:.4px; white-space:nowrap;
-  }
-  .topup-status-tag.pending{
-    background:rgba(255,176,32,0.14); color:var(--gx-warn); border:1px solid rgba(255,176,32,0.35);
-    animation:tagPulse 1.8s ease-in-out infinite;
-  }
-  @keyframes tagPulse{
-    0%,100%{ box-shadow:0 0 0 0 rgba(255,176,32,0.35); }
-    50%{ box-shadow:0 0 0 5px rgba(255,176,32,0); }
-  }
-  .topup-slip-wrap{
-    border-radius:12px; overflow:hidden; border:1px solid rgba(255,0,1,0.2);
-    margin-bottom:14px; cursor:zoom-in; position:relative; background:rgba(0,0,0,0.03);
-  }
-  .topup-slip-wrap img{ width:100%; max-height:260px; object-fit:contain; display:block; }
-  .topup-slip-wrap .zoom-hint{
-    position:absolute; bottom:8px; right:8px; background:rgba(10,8,20,0.55);
-    color:#fff; font-size:10px; padding:3px 9px; border-radius:20px;
-    display:flex; align-items:center; gap:4px; backdrop-filter:blur(3px);
-  }
-  .topup-slip-wrap .zoom-hint svg{ width:11px;height:11px;stroke:currentColor; }
-  .topup-actions-row{ display:flex; gap:10px; }
-  .topup-btn{
-    flex:1; border:none; border-radius:11px; padding:12px;
-    font-family:var(--gx-font); font-weight:700; font-size:13.5px; letter-spacing:.3px;
-    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:7px;
-    transition:transform .15s ease, box-shadow .2s ease, opacity .2s ease;
-  }
-  .topup-btn:active{ transform:scale(0.96); }
-  .topup-btn:disabled{ opacity:.5; cursor:default; }
-  .topup-btn svg{ width:16px;height:16px;stroke:currentColor; }
-  .topup-btn.approve{
-    background:linear-gradient(135deg, #22c579, #159657);
-    color:#fff; box-shadow:0 4px 14px -4px rgba(32,181,106,0.55);
-  }
-  .topup-btn.approve:hover{ box-shadow:0 4px 20px -3px rgba(32,181,106,0.7); }
-  .topup-btn.reject{
-    background:linear-gradient(135deg, #ec4a6b, #c22246);
-    color:#fff; box-shadow:0 4px 14px -4px rgba(232,57,90,0.55);
-  }
-  .topup-btn.reject:hover{ box-shadow:0 4px 20px -3px rgba(232,57,90,0.7); }
-  /* ===== slip lightbox (fullscreen viewer) ===== */
-  .slip-lightbox{
-    position:fixed; inset:0; z-index:80; background:rgba(8,6,16,0.92);
-    display:none; align-items:center; justify-content:center; padding:24px;
-    backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
-    animation:lbIn .2s ease;
-  }
-  .slip-lightbox.show{ display:flex; }
-  @keyframes lbIn{ from{opacity:0;} to{opacity:1;} }
-  .slip-lightbox img{
-    max-width:100%; max-height:88vh; border-radius:14px;
-    box-shadow:0 25px 70px -12px rgba(0,0,0,0.7);
-    border:1px solid rgba(255,0,1,0.3);
-  }
-  .slip-lightbox .lb-close{
-    position:absolute; top:18px; right:18px; width:38px;height:38px;border-radius:50%;
-    background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18);
-    color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer;
-  }
-  .slip-lightbox .lb-close svg{ width:18px;height:18px;stroke:currentColor; }
-
-  /* ===== duration options (12ຊມ / 1ວັນ ... 30ວັນ) ===== */
-  .duration-toggle-label{
-    display:flex; align-items:center; gap:8px; cursor:pointer;
-    font-size:0.95rem; color:var(--ink-100); text-transform:none;
-    font-family:'Noto Sans Lao', sans-serif; letter-spacing:0;
-  }
-  .duration-toggle-label input[type="checkbox"]{
-    width:18px;height:18px;accent-color:var(--gx-signal);cursor:pointer;flex-shrink:0;
-  }
-  .duration-options-list{
-    display:flex; flex-direction:column; gap:8px;
-    border:1px solid rgba(255,0,1,0.18); border-radius:12px;
-    padding:12px; background:rgba(255,0,1,0.03);
-  }
-  .duration-opt-row{
-    display:flex; align-items:center; gap:10px;
-  }
-  .duration-opt-row label{
-    display:flex; align-items:center; gap:8px; flex:1; min-width:64px;
-    font-size:0.9rem; color:var(--ink-100); cursor:pointer;
-  }
-  .duration-opt-row input[type="checkbox"]{
-    width:16px;height:16px;accent-color:var(--gx-signal);cursor:pointer;flex-shrink:0;
-  }
-  .duration-opt-row .dur-price{
-    width:150px; padding:8px 10px; border-radius:8px;
-    border:1px solid rgba(255,0,1,0.25); background:#fff;
-    color:#161a2c; font-size:0.9rem;
-  }
-  .duration-pill-badge{
-    display:inline-flex; align-items:center; gap:4px;
-    font-size:10.5px; padding:2px 8px; border-radius:20px;
-    background:rgba(255,0,1,0.12); color:var(--gx-signal);
-    border:1px solid rgba(255,0,1,0.25); margin-left:6px;
-  }
-  .prod-duration-list{
-    display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;
-  }
-  .prod-duration-chip{
-    font-size:10.5px; padding:3px 9px; border-radius:20px;
-    background:rgba(255,0,1,0.08); border:1px solid rgba(255,0,1,0.2);
-    color:var(--ink-300);
-  }
-  .prod-row.is-archived{
-    opacity: 0.55;
-  }
-  .archived-tag{
-    display:inline-block;
-    font-size:10.5px; font-weight:600;
-    padding:2px 8px; border-radius:20px;
-    background:rgba(239,68,68,0.1); color:#dc2626;
-    border:1px solid rgba(239,68,68,0.25);
-    margin-bottom:8px;
-  }
-
-  /* ===== ລິ້ງໂບນັດ — ຕອນເພີ່ມສິນຄ້າໃໝ່ ===== */
-  .link-rows-list{
-    display:flex; flex-direction:column; gap:8px;
-    border:1px solid rgba(255,0,1,0.18); border-radius:12px;
-    padding:12px; background:rgba(255,0,1,0.03);
-    margin-bottom:8px;
-  }
-  .link-row{ display:flex; gap:8px; align-items:center; }
-  .link-row input{
-    flex:1; min-width:0; padding:8px 10px; border-radius:8px;
-    border:1px solid rgba(255,0,1,0.25); background:#fff;
-    color:#161a2c; font-size:0.85rem; font-family:inherit;
-  }
-  .link-row-remove{
-    flex-shrink:0; width:30px;height:30px;border-radius:8px;
-    border:1px solid rgba(232,57,90,0.3); background:rgba(232,57,90,0.06);
-    color:var(--gx-danger); font-size:16px; line-height:1; cursor:pointer;
-  }
-  .gx-add-link-btn{
-    width:100%; padding:10px; border-radius:10px;
-    border:1.5px dashed rgba(255,0,1,0.35); background:transparent;
-    color:var(--gx-signal); font-weight:700; font-size:0.85rem; cursor:pointer;
-    font-family:var(--gx-font);
-  }
-  .gx-add-link-btn:hover{ background:rgba(255,0,1,0.05); }
-
-  /* ===== ຢຸດຂາຍຊົ່ວຄາວ ===== */
-  .pause-toggle-label{
-    display:flex; align-items:center; gap:8px; cursor:pointer;
-    font-size:0.85rem; color:var(--ink-100);
-    font-family:'Noto Sans Lao', sans-serif;
-    margin:2px 0;
-  }
-  .pause-toggle-label input[type="checkbox"]{
-    width:16px;height:16px;accent-color:var(--gx-warn);cursor:pointer;flex-shrink:0;
-  }
-  .pause-note-wrap input{
-    width:100%; padding:8px 10px; border-radius:8px;
-    border:1px solid rgba(255,176,32,0.35); background:rgba(255,176,32,0.04);
-    color:var(--ink-100); font-size:0.82rem; font-family:inherit;
-  }
-  .paused-tag{
-    display:inline-block;
-    font-size:10.5px; font-weight:600;
-    padding:2px 8px; border-radius:20px;
-    background:rgba(255,176,32,0.14); color:#a06600;
-    border:1px solid rgba(255,176,32,0.35);
-    margin-bottom:8px;
-  }
-  .prod-row.is-paused{ opacity:0.85; }
-
-  /* ===== ລິ້ງໂບນັດ — ຕອນຈັດການສິນຄ້າ ===== */
-  .prod-links-section{ margin-top:4px; }
-  .prod-links-list{
-    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;
-  }
-  .prod-link-chip{
-    display:inline-flex; align-items:center; gap:6px;
-    font-size:10.5px; padding:3px 6px 3px 9px; border-radius:20px;
-    background:rgba(255,0,1,0.08); border:1px solid rgba(255,0,1,0.2);
-    color:var(--ink-300);
-  }
-  .link-chip-remove{
-    width:16px;height:16px;border-radius:50%;flex-shrink:0;
-    border:none; background:rgba(232,57,90,0.14); color:var(--gx-danger);
-    font-size:11px; line-height:1; cursor:pointer;
-  }
-  .link-add-inline{ display:flex; gap:6px; }
-  .link-add-inline input{
-    flex:1; min-width:0; padding:7px 9px; border-radius:8px;
-    border:1px solid rgba(255,0,1,0.22); background:#fff;
-    color:#161a2c; font-size:0.8rem; font-family:inherit;
-  }
-  .link-add-btn{
-    flex-shrink:0; width:30px;height:30px;border-radius:8px;
-    border:1px solid rgba(255,0,1,0.3); background:rgba(255,0,1,0.06);
-    color:var(--gx-signal); font-size:16px; line-height:1; cursor:pointer;
-  }
-
-  /* ===== reseller / agent panel ===== */
-  .tier-card{
-    display:flex; flex-direction:column; gap:10px;
-    padding:14px 0; border-bottom:1px solid rgba(255,0,1,0.12);
-  }
-  .tier-card:last-child{ border-bottom:none; }
-  .tier-card-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .tier-card-title{ font-family:var(--gx-font); font-weight:700; font-size:15px; color:var(--shine); }
-  .tier-card-sub{ font-size:11px; color:var(--ink-500); }
-  .tier-card-fields{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .tier-card-fields.single{ grid-template-columns:1fr; }
-  .tier-card-fields label{ font-size:11px; color:var(--ink-500); display:block; margin-bottom:4px; }
-  .tier-card-fields input{ width:100%; padding:9px 10px; font-size:0.88rem; }
-  .tier-card-lifetime-note{ font-size:11.5px; color:var(--ink-500); }
-
-  .agent-key-row{
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    padding:12px 0; border-bottom:1px solid rgba(255,0,1,0.12); flex-wrap:wrap;
-  }
-  .agent-key-row:last-child{ border-bottom:none; }
-  .agent-key-main{ display:flex; flex-direction:column; gap:3px; min-width:0; }
-  .agent-key-code{ font-family:var(--gx-font); font-weight:700; font-size:14px; color:var(--shine); letter-spacing:.4px; }
-  .agent-key-meta{ font-size:11px; color:var(--ink-500); }
-  .agent-key-right{ display:flex; align-items:center; gap:8px; flex-shrink:0; }
-
-  .key-status-tag{
-    flex-shrink:0; font-size:10.5px; padding:4px 11px; border-radius:20px;
-    font-family:var(--gx-font); font-weight:600; letter-spacing:.4px; white-space:nowrap;
-  }
-  .key-status-tag.unused{ background:rgba(32,181,106,0.14); color:var(--gx-success); border:1px solid rgba(32,181,106,0.35); }
-  .key-status-tag.used{ background:rgba(120,120,130,0.14); color:var(--ink-500); border:1px solid rgba(120,120,130,0.3); }
-
-  .key-copy-btn{
-    width:32px;height:32px;border-radius:8px;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(255,0,1,0.05); border:1px solid rgba(255,0,1,0.22);
-    color:var(--ink-300); cursor:pointer; transition:all .15s ease;
-  }
-  .key-copy-btn:hover{ border-color:var(--gx-signal-soft); color:var(--shine-dim); }
-  .key-copy-btn svg{ width:14px;height:14px;stroke:currentColor; }
-
-  .new-key-banner{
-    margin-top:14px; border-radius:14px; padding:16px;
-    background:linear-gradient(165deg, rgba(32,181,106,0.1), rgba(32,181,106,0.02));
-    border:1px solid rgba(32,181,106,0.3);
-    display:flex; align-items:center; justify-content:space-between; gap:10px;
-    animation:topupIn .35s ease both;
-  }
-  .new-key-banner-code{ font-family:var(--gx-font); font-weight:800; font-size:18px; letter-spacing:1px; color:var(--gx-success); word-break:break-all; }
-  .new-key-banner-label{ font-size:11px; color:var(--ink-500); margin-bottom:4px; }
-
-  .price-prod-card{
-    padding:14px 0; border-bottom:1px solid rgba(255,0,1,0.12);
-  }
-  .price-prod-card:last-child{ border-bottom:none; }
-  .price-prod-name{ font-family:var(--gx-font); font-weight:700; font-size:14px; color:var(--shine); margin-bottom:8px; }
-  .price-dur-base{ font-family:var(--gx-font); font-weight:500; font-size:11.5px; color:var(--ink-500); }
-  .price-dur-list{ display:flex; flex-direction:column; gap:8px; }
-  .price-dur-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
-  .price-dur-label{ font-size:12.5px; color:var(--ink-300); flex-shrink:0; }
-  .price-dur-row input{ flex:1; min-width:120px; padding:9px 10px; font-size:0.88rem; }
-  .price-prod-card .gx-submit{ padding:10px 16px; font-size:0.85rem; min-height:0; }
-
-  .agent-cat-row{ display:flex; gap:8px; overflow-x:auto; margin:2px 0 14px; padding-bottom:2px; }
-  .agent-cat-tab{
-    flex-shrink:0; display:flex; flex-direction:column; align-items:center; gap:3px;
-    padding:9px 14px; border-radius:12px; border:1px solid var(--navy-700); background:var(--navy-800);
-    cursor:pointer; user-select:none; min-width:76px; transition:.15s;
-  }
-  .agent-cat-tab .agent-cat-name{ font-family:var(--gx-font); font-size:11.5px; font-weight:700; color:var(--ink-300); white-space:nowrap; }
-  .agent-cat-tab .agent-cat-count{ font-size:9.5px; color:var(--ink-500); }
-  .agent-cat-tab.active{ border-color:var(--gx-signal-soft); background:var(--gx-signal-dim); }
-  .agent-cat-tab.active .agent-cat-name{ color:#ffdada; }
-  .agent-cat-tab.active .agent-cat-count{ color:#ffb3b3; }
-
-  .search-row-agent{ position:relative; margin-bottom:10px; }
-  .search-row-agent input{
-    width:100%; background:var(--navy-900); border:1px solid var(--navy-700); color:var(--ink-100);
-    border-radius:11px; padding:10px 12px; font-family:var(--gx-font); font-size:12.5px;
-  }
-  .search-row-agent input::placeholder{ color:var(--ink-500); }
-  .search-row-agent input:focus{ outline:none; border-color:var(--gx-signal-soft); }
-
-  .agent-acc-row{
-    display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
-    padding:13px 0; border-bottom:1px solid rgba(255,0,1,0.12); flex-wrap:wrap;
-  }
-  .agent-acc-row:last-child{ border-bottom:none; }
-  .agent-acc-main{ flex:1; min-width:180px; }
-  .agent-acc-email{ font-family:var(--gx-font); font-weight:700; font-size:13.5px; color:var(--shine); word-break:break-all; }
-  .agent-acc-meta{ font-size:11px; color:var(--ink-500); margin-top:2px; }
-  .agent-acc-progress{ margin-top:8px; max-width:280px; }
-  .agent-acc-bar{ height:6px; border-radius:99px; background:var(--navy-700); overflow:hidden; }
-  .agent-acc-bar-fill{ height:100%; background:var(--gx-signal); border-radius:99px; transition:width .3s; }
-  .agent-acc-bar-fill.full{ background:var(--gx-success); }
-  .agent-acc-progress-text{ font-size:10.5px; color:var(--ink-500); margin-top:4px; display:block; }
-  .agent-acc-note{ font-size:10.5px; color:var(--gx-warn); margin-top:4px; }
-  .agent-acc-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; }
-  .agent-acc-toggle-btn{
-    font-family:var(--gx-font); font-size:11px; font-weight:600; padding:7px 12px; border-radius:9px;
-    cursor:pointer; white-space:nowrap;
-    background:rgba(232,49,49,0.12); border:1px solid rgba(232,49,49,0.4); color:var(--gx-danger);
-  }
-  .agent-acc-toggle-btn:hover{ background:rgba(232,49,49,0.2); }
-  .agent-acc-toggle-btn.is-revoked{
-    background:rgba(32,181,106,0.14); border-color:rgba(32,181,106,0.35); color:var(--gx-success);
-  }
-  .agent-acc-toggle-btn:disabled{ opacity:.6; cursor:default; }
-  .key-status-tag.revoked{ background:rgba(232,49,49,0.14); color:var(--gx-danger); border:1px solid rgba(232,49,49,0.35); }
-
-  /* ================= D2 DASHBOARD (ໜ້າສະຫຼຸບຫຼັກ — ຕໍ່ຂໍ້ມູນຈິງ) ================= */
-  .d2-board{ margin-bottom:18px; }
-  .d2-kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
-  .d2-kpi{ background:var(--gx-panel,#111); border:1px solid rgba(255,0,1,0.16); border-radius:16px; padding:12px 8px; text-align:center; }
-  .d2-kpi-num{ font-weight:700; font-size:21px; line-height:1; }
-  .d2-kpi-label{ font-size:9.5px; color:var(--gx-ink-dim,#9a9694); margin-top:5px; line-height:1.35; }
-
-  .d2-sum-row{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
-  .d2-sum-card{ background:var(--gx-panel,#111); border:1px solid rgba(255,0,1,0.16); border-radius:18px; padding:14px; }
-  .d2-sum-card.d2-acc-green{ border-color:rgba(35,197,94,.28); }
-  .d2-sum-card.d2-acc-violet{ border-color:rgba(124,92,255,.28); }
-  .d2-sum-label{ font-size:10px; color:var(--gx-ink-dim,#9a9694); line-height:1.4; }
-  .d2-sum-value{ font-weight:700; font-size:20px; line-height:1.1; margin-top:4px; }
-  .d2-sum-unit{ font-size:9.5px; color:var(--gx-ink-dim,#9a9694); margin-top:1px; }
-
-  .d2-challenge-card{
-    position:relative;
-    background:linear-gradient(180deg, rgba(124,92,255,0.09), rgba(124,92,255,0.02));
-    border:1px solid rgba(124,92,255,0.35); border-radius:20px; padding:14px 14px 12px; margin-bottom:14px;
-    overflow:hidden;
-  }
-  .d2-ch-track{ display:flex; transition:transform .38s cubic-bezier(.22,.9,.3,1); }
-  .d2-ch-slide{ flex:0 0 100%; min-width:100%; }
-  .d2-ch-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
-  .d2-ch-title{ font-weight:700; font-size:13px; }
-  .d2-ch-sub{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-top:3px; }
-  .d2-ch-badge{ flex-shrink:0; font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
-  .d2-ch-badge.d2-up{ background:rgba(35,197,94,0.14); color:#23c55e; }
-  .d2-ch-badge.d2-down{ background:rgba(255,0,1,0.14); color:#ff6767; }
-  .d2-ch-badge.d2-flat{ background:rgba(255,255,255,0.06); color:#a9a6a3; }
-  .d2-ch-badge.d2-reset{ background:rgba(124,92,255,0.16); color:#c9bfff; }
-  .d2-ch-value{ font-weight:700; font-size:28px; line-height:1; margin-bottom:4px; }
-  .d2-ch-value span{ font-size:12px; color:var(--gx-ink-dim,#9a9694); font-weight:600; margin-left:5px; }
-  .d2-ch-prev{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-bottom:10px; }
-  .d2-ch-nav{ display:flex; align-items:center; gap:8px; }
-  .d2-ch-arrow{
-    flex-shrink:0; width:38px; height:38px; border-radius:12px;
-    background:rgba(124,92,255,0.1); border:1px solid rgba(124,92,255,.35); color:#c9bfff;
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    transition:opacity .15s ease, transform .12s ease;
-  }
-  .d2-ch-arrow:active{ transform:scale(0.92); }
-  .d2-ch-arrow:disabled{ opacity:.25; cursor:default; pointer-events:none; }
-  .d2-ch-arrow svg{ width:16px; height:16px; stroke:currentColor; }
-  .d2-ch-recheck-btn{
-    flex:1; display:flex; align-items:center; justify-content:center; gap:8px;
-    background:rgba(124,92,255,0.14); border:1px solid rgba(124,92,255,.4); color:#c9bfff;
-    font-weight:600; font-size:12.5px; padding:10px; border-radius:14px; cursor:pointer;
-  }
-  .d2-ch-recheck-btn:disabled{ opacity:.55; cursor:not-allowed; }
-  .d2-ch-recheck-btn svg{ width:14px; height:14px; stroke:currentColor; }
-  .d2-ch-recheck-btn.d2-spinning svg{ animation:d2spin .6s linear; }
-  @keyframes d2spin{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
-  .d2-ch-lastcheck{ text-align:center; font-size:10px; color:var(--gx-ink-dim,#9a9694); margin-top:8px; }
-  .d2-ch-dots{ display:flex; justify-content:center; gap:5px; margin-top:10px; }
-  .d2-ch-dot{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.15); transition:background .2s ease, width .2s ease; }
-  .d2-ch-dot.active{ background:#c9bfff; width:14px; border-radius:3px; }
-
-  .d2-attn{
-    background:linear-gradient(180deg, rgba(255,0,1,0.07), rgba(255,0,1,0.02));
-    border:1px solid rgba(255,0,1,0.4); border-radius:20px; padding:14px 12px 6px; margin-bottom:16px;
-  }
-  .d2-attn-head{ display:flex; align-items:center; gap:9px; margin-bottom:10px; }
-  .d2-attn-head svg{ width:16px; height:16px; stroke:var(--gx-signal,#ff0001); flex-shrink:0; }
-  .d2-attn-title{ font-weight:700; font-size:13px; }
-  .d2-attn-count{ margin-left:auto; background:var(--gx-signal,#ff0001); color:#fff; font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:20px; }
-  .d2-attn-row{ display:flex; align-items:center; gap:11px; padding:10px 6px; border-radius:12px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.04); }
-  .d2-attn-row:last-child{ border-bottom:none; }
-  .d2-attn-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 4px currentColor; }
-  .d2-attn-dot.d2-sev-high{ background:#ff0001; color:rgba(255,0,1,0.18); }
-  .d2-attn-dot.d2-sev-mid{ background:#ffb020; color:rgba(255,176,32,0.18); }
-  .d2-attn-body{ flex:1; min-width:0; }
-  .d2-attn-text{ font-size:12.5px; font-weight:600; line-height:1.4; }
-  .d2-attn-sub{ font-size:10.8px; color:var(--gx-ink-dim,#9a9694); margin-top:2px; }
-  .d2-attn-arrow{ width:24px; height:24px; border-radius:8px; flex-shrink:0; background:rgba(255,255,255,0.04); display:flex; align-items:center; justify-content:center; color:var(--gx-ink-dim,#9a9694); }
-  .d2-attn-arrow svg{ width:11px; height:11px; stroke:currentColor; }
-  .d2-attn-empty{ display:flex; align-items:center; gap:9px; padding:12px 6px; color:#23c55e; font-size:12.5px; font-weight:600; }
-  .d2-attn-empty svg{ width:16px; height:16px; stroke:#23c55e; }
-
-  .d2-cat-group{ margin-bottom:16px; }
-  .d2-cat-head{ display:flex; align-items:center; gap:9px; padding:0 4px; margin-bottom:8px; }
-  .d2-cat-swatch{ width:24px; height:24px; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-  .d2-cat-swatch svg{ width:13px; height:13px; stroke:#fff; }
-  .d2-cat-name{ font-weight:700; font-size:11.5px; letter-spacing:.5px; text-transform:uppercase; }
-  .d2-cat-cards{ display:flex; flex-direction:column; gap:7px; }
-  .d2-fn-card{
-    background:var(--gx-panel,#111); border:1px solid rgba(255,0,1,0.16); border-radius:14px;
-    display:flex; align-items:center; gap:11px; padding:12px 11px; cursor:pointer;
-    transition:border-color .25s ease, transform .15s ease;
-  }
-  .d2-fn-card:active{ transform:scale(.99); }
-  /* ອະນິເມຊັນ "ເປີດ" ຂອງກາດ — ໃຫ້ຮູ້ສຶກຄືກັບ .fn-card.expanded ໃນ demo:
-     ຂອບກາດຕິດສີ + ລູກສອນໝຸນ 180° + ປ່ຽນສີ ຕອນ switch ຂອງມັນຖືກເປີດ */
-  .d2-fn-card.d2-open{ border-color:var(--rail-color, rgba(255,0,1,0.5)); }
-  .d2-fn-icon{ width:36px; height:36px; border-radius:11px; flex-shrink:0; background:var(--rail-color,#ff0001); display:flex; align-items:center; justify-content:center; }
-  .d2-fn-icon svg{ width:16px; height:16px; stroke:#fff; }
-  .d2-fn-text{ flex:1; min-width:0; }
-  .d2-fn-title-row{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
-  .d2-fn-title{ font-weight:700; font-size:13px; }
-  .d2-fn-badge{ font-size:9.5px; font-weight:700; padding:2px 8px; border-radius:20px; flex-shrink:0; letter-spacing:.2px; }
-  .d2-fn-badge.d2-ok{ background:rgba(255,255,255,0.06); color:#a9a6a3; }
-  .d2-fn-badge.d2-warn{ background:rgba(255,176,32,0.14); color:#ffb020; }
-  .d2-fn-badge.d2-urgent{ background:rgba(255,0,1,0.14); color:#ff6767; }
-  .d2-fn-desc{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-top:2px; line-height:1.4; }
-  .d2-fn-arrow{
-    width:24px; height:24px; border-radius:8px; flex-shrink:0; background:rgba(255,255,255,0.04);
-    display:flex; align-items:center; justify-content:center; color:var(--gx-ink-dim,#9a9694);
-    transition:transform .3s cubic-bezier(.2,.85,.25,1), color .25s ease, background .25s ease;
-  }
-  .d2-fn-arrow svg{ width:11px; height:11px; stroke:currentColor; }
-  .d2-fn-card.d2-open .d2-fn-arrow{ transform:rotate(180deg); color:var(--rail-color, #ff0001); background:rgba(255,0,1,0.1); }
-
-  /* ---- ເອົາ list ເມນູເກົ່າ (switch-head) ແລະ ops-strip ເກົ່າອອກ — ຊ້ຳກັບ D2 dashboard ດ້ານເທິງແລ້ວ ---- */
-  .switch-head{ display:none !important; }
-  #opsStrip{ display:none !important; }
-</style>
 </head>
 <body>
 <div class="ambient-glow">
-  <div class="orb orb-gold"></div>
-  <div class="orb orb-navy"></div>
-  <div class="orb orb-gold-soft"></div>
+<div class="orb orb-gold"></div>
+<div class="orb orb-navy"></div>
+<div class="orb orb-gold-soft"></div>
 </div>
 <div class="gx-grid"></div>
 <div class="gx-scanline"></div>
-
 <!-- ============ ໜ້າລົງຊື່ເຂົ້າຫ້ອງແອດມິນ (ຜ່ານ Discord) ============ -->
 <div class="admin-shell login-screen" id="loginScreen">
-  <div class="login-logo">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
-  </div>
-  <div>
-    <div class="login-title">ຫ້ອງແອດມິນ ⋅ DEK MASH SHOP</div>
-    <div class="login-sub" style="margin-top:6px;">ສຳລັບຈັດການສິນຄ້າ ແລະ ເຕີມສະຕັອກລະຫັດ ເທົ່ານັ້ນ</div>
-  </div>
-  <div class="login-card">
-    <button class="btn-block btn-discord" id="discordLoginBtn">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.9-1.52.07.07 0 0 0-.08.04c-.21.38-.45.86-.61 1.24a18.3 18.3 0 0 0-5.46 0 12.6 12.6 0 0 0-.62-1.24.08.08 0 0 0-.08-.04c-1.7.29-3.34.8-4.9 1.52a.07.07 0 0 0-.03.03C.53 8.7-.32 12.9.1 17.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.87-.9.08.08 0 0 1 0-.13c.13-.09.25-.19.37-.28a.07.07 0 0 1 .08 0c3.93 1.8 8.18 1.8 12.06 0a.07.07 0 0 1 .08 0c.12.1.24.19.37.28a.08.08 0 0 1 0 .13c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.12c.37.7.78 1.36 1.23 2a.08.08 0 0 0 .08.02 19.8 19.8 0 0 0 6.01-3.03.08.08 0 0 0 .03-.05c.5-4.83-.83-9-3.51-12.66a.06.06 0 0 0-.03-.03ZM8.02 14.6c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.95 2.42-2.15 2.42Zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.94 2.42-2.15 2.42Z"/></svg>
+<div class="login-logo">
+<svg fill="none" viewbox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z" stroke="#fff" stroke-linejoin="round" stroke-width="1.6"></path></svg>
+</div>
+<div>
+<div class="login-title">ຫ້ອງແອດມິນ ⋅ DEK MASH SHOP</div>
+<div class="login-sub u-mt-6">ສຳລັບຈັດການສິນຄ້າ ແລະ ເຕີມສະຕັອກລະຫັດ ເທົ່ານັ້ນ</div>
+</div>
+<div class="login-card">
+<button class="btn-block btn-discord" id="discordLoginBtn">
+<svg fill="currentColor" viewbox="0 0 24 24"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.9-1.52.07.07 0 0 0-.08.04c-.21.38-.45.86-.61 1.24a18.3 18.3 0 0 0-5.46 0 12.6 12.6 0 0 0-.62-1.24.08.08 0 0 0-.08-.04c-1.7.29-3.34.8-4.9 1.52a.07.07 0 0 0-.03.03C.53 8.7-.32 12.9.1 17.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.87-.9.08.08 0 0 1 0-.13c.13-.09.25-.19.37-.28a.07.07 0 0 1 .08 0c3.93 1.8 8.18 1.8 12.06 0a.07.07 0 0 1 .08 0c.12.1.24.19.37.28a.08.08 0 0 1 0 .13c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.12c.37.7.78 1.36 1.23 2a.08.08 0 0 0 .08.02 19.8 19.8 0 0 0 6.01-3.03.08.08 0 0 0 .03-.05c.5-4.83-.83-9-3.51-12.66a.06.06 0 0 0-.03-.03ZM8.02 14.6c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.95 2.42-2.15 2.42Zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.94 2.42-2.15 2.42Z"></path></svg>
       ເຂົ້າສູ່ລະບົບດ້ວຍ Discord
     </button>
-    <div class="login-error" id="loginError"></div>
-  </div>
-  <div class="hint" style="text-align:center; max-width:300px;">
+<div class="login-error" id="loginError"></div>
+</div>
+<div class="hint u-hint-center">
     ຫ້ອງແອດມິນນີ້ອະນຸຍາດສະເພາະບັນຊີ Discord ທີ່ຜູກກັບອີເມວແອດມິນເທົ່ານັ້ນ ຖ້າອີເມວບໍ່ກົງ ລະບົບຈະປະຕິເສດການເຂົ້າໃຊ້
   </div>
 </div>
-
 <!-- ============ ໜ້າ: login ແລ້ວແຕ່ບໍ່ແມ່ນແອດມິນ ============ -->
-<div class="admin-shell login-screen" id="deniedScreen" style="display:none;">
-  <div class="login-logo" style="background:#2a2a2a;">
-    <svg viewBox="0 0 24 24" fill="none"><path d="M12 9v4M12 17h.01M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>
-  </div>
-  <div>
-    <div class="login-title">ບໍ່ມີສິດເຂົ້າຫ້ອງແອດມິນ</div>
-    <div class="login-sub" style="margin-top:6px;">ບັນຊີ Discord ນີ້ບໍ່ແມ່ນບັນຊີແອດມິນ ຈຶ່ງເຂົ້າໜ້ານີ້ບໍ່ໄດ້</div>
-  </div>
-  <button class="btn-block secondary" id="deniedLogoutBtn" style="max-width:340px;">ອອກຈາກລະບົບ</button>
+<div class="admin-shell login-screen u-hidden" id="deniedScreen">
+<div class="login-logo u-bg-black">
+<svg fill="none" viewbox="0 0 24 24"><path d="M12 9v4M12 17h.01M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z" stroke="#fff" stroke-linejoin="round" stroke-width="1.6"></path></svg>
 </div>
-
+<div>
+<div class="login-title">ບໍ່ມີສິດເຂົ້າຫ້ອງແອດມິນ</div>
+<div class="login-sub u-mt-6">ບັນຊີ Discord ນີ້ບໍ່ແມ່ນບັນຊີແອດມິນ ຈຶ່ງເຂົ້າໜ້ານີ້ບໍ່ໄດ້</div>
+</div>
+<button class="btn-block secondary u-max-w-340" id="deniedLogoutBtn">ອອກຈາກລະບົບ</button>
+</div>
 <!-- ============ Gate: ກຳລັງກວດສອບ (ຫຼັງລ໋ອກອິນ Discord ຜ່ານແລ້ວ ລໍຖ້າໂຫຼດຂໍ້ມູນ Supabase) ============ -->
-<div id="gate" style="display:none; text-align:center; padding:70px 10px; color:var(--ink-300); font-size:13.5px;">
-  <div style="width:34px;height:34px;border-radius:50%;margin:0 auto 16px; border:3px solid rgba(255,0,1,0.15); border-top-color:var(--gx-signal); animation:gxSpin .8s linear infinite;"></div>
-  <div>ກຳລັງໂຫຼດຂໍ້ມູນ...</div>
+<div class="u-gate" id="gate">
+<div class="u-spinner"></div>
+<div>ກຳລັງໂຫຼດຂໍ້ມູນ...</div>
 </div>
-
 <!-- ============ Dashboard (ພອດແອດມິນຈິງ — ຕໍ່ Supabase) ============ -->
-<div class="wrap" id="adminApp" style="display:none;">
-
-  <div class="back-row">
-    <button class="icon-btn" id="logoutBtn" title="ກັບໄປໜ້າເວັບ" style="width:40px;height:40px;">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-    </button>
-    <h1 class="page-title">ຫ້ອງຄວບຄຸມແອດມິນ</h1>
-  </div>
-
-  <div class="ops-strip" id="opsStrip"></div>
-
-  <!-- ============ D2 DASHBOARD — ໜ້າສະຫຼຸບ (ຕໍ່ຂໍ້ມູນຈິງ) ============ -->
-  <div class="d2-board">
-
-    <div class="d2-kpi-row">
-      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiProducts">—</div><div class="d2-kpi-label">ສິນຄ້າ<br>ທັງໝົດ</div></div>
-      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiStock">—</div><div class="d2-kpi-label">ລະຫັດ<br>ຄົງເຫຼືອ</div></div>
-      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiTopup">—</div><div class="d2-kpi-label">ຄຳຂໍເຕີມເງິນ<br>ລໍຖ້າ</div></div>
-      <div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiAgents">—</div><div class="d2-kpi-label">ຕົວແທນ<br>ທຳງານຢູ່</div></div>
-    </div>
-
-    <div class="d2-sum-row">
-      <div class="d2-sum-card d2-acc-green">
-        <div class="d2-sum-label">ຍອດເຕີມເງິນທັງໝົດ</div>
-        <div class="d2-sum-value" id="d2SumTopup">—</div>
-        <div class="d2-sum-unit">ກີບ ⋅ ນັບແຕ່ເປີດຮ້ານ</div>
-      </div>
-      <div class="d2-sum-card d2-acc-violet">
-        <div class="d2-sum-label">ຄຳສັ່ງຊື້ສຳເລັດທັງໝົດ</div>
-        <div class="d2-sum-value" id="d2SumOrders">—</div>
-        <div class="d2-sum-unit">ລາຍການ ⋅ ນັບແຕ່ເປີດຮ້ານ</div>
-      </div>
-    </div>
-
-    <div class="d2-challenge-card">
-      <div class="d2-ch-track" id="d2ChTrack"><!-- ໃສ່ໂດຍ JS --></div>
-      <div class="d2-ch-nav">
-        <button type="button" class="d2-ch-arrow" id="d2ChPrevBtn" title="ເບິ່ງຮອບກ່ອນໜ້າ">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button type="button" class="d2-ch-recheck-btn" id="d2ChRecheckBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
-          <span id="d2ChRecheckLabel">ນັບຍອດໃໝ່</span>
-        </button>
-        <button type="button" class="d2-ch-arrow" id="d2ChNextBtn" title="ກັບໄປຮອບປັດຈຸບັນ">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      </div>
-      <div class="d2-ch-lastcheck" id="d2ChLastCheck">ຍັງບໍ່ເຄີຍເຊັກ</div>
-      <div class="d2-ch-dots" id="d2ChDots"></div>
-    </div>
-
-    <div class="d2-attn">
-      <div class="d2-attn-head">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
-        <span class="d2-attn-title">ຕ້ອງດຳເນີນການ</span>
-        <span class="d2-attn-count" id="d2AttnCount">0</span>
-      </div>
-      <div id="d2AttnList"></div>
-    </div>
-
-    <!-- ໝວດ: ຄັງສິນຄ້າ -->
-    <div class="d2-cat-group" style="--rail-color:var(--black-400,#ff0001);">
-      <div class="d2-cat-head">
-        <div class="d2-cat-swatch" style="background:var(--black-400,#ff0001);">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
-        </div>
-        <div class="d2-cat-name">ຄັງສິນຄ້າ</div>
-      </div>
-      <div class="d2-cat-cards">
-        <div class="d2-fn-card" data-goto="panelAdd">
-          <div class="d2-fn-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
-          <div class="d2-fn-text">
-            <div class="d2-fn-title-row"><span class="d2-fn-title">ເພີ່ມສິນຄ້າ</span></div>
-            <div class="d2-fn-desc">ສ້າງລາຍການສິນຄ້າໃໝ່ໃຫ້ໂຊວ໌ໃນໜ້າຮ້ານ</div>
-          </div>
-          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-        </div>
-        <div class="d2-fn-card" data-goto="panelManage">
-          <div class="d2-fn-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></div>
-          <div class="d2-fn-text">
-            <div class="d2-fn-title-row"><span class="d2-fn-title">ຈັດການສິນຄ້າ</span><span class="d2-fn-badge d2-ok" id="d2BadgeManage">—</span></div>
-            <div class="d2-fn-desc">ແກ້ໄຂ, ຢຸດຂາຍຊົ່ວຄາວ ຫຼືລຶບສິນຄ້າ</div>
-          </div>
-          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-        </div>
-        <div class="d2-fn-card" data-goto="panelCodes">
-          <div class="d2-fn-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-          <div class="d2-fn-text">
-            <div class="d2-fn-title-row"><span class="d2-fn-title">ເຕີມລະຫັດ</span><span class="d2-fn-badge d2-urgent" id="d2BadgeCodes">—</span></div>
-            <div class="d2-fn-desc">ເພີ່ມສະຕັອກລະຫັດໃຫ້ສິນຄ້າແຕ່ລະລາຍການ</div>
-          </div>
-          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ໝວດ: ການເງິນ -->
-    <div class="d2-cat-group" style="--rail-color:#ffb020;">
-      <div class="d2-cat-head">
-        <div class="d2-cat-swatch" style="background:#ffb020;">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
-        </div>
-        <div class="d2-cat-name">ການເງິນ</div>
-      </div>
-      <div class="d2-cat-cards">
-        <div class="d2-fn-card" data-goto="panelTopup">
-          <div class="d2-fn-icon" style="background:#ffb020;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
-          <div class="d2-fn-text">
-            <div class="d2-fn-title-row"><span class="d2-fn-title">ຄຳຂໍເຕີມເງິນ</span><span class="d2-fn-badge d2-warn" id="d2BadgeTopup">—</span></div>
-            <div class="d2-fn-desc">ກວດສະລິບໂອນເງິນ ແລ້ວກົດອະນຸມັດ ຫຼືປະຕິເສດ</div>
-          </div>
-          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ໝວດ: ຕົວແທນຈຳໜ່າຍ -->
-    <div class="d2-cat-group" style="--rail-color:#7c5cff;">
-      <div class="d2-cat-head">
-        <div class="d2-cat-swatch" style="background:#7c5cff;">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </div>
-        <div class="d2-cat-name">ຕົວແທນຈຳໜ່າຍ</div>
-      </div>
-      <div class="d2-cat-cards">
-        <div class="d2-fn-card" data-goto="panelAgent">
-          <div class="d2-fn-icon" style="background:#7c5cff;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <div class="d2-fn-text">
-            <div class="d2-fn-title-row"><span class="d2-fn-title">ລະບົບຕົວແທນ</span><span class="d2-fn-badge d2-ok" id="d2BadgeAgent">—</span></div>
-            <div class="d2-fn-desc">ຄີຍ໌ປົດລັອກ, ລາຄາພິເສດ ແລະ ຈັດການຕົວແທນ</div>
-          </div>
-          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ໝວດ: ຕັ້ງຄ່າ -->
-    <div class="d2-cat-group" style="--rail-color:#2a2a2a;">
-      <div class="d2-cat-head">
-        <div class="d2-cat-swatch" style="background:#2a2a2a;">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
-        </div>
-        <div class="d2-cat-name">ຕັ້ງຄ່າ</div>
-      </div>
-      <div class="d2-cat-cards">
-        <div class="d2-fn-card" data-goto="panelSettings">
-          <div class="d2-fn-icon" style="background:#2a2a2a;"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82"/></svg></div>
-          <div class="d2-fn-text">
-            <div class="d2-fn-title-row"><span class="d2-fn-title">ຕັ້ງຄ່າຮ້ານ</span></div>
-            <div class="d2-fn-desc">ໂລໂກ້, ໝວດໝູ່, QR ຮັບເງິນ ແລະ ຊ່ອງທາງໂຊເຊียล</div>
-          </div>
-          <div class="d2-fn-arrow"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-  <!-- /D2 DASHBOARD -->
-
-  <div class="deck" id="deck">
-    <div class="switch open" data-target="panelAdd">
-      <div class="switch-head">
-        <span class="switch-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>
-        <span class="switch-text">
-          <span class="dash-title">ເພີ່ມສິນຄ້າ</span>
-          <span class="dash-desc">ສ້າງລາຍການສິນຄ້າໃໝ່ເຂົ້າຮ້ານ</span>
-        </span>
-        <span class="switch-right"><span class="switch-chevron"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></span>
-      </div>
-      <div class="switch-body"><div class="switch-body-inner">
-  <!-- ===== PANEL 1: ເພີ່ມສິນຄ້າ ===== -->
-  <div class="panel-content" id="panelAdd">
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+<div class="wrap u-hidden" id="adminApp">
+<div class="back-row">
+<button class="icon-btn u-icon-40" id="logoutBtn" title="ກັບໄປໜ້າເວັບ">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
+</button>
+<h1 class="page-title">ຫ້ອງຄວບຄຸມແອດມິນ</h1>
+</div>
+<div class="ops-strip" id="opsStrip"></div>
+<!-- ============ D2 DASHBOARD — ໜ້າສະຫຼຸບ (ຕໍ່ຂໍ້ມູນຈິງ) ============ -->
+<div class="d2-board">
+<div class="d2-kpi-row">
+<div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiProducts">—</div><div class="d2-kpi-label">ສິນຄ້າ<br/>ທັງໝົດ</div></div>
+<div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiStock">—</div><div class="d2-kpi-label">ລະຫັດ<br/>ຄົງເຫຼືອ</div></div>
+<div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiTopup">—</div><div class="d2-kpi-label">ຄຳຂໍເຕີມເງິນ<br/>ລໍຖ້າ</div></div>
+<div class="d2-kpi"><div class="d2-kpi-num" id="d2KpiAgents">—</div><div class="d2-kpi-label">ຕົວແທນ<br/>ທຳງານຢູ່</div></div>
+</div>
+<div class="d2-sum-row">
+<div class="d2-sum-card d2-acc-green">
+<div class="d2-sum-label">ຍອດເຕີມເງິນທັງໝົດ</div>
+<div class="d2-sum-value" id="d2SumTopup">—</div>
+<div class="d2-sum-unit">ກີບ ⋅ ນັບແຕ່ເປີດຮ້ານ</div>
+</div>
+<div class="d2-sum-card d2-acc-violet">
+<div class="d2-sum-label">ຄຳສັ່ງຊື້ສຳເລັດທັງໝົດ</div>
+<div class="d2-sum-value" id="d2SumOrders">—</div>
+<div class="d2-sum-unit">ລາຍການ ⋅ ນັບແຕ່ເປີດຮ້ານ</div>
+</div>
+</div>
+<div class="d2-challenge-card">
+<div class="d2-ch-track" id="d2ChTrack"><!-- ໃສ່ໂດຍ JS --></div>
+<div class="d2-ch-nav">
+<button class="d2-ch-arrow" id="d2ChPrevBtn" title="ເບິ່ງຮອບກ່ອນໜ້າ" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+</button>
+<button class="d2-ch-recheck-btn" id="d2ChRecheckBtn" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+<span id="d2ChRecheckLabel">ນັບຍອດໃໝ່</span>
+</button>
+<button class="d2-ch-arrow" id="d2ChNextBtn" title="ກັບໄປຮອບປັດຈຸບັນ" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+</button>
+</div>
+<div class="d2-ch-lastcheck" id="d2ChLastCheck">ຍັງບໍ່ເຄີຍເຊັກ</div>
+<div class="d2-ch-dots" id="d2ChDots"></div>
+</div>
+<div class="d2-attn">
+<div class="d2-attn-head">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"></path></svg>
+<span class="d2-attn-title">ຕ້ອງດຳເນີນການ</span>
+<span class="d2-attn-count" id="d2AttnCount">0</span>
+</div>
+<div id="d2AttnList"></div>
+</div>
+<!-- ໝວດ: ຄັງສິນຄ້າ -->
+<div class="d2-cat-group rail-red">
+<div class="d2-cat-head">
+<div class="d2-cat-swatch swatch-red">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5M12 22V12"></path></svg>
+</div>
+<div class="d2-cat-name">ຄັງສິນຄ້າ</div>
+</div>
+<div class="d2-cat-cards">
+<div class="d2-fn-card" data-goto="panelAdd">
+<div class="d2-fn-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg></div>
+<div class="d2-fn-text">
+<div class="d2-fn-title-row"><span class="d2-fn-title">ເພີ່ມສິນຄ້າ</span></div>
+<div class="d2-fn-desc">ສ້າງລາຍການສິນຄ້າໃໝ່ໃຫ້ໂຊວ໌ໃນໜ້າຮ້ານ</div>
+</div>
+<div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+</div>
+<div class="d2-fn-card" data-goto="panelManage">
+<div class="d2-fn-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg></div>
+<div class="d2-fn-text">
+<div class="d2-fn-title-row"><span class="d2-fn-title">ຈັດການສິນຄ້າ</span><span class="d2-fn-badge d2-ok" id="d2BadgeManage">—</span></div>
+<div class="d2-fn-desc">ແກ້ໄຂ, ຢຸດຂາຍຊົ່ວຄາວ ຫຼືລຶບສິນຄ້າ</div>
+</div>
+<div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+</div>
+<div class="d2-fn-card" data-goto="panelCodes">
+<div class="d2-fn-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="10" rx="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+<div class="d2-fn-text">
+<div class="d2-fn-title-row"><span class="d2-fn-title">ເຕີມລະຫັດ</span><span class="d2-fn-badge d2-urgent" id="d2BadgeCodes">—</span></div>
+<div class="d2-fn-desc">ເພີ່ມສະຕັອກລະຫັດໃຫ້ສິນຄ້າແຕ່ລະລາຍການ</div>
+</div>
+<div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+</div>
+</div>
+</div>
+<!-- ໝວດ: ການເງິນ -->
+<div class="d2-cat-group rail-orange">
+<div class="d2-cat-head">
+<div class="d2-cat-swatch swatch-orange">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="14" rx="2.5" width="20" x="2" y="6"></rect><path d="M2 10h20"></path><path d="M6 15h4"></path></svg>
+</div>
+<div class="d2-cat-name">ການເງິນ</div>
+</div>
+<div class="d2-cat-cards">
+<div class="d2-fn-card" data-goto="panelTopup">
+<div class="d2-fn-icon swatch-orange"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></div>
+<div class="d2-fn-text">
+<div class="d2-fn-title-row"><span class="d2-fn-title">ຄຳຂໍເຕີມເງິນ</span><span class="d2-fn-badge d2-warn" id="d2BadgeTopup">—</span></div>
+<div class="d2-fn-desc">ກວດສະລິບໂອນເງິນ ແລ້ວກົດອະນຸມັດ ຫຼືປະຕິເສດ</div>
+</div>
+<div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+</div>
+</div>
+</div>
+<!-- ໝວດ: ຕົວແທນຈຳໜ່າຍ -->
+<div class="d2-cat-group rail-purple">
+<div class="d2-cat-head">
+<div class="d2-cat-swatch swatch-purple">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+</div>
+<div class="d2-cat-name">ຕົວແທນຈຳໜ່າຍ</div>
+</div>
+<div class="d2-cat-cards">
+<div class="d2-fn-card" data-goto="panelAgent">
+<div class="d2-fn-icon swatch-purple"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+<div class="d2-fn-text">
+<div class="d2-fn-title-row"><span class="d2-fn-title">ລະບົບຕົວແທນ</span><span class="d2-fn-badge d2-ok" id="d2BadgeAgent">—</span></div>
+<div class="d2-fn-desc">ຄີຍ໌ປົດລັອກ, ລາຄາພິເສດ ແລະ ຈັດການຕົວແທນ</div>
+</div>
+<div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+</div>
+</div>
+</div>
+<!-- ໝວດ: ຕັ້ງຄ່າ -->
+<div class="d2-cat-group rail-black">
+<div class="d2-cat-head">
+<div class="d2-cat-swatch u-bg-black">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"></path></svg>
+</div>
+<div class="d2-cat-name">ຕັ້ງຄ່າ</div>
+</div>
+<div class="d2-cat-cards">
+<div class="d2-fn-card" data-goto="panelSettings">
+<div class="d2-fn-icon u-bg-black"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82"></path></svg></div>
+<div class="d2-fn-text">
+<div class="d2-fn-title-row"><span class="d2-fn-title">ຕັ້ງຄ່າຮ້ານ</span></div>
+<div class="d2-fn-desc">ໂລໂກ້, ໝວດໝູ່, QR ຮັບເງິນ ແລະ ຊ່ອງທາງໂຊເຊียล</div>
+</div>
+<div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+</div>
+</div>
+</div>
+</div>
+<!-- /D2 DASHBOARD -->
+<div class="deck" id="deck">
+<div class="switch open" data-target="panelAdd">
+<div class="switch-head">
+<span class="switch-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg></span>
+<span class="switch-text">
+<span class="dash-title">ເພີ່ມສິນຄ້າ</span>
+<span class="dash-desc">ສ້າງລາຍການສິນຄ້າໃໝ່ເຂົ້າຮ້ານ</span>
+</span>
+<span class="switch-right"><span class="switch-chevron"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span></span>
+</div>
+<div class="switch-body"><div class="switch-body-inner">
+<!-- ===== PANEL 1: ເພີ່ມສິນຄ້າ ===== -->
+<div class="panel-content" id="panelAdd">
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" x2="12" y1="3" y2="15"></line></svg>
         ເພີ່ມສິນຄ້າໃໝ່
       </h3>
-      <p class="panel-sub">ຕື່ມຮູບ, ຊື່, ໝວດໝູ່ ແລະ ລາຄາ ເພື່ອສ້າງສິນຄ້າໃໝ່ໃຫ້ໂຊວ໌ໃນໜ້າຮ້ານ</p>
-      <form id="addForm">
-        <div class="gx-field">
-          <label>ຮູບສິນຄ້າ</label>
-          <div class="drop-zone" id="dropZone">
-            <span id="dropZoneText">ແຕະເພື່ອເລືອກຮູບພາບ</span>
-            <input type="file" id="imageInput" accept="image/*">
-          </div>
-        </div>
-        <div class="gx-field">
-          <label>ຊື່ສິນຄ້າ</label>
-          <div class="gx-input-wrap"><input type="text" id="pName" required placeholder="ຕົວຢ່າງ: ບັດເຕີມເງິນ 100 ບາດ"></div>
-        </div>
-        <div class="gx-row2">
-          <div class="gx-field">
-            <label>ໝວດໝູ່</label>
-            <div class="gx-input-wrap">
-              <select id="pCategorySelect" required>
-                <option value="">ເລືອກໝວດໝູ່</option>
-              </select>
-            </div>
-          </div>
-          <div class="gx-field" id="basePriceField">
-            <label>ລາຄາ (ກີບ)</label>
-            <div class="gx-input-wrap"><input type="number" id="pPrice" min="0" step="0.01" placeholder="0"></div>
-          </div>
-        </div>
-
-        <div class="gx-field">
-          <label>ລາຍລະອຽດສິນຄ້າ (ບໍ່ບັງຄັບ)</label>
-          <div class="gx-input-wrap"><textarea id="pDescription" rows="4" placeholder="ອະທິບາຍລາຍລະອຽດສິນຄ້າ, ວິທີໃຊ້, ເງື່ອນໄຂ ... (ຈະສະແດງຢູ່ໜ້າສິນຄ້າ ໃຕ້ປຸ່ມຊື້ເລີຍ)" style="resize:vertical;min-height:90px;"></textarea></div>
-        </div>
-        <div class="gx-field">
-          <label class="duration-toggle-label">
-            <input type="checkbox" id="pDurationEnabled">
+<p class="panel-sub">ຕື່ມຮູບ, ຊື່, ໝວດໝູ່ ແລະ ລາຄາ ເພື່ອສ້າງສິນຄ້າໃໝ່ໃຫ້ໂຊວ໌ໃນໜ້າຮ້ານ</p>
+<form id="addForm">
+<div class="gx-field">
+<label>ຮູບສິນຄ້າ</label>
+<div class="drop-zone" id="dropZone">
+<span id="dropZoneText">ແຕະເພື່ອເລືອກຮູບພາບ</span>
+<input accept="image/*" id="imageInput" type="file"/>
+</div>
+</div>
+<div class="gx-field">
+<label>ຊື່ສິນຄ້າ</label>
+<div class="gx-input-wrap"><input id="pName" placeholder="ຕົວຢ່າງ: ບັດເຕີມເງິນ 100 ບາດ" required="" type="text"/></div>
+</div>
+<div class="gx-row2">
+<div class="gx-field">
+<label>ໝວດໝູ່</label>
+<div class="gx-input-wrap">
+<select id="pCategorySelect" required="">
+<option value="">ເລືອກໝວດໝູ່</option>
+</select>
+</div>
+</div>
+<div class="gx-field" id="basePriceField">
+<label>ລາຄາ (ກີບ)</label>
+<div class="gx-input-wrap"><input id="pPrice" min="0" placeholder="0" step="0.01" type="number"/></div>
+</div>
+</div>
+<div class="gx-field">
+<label>ລາຍລະອຽດສິນຄ້າ (ບໍ່ບັງຄັບ)</label>
+<div class="gx-input-wrap"><textarea class="u-textarea-resize" id="pDescription" placeholder="ອະທິບາຍລາຍລະອຽດສິນຄ້າ, ວິທີໃຊ້, ເງື່ອນໄຂ ... (ຈະສະແດງຢູ່ໜ້າສິນຄ້າ ໃຕ້ປຸ່ມຊື້ເລີຍ)" rows="4"></textarea></div>
+</div>
+<div class="gx-field">
+<label class="duration-toggle-label">
+<input id="pDurationEnabled" type="checkbox"/>
             ມີຕົວເລືອກໄລຍະເວລາ (12ຊມ, 1ວັນ, 2ວັນ ... 30ວັນ) — ແຕ່ລະຕົວເລືອກຕັ້ງລາຄາເອງໄດ້
           </label>
-        </div>
-        <div class="gx-field" id="durationOptionsWrap" style="display:none;">
-          <label>ເລືອກໄລຍະເວລາ ແລະ ຕັ້ງລາຄາ (ກີບ)</label>
-          <div class="duration-options-list" id="durationOptionsList"></div>
-        </div>
-
-        <div class="gx-field">
-          <label class="duration-toggle-label">
-            <input type="checkbox" id="pLinksEnabled">
+</div>
+<div class="gx-field u-hidden" id="durationOptionsWrap">
+<label>ເລືອກໄລຍະເວລາ ແລະ ຕັ້ງລາຄາ (ກີບ)</label>
+<div class="duration-options-list" id="durationOptionsList"></div>
+</div>
+<div class="gx-field">
+<label class="duration-toggle-label">
+<input id="pLinksEnabled" type="checkbox"/>
             ມີລິ້ງໂບນັດ — ລູກຄ້າຈະກົດເບິ່ງໄດ້ກໍ່ຕໍ່ເມື່ອຊື້ສິນຄ້ານີ້ແລ້ວຢ່າງໜ້ອຍ 1 ຄັ້ງ
           </label>
-        </div>
-        <div class="gx-field" id="linksOptionsWrap" style="display:none;">
-          <label>ລິ້ງໂບນັດ (ໃສ່ຊື່ + ລິ້ງ, ເພີ່ມໄດ້ບໍ່ຈຳກັດ)</label>
-          <div class="link-rows-list" id="linkRowsList"></div>
-          <button type="button" class="gx-add-link-btn" id="addLinkRowBtn">+ ເພີ່ມລິ້ງ</button>
-        </div>
-
-        <button type="submit" class="gx-submit" id="addSubmit">
-          <span class="gx-spinner"></span>
-          <span class="gx-submit-label">ເພີ່ມສິນຄ້າ</span>
-        </button>
-        <div class="gx-msg" id="addMsg"></div>
-      </form>
-    </div>
-  </div>
-      </div></div>
-    </div>
-
-    <div class="switch" data-target="panelManage">
-      <div class="switch-head">
-        <span class="switch-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg></span>
-        <span class="switch-text">
-          <span class="dash-title">ຈັດການສິນຄ້າ</span>
-          <span class="dash-desc">ແກ້ໄຂ, ຢຸດຂາຍ ຫຼືລຶບສິນຄ້າທີ່ມີຢູ່</span>
-        </span>
-        <span class="switch-right"><span class="switch-chevron"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></span>
-      </div>
-      <div class="switch-body"><div class="switch-body-inner">
-  <!-- ===== PANEL 2: ຈັດການສິນຄ້າ ===== -->
-  <div class="panel-content" id="panelManage">
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+</div>
+<div class="gx-field u-hidden" id="linksOptionsWrap">
+<label>ລິ້ງໂບນັດ (ໃສ່ຊື່ + ລິ້ງ, ເພີ່ມໄດ້ບໍ່ຈຳກັດ)</label>
+<div class="link-rows-list" id="linkRowsList"></div>
+<button class="gx-add-link-btn" id="addLinkRowBtn" type="button">+ ເພີ່ມລິ້ງ</button>
+</div>
+<button class="gx-submit" id="addSubmit" type="submit">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ເພີ່ມສິນຄ້າ</span>
+</button>
+<div class="gx-msg" id="addMsg"></div>
+</form>
+</div>
+</div>
+</div></div>
+</div>
+<div class="switch" data-target="panelManage">
+<div class="switch-head">
+<span class="switch-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg></span>
+<span class="switch-text">
+<span class="dash-title">ຈັດການສິນຄ້າ</span>
+<span class="dash-desc">ແກ້ໄຂ, ຢຸດຂາຍ ຫຼືລຶບສິນຄ້າທີ່ມີຢູ່</span>
+</span>
+<span class="switch-right"><span class="switch-chevron"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span></span>
+</div>
+<div class="switch-body"><div class="switch-body-inner">
+<!-- ===== PANEL 2: ຈັດການສິນຄ້າ ===== -->
+<div class="panel-content" id="panelManage">
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
         ຈັດການສິນຄ້າ
       </h3>
-      <p class="panel-sub">ລາຍການສິນຄ້າທັງໝົດ — ແກ້ໄຂຂໍ້ມູນ, ຢຸດຂາຍຊົ່ວຄາວ ຫຼືລຶບອອກໄດ້ຈາກຈຸດນີ້</p>
-      <div id="manageList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
-    </div>
-  </div>
-      </div></div>
-    </div>
-
-    <div class="switch" data-target="panelCodes">
-      <div class="switch-head">
-        <span class="switch-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-        <span class="switch-text">
-          <span class="dash-title">ເຕີມລະຫັດ</span>
-          <span class="dash-desc">ເພີ່ມສະຕັອກລະຫັດໃຫ້ສິນຄ້າແຕ່ລະລາຍການ</span>
-        </span>
-        <span class="switch-right"><span class="switch-chevron"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></span>
-      </div>
-      <div class="switch-body"><div class="switch-body-inner">
-  <!-- ===== PANEL 3: ເຕີມລະຫັດ ===== -->
-  <div class="panel-content" id="panelCodes">
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+<p class="panel-sub">ລາຍການສິນຄ້າທັງໝົດ — ແກ້ໄຂຂໍ້ມູນ, ຢຸດຂາຍຊົ່ວຄາວ ຫຼືລຶບອອກໄດ້ຈາກຈຸດນີ້</p>
+<div id="manageList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+</div>
+</div></div>
+</div>
+<div class="switch" data-target="panelCodes">
+<div class="switch-head">
+<span class="switch-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="10" rx="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+<span class="switch-text">
+<span class="dash-title">ເຕີມລະຫັດ</span>
+<span class="dash-desc">ເພີ່ມສະຕັອກລະຫັດໃຫ້ສິນຄ້າແຕ່ລະລາຍການ</span>
+</span>
+<span class="switch-right"><span class="switch-chevron"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span></span>
+</div>
+<div class="switch-body"><div class="switch-body-inner">
+<!-- ===== PANEL 3: ເຕີມລະຫັດ ===== -->
+<div class="panel-content" id="panelCodes">
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="10" rx="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         ເຕີມລະຫັດສິນຄ້າ
       </h3>
-      <p class="panel-sub">ເລືອກສິນຄ້າແລ້ວວາງລະຫັດເພື່ອເພີ່ມສະຕັອກ — ລະບົບຈະຕັດອອກຂາຍໃຫ້ອັດຕະໂນມັດ</p>
-      <div class="gx-field">
-        <label>ເລືອກສິນຄ້າ</label>
-        <div class="gx-input-wrap"><select id="codeProductSelect"></select></div>
-      </div>
-      <div class="gx-field" id="codeDurationWrap" style="display:none;">
-        <label>ເລືອກໄລຍະເວລາ (ລະຫັດຈະຖືກແຍກເກັບຕາມໄລຍະເວລານີ້)</label>
-        <div class="gx-input-wrap"><select id="codeDurationSelect"></select></div>
-      </div>
-      <div class="gx-field">
-        <label>ລະຫັດ (ໜຶ່ງແຖວຕໍ່ໜຶ່ງລະຫັດ)</label>
-        <div class="gx-input-wrap"><textarea id="codesInput" placeholder="ABCD-1234&#10;EFGH-5678&#10;IJKL-9012"></textarea></div>
-      </div>
-      <button type="button" class="gx-submit" id="codesSubmit">
-        <span class="gx-spinner"></span>
-        <span class="gx-submit-label">ເພີ່ມລະຫັດ</span>
-      </button>
-      <div class="gx-msg" id="codesMsg"></div>
-      <div class="ops-strip" id="codeStockStrip" style="margin-top:16px;"></div>
-    </div>
-  </div>
-      </div></div>
-    </div>
-
-    <div class="switch" data-target="panelTopup">
-      <div class="switch-head">
-        <span class="switch-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></span>
-        <span class="switch-text">
-          <span class="dash-title">ຄຳຂໍເຕີມເງິນ</span>
-          <span class="dash-desc">ກວດ ແລະ ອະນຸມັດການເຕີມເງິນຂອງລູກຄ້າ</span>
-        </span>
-        <span class="switch-right">
-          <span class="tab-badge" id="topupBadge" style="display:none;position:static;"></span>
-          <span class="switch-chevron"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-        </span>
-      </div>
-      <div class="switch-body"><div class="switch-body-inner">
-  <!-- ===== PANEL 4: ຄຳຂໍເຕີມເງິນ ===== -->
-  <div class="panel-content" id="panelTopup">
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+<p class="panel-sub">ເລືອກສິນຄ້າແລ້ວວາງລະຫັດເພື່ອເພີ່ມສະຕັອກ — ລະບົບຈະຕັດອອກຂາຍໃຫ້ອັດຕະໂນມັດ</p>
+<div class="gx-field">
+<label>ເລືອກສິນຄ້າ</label>
+<div class="gx-input-wrap"><select id="codeProductSelect"></select></div>
+</div>
+<div class="gx-field u-hidden" id="codeDurationWrap">
+<label>ເລືອກໄລຍະເວລາ (ລະຫັດຈະຖືກແຍກເກັບຕາມໄລຍະເວລານີ້)</label>
+<div class="gx-input-wrap"><select id="codeDurationSelect"></select></div>
+</div>
+<div class="gx-field">
+<label>ລະຫັດ (ໜຶ່ງແຖວຕໍ່ໜຶ່ງລະຫັດ)</label>
+<div class="gx-input-wrap"><textarea id="codesInput" placeholder="ABCD-1234
+EFGH-5678
+IJKL-9012"></textarea></div>
+</div>
+<button class="gx-submit" id="codesSubmit" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ເພີ່ມລະຫັດ</span>
+</button>
+<div class="gx-msg" id="codesMsg"></div>
+<div class="ops-strip u-mt-16" id="codeStockStrip"></div>
+</div>
+</div>
+</div></div>
+</div>
+<div class="switch" data-target="panelTopup">
+<div class="switch-head">
+<span class="switch-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="14" rx="2.5" width="20" x="2" y="6"></rect><path d="M2 10h20"></path><path d="M6 15h4"></path></svg></span>
+<span class="switch-text">
+<span class="dash-title">ຄຳຂໍເຕີມເງິນ</span>
+<span class="dash-desc">ກວດ ແລະ ອະນຸມັດການເຕີມເງິນຂອງລູກຄ້າ</span>
+</span>
+<span class="switch-right">
+<span class="tab-badge u-hidden u-pos-static" id="topupBadge"></span>
+<span class="switch-chevron"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+</span>
+</div>
+<div class="switch-body"><div class="switch-body-inner">
+<!-- ===== PANEL 4: ຄຳຂໍເຕີມເງິນ ===== -->
+<div class="panel-content" id="panelTopup">
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="10" rx="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         ຄຳຂໍເຕີມເງິນ
-        <button type="button" class="mini-refresh" id="topupRefreshBtn" title="ໂຫຼດຄືນໃໝ່">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        </button>
-      </h3>
-      <p class="panel-sub">ກວດສະລິບໂອນເງິນຂອງລູກຄ້າ ແລ້ວກົດອະນຸມັດ ຫຼືປະຕິເສດ</p>
-      <div id="topupList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
-    </div>
-  </div>
-      </div></div>
-    </div>
-
-    <div class="switch" data-target="panelAgent">
-      <div class="switch-head">
-        <span class="switch-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-        <span class="switch-text">
-          <span class="dash-title">ລະບົບຕົວແທນ</span>
-          <span class="dash-desc">ຈັດການຕົວແທນຈຳໜ່າຍ — ຄີຍ໌ປົດລັອກ, ລາຄາ/ໂຄວຕ້າແຕ່ລະລະດັບ</span>
-        </span>
-        <span class="switch-right">
-          <span class="switch-chevron"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>
-        </span>
-      </div>
-      <div class="switch-body"><div class="switch-body-inner">
-  <!-- ===== PANEL: ລະບົບຕົວແທນ (ລວມ 3 ສ່ວນຍ່ອຍໄວ້ໃນ panel-content ດຽວ ເພື່ອໃຫ້ accordion JS ເປີດ/ປິດຖືກຕ້ອງ) ===== -->
-  <div class="panel-content" id="panelAgent">
-
-    <!-- ---- ສ່ວນຍ່ອຍ 1: ຕັ້ງຄ່າລະດັບ (tiers) ---- -->
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <button class="mini-refresh" id="topupRefreshBtn" title="ໂຫຼດຄືນໃໝ່" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+</button>
+</h3>
+<p class="panel-sub">ກວດສະລິບໂອນເງິນຂອງລູກຄ້າ ແລ້ວກົດອະນຸມັດ ຫຼືປະຕິເສດ</p>
+<div id="topupList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+</div>
+</div></div>
+</div>
+<div class="switch" data-target="panelAgent">
+<div class="switch-head">
+<span class="switch-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
+<span class="switch-text">
+<span class="dash-title">ລະບົບຕົວແທນ</span>
+<span class="dash-desc">ຈັດການຕົວແທນຈຳໜ່າຍ — ຄີຍ໌ປົດລັອກ, ລາຄາ/ໂຄວຕ້າແຕ່ລະລະດັບ</span>
+</span>
+<span class="switch-right">
+<span class="switch-chevron"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+</span>
+</div>
+<div class="switch-body"><div class="switch-body-inner">
+<!-- ===== PANEL: ລະບົບຕົວແທນ (ລວມ 3 ສ່ວນຍ່ອຍໄວ້ໃນ panel-content ດຽວ ເພື່ອໃຫ້ accordion JS ເປີດ/ປິດຖືກຕ້ອງ) ===== -->
+<div class="panel-content" id="panelAgent">
+<!-- ---- ສ່ວນຍ່ອຍ 1: ຕັ້ງຄ່າລະດັບ (tiers) ---- -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
         ຕັ້ງຄ່າລະດັບຕົວແທນ
       </h3>
-      <p class="panel-sub">ກຳນົດສ່ວນຫຼຸດ ແລະ ໂຄວຕ້າຍອດຊື້ຂອງແຕ່ລະລະດັບ — ຄີຍ໌ໃໝ່ທີ່ໃຊ້ຫຼັງຈາກນີ້ຈະໃຊ້ຄ່າຫຼ້າສຸດ (ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວຈະບໍ່ຖືກກະທົບ)</p>
-      <div id="agentTierList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
-    </div>
-
-    <!-- ---- ສ່ວນຍ່ອຍ 2: ສ້າງຄີຍ໌ ---- -->
-    <div class="stat-panel" style="margin-top:16px;">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+<p class="panel-sub">ກຳນົດສ່ວນຫຼຸດ ແລະ ໂຄວຕ້າຍອດຊື້ຂອງແຕ່ລະລະດັບ — ຄີຍ໌ໃໝ່ທີ່ໃຊ້ຫຼັງຈາກນີ້ຈະໃຊ້ຄ່າຫຼ້າສຸດ (ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວຈະບໍ່ຖືກກະທົບ)</p>
+<div id="agentTierList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+<!-- ---- ສ່ວນຍ່ອຍ 2: ສ້າງຄີຍ໌ ---- -->
+<div class="stat-panel u-mt-16">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="10" rx="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         ສ້າງຄີຍ໌ຕົວແທນໃໝ່
       </h3>
-      <p class="panel-sub">ເລືອກລະດັບ ແລ້ວກົດສ້າງ — ຄີຍ໌ຈະສ້າງແບບສຸ່ມ ນຳໄປໃຫ້ລູກຄ້າກອກໃນໜ້າໂປຣໄຟລ໌ເພື່ອປົດລັອກລາຄາຕົວແທນ</p>
-      <div class="gx-field">
-        <label>ລະດັບ</label>
-        <div class="gx-input-wrap"><select id="agentKeyTierSelect"></select></div>
-      </div>
-      <button type="button" class="gx-submit" id="agentCreateKeyBtn">
-        <span class="gx-spinner"></span>
-        <span class="gx-submit-label">ສ້າງຄີຍ໌</span>
-      </button>
-      <div class="gx-msg" id="agentCreateKeyMsg"></div>
-      <div id="agentNewKeyResult"></div>
-    </div>
-
-    <!-- ---- ສ່ວນຍ່ອຍ 3: ລາຍການຄີຍ໌ ---- -->
-    <div class="stat-panel" style="margin-top:16px;">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+<p class="panel-sub">ເລືອກລະດັບ ແລ້ວກົດສ້າງ — ຄີຍ໌ຈະສ້າງແບບສຸ່ມ ນຳໄປໃຫ້ລູກຄ້າກອກໃນໜ້າໂປຣໄຟລ໌ເພື່ອປົດລັອກລາຄາຕົວແທນ</p>
+<div class="gx-field">
+<label>ລະດັບ</label>
+<div class="gx-input-wrap"><select id="agentKeyTierSelect"></select></div>
+</div>
+<button class="gx-submit" id="agentCreateKeyBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ສ້າງຄີຍ໌</span>
+</button>
+<div class="gx-msg" id="agentCreateKeyMsg"></div>
+<div id="agentNewKeyResult"></div>
+</div>
+<!-- ---- ສ່ວນຍ່ອຍ 3: ລາຍການຄີຍ໌ ---- -->
+<div class="stat-panel u-mt-16">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         ລາຍການຄີຍ໌
-        <button type="button" class="mini-refresh" id="agentKeysRefreshBtn" title="ໂຫຼດຄືນໃໝ່">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        </button>
-      </h3>
-      <p class="panel-sub">ຄີຍ໌ທັງໝົດທີ່ເຄີຍສ້າງ — ຄີຍ໌ທີ່ໃຊ້ແລ້ວຈະສະແດງວ່າໃຜເປັນຄົນໃຊ້</p>
-      <div class="ops-strip" id="agentKeysOpsStrip"></div>
-      <div id="agentKeysList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
-    </div>
-
-    <!-- ---- ສ່ວນຍ່ອຍ 3.5: ຈັດການຕົວແທນ ---- -->
-    <div class="stat-panel" style="margin-top:16px;">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <button class="mini-refresh" id="agentKeysRefreshBtn" title="ໂຫຼດຄືນໃໝ່" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+</button>
+</h3>
+<p class="panel-sub">ຄີຍ໌ທັງໝົດທີ່ເຄີຍສ້າງ — ຄີຍ໌ທີ່ໃຊ້ແລ້ວຈະສະແດງວ່າໃຜເປັນຄົນໃຊ້</p>
+<div class="ops-strip" id="agentKeysOpsStrip"></div>
+<div id="agentKeysList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+<!-- ---- ສ່ວນຍ່ອຍ 3.5: ຈັດການຕົວແທນ ---- -->
+<div class="stat-panel u-mt-16">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         ຈັດການຕົວແທນ
-        <button type="button" class="mini-refresh" id="agentAccountsRefreshBtn" title="ໂຫຼດຄືນໃໝ່">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        </button>
-      </h3>
-      <p class="panel-sub">ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວ — ເບິ່ງຍອດຊື້ສະສົມທຽບກັບເປົ້າຂອງລະດັບຕົນ ແລະ ປິດສິດຕົວແທນໄດ້ຈາກບ່ອນນີ້</p>
-      <div class="ops-strip" id="agentAccountsOpsStrip"></div>
-      <div class="search-row-agent"><input type="text" id="agentAccountsSearch" placeholder="ຄົ້ນຫາອີເມວ/ຊື່ຕົວແທນ..."></div>
-      <div id="agentAccountsList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
-    </div>
-
-    <!-- ---- ສ່ວນຍ່ອຍ 4: ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ ---- -->
-    <div class="stat-panel" style="margin-top:16px;">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+        <button class="mini-refresh" id="agentAccountsRefreshBtn" title="ໂຫຼດຄືນໃໝ່" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+</button>
+</h3>
+<p class="panel-sub">ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວ — ເບິ່ງຍອດຊື້ສະສົມທຽບກັບເປົ້າຂອງລະດັບຕົນ ແລະ ປິດສິດຕົວແທນໄດ້ຈາກບ່ອນນີ້</p>
+<div class="ops-strip" id="agentAccountsOpsStrip"></div>
+<div class="search-row-agent"><input id="agentAccountsSearch" placeholder="ຄົ້ນຫາອີເມວ/ຊື່ຕົວແທນ..." type="text"/></div>
+<div id="agentAccountsList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+<!-- ---- ສ່ວນຍ່ອຍ 4: ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ ---- -->
+<div class="stat-panel u-mt-16">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
         ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ
       </h3>
-      <p class="panel-sub">ຕັ້ງລາຄາທີ່ຕ້ອງການໃຫ້ຕົວແທນຊື້ຕໍ່ສິນຄ້າ (ຫຼືຕໍ່ໄລຍະເວລາ) ໄດ້ໂດຍກົງ — ຖ້າເວັ້ນຫວ່າງໄວ້ ລະບົບຈະໃຊ້ສ່ວນຫຼຸດ % ຂອງລະດັບຕົວແທນແທນອັດຕະໂນມັດ (ລາຄານີ້ໃຊ້ຄືກັນທຸກລະດັບ ບໍ່ແຍກຕາມ tier)</p>
-      <div id="agentPriceCatTabs" class="agent-cat-row"></div>
-      <div id="agentPriceList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
-    </div>
-
-  </div>
-      </div></div>
-    </div>
-
-    <div class="switch" data-target="panelSettings">
-      <div class="switch-head">
-        <span class="switch-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg></span>
-        <span class="switch-text">
-          <span class="dash-title">ຕັ້ງຄ່າຮ້ານ</span>
-          <span class="dash-desc">ໂລໂກ້, ໝວດໝູ່, QR ແລະ ຂໍ້ມູນຮ້ານ</span>
-        </span>
-        <span class="switch-right"><span class="switch-chevron"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></span>
-      </div>
-      <div class="switch-body"><div class="switch-body-inner">
-  <!-- ===== PANEL 5: ຕັ້ງຄ່າຮ້ານ ===== -->
-  <div class="panel-content" id="panelSettings">
-    <p class="panel-sub" style="margin:-2px 2px 16px;">ຈັດການຂໍ້ມູນຮ້ານທັງໝົດ — ຊື່ຮ້ານ, ໝວດໝູ່, ໂລໂກ້, QR ແລະ ຊ່ອງທາງໂຊເຊียล ໃນທີ່ດຽວ</p>
-
-    <!-- ຊື່ຮ້ານ -->
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/></svg>
+<p class="panel-sub">ຕັ້ງລາຄາທີ່ຕ້ອງການໃຫ້ຕົວແທນຊື້ຕໍ່ສິນຄ້າ (ຫຼືຕໍ່ໄລຍະເວລາ) ໄດ້ໂດຍກົງ — ຖ້າເວັ້ນຫວ່າງໄວ້ ລະບົບຈະໃຊ້ສ່ວນຫຼຸດ % ຂອງລະດັບຕົວແທນແທນອັດຕະໂນມັດ (ລາຄານີ້ໃຊ້ຄືກັນທຸກລະດັບ ບໍ່ແຍກຕາມ tier)</p>
+<div class="agent-cat-row" id="agentPriceCatTabs"></div>
+<div id="agentPriceList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+</div>
+</div></div>
+</div>
+<div class="switch" data-target="panelSettings">
+<div class="switch-head">
+<span class="switch-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"></path></svg></span>
+<span class="switch-text">
+<span class="dash-title">ຕັ້ງຄ່າຮ້ານ</span>
+<span class="dash-desc">ໂລໂກ້, ໝວດໝູ່, QR ແລະ ຂໍ້ມູນຮ້ານ</span>
+</span>
+<span class="switch-right"><span class="switch-chevron"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span></span>
+</div>
+<div class="switch-body"><div class="switch-body-inner">
+<!-- ===== PANEL 5: ຕັ້ງຄ່າຮ້ານ ===== -->
+<div class="panel-content" id="panelSettings">
+<p class="panel-sub u-panel-sub-margin">ຈັດການຂໍ້ມູນຮ້ານທັງໝົດ — ຊື່ຮ້ານ, ໝວດໝູ່, ໂລໂກ້, QR ແລະ ຊ່ອງທາງໂຊເຊียล ໃນທີ່ດຽວ</p>
+<!-- ຊື່ຮ້ານ -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M3 21h18"></path><path d="M5 21V7l8-4v18"></path><path d="M19 21V11l-6-4"></path></svg>
         ຊື່ຮ້ານ
       </h3>
-      <div class="gx-field">
-        <label>ຊື່ຮ້ານ (ຈະປ່ຽນທຸກຈຸດທີ່ສະແດງຊື່ຮ້ານໃນເວັບໄຊທ໌ໂດຍອັດຕະໂນມັດ)</label>
-        <div class="gx-input-wrap"><input type="text" id="settingStoreName" placeholder="ຕົວຢ່າງ: Dek Mash Shop"></div>
-      </div>
-      <button type="button" class="gx-submit" id="saveStoreNameBtn">
-        <span class="gx-spinner"></span>
-        <span class="gx-submit-label">ບັນທຶກຊື່ຮ້ານ</span>
-      </button>
-      <div class="gx-msg" id="storeNameMsg"></div>
-    </div>
-
-    <!-- ຄຳອະທິບາຍ -->
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+<div class="gx-field">
+<label>ຊື່ຮ້ານ (ຈະປ່ຽນທຸກຈຸດທີ່ສະແດງຊື່ຮ້ານໃນເວັບໄຊທ໌ໂດຍອັດຕະໂນມັດ)</label>
+<div class="gx-input-wrap"><input id="settingStoreName" placeholder="ຕົວຢ່າງ: Dek Mash Shop" type="text"/></div>
+</div>
+<button class="gx-submit" id="saveStoreNameBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ບັນທຶກຊື່ຮ້ານ</span>
+</button>
+<div class="gx-msg" id="storeNameMsg"></div>
+</div>
+<!-- ຄຳອະທິບາຍ -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>
         ຄຳອະທິບາຍຮ້ານ
       </h3>
-      <div class="gx-field">
-        <label>ຂໍ້ຄວາມສັ້ນໆໃຕ້ຊື່ຮ້ານໃນໜ້າຫຼັກ</label>
-        <div class="gx-input-wrap"><textarea id="settingTagline" placeholder="ຄຳອະທິບາຍສັ້ນໆກ່ຽວກັບຮ້ານ..."></textarea></div>
-      </div>
-      <button type="button" class="gx-submit" id="saveTaglineBtn">
-        <span class="gx-spinner"></span>
-        <span class="gx-submit-label">ບັນທຶກຄຳອະທິບາຍ</span>
-      </button>
-      <div class="gx-msg" id="taglineMsg"></div>
-    </div>
-
-    <!-- ຮູບ hero ໜ້າຫຼັກ -->
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມສັ້ນໆໃຕ້ຊື່ຮ້ານໃນໜ້າຫຼັກ</label>
+<div class="gx-input-wrap"><textarea id="settingTagline" placeholder="ຄຳອະທິບາຍສັ້ນໆກ່ຽວກັບຮ້ານ..."></textarea></div>
+</div>
+<button class="gx-submit" id="saveTaglineBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ບັນທຶກຄຳອະທິບາຍ</span>
+</button>
+<div class="gx-msg" id="taglineMsg"></div>
+</div>
+<!-- ຮູບ hero ໜ້າຫຼັກ -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="18" rx="2" width="18" x="3" y="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
         ຮູບ Hero ໜ້າຫຼັກ
       </h3>
-      <div class="gx-field cat-field-group">
-        <label>ຮູບກາງໜ້າຫຼັກ (ຖ້າບໍ່ໃສ່ຮູບ ຈະໃຊ້ວິດີໂອຄ່າເລີ່ມຕົ້ນແທນ)</label>
-        <div class="cat-img-row">
-          <div class="drop-zone cat-img-drop" id="heroImageDropZone">
-            <span id="heroImageDropZoneText">ແຕະເພື່ອເລືອກຮູບ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
-            <input type="file" id="heroImageInput" accept="image/*">
-          </div>
-          <button type="button" class="cat-img-remove-btn" id="heroImageRemoveBtn" title="ລຶບຮູບ, ກັບໄປໃຊ້ວິດີໂອຄ່າເລີ່ມຕົ້ນ">ລຶບຮູບ</button>
-        </div>
-        <div class="gx-msg" id="heroImageMsg"></div>
-      </div>
-    </div>
-
-    <!-- Popup ໂປຣໂມຊັ່ນ (ໂຊວ໌ຕອນເປີດໜ້າຫຼັກ) -->
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+<div class="gx-field cat-field-group">
+<label>ຮູບກາງໜ້າຫຼັກ (ຖ້າບໍ່ໃສ່ຮູບ ຈະໃຊ້ວິດີໂອຄ່າເລີ່ມຕົ້ນແທນ)</label>
+<div class="cat-img-row">
+<div class="drop-zone cat-img-drop" id="heroImageDropZone">
+<span id="heroImageDropZoneText">ແຕະເພື່ອເລືອກຮູບ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+<input accept="image/*" id="heroImageInput" type="file"/>
+</div>
+<button class="cat-img-remove-btn" id="heroImageRemoveBtn" title="ລຶບຮູບ, ກັບໄປໃຊ້ວິດີໂອຄ່າເລີ່ມຕົ້ນ" type="button">ລຶບຮູບ</button>
+</div>
+<div class="gx-msg" id="heroImageMsg"></div>
+</div>
+</div>
+<!-- Popup ໂປຣໂມຊັ່ນ (ໂຊວ໌ຕອນເປີດໜ້າຫຼັກ) -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="18" rx="2" width="18" x="3" y="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
         Popup ໂປຣໂມຊັ່ນ (ໂຊວ໌ຕອນເປີດໜ້າຫຼັກ)
       </h3>
-      <p style="font-size:12px;color:var(--ink-500);margin:0 0 10px;">ຮູບນີ້ຈະໂຊວ໌ເປັນ popup ທັນທີທີ່ລູກຄ້າເປີດໜ້າຫຼັກ (ຄືປ້າຍໂຄສະນາເຕັມໜ້າຈໍ) — ຂະໜາດແນະນຳ: ຮູບແນວຕັ້ງ ອັດຕາສ່ວນປະມານ 3:4 (ເຊັ່ນ 900×1200px) ລູກຄ້າສາມາດປິດ ຫຼື ກົດ "ບໍ່ໂຊວ໌ອີກ 1 ຊົ່ວໂມງ" ໄດ້ເອງ</p>
-      <label class="pause-toggle-label" style="margin-bottom:14px;">
-        <input type="checkbox" id="promoPopupEnabled">
+<p class="u-small-hint">ຮູບນີ້ຈະໂຊວ໌ເປັນ popup ທັນທີທີ່ລູກຄ້າເປີດໜ້າຫຼັກ (ຄືປ້າຍໂຄສະນາເຕັມໜ້າຈໍ) — ຂະໜາດແນະນຳ: ຮູບແນວຕັ້ງ ອັດຕາສ່ວນປະມານ 3:4 (ເຊັ່ນ 900×1200px) ລູກຄ້າສາມາດປິດ ຫຼື ກົດ "ບໍ່ໂຊວ໌ອີກ 1 ຊົ່ວໂມງ" ໄດ້ເອງ</p>
+<label class="pause-toggle-label u-mb-14">
+<input id="promoPopupEnabled" type="checkbox"/>
         ເປີດໃຊ້ງານ popup ນີ້
       </label>
-      <div class="gx-field cat-field-group">
-        <label>ຮູບໂປຣໂມຊັ່ນ</label>
-        <div class="cat-img-row">
-          <div class="drop-zone cat-img-drop" id="promoPopupImageDropZone">
-            <span id="promoPopupImageDropZoneText">ແຕະເພື່ອເລືອກຮູບ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
-            <input type="file" id="promoPopupImageInput" accept="image/*">
-          </div>
-          <button type="button" class="cat-img-remove-btn" id="promoPopupImageRemoveBtn" title="ລຶບຮູບ, ປິດ popup ນີ້ໄປ">ລຶບຮູບ</button>
-        </div>
-        <div class="gx-msg" id="promoPopupImageMsg"></div>
-      </div>
-    </div>
-
-    <!-- ຊື່ + ຮູບປະຈຳໝວດໝູ່ 1-10 -->
-    <div class="stat-panel">
-      <h3>
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+<div class="gx-field cat-field-group">
+<label>ຮູບໂປຣໂມຊັ່ນ</label>
+<div class="cat-img-row">
+<div class="drop-zone cat-img-drop" id="promoPopupImageDropZone">
+<span id="promoPopupImageDropZoneText">ແຕະເພື່ອເລືອກຮູບ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+<input accept="image/*" id="promoPopupImageInput" type="file"/>
+</div>
+<button class="cat-img-remove-btn" id="promoPopupImageRemoveBtn" title="ລຶບຮູບ, ປິດ popup ນີ້ໄປ" type="button">ລຶບຮູບ</button>
+</div>
+<div class="gx-msg" id="promoPopupImageMsg"></div>
+</div>
+</div>
+<!-- ຊື່ + ຮູບປະຈຳໝວດໝູ່ 1-10 -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="18" rx="2" width="18" x="3" y="3"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
         ໝວດໝູ່ສິນຄ້າ (1-4) — ຊື່ ແລະ ຮູບພາບ
       </h3>
-      <p style="font-size:12px;color:var(--ink-500);margin:0 0 10px;">ໜ້າຮ້ານຈິງມີ 4 ກາຕູນໝວດໝູ່ຄົງທີ່ — ຕັ້ງຊື່ ແລະ ເລືອກຮູບໃຫ້ຄົບທັງ 4 ໝວດ — ຮູບພາບອັບໂຫລດ+ບັນທຶກອັດຕະໂນມັດທັນທີ, ສ່ວນຊື່ພິມແລ້ວກົດ "ຢືນຢັນ" ຂ້າງໆຊ່ອງນັ້ນເລີຍ (ຫຼືກົດ Enter) ບໍ່ຕ້ອງເລື່ອນລົງໄປລຸ່ມສຸດ</p>
-    <div class="gx-field cat-field-group cat-numbered">
-      <span class="cat-num-badge">1</span>
-      <div class="cat-enable-row">
-        <span class="cat-enable-state" id="catEnableState1">ເປີດ</span>
-        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled1" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
-      </div>
-      <label>ໝວດໝູ່ 1 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName1" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm1">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg1"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 1 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTag1" placeholder="ຕົວຢ່າງ: ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງ PC"><button type="button" class="cat-name-confirm-btn" id="catTagConfirm1">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg1"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 1 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTitle1" placeholder="ຕົວຢ່າງ: ANDROID"><button type="button" class="cat-name-confirm-btn" id="catTitleConfirm1">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg1"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 1 — ຄຳອະທິບາຍໃນແບນເນີ</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catDesc1" placeholder="ຄຳອະທິບາຍສັ້ນໆ"><button type="button" class="cat-name-confirm-btn" id="catDescConfirm1">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg1"></div>
-      <div class="cat-img-row" style="margin-top:8px;">
-        <div class="drop-zone cat-img-drop" id="catImgDrop1">
-          <span id="catImgDropText1">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
-          <input type="file" id="catImgInput1" accept="image/*">
-        </div>
-        <button type="button" class="cat-img-remove-btn" id="catImgRemove1" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
-      </div>
-      <div class="gx-msg" id="catImgMsg1"></div>
-    </div>
-    <div class="gx-field cat-field-group cat-numbered">
-      <span class="cat-num-badge">2</span>
-      <div class="cat-enable-row">
-        <span class="cat-enable-state" id="catEnableState2">ເປີດ</span>
-        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled2" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
-      </div>
-      <label>ໝວດໝູ່ 2 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName2" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm2">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg2"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 2 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTag2" placeholder="ຕົວຢ່າງ: ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື"><button type="button" class="cat-name-confirm-btn" id="catTagConfirm2">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg2"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 2 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTitle2" placeholder="ຕົວຢ່າງ: ANDROID"><button type="button" class="cat-name-confirm-btn" id="catTitleConfirm2">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg2"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 2 — ຄຳອະທິບາຍໃນແບນເນີ</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catDesc2" placeholder="ຄຳອະທິບາຍສັ້ນໆ"><button type="button" class="cat-name-confirm-btn" id="catDescConfirm2">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg2"></div>
-      <div class="cat-img-row" style="margin-top:8px;">
-        <div class="drop-zone cat-img-drop" id="catImgDrop2">
-          <span id="catImgDropText2">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
-          <input type="file" id="catImgInput2" accept="image/*">
-        </div>
-        <button type="button" class="cat-img-remove-btn" id="catImgRemove2" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
-      </div>
-      <div class="gx-msg" id="catImgMsg2"></div>
-    </div>
-    <div class="gx-field cat-field-group cat-numbered">
-      <span class="cat-num-badge">3</span>
-      <div class="cat-enable-row">
-        <span class="cat-enable-state" id="catEnableState3">ເປີດ</span>
-        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled3" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
-      </div>
-      <label>ໝວດໝູ່ 3 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName3" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm3">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg3"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 3 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTag3" placeholder="ຕົວຢ່າງ: ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື"><button type="button" class="cat-name-confirm-btn" id="catTagConfirm3">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg3"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 3 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTitle3" placeholder="ຕົວຢ່າງ: ANDROID"><button type="button" class="cat-name-confirm-btn" id="catTitleConfirm3">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg3"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 3 — ຄຳອະທິບາຍໃນແບນເນີ</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catDesc3" placeholder="ຄຳອະທິບາຍສັ້ນໆ"><button type="button" class="cat-name-confirm-btn" id="catDescConfirm3">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg3"></div>
-      <div class="cat-img-row" style="margin-top:8px;">
-        <div class="drop-zone cat-img-drop" id="catImgDrop3">
-          <span id="catImgDropText3">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
-          <input type="file" id="catImgInput3" accept="image/*">
-        </div>
-        <button type="button" class="cat-img-remove-btn" id="catImgRemove3" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
-      </div>
-      <div class="gx-msg" id="catImgMsg3"></div>
-    </div>
-    <div class="gx-field cat-field-group cat-numbered">
-      <span class="cat-num-badge">4</span>
-      <div class="cat-enable-row">
-        <span class="cat-enable-state" id="catEnableState4">ເປີດ</span>
-        <label class="pause-toggle-label"><input type="checkbox" id="catEnabled4" checked>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
-      </div>
-      <label>ໝວດໝູ່ 4 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catName4" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ"><button type="button" class="cat-name-confirm-btn" id="catNameConfirm4">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg4"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 4 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTag4" placeholder="ຕົວຢ່າງ: ອຸປະກອນເສີມເກມມິ່ງ"><button type="button" class="cat-name-confirm-btn" id="catTagConfirm4">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg4"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 4 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catTitle4" placeholder="ຕົວຢ່າງ: ANDROID"><button type="button" class="cat-name-confirm-btn" id="catTitleConfirm4">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg4"></div>
-      <label style="margin-top:10px;">ໝວດໝູ່ 4 — ຄຳອະທິບາຍໃນແບນເນີ</label>
-      <div class="gx-input-wrap cat-name-row"><input type="text" id="catDesc4" placeholder="ຄຳອະທິບາຍສັ້ນໆ"><button type="button" class="cat-name-confirm-btn" id="catDescConfirm4">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg4"></div>
-      <div class="cat-img-row" style="margin-top:8px;">
-        <div class="drop-zone cat-img-drop" id="catImgDrop4">
-          <span id="catImgDropText4">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
-          <input type="file" id="catImgInput4" accept="image/*">
-        </div>
-        <button type="button" class="cat-img-remove-btn" id="catImgRemove4" title="ລຶບຮູບໝວດໝູ່ນີ້">ລຶບຮູບ</button>
-      </div>
-      <div class="gx-msg" id="catImgMsg4"></div>
-    </div>
-    <button type="button" class="gx-submit" id="saveCategoryNamesBtn" style="margin-top:14px;">
-      <span class="gx-spinner"></span>
-      <span class="gx-submit-label">ບັນທຶກຊື່ໝວດໝູ່ທັງໝົດ</span>
-    </button>
-    <div class="gx-msg" id="categoryNamesMsg"></div>
-  </div>
-
-  <!-- ຊ່ອງທາງໂຊເຊียล -->
-  <div class="stat-panel">
-    <h3>
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/></svg>
+<p class="u-small-hint">ໜ້າຮ້ານຈິງມີ 4 ກາຕູນໝວດໝູ່ຄົງທີ່ — ຕັ້ງຊື່ ແລະ ເລືອກຮູບໃຫ້ຄົບທັງ 4 ໝວດ — ຮູບພາບອັບໂຫລດ+ບັນທຶກອັດຕະໂນມັດທັນທີ, ສ່ວນຊື່ພິມແລ້ວກົດ "ຢືນຢັນ" ຂ້າງໆຊ່ອງນັ້ນເລີຍ (ຫຼືກົດ Enter) ບໍ່ຕ້ອງເລື່ອນລົງໄປລຸ່ມສຸດ</p>
+<div class="gx-field cat-field-group cat-numbered">
+<span class="cat-num-badge">1</span>
+<div class="cat-enable-row">
+<span class="cat-enable-state" id="catEnableState1">ເປີດ</span>
+<label class="pause-toggle-label"><input checked="" id="catEnabled1" type="checkbox"/>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+</div>
+<label>ໝວດໝູ່ 1 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catName1" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ" type="text"/><button class="cat-name-confirm-btn" id="catNameConfirm1" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg1"></div>
+<label class="u-mt-10">ໝວດໝູ່ 1 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTag1" placeholder="ຕົວຢ່າງ: ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງ PC" type="text"/><button class="cat-name-confirm-btn" id="catTagConfirm1" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg1"></div>
+<label class="u-mt-10">ໝວດໝູ່ 1 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTitle1" placeholder="ຕົວຢ່າງ: ANDROID" type="text"/><button class="cat-name-confirm-btn" id="catTitleConfirm1" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg1"></div>
+<label class="u-mt-10">ໝວດໝູ່ 1 — ຄຳອະທິບາຍໃນແບນເນີ</label>
+<div class="gx-input-wrap cat-name-row"><input id="catDesc1" placeholder="ຄຳອະທິບາຍສັ້ນໆ" type="text"/><button class="cat-name-confirm-btn" id="catDescConfirm1" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg1"></div>
+<div class="cat-img-row u-mt-8">
+<div class="drop-zone cat-img-drop" id="catImgDrop1">
+<span id="catImgDropText1">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+<input accept="image/*" id="catImgInput1" type="file"/>
+</div>
+<button class="cat-img-remove-btn" id="catImgRemove1" title="ລຶບຮູບໝວດໝູ່ນີ້" type="button">ລຶບຮູບ</button>
+</div>
+<div class="gx-msg" id="catImgMsg1"></div>
+</div>
+<div class="gx-field cat-field-group cat-numbered">
+<span class="cat-num-badge">2</span>
+<div class="cat-enable-row">
+<span class="cat-enable-state" id="catEnableState2">ເປີດ</span>
+<label class="pause-toggle-label"><input checked="" id="catEnabled2" type="checkbox"/>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+</div>
+<label>ໝວດໝູ່ 2 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catName2" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ" type="text"/><button class="cat-name-confirm-btn" id="catNameConfirm2" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg2"></div>
+<label class="u-mt-10">ໝວດໝູ່ 2 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTag2" placeholder="ຕົວຢ່າງ: ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື" type="text"/><button class="cat-name-confirm-btn" id="catTagConfirm2" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg2"></div>
+<label class="u-mt-10">ໝວດໝູ່ 2 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTitle2" placeholder="ຕົວຢ່າງ: ANDROID" type="text"/><button class="cat-name-confirm-btn" id="catTitleConfirm2" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg2"></div>
+<label class="u-mt-10">ໝວດໝູ່ 2 — ຄຳອະທິບາຍໃນແບນເນີ</label>
+<div class="gx-input-wrap cat-name-row"><input id="catDesc2" placeholder="ຄຳອະທິບາຍສັ້ນໆ" type="text"/><button class="cat-name-confirm-btn" id="catDescConfirm2" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg2"></div>
+<div class="cat-img-row u-mt-8">
+<div class="drop-zone cat-img-drop" id="catImgDrop2">
+<span id="catImgDropText2">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+<input accept="image/*" id="catImgInput2" type="file"/>
+</div>
+<button class="cat-img-remove-btn" id="catImgRemove2" title="ລຶບຮູບໝວດໝູ່ນີ້" type="button">ລຶບຮູບ</button>
+</div>
+<div class="gx-msg" id="catImgMsg2"></div>
+</div>
+<div class="gx-field cat-field-group cat-numbered">
+<span class="cat-num-badge">3</span>
+<div class="cat-enable-row">
+<span class="cat-enable-state" id="catEnableState3">ເປີດ</span>
+<label class="pause-toggle-label"><input checked="" id="catEnabled3" type="checkbox"/>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+</div>
+<label>ໝວດໝູ່ 3 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catName3" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ" type="text"/><button class="cat-name-confirm-btn" id="catNameConfirm3" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg3"></div>
+<label class="u-mt-10">ໝວດໝູ່ 3 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTag3" placeholder="ຕົວຢ່າງ: ໂປຣແກຣມຊ່ວຍຫຼິ້ນເທິງມືຖື" type="text"/><button class="cat-name-confirm-btn" id="catTagConfirm3" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg3"></div>
+<label class="u-mt-10">ໝວດໝູ່ 3 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTitle3" placeholder="ຕົວຢ່າງ: ANDROID" type="text"/><button class="cat-name-confirm-btn" id="catTitleConfirm3" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg3"></div>
+<label class="u-mt-10">ໝວດໝູ່ 3 — ຄຳອະທິບາຍໃນແບນເນີ</label>
+<div class="gx-input-wrap cat-name-row"><input id="catDesc3" placeholder="ຄຳອະທິບາຍສັ້ນໆ" type="text"/><button class="cat-name-confirm-btn" id="catDescConfirm3" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg3"></div>
+<div class="cat-img-row u-mt-8">
+<div class="drop-zone cat-img-drop" id="catImgDrop3">
+<span id="catImgDropText3">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+<input accept="image/*" id="catImgInput3" type="file"/>
+</div>
+<button class="cat-img-remove-btn" id="catImgRemove3" title="ລຶບຮູບໝວດໝູ່ນີ້" type="button">ລຶບຮູບ</button>
+</div>
+<div class="gx-msg" id="catImgMsg3"></div>
+</div>
+<div class="gx-field cat-field-group cat-numbered">
+<span class="cat-num-badge">4</span>
+<div class="cat-enable-row">
+<span class="cat-enable-state" id="catEnableState4">ເປີດ</span>
+<label class="pause-toggle-label"><input checked="" id="catEnabled4" type="checkbox"/>ໂຊວ໌ຢູ່ໜ້າຮ້ານ</label>
+</div>
+<label>ໝວດໝູ່ 4 — ຊື່ (ຈະໂຊວ໌ໃນໜ້າ "ໝວດໝູ່ທັງໝົດ" ແລະ ໃຊ້ເປັນຕົວເລືອກຕອນເພີ່ມສິນຄ້າ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catName4" placeholder="ຕົວຢ່າງ: ບັດເຕີມເກມ" type="text"/><button class="cat-name-confirm-btn" id="catNameConfirm4" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catNameMsg4"></div>
+<label class="u-mt-10">ໝວດໝູ່ 4 — ຂໍ້ຄວາມປ້າຍນ້ອຍ (ຂ້າງໄອຄອນເທິງແບນເນີ)</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTag4" placeholder="ຕົວຢ່າງ: ອຸປະກອນເສີມເກມມິ່ງ" type="text"/><button class="cat-name-confirm-btn" id="catTagConfirm4" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTagMsg4"></div>
+<label class="u-mt-10">ໝວດໝູ່ 4 — ຫົວຂໍ້ໃຫຍ່ເທິງແບນເນີ (ຄຳໃຫຍ່ໆ ເຊັ່ນ "ANDROID")</label>
+<div class="gx-input-wrap cat-name-row"><input id="catTitle4" placeholder="ຕົວຢ່າງ: ANDROID" type="text"/><button class="cat-name-confirm-btn" id="catTitleConfirm4" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catTitleMsg4"></div>
+<label class="u-mt-10">ໝວດໝູ່ 4 — ຄຳອະທິບາຍໃນແບນເນີ</label>
+<div class="gx-input-wrap cat-name-row"><input id="catDesc4" placeholder="ຄຳອະທິບາຍສັ້ນໆ" type="text"/><button class="cat-name-confirm-btn" id="catDescConfirm4" type="button">ຢືນຢັນ</button></div><div class="gx-msg cat-name-msg" id="catDescMsg4"></div>
+<div class="cat-img-row u-mt-8">
+<div class="drop-zone cat-img-drop" id="catImgDrop4">
+<span id="catImgDropText4">ແຕະເພື່ອເລືອກຮູບໝວດໝູ່ນີ້ (ອັບໂຫລດອັດຕະໂນມັດ)</span>
+<input accept="image/*" id="catImgInput4" type="file"/>
+</div>
+<button class="cat-img-remove-btn" id="catImgRemove4" title="ລຶບຮູບໝວດໝູ່ນີ້" type="button">ລຶບຮູບ</button>
+</div>
+<div class="gx-msg" id="catImgMsg4"></div>
+</div>
+<button class="gx-submit u-mt-14" id="saveCategoryNamesBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ບັນທຶກຊື່ໝວດໝູ່ທັງໝົດ</span>
+</button>
+<div class="gx-msg" id="categoryNamesMsg"></div>
+</div>
+<!-- ຊ່ອງທາງໂຊເຊียล -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.6" x2="15.4" y1="10.5" y2="6.5"></line><line x1="8.6" x2="15.4" y1="13.5" y2="17.5"></line></svg>
       ຊ່ອງທາງໂຊເຊียล
     </h3>
-    <div class="gx-field">
-      <label>ລິ້ງ Facebook (ວາງລິ້ງເຕັມ ເຊັ່ນ https://facebook.com/ຮ້ານທ່ານ)</label>
-      <div class="gx-input-wrap"><input type="url" id="settingSocialFacebook" placeholder="https://facebook.com/..."></div>
-    </div>
-    <div class="gx-field">
-      <label>ລິ້ງ Discord</label>
-      <div class="gx-input-wrap"><input type="url" id="settingSocialDiscord" placeholder="https://discord.gg/..."></div>
-    </div>
-    <div class="gx-field">
-      <label>ລິ້ງ Line</label>
-      <div class="gx-input-wrap"><input type="url" id="settingSocialLine" placeholder="https://line.me/ti/p/..."></div>
-    </div>
-    <div class="gx-field">
-      <label>ລິ້ງ Telegram</label>
-      <div class="gx-input-wrap"><input type="url" id="settingSocialTelegram" placeholder="https://t.me/..."></div>
-    </div>
-    <div class="gx-field">
-      <label>ລິ້ງ WhatsApp</label>
-      <div class="gx-input-wrap"><input type="url" id="settingSocialWhatsapp" placeholder="https://wa.me/856XXXXXXXXX"></div>
-    </div>
-    <div class="gx-msg" style="margin-bottom:10px;color:var(--ink-500);font-size:12px;">
+<div class="gx-field">
+<label>ລິ້ງ Facebook (ວາງລິ້ງເຕັມ ເຊັ່ນ https://facebook.com/ຮ້ານທ່ານ)</label>
+<div class="gx-input-wrap"><input id="settingSocialFacebook" placeholder="https://facebook.com/..." type="url"/></div>
+</div>
+<div class="gx-field">
+<label>ລິ້ງ Discord</label>
+<div class="gx-input-wrap"><input id="settingSocialDiscord" placeholder="https://discord.gg/..." type="url"/></div>
+</div>
+<div class="gx-field">
+<label>ລິ້ງ Line</label>
+<div class="gx-input-wrap"><input id="settingSocialLine" placeholder="https://line.me/ti/p/..." type="url"/></div>
+</div>
+<div class="gx-field">
+<label>ລິ້ງ Telegram</label>
+<div class="gx-input-wrap"><input id="settingSocialTelegram" placeholder="https://t.me/..." type="url"/></div>
+</div>
+<div class="gx-field">
+<label>ລິ້ງ WhatsApp</label>
+<div class="gx-input-wrap"><input id="settingSocialWhatsapp" placeholder="https://wa.me/856XXXXXXXXX" type="url"/></div>
+</div>
+<div class="gx-msg u-small-hint-mb">
       ປ່ອຍຊ່ອງໃດຫວ່າງໄວ້ = ໄອຄອນຊ່ອງທາງນັ້ນຈະຖືກເຊື່ອງໄວ້ໃນ footer ໜ້າຫຼັກອັດຕະໂນມັດ
     </div>
-    <button type="button" class="gx-submit" id="saveSocialLinksBtn">
-      <span class="gx-spinner"></span>
-      <span class="gx-submit-label">ບັນທຶກຊ່ອງທາງໂຊເຊียล</span>
-    </button>
-    <div class="gx-msg" id="socialLinksMsg"></div>
-  </div>
-
-  <!-- ໂລໂກ້ຮ້ານ -->
-  <div class="stat-panel">
-    <h3>
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg>
+<button class="gx-submit" id="saveSocialLinksBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ບັນທຶກຊ່ອງທາງໂຊເຊียล</span>
+</button>
+<div class="gx-msg" id="socialLinksMsg"></div>
+</div>
+<!-- ໂລໂກ້ຮ້ານ -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="18" rx="2" width="18" x="3" y="3"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-5-5L5 21"></path></svg>
       ໂລໂກ້ຮ້ານ
     </h3>
-    <div class="gx-field">
-      <label>ຮູບໂລໂກ້ (ຈະສະແດງທັງໃນແຖບເມນູ ແລະ ເມນູຂ້າງ)</label>
-      <div class="drop-zone" id="logoDropZone">
-        <span id="logoDropZoneText">ແຕະເພື່ອເລືອກຮູບໂລໂກ້ໃໝ່</span>
-        <input type="file" id="logoInput" accept="image/*">
-      </div>
-    </div>
-    <button type="button" class="gx-submit" id="saveLogoBtn">
-      <span class="gx-spinner"></span>
-      <span class="gx-submit-label">ບັນທຶກໂລໂກ້</span>
-    </button>
-    <div class="gx-msg" id="logoMsg"></div>
-  </div>
-
-  <!-- QR ໂອນເງິນ -->
-  <div class="stat-panel">
-    <h3>
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="21"/><line x1="21" y1="14" x2="21" y2="21"/><line x1="17.5" y1="14" x2="17.5" y2="17.5"/><line x1="14" y1="17.5" x2="21" y2="17.5"/></svg>
+<div class="gx-field">
+<label>ຮູບໂລໂກ້ (ຈະສະແດງທັງໃນແຖບເມນູ ແລະ ເມນູຂ້າງ)</label>
+<div class="drop-zone" id="logoDropZone">
+<span id="logoDropZoneText">ແຕະເພື່ອເລືອກຮູບໂລໂກ້ໃໝ່</span>
+<input accept="image/*" id="logoInput" type="file"/>
+</div>
+</div>
+<button class="gx-submit" id="saveLogoBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ບັນທຶກໂລໂກ້</span>
+</button>
+<div class="gx-msg" id="logoMsg"></div>
+</div>
+<!-- QR ໂອນເງິນ -->
+<div class="stat-panel">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="7" width="7" x="3" y="3"></rect><rect height="7" width="7" x="14" y="3"></rect><rect height="7" width="7" x="3" y="14"></rect><line x1="14" x2="14" y1="14" y2="21"></line><line x1="21" x2="21" y1="14" y2="21"></line><line x1="17.5" x2="17.5" y1="14" y2="17.5"></line><line x1="14" x2="21" y1="17.5" y2="17.5"></line></svg>
       QR ໂອນເງິນ
     </h3>
-    <div class="gx-row2">
-      <div>
-        <div class="gx-field">
-          <label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 1</label>
-          <div class="gx-input-wrap"><input type="text" id="settingQrLabel1" placeholder="ເຊັ່ນ: ບັນຊີທະນາຄານ"></div>
-        </div>
-        <div class="gx-field">
-          <label>ຮູບ QR ຮັບເງິນ ອັນທີ 1</label>
-          <div class="drop-zone" id="qrDropZone">
-            <span id="qrDropZoneText">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
-            <input type="file" id="qrInput" accept="image/*">
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="gx-field">
-          <label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 2</label>
-          <div class="gx-input-wrap"><input type="text" id="settingQrLabel2" placeholder="ເຊັ່ນ: ບັນຊີພັດທະນາ"></div>
-        </div>
-        <div class="gx-field">
-          <label>ຮູບ QR ຮັບເງິນ ອັນທີ 2 (ບໍ່ບັງຄັບ)</label>
-          <div class="drop-zone" id="qrDropZone2">
-            <span id="qrDropZoneText2">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
-            <input type="file" id="qrInput2" accept="image/*">
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="gx-msg" style="margin-bottom:10px;color:var(--ink-500);font-size:12px;">
+<div class="gx-row2">
+<div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 1</label>
+<div class="gx-input-wrap"><input id="settingQrLabel1" placeholder="ເຊັ່ນ: ບັນຊີທະນາຄານ" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຮູບ QR ຮັບເງິນ ອັນທີ 1</label>
+<div class="drop-zone" id="qrDropZone">
+<span id="qrDropZoneText">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
+<input accept="image/*" id="qrInput" type="file"/>
+</div>
+</div>
+</div>
+<div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 2</label>
+<div class="gx-input-wrap"><input id="settingQrLabel2" placeholder="ເຊັ່ນ: ບັນຊີພັດທະນາ" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຮູບ QR ຮັບເງິນ ອັນທີ 2 (ບໍ່ບັງຄັບ)</label>
+<div class="drop-zone" id="qrDropZone2">
+<span id="qrDropZoneText2">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
+<input accept="image/*" id="qrInput2" type="file"/>
+</div>
+</div>
+</div>
+</div>
+<div class="gx-msg u-small-hint-mb">
       ຖ້າບໍ່ໃສ່ຮູບ QR ອັນທີ 2 ໜ້າເຕີມເງິນຈະສະແດງແຕ່ QR ອັນທີ 1 ຄືເກົ່າ
     </div>
-    <button type="button" class="gx-submit" id="saveQrBtn">
-      <span class="gx-spinner"></span>
-      <span class="gx-submit-label">ບັນທຶກ QR ໂອນເງິນ</span>
-    </button>
-    <div class="gx-msg" id="qrMsg"></div>
-  </div>
-
-  </div>
-  <!-- /panelSettings -->
-      </div></div>
-    </div>
-  </div>
-
+<button class="gx-submit" id="saveQrBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ບັນທຶກ QR ໂອນເງິນ</span>
+</button>
+<div class="gx-msg" id="qrMsg"></div>
+</div>
+</div>
+<!-- /panelSettings -->
+</div></div>
+</div>
+</div>
 </div>
 <!-- /adminApp -->
-
 <div class="slip-lightbox" id="slipLightbox">
-  <div class="lb-close" id="slipLightboxClose">
-    <svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </div>
-  <img id="slipLightboxImg" src="" alt="ສະລິບ">
+<div class="lb-close" id="slipLightboxClose">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><line x1="18" x2="6" y1="6" y2="18"></line><line x1="6" x2="18" y1="6" y2="18"></line></svg>
 </div>
-
+<img alt="ສະລິບ" id="slipLightboxImg" src=""/>
+</div>
 <div class="toast" id="toast"></div>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="admin-supabase-config.js"></script>
 <script src="admin.js"></script>
