@@ -189,6 +189,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  /* ---------- ໄອຄອນຊ່ອງທາງຕິດຕໍ່ໃນ footer (ໃຊ້ SOCIAL_META ດຽວກັນກັບ contact modal) ----------
+     ດຶງລິ້ງແທ້ຈາກ store.social — ຊ່ອງທາງໃດແອດມິນຍັງບໍ່ໄດ້ຕັ້ງລິ້ງໄວ້ ຈະບໍ່ໂຊວ໌ໄອຄອນນັ້ນ,
+     ຖ້າຍັງບໍ່ໄດ້ຕັ້ງລິ້ງໃດເລີຍ ແຖວໄອຄອນທັງໝົດຈະຖືກເຊື່ອງໄປ */
+  const footerSocialEl = document.getElementById('footer-social');
+  if (footerSocialEl) {
+    (async () => {
+      try {
+        const data = await window.StorefrontData.fetchData();
+        const social = data?.store?.social || null;
+        const entries = Object.keys(SOCIAL_META)
+          .map((key) => ({ key, ...SOCIAL_META[key], href: social && String(social[key] || '').trim() }))
+          .filter((l) => l.href);
+
+        if (entries.length) {
+          footerSocialEl.innerHTML = entries.map((l) => `
+            <a class="footer-social-link" href="${escHtml(l.href)}" target="_blank" rel="noopener" aria-label="${escHtml(l.name)}" style="background:${l.color}">${l.icon}</a>
+          `).join('');
+        } else {
+          footerSocialEl.style.display = 'none';
+        }
+      } catch (err) {
+        console.error('Footer social icons: fetchData failed', err);
+      }
+    })();
+  }
+
   const startBtn = document.querySelector('.btn-primary');
   const howBtn = document.querySelector('.btn-ghost');
 
