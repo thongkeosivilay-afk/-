@@ -193,11 +193,11 @@ hr.div{ border:none; border-top:1px solid var(--card-border); margin:20px 16px 0
   border:1px solid var(--card-border); border-bottom:none;
   border-radius:22px 22px 0 0; padding:10px 0 0;
   transform:translateY(100%); transition:transform .32s cubic-bezier(.22,1,.36,1);
-  max-height:88vh; display:flex; flex-direction:column;
+  max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
 }
 .cs-overlay.open .cs-sheet{ transform:translateY(0); }
-.cs-grabber{ width:36px; height:4px; border-radius:99px; background:var(--card-border); margin:0 auto 14px; }
-.cs-scroll{ overflow-y:auto; padding:0 20px 22px; }
+.cs-grabber{ width:36px; height:4px; border-radius:99px; background:var(--card-border); margin:0 auto 14px; flex:none; }
+.cs-scroll{ overflow-y:auto; padding:0 20px 22px; flex:1 1 auto; min-height:0; -webkit-overflow-scrolling:touch; }
 
 .cs-ok-wrap{ display:flex; flex-direction:column; align-items:center; text-align:center; padding:6px 0 18px; }
 .cs-ok-ring{
