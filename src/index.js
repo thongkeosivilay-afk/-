@@ -71,8 +71,29 @@ const ADMIN_EMAILS = ['bhchhhyggg@gmail.com', 'nuanmm12233@gmail.com'];
 
 const SUPABASE_PROXY_PREFIX = '/api/admin/supabase';
 
-export default {
-  async fetch(request, env) {
+/* ---------- security headers: ใส่ให้ทุก response ที่ตอบกลับ ---------- */
+function withSecurityHeaders(response) {
+  const headers = new Headers(response.headers);
+  headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+      "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; " +
+      "connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'"
+  );
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('X-Frame-Options', 'DENY');
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  headers.set('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+async function route(request, env) {
+  {
     const url = new URL(request.url);
 
     if (url.pathname === '/auth/discord/login') {
@@ -141,6 +162,13 @@ export default {
 
     // path อื่นๆ ทั้งหมด -> เสิร์ฟไฟล์ static เดิม (index.html, style.css, script.js, ...)
     return env.ASSETS.fetch(request);
+  }
+}
+
+export default {
+  async fetch(request, env) {
+    const response = await route(request, env);
+    return withSecurityHeaders(response);
   },
 };
 
