@@ -1294,3 +1294,24 @@
     cursor:pointer; font-family:inherit;
   }
   .promo-popup-close-all:active{ transform:scale(.98); }
+
+/* ===== Utility classes (migrated from inline style= attributes for CSP compliance) ===== */
+.u-hidden { display: none; }
+.u-mb-10 { margin-bottom: 10px; }
+.u-mb-16 { margin-bottom: 16px; }
+.u-mb-20 { margin-bottom: 20px; }
+.u-mb-22 { margin-bottom: 22px; }
+.u-fs-20 { font-size: 20px; }
+.u-uppercase { text-transform: uppercase; }
+.u-flex-start { justify-content: flex-start; }
+.u-ml-4 { margin-left: 4px; }
+.u-caption-faint { font-size: 12px; color: var(--text-faint); margin-top: -8px; }
+.u-fine-print { margin-top: 14px; font-size: 10.5px; color: var(--text-faint); opacity: .6; }
+.u-inline-link { text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.topup-submit-alt {
+  margin-top: 16px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: none;
+  border: 1px solid var(--card-border);
+}
