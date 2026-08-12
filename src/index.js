@@ -76,14 +76,16 @@ function withSecurityHeaders(response) {
   const headers = new Headers(response.headers);
   headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
-      "style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; " +
-      "connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'"
+    "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; " +
+      "style-src 'self'; img-src 'self' data: https:; " +
+      "connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; " +
+      "form-action 'self'"
   );
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'DENY');
   headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   headers.set('Cross-Origin-Resource-Policy', 'same-origin');
+  headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   headers.set('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
   return new Response(response.body, {
     status: response.status,
