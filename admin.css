@@ -613,7 +613,33 @@
     font-size:10.5px; padding:3px 9px; border-radius:20px;
     background:rgba(255,0,1,0.08); border:1px solid rgba(255,0,1,0.2);
     color:var(--ink-300);
+    display:inline-flex; align-items:center; gap:5px;
+    cursor:pointer; transition:background .15s ease, border-color .15s ease;
   }
+  .prod-duration-chip:hover{
+    background:rgba(255,0,1,0.16); border-color:rgba(255,0,1,0.4);
+  }
+  .prod-duration-chip .pdc-edit-icon{
+    width:11px; height:11px; flex-shrink:0; opacity:.6;
+  }
+  .prod-duration-chip.is-editing{
+    background:#fff; border-color:var(--gx-signal); padding:3px 4px 3px 9px; cursor:default;
+  }
+  .prod-duration-chip .pdc-price-input{
+    width:78px; font-size:11px; padding:2px 6px; border-radius:12px;
+    border:1px solid rgba(255,0,1,0.3); color:#161a2c; background:#fff;
+  }
+  .prod-duration-chip .pdc-save-btn,
+  .prod-duration-chip .pdc-cancel-btn{
+    width:20px; height:20px; border-radius:50%; border:none; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .prod-duration-chip .pdc-save-btn{ background:rgba(34,197,94,0.15); color:#16a34a; }
+  .prod-duration-chip .pdc-save-btn:hover{ background:rgba(34,197,94,0.3); }
+  .prod-duration-chip .pdc-save-btn svg{ width:12px; height:12px; }
+  .prod-duration-chip .pdc-cancel-btn{ background:rgba(239,68,68,0.1); color:#dc2626; }
+  .prod-duration-chip .pdc-cancel-btn:hover{ background:rgba(239,68,68,0.22); }
+  .prod-duration-chip .pdc-cancel-btn svg{ width:11px; height:11px; }
   .prod-row.is-archived{
     opacity: 0.55;
   }

@@ -501,7 +501,12 @@ function renderManageList(products) {
         </div>
         ${p.duration_enabled && p.durations && p.durations.length ? `
         <div class="prod-duration-list">
-          ${p.durations.map(d => `<span class="prod-duration-chip">${d.label} • ${formatKipAdmin(d.price)} • ຄົງເຫຼືອ ${d.stock}</span>`).join('')}
+          ${p.durations.map(d => `
+            <span class="prod-duration-chip" data-duration-id="${d.id}" data-price="${d.price}" title="ກົດເພື່ອແກ້ໄຂລາຄາ">
+              <span class="pdc-text">${d.label} • ${formatKipAdmin(d.price)} • ຄົງເຫຼືອ ${d.stock}</span>
+              <svg class="pdc-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </span>
+          `).join('')}
         </div>` : ''}
         <div class="prod-links-section">
           <div class="prod-links-list">
@@ -541,7 +546,70 @@ function renderManageList(products) {
         removeProductLink(chip.dataset.linkId, chip, id);
       });
     });
+
+    row.querySelectorAll('.prod-duration-chip').forEach(chip => {
+      chip.addEventListener('click', () => openDurationPriceEditor(chip, id));
+    });
   });
+}
+
+// ---------- ໄລຍະເວລາ — ແກ້ໄຂລາຄາ (ກົດທີ່ chip ເພື່ອປ່ຽນລາຄາທີ່ໃສ່ຜິດ) ----------
+function openDurationPriceEditor(chip, productId) {
+  if (chip.classList.contains('is-editing')) return;
+  chip.classList.add('is-editing');
+  const durationId = chip.dataset.durationId;
+  const currentPrice = chip.dataset.price;
+
+  chip.innerHTML = `
+    <input type="number" class="pdc-price-input" value="${currentPrice}" min="0" step="0.01">
+    <button type="button" class="pdc-save-btn" title="ບັນທຶກ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </button>
+    <button type="button" class="pdc-cancel-btn" title="ຍົກເລີກ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  `;
+
+  const input = chip.querySelector('.pdc-price-input');
+  input.focus();
+  input.select();
+
+  const cancel = () => renderManageList(currentProducts);
+
+  const save = () => saveDurationPrice(chip, productId, durationId, input.value);
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') save();
+    if (e.key === 'Escape') cancel();
+  });
+  chip.querySelector('.pdc-save-btn').addEventListener('click', save);
+  chip.querySelector('.pdc-cancel-btn').addEventListener('click', cancel);
+}
+
+async function saveDurationPrice(chip, productId, durationId, rawValue) {
+  const newPrice = parseFloat(rawValue);
+  if (isNaN(newPrice) || newPrice < 0) {
+    showToast('ລາຄາບໍ່ຖືກຕ້ອງ');
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from('product_durations')
+    .update({ price: newPrice })
+    .eq('id', durationId);
+
+  if (error) {
+    console.error(error);
+    showToast('ບັນທຶກລາຄາບໍ່ສຳເລັດ: ' + error.message);
+    return;
+  }
+
+  const p = currentProducts.find(x => x.id === productId);
+  const d = p && p.durations && p.durations.find(x => x.id === durationId);
+  if (d) d.price = newPrice;
+
+  showToast('ບັນທຶກລາຄາໃໝ່ສຳເລັດ');
+  renderManageList(currentProducts);
 }
 
 // ---------- ລິ້ງໂບນັດ — ເພີ່ມ/ລຶບໃນສິນຄ້າທີ່ມີຢູ່ແລ້ວ ----------
