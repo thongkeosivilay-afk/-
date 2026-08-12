@@ -249,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       stepAmount.style.display = 'none';
+      stepPay.classList.remove('u-hidden');
       stepPay.style.display = '';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
@@ -262,6 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   backToAmountBtn.addEventListener('click', () => {
     stepPay.style.display = 'none';
+    stepPay.classList.add('u-hidden');
+    stepAmount.classList.remove('u-hidden');
     stepAmount.style.display = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
@@ -327,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
       refEl.textContent = data.id || currentTopupId || '-';
       waitAmountEl.textContent = formatKip(selectedAmount);
       stepPay.style.display = 'none';
+      stepWaiting.classList.remove('u-hidden');
       stepWaiting.style.display = '';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
