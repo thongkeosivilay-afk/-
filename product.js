@@ -178,25 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function showSuccessSheet(codes, total) {
-    csOpen(csSuccessHTML(codes, total));
-    csBindCopyButtons();
-
-    let secondsLeft = 3;
-    const countdownEl = document.getElementById('csCountdown');
-    csRedirectTimer = setInterval(() => {
-      secondsLeft--;
-      if (countdownEl) countdownEl.textContent = secondsLeft;
-      if (secondsLeft <= 0) {
-        clearInterval(csRedirectTimer);
-        window.location.href = 'orders.html';
-      }
-    }, 1000);
-
-    document.getElementById('csCancelBtn').addEventListener('click', () => {
-      clearInterval(csRedirectTimer);
-      csClose();
-      window.location.reload();
-    });
+    // ຊື້ສຳເລັດ -> ເດັ້ງໄປໜ້າ "ປະຫວັດການສັ່ງຊື້" ທັນທີ ບໍ່ໂຊວ໌ຊີດ/ບໍ່ນັບຖອຍຫຼັງ
+    window.location.href = 'orders.html';
   }
 
   function showErrorSheet(message, partialCodes) {
