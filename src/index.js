@@ -910,6 +910,29 @@ async function getSoldCount(env) {
   }
 }
 
+/* ---------- 5b) ຈຳນວນ "ຂາຍແລ້ວ" ຂອງແຕ່ລະສິນຄ້າ (ໃຊ້ໂຊວ໌ປ້າຍ "ຂາຍແລ້ວ X ອັນ" ໃນ category.js)
+   ນັບຈາກ orders ທີ່ status = completed, ຈັດກຸ່ມຕາມ product_name (orders ບໍ່ມີ product_id ໂດຍກົງ
+   ຈຶ່ງອີງຊື່ສິນຄ້າ ຄືກັນກັບ handlePublicRecentPurchases ດ້ານລຸ່ມ) ຄືນເປັນ Map<product_name, count> */
+async function getSoldCountsByProductName(env) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return new Map();
+  try {
+    const rows = await supabaseSelect(env, 'orders', {
+      select: 'product_name',
+      status: 'eq.completed',
+    });
+    const counts = new Map();
+    (rows || []).forEach((row) => {
+      const name = row.product_name;
+      if (!name) return;
+      counts.set(name, (counts.get(name) || 0) + 1);
+    });
+    return counts;
+  } catch (err) {
+    console.error('getSoldCountsByProductName error:', err);
+    return new Map();
+  }
+}
+
 /* ---------- 6) /api/public/storefront ----------
    ดึงหมวดหมู่ (category_1..4 name/image จาก site_settings) + สินค้า (products ที่ไม่ถูก
    archived) + สต็อกจริงของแต่ละชิ้น (ผ่าน RPC product_stock / product_duration_stock —
@@ -943,7 +966,7 @@ async function handlePublicStorefront(request, env) {
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_enabled`),
     ];
 
-    const [settingsRows, products, durations, userCount, totalSold] = await Promise.all([
+    const [settingsRows, products, durations, userCount, totalSold, soldCountsByName] = await Promise.all([
       supabaseSelect(env, 'site_settings', {
         select: siteSettingsColumns.join(','),
         id: 'eq.1',
@@ -961,6 +984,7 @@ async function handlePublicStorefront(request, env) {
       }),
       getRegisteredUserCount(env),
       getSoldCount(env),
+      getSoldCountsByProductName(env),
     ]);
 
     const settings = settingsRows[0] || {};
@@ -987,6 +1011,7 @@ async function handlePublicStorefront(request, env) {
         description: p.description || null,
         stock: stock ?? 0,
         durations: durationsWithStock,
+        soldCount: soldCountsByName.get(p.name) || 0,
       };
     }));
 
