@@ -73,7 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="cat-banner-bg"></div>
           <div class="cat-banner-media${category.image ? ' has-image' : ''}">${mediaHTML}</div>
           <div class="cat-banner-content">
-            <div class="cat-tag-row"><span class="accent-bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${decor.tagIcon}</svg>${escapeHtml(tagText)}</div>
             <div class="cat-big-title display-en en">${escapeHtml(bigTitle)}</div>
                       </div>
           <div class="cat-click"><span class="dot"></span>Click Here!</div>
