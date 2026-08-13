@@ -2360,12 +2360,49 @@ async function initAdminPanel() {
   const codeDurationSelect = document.getElementById('codeDurationSelect');
   codeDurationSelect.addEventListener('change', renderCodeStockStrip);
 
+  // ແຍກ textarea ອອກເປັນລາຍການ "ລະຫັດ" ແຕ່ລະອັນ
+  // - ຖ້າແຕ່ລະແຖວເປັນລະຫັດທຳມະດາ (ເຊັ່ນ MEOW-xxxx) -> ແຍກທີລະແຖວຄືເກົ່າ
+  // - ຖ້າເປັນ JSON (ເຊັ່ນ guest_account_info ທີ່ copy ມາຫຼາຍແຖວ) -> ຈັບກຸ່ມຕາມວົງເລັບ { }
+  //   ໃຫ້ຄົງເປັນລະຫັດດຽວ ບໍ່ໃຫ້ຖືກຕັດແຍກທຸກແຖວຄືເມື່ອກ່ອນ (ນັ້ນຄືສາເຫດທີ່ລູກຄ້າໄດ້ຮັບ JSON ຂາດໆ)
+  function parseCodesInput(raw) {
+    const rawLines = raw.split('\n');
+    const results = [];
+    let buffer = '';
+    let depth = 0;
+
+    const braceDelta = (s) => {
+      let d = 0;
+      for (const ch of s) { if (ch === '{') d++; else if (ch === '}') d--; }
+      return d;
+    };
+
+    for (const line of rawLines) {
+      const trimmed = line.trim();
+      if (depth === 0) {
+        if (!trimmed) continue; // ຂ້າມແຖວຫວ່າງລະຫວ່າງລະຫັດ
+        if (trimmed.startsWith('{')) {
+          buffer = trimmed;
+          depth = braceDelta(trimmed);
+          if (depth <= 0) { results.push(buffer); buffer = ''; depth = 0; }
+        } else {
+          results.push(trimmed);
+        }
+      } else {
+        buffer += '\n' + trimmed;
+        depth += braceDelta(trimmed);
+        if (depth <= 0) { results.push(buffer); buffer = ''; depth = 0; }
+      }
+    }
+    if (buffer) results.push(buffer); // JSON ທີ່ວົງເລັບບໍ່ຄົບ ກໍ່ຍັງເພີ່ມໄວ້ (ດີກວ່າຖິ້ມຂໍ້ມູນຫາຍ)
+    return results;
+  }
+
   const codesSubmit = document.getElementById('codesSubmit');
   codesSubmit.addEventListener('click', async () => {
     const msg = document.getElementById('codesMsg');
     const textarea = document.getElementById('codesInput');
     const productId = codeProductSelect.value;
-    const lines = textarea.value.split('\n').map(l => l.trim()).filter(Boolean);
+    const lines = parseCodesInput(textarea.value);
     const product = currentProducts.find(p => p.id === productId);
     const durationId = product && product.duration_enabled ? codeDurationSelect.value : null;
 
