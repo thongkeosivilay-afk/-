@@ -1149,8 +1149,19 @@ function renderResellerKeys(keys) {
 // reseller_keys ເປັນແຄ່ປະຫວັດວ່າຄີຍ໌ໃດຖືກ redeem ໄປແລ້ວເທົ່ານັ້ນ ບໍ່ມີຜົນຕໍ່ລາຄາໂດຍກົງ —
 // ດັ່ງນັ້ນ "ປິດຕົວແທນ" ຈຶ່ງຕ້ອງແກ້ reseller_status.is_reseller (ບໍ່ແມ່ນ reseller_keys.status)
 // ຈຶ່ງຈະຕັດລາຄາພິເສດຂອງຄົນນັ້ນໄດ້ຈິງທັນທີ
+//
+// ---- ໂຄວຕ້າ "ຮອບ" (cycle) + ຄ້າງ 100% 7 ມື້ກ່ອນຣີເຊັດ ----
+// ຄິດຍອດຊື້ທຽບກັບເປົ້າຈາກ reseller_status.cycle_start ຫາດຽວນີ້ (ບໍ່ແມ່ນ all-time) — ຄົບ 100%
+// ຄັ້ງທຳອິດຈະບັນທຶກ quota_reached_at ແລ້ວຄ້າງ 100% ໄວ້ອີກ RESET_HOLD_MS ກ່ອນຣີເຊັດຮອບໃໝ່
+// (cycle_start = ດຽວນີ້, quota_reached_at = null) — ໂຕເຄິດ+ຣີເຊັດນີ້ເປັນ "lazy": ກວດທຸກຄັ້ງທີ່
+// admin ໂຫຼດລາຍຊື່ຕົວແທນ ຄືກັນກັບ handleResellerDashboard ຝັ່ງ Worker (src/index.js) —
+// ດັ່ງນັ້ນຄ່າ RESET_HOLD_MS ຕ້ອງກົງກັນທັງສອງບ່ອນ
+const RESET_HOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 ມື້ — ຕ້ອງກົງກັບ RESET_HOLD_MS ໃນ src/index.js
+
 let currentAgentAccounts = [];
 let agentAccountsSearchTerm = '';
+let agentAccountsCountdownTimer = null;
+let agentAccountsAutoRefreshing = false;
 
 async function loadAgentAccounts() {
   const list = document.getElementById('agentAccountsList');
@@ -1179,10 +1190,22 @@ async function loadAgentAccounts() {
     return;
   }
 
-  // ດຶງຍອດຊື້ສະສົມຂອງແຕ່ລະຄົນຈາກຕາຕະລາງ orders (ອີງໃສ່ user_email) — ຖ້າຄົນນັ້ນຍັງບໍ່ມີອີເມວບັນທຶກໄວ້
-  // (redeem ກ່ອນລະບົບເພີ່ມ user_email ເຂົ້າ reseller_status) ຈະຂ້າມການຄິດຍອດແບບບໍ່ພັງໜ້າ
+  // ດຶງຍອດຊື້ "ຮອບປັດຈຸບັນ" (cycle_start -> ດຽວນີ້) ຂອງແຕ່ລະຄົນຈາກຕາຕະລາງ orders (ອີງໃສ່ user_email)
+  // — ຖ້າຄົນນັ້ນຍັງບໍ່ມີອີເມວບັນທຶກໄວ້ (redeem ກ່ອນລະບົບເພີ່ມ user_email ເຂົ້າ reseller_status)
+  // ຈະຂ້າມການຄິດຍອດແບບບໍ່ພັງໜ້າ — ພ້ອມກັນນັ້ນກໍ່ກວດ/ຣີເຊັດຮອບໃໝ່ຖ້າຄ້າງ 100% ຄົບ 7 ມື້ແລ້ວ
   let ordersOk = true;
+  const nowMs = Date.now();
   accounts = await Promise.all(accounts.map(async (s) => {
+    let cycleStart = s.cycle_start || s.period_start || new Date(nowMs).toISOString();
+    let quotaReachedAt = s.quota_reached_at || null;
+    let needsPersist = !s.cycle_start;
+
+    if (quotaReachedAt && (nowMs - new Date(quotaReachedAt).getTime()) >= RESET_HOLD_MS) {
+      cycleStart = new Date(nowMs).toISOString();
+      quotaReachedAt = null;
+      needsPersist = true;
+    }
+
     let totalSpent = null;
     if (s.user_email) {
       try {
@@ -1190,7 +1213,8 @@ async function loadAgentAccounts() {
           .from('orders')
           .select('price')
           .eq('user_email', s.user_email)
-          .eq('status', 'completed');
+          .eq('status', 'completed')
+          .gte('created_at', cycleStart);
         if (oerr) throw oerr;
         totalSpent = (odata || []).reduce((sum, o) => sum + (Number(o.price) || 0), 0);
       } catch (err) {
@@ -1198,9 +1222,28 @@ async function loadAgentAccounts() {
         console.error('loadAgentAccounts: ດຶງຍອດຂາຍບໍ່ສຳເລັດ', err);
       }
     }
+
+    const quota = Number(s.quota_target) || 0;
+    if (quota > 0 && totalSpent !== null && totalSpent >= quota && !quotaReachedAt) {
+      quotaReachedAt = new Date(nowMs).toISOString();
+      needsPersist = true;
+    }
+
+    if (needsPersist) {
+      try {
+        await supabaseClient
+          .from('reseller_status')
+          .update({ cycle_start: cycleStart, quota_reached_at: quotaReachedAt })
+          .eq('user_id', s.user_id);
+      } catch (err) {
+        console.error('loadAgentAccounts: ບັນທຶກຮອບ/ເວລາຄົບເປົ້າບໍ່ສຳເລັດ', err);
+      }
+    }
+
     // ຫາລະຫັດຄີຍ໌ທີ່ຄົນນີ້ໃຊ້ (ຖ້າມີ) ມາໂຊວ໌ປະກອບ — ບໍ່ບັງຄັບ, ອີງໃສ່ currentResellerKeys ທີ່ໂຫຼດໄວ້ແລ້ວ
     const matchedKey = (currentResellerKeys || []).find(k => k.used_by === s.user_id);
-    return { ...s, totalSpent, code: matchedKey ? matchedKey.code : null };
+    const quotaResetAt = quotaReachedAt ? new Date(new Date(quotaReachedAt).getTime() + RESET_HOLD_MS).toISOString() : null;
+    return { ...s, totalSpent, cycleStart, quotaReachedAt, quotaResetAt, code: matchedKey ? matchedKey.code : null };
   }));
 
   currentAgentAccounts = accounts;
@@ -1217,6 +1260,51 @@ async function loadAgentAccounts() {
 
   renderAgentAccounts(currentAgentAccounts, !ordersOk);
   renderD2Dashboard();
+  startAgentAccountsCountdownTicker();
+}
+
+/* ---------- ນັບຖອຍຫຼັງແບບສົດໆ ໃນລາຍຊື່ຕົວແທນ (ໝົດອາຍຸ + ຄ້າງລໍຣີເຊັດ) ----------
+   ອັບເດດ .agent-acc-countdown[data-expiry]/[data-reset] ທຸກ 1 ວິນາທີ ໂດຍບໍ່ຕ້ອງ render ໃໝ່ທັງໝົດ
+   (ກັນປຸ່ມ/scroll ກະພິບ) — ພໍມີອັນໃດຄົບກຳນົດ (ໝົດອາຍຸ ຫຼື ຄົບ 7 ມື້) ຈະດຶງລາຍຊື່ຄືນຄັ້ງດຽວ
+   ເພື່ອອັບເດດສະຖານະ (ຣີເຊັດຮອບ/ຕັດຕົວແທນ) ໃຫ້ຕົງກັບຄວາມຈິງ */
+function formatCountdownParts(targetIso) {
+  const remain = new Date(targetIso).getTime() - Date.now();
+  if (Number.isNaN(remain)) return null;
+  if (remain <= 0) return { done: true };
+  return {
+    done: false,
+    d: Math.floor(remain / 86400000),
+    h: Math.floor((remain % 86400000) / 3600000),
+    m: Math.floor((remain % 3600000) / 60000),
+    s: Math.floor((remain % 60000) / 1000),
+  };
+}
+
+function startAgentAccountsCountdownTicker() {
+  if (agentAccountsCountdownTimer) return; // ຕັ້ງໄວ້ຄັ້ງດຽວກໍ່ພໍ (ໂຕ interval ຈະ query DOM ໃໝ່ທຸກ tick ເອງ)
+  agentAccountsCountdownTimer = setInterval(() => {
+    let anyDone = false;
+    document.querySelectorAll('.agent-acc-countdown[data-expiry]').forEach((elx) => {
+      const iso = elx.getAttribute('data-expiry');
+      if (!iso) return;
+      const parts = formatCountdownParts(iso);
+      if (!parts) return;
+      if (parts.done) { elx.textContent = 'ໝົດອາຍຸແລ້ວ'; anyDone = true; return; }
+      elx.textContent = `${parts.d}ວ ${String(parts.h).padStart(2, '0')}:${String(parts.m).padStart(2, '0')}:${String(parts.s).padStart(2, '0')}`;
+    });
+    document.querySelectorAll('.agent-acc-countdown[data-reset]').forEach((elx) => {
+      const iso = elx.getAttribute('data-reset');
+      if (!iso) return;
+      const parts = formatCountdownParts(iso);
+      if (!parts) return;
+      if (parts.done) { elx.textContent = 'ກຳລັງຣີເຊັດ...'; anyDone = true; return; }
+      elx.textContent = `${parts.d}ວ ${String(parts.h).padStart(2, '0')}:${String(parts.m).padStart(2, '0')}:${String(parts.s).padStart(2, '0')}`;
+    });
+    if (anyDone && !agentAccountsAutoRefreshing) {
+      agentAccountsAutoRefreshing = true;
+      loadAgentAccounts().finally(() => { agentAccountsAutoRefreshing = false; });
+    }
+  }, 1000);
 }
 
 function renderAgentAccounts(accounts, ordersFailed) {
@@ -1235,6 +1323,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
     const isLifetime = a.period_end === null;
     const quota = Number(a.quota_target) || 0;
     const spent = a.totalSpent;
+    const isHeld = !!a.quotaReachedAt;
 
     let progressHtml = '';
     if (!a.user_email) {
@@ -1242,13 +1331,20 @@ function renderAgentAccounts(accounts, ordersFailed) {
     } else if (ordersFailed || spent === null) {
       progressHtml = `<div class="agent-acc-note">ບໍ່ສາມາດດຶງຍອດຊື້ສະສົມໄດ້</div>`;
     } else if (isLifetime || !quota) {
-      progressHtml = `<div class="agent-acc-progress-text">ຍອດຊື້ສະສົມ ${formatKipAdmin(spent)} • ${isLifetime ? 'ຖາວອນ ບໍ່ມີເປົ້າ' : 'ບໍ່ໄດ້ຕັ້ງເປົ້າ'}</div>`;
+      progressHtml = `<div class="agent-acc-progress-text">ຍອດຊື້ຮອບນີ້ ${formatKipAdmin(spent)} • ${isLifetime ? 'ຖາວອນ ບໍ່ມີເປົ້າ' : 'ບໍ່ໄດ້ຕັ້ງເປົ້າ'}</div>`;
     } else {
       const pct = Math.min(100, Math.round((spent / quota) * 100));
       progressHtml = `
         <div class="agent-acc-progress">
           <div class="agent-acc-bar"><div class="agent-acc-bar-fill ${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></div></div>
-          <span class="agent-acc-progress-text">${formatKipAdmin(spent)} / ${formatKipAdmin(quota)} (${pct}%)</span>
+          <span class="agent-acc-progress-text">${formatKipAdmin(spent)} / ${formatKipAdmin(quota)} (${pct}%) · ຮອບນີ້</span>
+        </div>`;
+    }
+    if (isHeld) {
+      progressHtml += `
+        <div class="agent-acc-hold">
+          <span class="agent-acc-live-dot"></span>
+          <span>ຄົບເປົ້າ 100% — ຄ້າງລໍຣີເຊັດ ອີກ <span class="agent-acc-countdown" data-reset="${a.quotaResetAt}">—</span></span>
         </div>`;
     }
 
@@ -1257,12 +1353,16 @@ function renderAgentAccounts(accounts, ordersFailed) {
       ? escapeHtmlAdmin(a.user_email)
       : `ບໍ່ມີອີເມວ (user_id: ${escapeHtmlAdmin((a.user_id || '').slice(0, 8))}…)`;
 
+    const expiryHtml = isLifetime
+      ? 'ຖາວອນ ບໍ່ໝົດອາຍຸ'
+      : `ໝົດອາຍຸ <span class="agent-acc-countdown" data-expiry="${a.period_end}">—</span>`;
+
     return `
     <div class="agent-acc-row" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}">
       <div class="agent-acc-main">
         <div class="agent-acc-email">${emailLabel}</div>
         <div class="agent-acc-meta">
-          ລະດັບ ${tierLabel(a.duration_type)}${a.code ? ` • ຄີຍ໌ ${a.code}` : ''} • ປົດລັອກ ${a.period_start ? new Date(a.period_start).toLocaleString('lo-LA') : '—'}${a.period_end ? ` • ໝົດອາຍຸ ${new Date(a.period_end).toLocaleString('lo-LA')}` : ''}
+          ລະດັບ ${tierLabel(a.duration_type)}${a.code ? ` • ຄີຍ໌ ${a.code}` : ''} • ປົດລັອກ ${a.period_start ? new Date(a.period_start).toLocaleString('lo-LA') : '—'} • ${expiryHtml}
         </div>
         ${progressHtml}
       </div>
@@ -1279,6 +1379,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
     btn.addEventListener('click', () => toggleAgentStatus(btn));
   });
 }
+
 
 async function toggleAgentStatus(btn) {
   const userId = btn.dataset.userId;

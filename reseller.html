@@ -71,8 +71,12 @@
 <div class="rs-quota-tier" id="rsTier">—</div>
 </div>
 <div class="rs-quota-expiry">
-            ໝົດອາຍຸ
-            <b id="rsExpiry">—</b>
+<div class="rs-expiry-label u-hidden" id="rsExpiryStaticLabel">ໝົດອາຍຸ</div>
+<b id="rsExpiry" class="u-hidden">—</b>
+<div class="rs-expiry-label u-hidden" id="rsExpiryLiveLabel"><span class="rs-live-dot"></span>ໝົດອາຍຸໃນ</div>
+<div class="rs-expiry-time u-hidden" id="rsExpiryLive">
+<span class="rs-eh-days"><span id="rsExpD">--</span><span class="rs-eh-days-lbl">ວັນ</span></span><span class="rs-eh-clock"><span id="rsExpH">--</span><span class="rs-eh-colon">:</span><span id="rsExpM">--</span><span class="rs-eh-colon">:</span><span id="rsExpS">--</span></span>
+</div>
 </div>
 </div>
 <div class="rs-quota-body">
@@ -88,8 +92,12 @@
 </div>
 <div class="rs-quota-info">
 <div class="rs-quota-amount"><span id="rsCurrent">0</span> <small>/ <span id="rsTarget">0</span> ₭</small></div>
-<div class="rs-quota-sub">ຍອດຊື້ເດືອນນີ້ທຽບກັບເປົ້າທີ່ແອດມິນຕັ້ງໄວ້ · ເຫຼືອອີກ <b id="rsRemaining">0 ₭</b> ຮອດເປົ້າ</div>
+<div class="rs-quota-sub">ຍອດຊື້ຮອບນີ້ທຽບກັບເປົ້າທີ່ແອດມິນຕັ້ງໄວ້ · ເຫຼືອອີກ <b id="rsRemaining">0 ₭</b> ຮອດເປົ້າ</div>
 </div>
+</div>
+<div class="rs-hold-banner" id="rsHoldBanner">
+<span class="rs-live-dot"></span>
+<span>ຄົບເປົ້າ 100% ແລ້ວ! ຄ້າງໄວ້ 7 ມື້ ກ່ອນຣີເຊັດຮອບໃໝ່ — ອີກ <b id="rsHoldCountdown">—</b></span>
 </div>
 </div>
 <div class="rs-section-label">ມື້ນີ້</div>

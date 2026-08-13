@@ -828,6 +828,10 @@
   .agent-acc-bar-fill.full{ background:var(--gx-success); }
   .agent-acc-progress-text{ font-size:10.5px; color:var(--ink-500); margin-top:4px; display:block; }
   .agent-acc-note{ font-size:10.5px; color:var(--gx-warn); margin-top:4px; }
+  .agent-acc-countdown{ font-variant-numeric:tabular-nums; font-weight:700; color:var(--shine); }
+  .agent-acc-hold{ font-size:10.5px; color:var(--gx-warn); margin-top:4px; display:flex; align-items:center; gap:5px; }
+  .agent-acc-live-dot{ display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--gx-success); box-shadow:0 0 6px var(--gx-success); animation:agent-acc-pulse 1.2s infinite; }
+  @keyframes agent-acc-pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
   .agent-acc-right{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0; }
   .agent-acc-toggle-btn{
     font-family:var(--gx-font); font-size:11px; font-weight:600; padding:7px 12px; border-radius:9px;

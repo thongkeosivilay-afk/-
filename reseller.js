@@ -17,9 +17,36 @@ document.addEventListener('DOMContentLoaded', () => {
   const RESELLER_TIER_LABELS = { '7d': '7 ມື້', '14d': '14 ມື້', '30d': '30 ມື້', 'lifetime': 'ຖາວອນ' };
 
   const fmtMoney = (n) => Number(n || 0).toLocaleString('de-DE');
-  const fmtExpiry = (iso) => iso
-    ? new Date(iso).toLocaleString('lo-LA', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : 'ຖາວອນ ບໍ່ໝົດອາຍຸ';
+
+  /* ---------- ນັບຖອຍຫຼັງແບບສົດໆ (ໃຊ້ຮ່ວມກັນທັງ "ໝົດອາຍຸ" ແລະ "ຄ້າງ 100% ລໍຣີເຊັດ") ----------
+     ຮັບ targetIso (ເວລາເປົ້າໝາຍ) + callback ອັບເດດ DOM ທຸກ 1 ວິນາທີ; ຄືນຟັງຊັນ stop() ໄວ້ຢຸດ
+     interval ເມື່ອຈະ render ຄືນໃໝ່ (ກັນ interval ຊ້ອນກັນຫຼາຍອັນ) */
+  function startLiveCountdown(targetIso, onTick, onDone) {
+    const targetMs = new Date(targetIso).getTime();
+    if (Number.isNaN(targetMs)) return () => {};
+
+    function tick() {
+      const remain = targetMs - Date.now();
+      if (remain <= 0) {
+        onTick(0, 0, 0, 0);
+        if (onDone) onDone();
+        return false;
+      }
+      const d = Math.floor(remain / 86400000);
+      const h = Math.floor((remain % 86400000) / 3600000);
+      const m = Math.floor((remain % 3600000) / 60000);
+      const s = Math.floor((remain % 60000) / 1000);
+      onTick(d, h, m, s);
+      return true;
+    }
+
+    if (!tick()) return () => {};
+    const timer = setInterval(() => { if (!tick()) clearInterval(timer); }, 1000);
+    return () => clearInterval(timer);
+  }
+
+  let stopExpiryCountdown = null;
+  let stopHoldCountdown = null;
 
   /* ---------- Toast (ໃຊ້ .toast ຮ່ວມກັບ auth.css) ---------- */
   let toastTimer = null;
@@ -53,22 +80,66 @@ document.addEventListener('DOMContentLoaded', () => {
   const RING_C = 2 * Math.PI * RING_R;
   function renderDashboard(data) {
     const target = Number(data.quotaTarget) || 0;
-    const current = Number(data.monthPurchase) || 0;
+    const current = Number(data.cyclePurchase != null ? data.cyclePurchase : data.monthPurchase) || 0;
     const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
     const remaining = Math.max(0, target - current);
+    const isHeld = !!data.quotaReachedAt;
 
     document.getElementById('rsTier').textContent =
       (RESELLER_TIER_LABELS[data.durationType] || data.durationType || '—') + (target ? ` · ${fmtMoney(target)} ₭` : '');
-    document.getElementById('rsExpiry').textContent = fmtExpiry(data.periodEnd);
+
+    /* ---------- ໝົດອາຍຸ: ຖ້າມີ periodEnd -> ນັບຖອຍຫຼັງແບບສົດໆ ທຸກວິນາທີ, ຖ້າຖາວອນ -> ໂຊວ໌ຂໍ້ຄວາມຄົງທີ່ ---------- */
+    if (stopExpiryCountdown) { stopExpiryCountdown(); stopExpiryCountdown = null; }
+    const staticLabel = document.getElementById('rsExpiryStaticLabel');
+    const staticVal = document.getElementById('rsExpiry');
+    const liveLabel = document.getElementById('rsExpiryLiveLabel');
+    const liveVal = document.getElementById('rsExpiryLive');
+
+    if (!data.periodEnd) {
+      liveLabel.classList.add('u-hidden');
+      liveVal.classList.add('u-hidden');
+      staticLabel.classList.remove('u-hidden');
+      staticVal.classList.remove('u-hidden');
+      staticVal.textContent = 'ຖາວອນ ບໍ່ໝົດອາຍຸ';
+    } else {
+      staticLabel.classList.add('u-hidden');
+      staticVal.classList.add('u-hidden');
+      liveLabel.classList.remove('u-hidden');
+      liveVal.classList.remove('u-hidden');
+      const dEl = document.getElementById('rsExpD');
+      const hEl = document.getElementById('rsExpH');
+      const mEl = document.getElementById('rsExpM');
+      const sEl = document.getElementById('rsExpS');
+      stopExpiryCountdown = startLiveCountdown(data.periodEnd, (d, h, m, s) => {
+        dEl.textContent = String(d);
+        hEl.textContent = String(h).padStart(2, '0');
+        mEl.textContent = String(m).padStart(2, '0');
+        sEl.textContent = String(s).padStart(2, '0');
+      }, () => { fetchDashboard(); }); // ໝົດອາຍຸແທ້ໆ -> ດຶງແດຊບອດຄືນເພື່ອອັບເດດສະຖານະລ່າສຸດ
+    }
 
     const ringFg = document.getElementById('rsRingFg');
     ringFg.style.strokeDasharray = String(RING_C);
     ringFg.style.strokeDashoffset = String(RING_C - (pct / 100) * RING_C);
+    ringFg.classList.toggle('is-held', isHeld);
     document.getElementById('rsPct').textContent = pct + '%';
 
     document.getElementById('rsCurrent').textContent = fmtMoney(current);
     document.getElementById('rsTarget').textContent = fmtMoney(target);
     document.getElementById('rsRemaining').textContent = fmtMoney(remaining) + ' ₭';
+
+    /* ---------- ຄົບເປົ້າ 100% ແລ້ວ -> ຄ້າງໄວ້ 7 ມື້ ກ່ອນຣີເຊັດຮອບໃໝ່ (ນັບຖອຍຫຼັງແບບສົດໆຄືກັນ) ---------- */
+    if (stopHoldCountdown) { stopHoldCountdown(); stopHoldCountdown = null; }
+    const holdBanner = document.getElementById('rsHoldBanner');
+    if (isHeld && data.quotaResetAt) {
+      holdBanner.classList.add('show');
+      const holdEl = document.getElementById('rsHoldCountdown');
+      stopHoldCountdown = startLiveCountdown(data.quotaResetAt, (d, h, m, s) => {
+        holdEl.textContent = `${d}ວ ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }, () => { fetchDashboard(); }); // ຄົບ 7 ມື້ -> ດຶງແດຊບອດຄືນເພື່ອໂຊວ໌ຮອບໃໝ່ທີ່ຣີເຊັດແລ້ວ
+    } else {
+      holdBanner.classList.remove('show');
+    }
 
     const today = data.today || {};
     document.getElementById('rsTodayTopup').textContent = fmtMoney(today.topup);
