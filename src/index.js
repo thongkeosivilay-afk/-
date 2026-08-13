@@ -1505,7 +1505,17 @@ async function handleRedeemResellerKey(request, env) {
    ໜ້າ reseller.html ຮຽກຈຸດນີ້ ຫຼັງຈາກຮູ້ແລ້ວວ່າຄົນທີ່ login ຢູ່ເປັນຕົວແທນ (is_reseller = true)
    ເພື່ອເອົາຂໍ້ມູນສະຫຼຸບຈິງມາໂຊວ໌ (ໂຄວຕ້າ/ຍອດມື້ນີ້/ຍອດສະສົມ) — ຄິດໄລ່ຈາກ orders + topup_requests
    + wallets ຈິງຂອງ user ຄົນນັ້ນ (ອ່ານດ້ວຍ service_role key ຄືກັນກັບຈຸດອື່ນ, ບໍ່ໄດ້ໃຫ້ browser
-   ຮ້ອງ Supabase ຕົງໆ) ອີງເຂດເວລາ UTC+7 (ລາວ/ໄທ) ໃນການຕັດ "ມື້ນີ້"/"ເດືອນນີ້" */
+   ຮ້ອງ Supabase ຕົງໆ) ອີງເຂດເວລາ UTC+7 (ລາວ/ໄທ) ໃນການຕັດ "ມື້ນີ້"
+
+   ---- ໂຄວຕ້າ "ຮອບ" (cycle) ----
+   ຍອດຊື້ທຽບກັບເປົ້າ ບໍ່ໄດ້ອີງໃສ່ "ເດືອນປະຕິທິນ" ອີກຕໍ່ໄປ ແຕ່ອີງໃສ່ reseller_status.cycle_start
+   (ຈຸດເລີ່ມຮອບປັດຈຸບັນ) ຫາດຽວນີ້ — ເມື່ອຍອດຊື້ໃນຮອບຄົບເປົ້າ 100% ຄັ້ງທຳອິດ ຈະບັນທຶກເວລາໄວ້ໃນ
+   quota_reached_at ແລ້ວຄ້າງໄວ້ທີ່ 100% ຕໍ່ໄປອີກ RESET_HOLD_MS (7 ມື້) — ພໍຄົບ 7 ມື້ ຈຶ່ງຈະຣີເຊັດຮອບ
+   ໃໝ່ອັດຕະໂນມັດ (cycle_start = ດຽວນີ້, quota_reached_at = null -> ຍອດ/ອໍເດີໃນຮອບເລີ່ມນັບຄືນຈາກ 0)
+   ການຣີເຊັດນີ້ເປັນແບບ "lazy" ຄື ກວດ+ຣີເຊັດທຸກຄັ້ງທີ່ມີການດຶງແດຊບອດ (GET ນີ້) ຫຼືທຸກຄັ້ງທີ່ໜ້າ
+   admin ໂຫຼດລາຍຊື່ຕົວແທນ (ເບິ່ງ admin.js: loadAgentAccounts) */
+const RESET_HOLD_MS = 7 * 24 * 60 * 60 * 1000; // ໄລຍະຄ້າງ 100% ກ່ອນຣີເຊັດຮອບໃໝ່ (7 ມື້)
+
 async function handleResellerDashboard(request, env) {
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
 
@@ -1519,7 +1529,7 @@ async function handleResellerDashboard(request, env) {
 
   try {
     const statusRows = await supabaseSelect(env, 'reseller_status', {
-      select: 'is_reseller,duration_type,period_start,period_end,quota_target,discount_percent',
+      select: 'is_reseller,duration_type,period_start,period_end,quota_target,discount_percent,cycle_start,quota_reached_at',
       user_id: `eq.${user.id}`,
       limit: '1',
     });
@@ -1529,14 +1539,23 @@ async function handleResellerDashboard(request, env) {
       return json({ ok: true, isReseller: false });
     }
 
-    // ---- ຄິດຂອບເຂດ "ມື້ນີ້" ແລະ "ເດືອນນີ້" ອີງເຂດເວລາ UTC+7 ----
+    const nowMs = Date.now();
+    let cycleStart = status.cycle_start || status.period_start || new Date(nowMs).toISOString();
+    let quotaReachedAt = status.quota_reached_at || null;
+    let needsPersist = !status.cycle_start;
+
+    // ---- ຄ້າງ 100% ມາຄົບ 7 ມື້ແລ້ວ -> ຣີເຊັດຮອບໃໝ່ (ຍອດ/ອໍເດີໃນຮອບເລີ່ມນັບຄືນຈາກ 0) ----
+    if (quotaReachedAt && (nowMs - new Date(quotaReachedAt).getTime()) >= RESET_HOLD_MS) {
+      cycleStart = new Date(nowMs).toISOString();
+      quotaReachedAt = null;
+      needsPersist = true;
+    }
+
+    // ---- ຄິດຂອບເຂດ "ມື້ນີ້" ອີງເຂດເວລາ UTC+7 ----
     const TZ_OFFSET_MS = 7 * 60 * 60 * 1000;
-    const localNow = new Date(Date.now() + TZ_OFFSET_MS);
+    const localNow = new Date(nowMs + TZ_OFFSET_MS);
     const startOfDayUtc = new Date(
       Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate()) - TZ_OFFSET_MS
-    ).toISOString();
-    const startOfMonthUtc = new Date(
-      Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), 1) - TZ_OFFSET_MS
     ).toISOString();
 
     const [ordersRows, topupRows, walletRows] = await Promise.all([
@@ -1566,20 +1585,46 @@ async function handleResellerDashboard(request, env) {
     const isOnOrAfter = (iso, boundaryIso) => typeof iso === 'string' && iso >= boundaryIso;
 
     const todayOrders = orders.filter((o) => isOnOrAfter(o.created_at, startOfDayUtc));
-    const monthOrders = orders.filter((o) => isOnOrAfter(o.created_at, startOfMonthUtc));
+    const cycleOrders = orders.filter((o) => isOnOrAfter(o.created_at, cycleStart));
     const todayTopups = topups.filter((t) => isOnOrAfter(t.created_at, startOfDayUtc));
 
     const sumPrice = (rows) => rows.reduce((s, r) => s + (Number(r.price) || 0), 0);
     const sumAmount = (rows) => rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+
+    const target = Number(status.quota_target) || 0;
+    const cyclePurchase = sumPrice(cycleOrders);
+
+    // ---- ຮອບນີ້ຄົບເປົ້າ 100% ພໍ່ດີ (ຄັ້ງທຳອິດ) -> ບັນທຶກເວລາຄົບເປົ້າ ເລີ່ມນັບຄ້າງ 7 ມື້ ----
+    if (target > 0 && cyclePurchase >= target && !quotaReachedAt) {
+      quotaReachedAt = new Date(nowMs).toISOString();
+      needsPersist = true;
+    }
+
+    if (needsPersist) {
+      try {
+        await supabaseUpdate(env, 'reseller_status', { user_id: `eq.${user.id}` }, {
+          cycle_start: cycleStart,
+          quota_reached_at: quotaReachedAt,
+        });
+      } catch (err) {
+        // ບັນທຶກຮອບບໍ່ສຳເລັດກໍ່ຍັງສະແດງຂໍ້ມູນຮອບປັດຈຸບັນໃຫ້ລູກຄ້າໄດ້ຕາມປົກກະຕິ (ບໍ່ບັງຄັບ throw)
+        console.error('handleResellerDashboard: ບັນທຶກຮອບ/ເວລາຄົບເປົ້າບໍ່ສຳເລັດ', err);
+      }
+    }
+
+    const quotaResetAt = quotaReachedAt ? new Date(new Date(quotaReachedAt).getTime() + RESET_HOLD_MS).toISOString() : null;
 
     return json({
       ok: true,
       isReseller: true,
       durationType: status.duration_type,
       periodEnd: status.period_end,
-      quotaTarget: Number(status.quota_target) || 0,
+      quotaTarget: target,
       discountPercent: status.discount_percent,
-      monthPurchase: sumPrice(monthOrders),
+      cyclePurchase,
+      cycleStart,
+      quotaReachedAt,
+      quotaResetAt,
       today: {
         topup: sumAmount(todayTopups),
         purchase: sumPrice(todayOrders),
@@ -1659,6 +1704,30 @@ async function supabaseRpcStrict(env, fnName, args) {
     throw new Error(message);
   }
   return res.json();
+}
+
+/* ---------- helper: ยิง PATCH (update) ไป Supabase REST ด้วย service_role key (ฝั่ง Worker เท่านั้น)
+   ใช้กับ handleResellerDashboard เพื่อบันทึก cycle_start/quota_reached_at (รอบโควตา + เวลาคบเป้า
+   สำหรับค้าง 100% ก่อนรีเซ็ต) — filters ใช้รูปแบบเดียวกับ supabaseSelect เช่น { user_id: `eq.${id}` } ---------- */
+async function supabaseUpdate(env, table, filters, patch) {
+  const url = new URL(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}`);
+  for (const [key, value] of Object.entries(filters)) {
+    url.searchParams.set(key, value);
+  }
+  const res = await fetch(url.toString(), {
+    method: 'PATCH',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+      prefer: 'return=minimal',
+    },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase update "${table}" failed (${res.status}): ${text}`);
+  }
 }
 
 /* ---------- helper: ยิง INSERT ไป Supabase REST ด้วย service_role key (ฝั่ง Worker เท่านั้น) ---------- */
