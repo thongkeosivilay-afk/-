@@ -14,8 +14,19 @@
   var navigating = false;
 
   // เคลียร์ will-change หลังแอนิเมชั่น "เข้า" จบ กันค้าง GPU layer ทิ้งไว้เฉยๆ
+  // ---- สำคัญ: ต้องเคลียร์ animation ตัวเองทิ้งไปด้วย (ไม่ใช่แค่ willChange) ----
+  // .shell เล่น keyframe pt-in ซึ่งจบที่ transform:translateX(0) — ค่า transform ที่ไม่ใช่
+  // "none" (ต่อให้เป็น translateX(0) ที่มองไม่เห็นการขยับ) ทำให้ .shell กลายเป็น containing
+  // block ของลูกที่เป็น position:fixed ทุกตัว (เช่น .chat-fab) ไปตลอดกาล เพราะ
+  // animation-fill-mode:both ค้างค่า transform นี้ไว้ถาวรแม้แอนิเมชั่นจะ "จบ" ไปแล้ว —
+  // ผลคือ .chat-fab ไม่ได้ fix ติดขอบจอเหมือนที่ควร แต่กลับไปติดขอบล่างของ .shell (สูงเท่า
+  // เนื้อหาทั้งหน้า) แทน เลื่อนหน้าลงไปเท่าไหร่ก็ตามไปด้วยเหมือนลอยอยู่ก้นหน้าเว็บ — เอา
+  // animation ออกทั้งดุ้นหลังเข้าฉากเสร็จ ก็จะเลิกเป็น containing block ทันที (ตอนออกจากหน้า
+  // ค่อยมี .pt-exit{animation:...!important} มาทับใหม่ตอนนั้นอยู่แล้ว ไม่กระทบกัน)
   wrapper.addEventListener('animationend', function (e) {
-    if (e.target === wrapper) wrapper.style.willChange = 'auto';
+    if (e.target !== wrapper) return;
+    wrapper.style.willChange = 'auto';
+    if (e.animationName === 'pt-in') wrapper.style.animation = 'none';
   });
 
   // ถ้าเบราว์เซอร์ดึงหน้านี้กลับมาจาก bfcache (เช่นกดปุ่มย้อนกลับ)
@@ -27,6 +38,7 @@
       wrapper.style.opacity = '';
       wrapper.style.transform = '';
       wrapper.style.willChange = 'auto';
+      wrapper.style.animation = 'none'; // กันแอนิเมชั่นเข้าเล่นซ้ำ + กัน transform ค้างแบบเดียวกับด้านบน
     }
   });
 
