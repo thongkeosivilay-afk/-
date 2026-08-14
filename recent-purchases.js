@@ -74,6 +74,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     let html = '';
     for (let i = 0; i < setsNeeded; i++) items.forEach((it) => { html += cardHTML(it); });
     track.innerHTML = html;
+    // ໝາຍເຫດ: ຕ້ອງ remove('u-hidden') ນຳ ບໍ່ແມ່ນແຄ່ລຶບ inline style ຢ່າງດຽວ — index.html ໃສ່
+    // class="rp-carousel u-hidden" ໄວ້ຕັ້ງແຕ່ຕົ້ນ (ເຊື່ອງໄວ້ກ່ອນຈົນກວ່າຈະຮູ້ວ່າມີຂໍ້ມູນຈິງ) ແລະ
+    // .u-hidden{display:none} ໃນ style.css ຍັງມີຜົນຢູ່ຕໍ່ໄປແມ້ style.display ຈະຖືກຕັ້ງເປັນ '' —
+    // ຖ້າບໍ່ລຶບ class ນີ້ອອກ ແຖບ "ສິນຄ້າທີ່ຊື້ລ່າສຸດ" ຈະຄ້າງເຊື່ອງຢູ່ຕະຫຼອດ ບໍ່ວ່າຈະມີຂໍ້ມູນຈິງຫຼືບໍ່
+    carousel.classList.remove('u-hidden');
     carousel.style.display = '';
 
     const SPEED_PX_PER_SEC = 90; // ເລື່ອນໄວຂຶ້ນ
