@@ -60,8 +60,24 @@
 .oh-list{ display:flex; flex-direction:column; gap:12px; }
 .oh-item{
   background:var(--card); border:1px solid var(--card-border); border-radius:16px;
-  padding:14px 16px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:14px 16px; display:flex; flex-direction:column; gap:10px;
 }
+
+/* ---- ແຖວເທິງ: ເລກອໍເດີ/ວັນທີ + ປ້າຍສະຖານະ ---- */
+.oh-item-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.oh-item-id{
+  font-size:11px; color:var(--text-faint); font-family:monospace; line-height:1.5;
+  word-break:break-all;
+}
+.oh-item-status{
+  flex-shrink:0; font-size:11px; font-weight:800; padding:5px 11px; border-radius:999px;
+  white-space:nowrap;
+}
+.oh-item-status.completed{ background:rgba(55,214,122,.12); color:#37d67a; border:1px solid rgba(55,214,122,.35); }
+.oh-item-status.failed{ background:rgba(255,0,1,.12); color:var(--red-glow); border:1px solid rgba(255,0,1,.35); }
+
+/* ---- ແຖວກາງ: ໄອຄອນ + ຊື່ສິນຄ້າ/ຈຳນວນ/ລາຄາ ---- */
+.oh-item-main{ display:flex; align-items:center; gap:12px; }
 .oh-item-icon{
   width:40px; height:40px; border-radius:12px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
@@ -71,27 +87,36 @@
 .oh-item-icon img{ width:100%; height:100%; object-fit:cover; }
 .oh-item-body{ flex:1; min-width:140px; }
 .oh-item-name{ font-size:14.5px; font-weight:800; color:var(--text); }
-.oh-item-sub{ font-size:12px; color:var(--text-dim); margin-top:2px; }
-.oh-item-amount{ font-size:13px; font-weight:700; color:var(--red-glow); margin-top:4px; }
-.oh-item-date{ font-size:11.5px; color:var(--text-faint); margin-top:2px; }
-.oh-item-status{
-  flex-shrink:0; font-size:11px; font-weight:800; padding:5px 11px; border-radius:999px;
-  white-space:nowrap;
-}
-.oh-item-status.completed{ background:rgba(55,214,122,.12); color:#37d67a; border:1px solid rgba(55,214,122,.35); }
-.oh-item-status.failed{ background:rgba(255,0,1,.12); color:var(--red-glow); border:1px solid rgba(255,0,1,.35); }
+.oh-item-qty{ font-size:12px; color:var(--text-dim); margin-top:3px; }
+.oh-item-amount{ font-size:14.5px; font-weight:800; color:var(--gold); margin-top:3px; }
 
-.oh-item-code{
-  width:100%; margin-top:4px; display:flex; align-items:flex-start; gap:8px;
-  background:var(--bg-raise); border:1px dashed var(--card-border); border-radius:10px;
-  padding:8px 12px; font-size:12.5px; color:var(--text-dim); font-family:monospace;
-  cursor:pointer; justify-content:space-between;
+/* ---- ກ່ອງລະຫັດ: ຮອງຮັບໄດ້ທັງ 1 ອັນ ແລະຫຼາຍອັນ (ຮຽງລົງມາ) ---- */
+.oh-code-group{
+  display:flex; align-items:stretch; gap:10px;
+  background:var(--bg-raise); border:1px dashed rgba(55,214,122,.4); border-radius:12px;
+  padding:10px;
 }
-.oh-item-code:active{ opacity:.7; }
-.oh-item-code span:first-child{
-  white-space:pre-wrap; word-break:break-all; overflow-wrap:anywhere; line-height:1.5;
+.oh-code-lines{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
+.oh-code-line{
+  display:flex; align-items:center; gap:8px;
+  font-family:monospace; font-size:12.5px; color:#37d67a;
+  padding:6px 10px; border-radius:8px; background:rgba(55,214,122,.06);
+  cursor:pointer; white-space:nowrap; overflow:hidden;
 }
-.oh-item-code .copy-hint{ font-family:inherit; color:var(--text-faint); font-size:11px; flex-shrink:0; }
+.oh-code-line:active{ opacity:.7; }
+.oh-code-line .num{ color:var(--text-faint); font-family:'Rajdhani',sans-serif; font-size:11px; flex-shrink:0; }
+.oh-code-line .val{ flex:1; overflow:hidden; text-overflow:ellipsis; }
+.oh-code-line .tick{ opacity:0; flex-shrink:0; color:#37d67a; font-size:11px; transition:opacity .15s; }
+.oh-code-line.is-copied .tick{ opacity:1; }
+
+.oh-copy-all{
+  flex-shrink:0; align-self:center; display:flex; flex-direction:column; align-items:center; gap:5px;
+  background:#2ecc71; color:#04160c; border:none; border-radius:12px;
+  padding:11px 13px; font-family:inherit; font-weight:800; font-size:11.5px; cursor:pointer;
+}
+.oh-copy-all svg{ width:17px; height:17px; }
+.oh-copy-all:active{ opacity:.85; }
+.oh-copy-all.is-done{ background:#1fae5c; }
 
 .oh-error{ text-align:center; color:var(--text-faint); font-size:12.5px; padding:20px; }
 
