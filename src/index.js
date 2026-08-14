@@ -954,7 +954,7 @@ async function handlePublicStorefront(request, env) {
 
   try {
     const siteSettingsColumns = [
-      'store_name', 'tagline', 'announcement_text', 'hero_image',
+      'store_name', 'tagline', 'announcement_text', 'hero_image', 'logo_url',
       'qr_label', 'qr_label_2', 'qr_url', 'qr_url_2',
       'social_facebook', 'social_discord', 'social_line', 'social_telegram', 'social_whatsapp',
       'promo_popup_enabled', 'promo_popup_image',
@@ -1056,6 +1056,7 @@ async function handlePublicStorefront(request, env) {
         tagline: settings.tagline || null,
         announcement: settings.announcement_text || null,
         heroImage: settings.hero_image || null,
+        logoUrl: settings.logo_url || null,
         qrLabel1: settings.qr_label || null,
         qrLabel2: settings.qr_label_2 || null,
         qrUrl1: settings.qr_url || null,
