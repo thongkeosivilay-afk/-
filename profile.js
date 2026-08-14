@@ -80,10 +80,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ---- Avatar ----
     const avatarBox = document.getElementById('pAvatarBox');
+    // ຄວາມປອດໄພ: user.username ມາຈາກ signup ຟອມ (backend ບໍ່ໄດ້ຈຳກັດຕົວອັກສອນ, ອະນຸຍາດ
+    // < > " ' ໄດ້) — ຫ້າມເອົາໄປໃສ່ໃນ innerHTML ຕົງໆ ບໍ່ດັ່ງນັ້ນຄົນຕັ້ງຊື່ຜູ້ໃຊ້ເປັນ HTML/script
+    // ຈະເຮັດໃຫ້ໂຕເອງໂດນ XSS ຕອນເປີດໜ້າໂປຣໄຟລ໌ຂອງໂຕເອງ (stored XSS) — ໃຊ້ escapeHtml() ກັນໄວ້
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      }[c]));
+    }
     if (user.avatar) {
-      avatarBox.innerHTML = `<img src="${user.avatar}" alt="${user.username || ''}">`;
+      avatarBox.innerHTML = `<img src="${escapeHtml(user.avatar)}" alt="${escapeHtml(user.username || '')}">`;
     } else {
-      avatarBox.innerHTML = `<div class="p-avatar-fallback">${initials(user.username)}</div>`;
+      avatarBox.innerHTML = `<div class="p-avatar-fallback">${escapeHtml(initials(user.username))}</div>`;
     }
 
     // ---- Name / badge ----

@@ -154,7 +154,58 @@
     document.querySelectorAll('.sub')
       .forEach((el) => { el.innerHTML = taglineHTML; });
 
+    applyAnnouncementBar(store && store.announcement);
+
     return { name, tagline };
+  }
+
+  // ---------- ແຖບປະກາດ (settings.announcement_text ຈາກ "ຕັ້ງຄ່າຮ້ານ") ----------
+  // ແອດມິນຕັ້ງຄ່ານີ້ໄດ້ຢູ່ແລ້ວ (ຫ້ອງແອດມິນ -> ຕັ້ງຄ່າຮ້ານ -> ຂໍ້ຄວາມປະກາດ) ແຕ່ບໍ່ມີບ່ອນໃດໃນເວັບ
+  // ໄຊທ໌ເອົາໄປໂຊວ໌ໃຫ້ລູກຄ້າເຫັນເລີຍ — ຟັງຊັນນີ້ສ້າງແຖບປະກາດເລັກໆໄວ້ເທິງສຸດຂອງໜ້າໃຫ້ອັດຕະໂນມັດ
+  // (ສ້າງ style ໃນຕົວເອງ ບໍ່ອີງໃສ່ style.css ເພື່ອໃຫ້ໃຊ້ໄດ້ທຸກໜ້າ ລວມທັງ login.html/signup.html
+  // ທີ່ໃຊ້ auth.css ແທນ) — ຖ້າແອດມິນປ່ອຍວ່າງ ຈະບໍ່ໂຊວ໌ຫຍັງເລີຍ, ລູກຄ້າກົດ × ປິດໄດ້ (ຈື່ໄວ້ດ້ວຍ
+  // sessionStorage ຈົນກວ່າຈະປິດ browser ຫຼືຂໍ້ຄວາມປະກາດປ່ຽນໄປ)
+  function applyAnnouncementBar(rawText) {
+    const text = (rawText && String(rawText).trim()) || '';
+    let bar = document.querySelector('.site-announcement-bar');
+
+    if (!text) {
+      if (bar) bar.remove();
+      return;
+    }
+
+    if (!document.getElementById('site-announcement-style')) {
+      const style = document.createElement('style');
+      style.id = 'site-announcement-style';
+      style.textContent = `
+        .site-announcement-bar{position:relative;display:flex;align-items:center;gap:10px;
+          background:linear-gradient(90deg,#990001,#ff0001);color:#fff;font-size:13px;
+          font-weight:600;line-height:1.5;padding:9px 40px 9px 16px;text-align:center;
+          justify-content:center;}
+        .site-announcement-bar.is-hidden{display:none;}
+        .site-announcement-close{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+          background:rgba(0,0,0,.18);border:none;color:#fff;width:22px;height:22px;border-radius:50%;
+          font-size:15px;line-height:1;cursor:pointer;}
+        .site-announcement-close:hover{background:rgba(0,0,0,.32);}
+      `;
+      document.head.appendChild(style);
+    }
+
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'site-announcement-bar';
+      bar.innerHTML = '<span class="site-announcement-text"></span><button type="button" class="site-announcement-close" aria-label="ປິດ">×</button>';
+      document.body.prepend(bar);
+      bar.querySelector('.site-announcement-close').addEventListener('click', () => {
+        bar.classList.add('is-hidden');
+        try { sessionStorage.setItem('site_announcement_dismissed', text); } catch { /* private mode ฯลฯ ก็ปล่อยผ่าน ไม่ใช่ฟีเจอร์จำเป็น */ }
+      });
+    }
+
+    bar.querySelector('.site-announcement-text').textContent = text;
+    let dismissed = '';
+    try { dismissed = sessionStorage.getItem('site_announcement_dismissed') || ''; } catch { /* private mode ฯลฯ ก็ปล่อยผ่าน */ }
+    bar.classList.toggle('is-hidden', dismissed === text);
   }
 
   global.StorefrontData = {

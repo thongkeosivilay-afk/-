@@ -766,7 +766,7 @@ function renderCodeProductSelect(products) {
   const select = document.getElementById('codeProductSelect');
   const prevValue = select.value;
   const activeProducts = products.filter(p => !p.archived);
-  select.innerHTML = activeProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  select.innerHTML = activeProducts.map(p => `<option value="${p.id}">${escapeHtmlAdmin(p.name)}</option>`).join('');
   if (prevValue && activeProducts.some(p => p.id === prevValue)) select.value = prevValue;
   renderCodeStockStrip();
 }
