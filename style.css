@@ -452,33 +452,74 @@
   .empty-note{ font-size:12.5px; color:var(--text-faint); padding:14px 4px; text-align:center; }
 
 
-  /* ---------- Product rail ---------- */
+  /* ---------- Product rail — v6: dark glass body + traveling light-beam
+     border (signature effect). The beam is a thin conic-gradient comet
+     masked down to a 1px ring (mask-composite:exclude) so only a ring
+     path is ever painted, never the card face. --angle is driven every
+     frame by prod-card-beam.js (eased rAF loop, not a CSS @keyframes)
+     so hover/touch speed changes ease smoothly with no jump or reset. ---------- */
+  @property --angle{
+    syntax:'<angle>';
+    inherits:true;
+    initial-value:0deg;
+  }
   .prod-card{
+    --angle:0deg;
     flex:0 0 auto; width:222px; scroll-snap-align:start;
-    background:linear-gradient(175deg, #101010, #0a0a0a 55%);
-    border:1px solid #222;
-    border-radius:16px; overflow:visible; display:flex; flex-direction:column;
-    box-shadow:0 10px 28px -12px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.05);
+    background:linear-gradient(175deg, rgba(26,23,23,.74), rgba(8,7,7,.88) 70%);
+    backdrop-filter:blur(16px) saturate(150%);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:16px; overflow:hidden; display:flex; flex-direction:column;
+    box-shadow:
+      0 10px 28px -12px rgba(0,0,0,.8),
+      inset 0 1px 0 rgba(255,255,255,.05),
+      inset 0 -20px 26px -22px rgba(0,0,0,.5),
+      0 0 20px -10px rgba(255,0,1,.16);
     position:relative;
     transform:translateY(0) scale(1);
     transform-origin:center 70%;
-    transition:transform .38s cubic-bezier(.22,1,.36,1), box-shadow .38s cubic-bezier(.22,1,.36,1), border-color .35s ease;
+    transition:transform .4s cubic-bezier(.22,1,.36,1), box-shadow .4s cubic-bezier(.22,1,.36,1), border-color .35s ease;
     will-change:transform;
   }
   .prod-card > .prod-media{ border-radius:15px 15px 0 0; overflow:hidden; }
-  .prod-card:hover{
-    transform:translateY(-5px) scale(1.01);
-    border-color:rgba(255,0,1,.35);
-    box-shadow:0 18px 38px -14px rgba(0,0,0,.8), 0 0 22px rgba(255,0,1,.18), inset 0 1px 0 rgba(255,255,255,.06);
+
+  .prod-card::before{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:inherit;
+    padding:1.6px;
+    background:conic-gradient(from var(--angle),
+      rgba(255,255,255,.06) 0deg,
+      rgba(255,60,40,.08) 26deg,
+      rgba(255,80,45,.7) 48deg,
+      #fff 58deg,
+      rgba(255,100,55,.8) 68deg,
+      rgba(255,60,40,.08) 92deg,
+      rgba(255,255,255,.06) 360deg);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;
+            mask-composite:exclude;
+    filter:drop-shadow(0 0 4px rgba(255,60,30,.75));
+    pointer-events:none;
+    z-index:1;
   }
-  .prod-card:active{
-    border-color:rgba(255,0,1,.5);
-    transform:translateY(-2px) scale(.995);
-    box-shadow:0 8px 20px -10px rgba(0,0,0,.8), 0 0 24px rgba(255,0,1,.25), inset 0 1px 0 rgba(255,255,255,.08);
+  .prod-card.is-hot::before{ filter:drop-shadow(0 0 7px rgba(255,70,30,.95)); }
+
+  .prod-card:hover,
+  .prod-card.is-hot{
+    transform:translateY(-4px) scale(1.02);
+    border-color:rgba(255,255,255,.13);
+    box-shadow:
+      0 18px 38px -14px rgba(0,0,0,.85),
+      inset 0 1px 0 rgba(255,255,255,.07),
+      inset 0 -20px 26px -22px rgba(0,0,0,.5),
+      0 0 32px -8px rgba(255,0,1,.32);
   }
+  .prod-card:active{ transform:translateY(-1px) scale(.995); }
   @media (prefers-reduced-motion: reduce){
     .prod-card{ transition:none; }
-    .prod-card:hover, .prod-card:active{ transform:none; }
+    .prod-card:hover, .prod-card:active, .prod-card.is-hot{ transform:none; }
   }
 
   /* image area — awaiting real product photos: quiet dot-grid + soft
@@ -600,11 +641,14 @@
   .prod-name{ order:0; } .prod-price{ order:1; }
   .prod-status{ order:3; } .buy-btn{ order:4; }
 
-  .prod-status{ font-size:11.5px; display:flex; align-items:center; gap:5px; font-weight:600; color:var(--red-glow); }
+  .prod-status{ font-size:11.5px; display:flex; align-items:center; gap:5px; font-weight:600; color:var(--text-dim); }
   .prod-status .stock{ color:var(--text-faint); font-weight:500; }
   .prod-status.out{ color:var(--text-faint); }
   .prod-status.out .dot{ background:var(--text-faint); box-shadow:none; }
   .dot{ width:7px; height:7px; border-radius:50%; background:var(--red-glow); display:inline-block; box-shadow:0 0 6px rgba(255,0,1,.7); }
+  /* "ພ້ອມຂາຍ" (in-stock) status uses a green dot, not red — matches the
+     reference video; paused/soldout keep the neutral gray dot above */
+  .prod-status:not(.out) .dot{ background:var(--green); box-shadow:0 0 6px rgba(46,204,113,.65); }
 
   /* ============ ຕາປັ໊ມ "ຂາຍດີ!" ເທິງຮູບສິນຄ້າ (ສະເພາະສິນຄ້າທີ່ soldCount ສູງສຸດໃນ grid) ============ */
   .prod-stamp{
@@ -641,12 +685,12 @@
   .prod-sold-tag svg{ width:11px; height:11px; flex-shrink:0; }
 
   .buy-btn{
-    margin-top:auto; width:100%; padding:10px; border-radius:11px;
-    background:linear-gradient(180deg,var(--red-glow),var(--red) 55%,var(--red-deep));
-    color:#fff;
-    font-size:13px; font-weight:700; border:none;
+    margin-top:auto; width:100%; padding:11px; border-radius:13px;
+    background:linear-gradient(180deg,#ff4a3a,var(--red) 60%);
+    color:#0a0000;
+    font-size:13px; font-weight:800; border:none;
     display:flex; align-items:center; justify-content:center; gap:6px;
-    box-shadow:0 8px 18px -6px rgba(255,0,1,.55), inset 0 1px 0 rgba(255,255,255,.22);
+    box-shadow:0 8px 18px -6px rgba(255,0,1,.55), inset 0 1px 0 rgba(255,255,255,.32);
     transition:transform .15s ease, box-shadow .15s ease, opacity .15s ease;
   }
   .buy-btn svg{ width:15px; height:15px; flex-shrink:0; }
