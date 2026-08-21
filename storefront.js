@@ -53,11 +53,10 @@ document.addEventListener('DOMContentLoaded', () => {
       bigTitle: `CAT${category.index}`,
       desc: '',
     };
-    // ໃຊ້ຫົວຂໍ້/ຄຳອະທິບາຍ/ຂໍ້ຄວາມປ້າຍນ້ອຍ ທີ່ແອດມິນຕັ້ງເອງ (category_{i}_title / category_{i}_desc /
-    // category_{i}_tag) ຖ້າມີ — ຖ້າຍັງບໍ່ໄດ້ຕັ້ງ ໃຫ້ໃຊ້ຄ່າເລີ່ມຕົ້ນເກົ່າຈາກ SLOT_DECOR ຄືເດີມ
+    // ໃຊ້ຫົວຂໍ້ ທີ່ແອດມິນຕັ້ງເອງ (category_{i}_title) ຖ້າມີ — ຖ້າຍັງບໍ່ໄດ້ຕັ້ງ ໃຫ້ໃຊ້ຄ່າ
+    // ເລີ່ມຕົ້ນເກົ່າຈາກ SLOT_DECOR ຄືເດີມ (ຄຳອະທິບາຍ/ປ້າຍນ້ອຍ ບໍ່ໄດ້ໃຊ້ແລ້ວ, ເອົາອອກ
+    // ຈາກກາຕູນຕາມການຮ້ອງຂໍ)
     const bigTitle = (category.title && String(category.title).trim()) || decor.bigTitle;
-    const desc = (category.desc && String(category.desc).trim()) || decor.desc;
-    const tagText = (category.tag && String(category.tag).trim()) || decor.tagText;
 
     const mediaHTML = category.image
       ? `<img src="${escapeHtml(category.image)}" alt="${escapeHtml(category.name)}">`
@@ -67,13 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
           <span>ໃສ່ຮູບພາບໝວດໝູ່ນີ້<br>ຂະໜາດ 1600×560px (ອັດຕາສ່ວນ 2.86:1)</span>
         </div>`;
 
-    // ໝາຍເຫດ v2: ກາຕູນທັງໃບຕອນນີ້ແມ່ນ <a> ອັນດຽວ (ກ່ອນໜ້ານີ້ແມ່ນ <a class="cat-banner">
-    // ຢູ່ໃນ <div class="cat-item"> ອີກເທື່ອໜຶ່ງ ແລະ .cat-meta ເປັນ div ແຍກຢູ່ນອກ <a> —
-    // ໝາຍຄວາມວ່າສ່ວນ meta ກົດບໍ່ໄດ້ມາກ່ອນ). ດຽວນີ້ທັງກາຕູນກົດໄດ້ຈຸດດຽວ, ມີ focus ring
-    // ດຽວ, ແລະ tagIcon/tagText ຈາກ SLOT_DECOR ທີ່ຄຳນວນໄວ້ຢູ່ແລ້ວດ້ານເທິງ (ແຕ່ບໍ່ເຄີຍຖືກ
-    // ໃຊ້ຈິງ) ຕອນນີ້ຖືກ render ເປັນແຖບປ້າຍນ້ອຍດ້ານເທິງຫົວຂໍ້ໃຫຍ່ ຄືໃນຮູບຕົວຢ່າງ
-    const tagIcon = decor.tagIcon || '';
-
+    // ໝາຍເຫດ v3: ຕາມການຮ້ອງຂໍ, ເອົາແຖບປ້າຍນ້ອຍ (icon+tagText, ".cat-tag-row") ອອກ
+    // ຈາກເທິງຫົວຂໍ້ໃຫຍ່, ແລະ ເອົາຄຳອະທິບາຍ (".cat-meta-desc") ອອກຈາກສ່ວນລຸ່ມ —
+    // ດຽວນີ້ສ່ວນລຸ່ມເຫຼືອແຕ່ຊື່ໝວດໝູ່ + ຈຳນວນ/ຄົງເຫຼືອ ຊິດກັນ (ເບິ່ງ .cat-meta-name
+    // margin-bottom ແລະ .cat-meta-count margin-top ໃນ style.css)
     return `
       <a class="cat-item" href="category.html?cat=${category.index}">
         <div class="cat-banner">
@@ -81,7 +77,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="cat-banner-media${category.image ? ' has-image' : ''}">${mediaHTML}</div>
           <div class="cat-glare"></div>
           <div class="cat-banner-content">
-            <div class="cat-tag-row"><span class="accent-bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${tagIcon}</svg>${escapeHtml(tagText)}</div>
             <div class="cat-big-title display-en en">${escapeHtml(bigTitle)}</div>
           </div>
           <div class="cat-click"><span class="dot"></span>Click Here!</div>
@@ -89,7 +84,6 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="cat-meta">
           <div class="cat-meta-text">
             <div class="cat-meta-name">${escapeHtml(category.name)}</div>
-            <div class="cat-meta-desc">${escapeHtml(desc)}</div>
             <div class="cat-meta-count">${productCount.toLocaleString('en-US')} ລາຍການ • ຄົງເຫຼືອ ${stockCount.toLocaleString('en-US')} ຊິ້ນ</div>
           </div>
           <div class="cat-meta-arrow">

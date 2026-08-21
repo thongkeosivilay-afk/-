@@ -51,14 +51,14 @@
   }
   .brand{ display:flex; align-items:center; gap:10px; }
   .logo{
-    width:38px; height:38px; border-radius:11px;
+    width:46px; height:46px; border-radius:13px;
     background:var(--red);
     display:flex; align-items:center; justify-content:center;
     box-shadow:none;
     flex-shrink:0;
     overflow:hidden;
   }
-  .logo svg{ width:20px; height:20px; }
+  .logo svg{ width:24px; height:24px; }
   /* ໂລໂກ້ທີ່ແອດມິນອັບໂຫລດເອງ — ພື້ນຫຼັງແດງເລີ່ມຕົ້ນອອກ, ໃຫ້ຮູບເຕັມກ່ອງແທນ */
   .logo.has-custom-logo{ background:none; box-shadow:none; }
   .logo img{ width:100%; height:100%; object-fit:contain; display:block; }
@@ -499,14 +499,11 @@
   .cat-meta{
     padding:12px 18px 14px; position:relative; z-index:2; min-height:86px;
     display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border-top:1px solid var(--card-border);
   }
   .cat-meta-text{ min-width:0; flex:1; }
-  .cat-meta-name{ font-size:16.5px; font-weight:800; margin-bottom:4px; }
-  .cat-meta-desc{
-    font-size:12.5px; color:var(--text-dim); line-height:1.6;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
-  }
-  .cat-meta-count{ font-size:11px; color:var(--text-faint); margin-top:6px; font-weight:600; }
+  .cat-meta-name{ font-size:16.5px; font-weight:800; margin-bottom:2px; }
+  .cat-meta-count{ font-size:11px; color:var(--text-faint); margin-top:2px; font-weight:600; }
   .cat-meta-arrow{
     width:32px; height:32px; border-radius:50%; flex-shrink:0;
     background:#141414; border:1px solid #232323;
