@@ -67,23 +67,51 @@ document.addEventListener('DOMContentLoaded', () => {
           <span>ໃສ່ຮູບພາບໝວດໝູ່ນີ້<br>ຂະໜາດ 1600×560px (ອັດຕາສ່ວນ 2.86:1)</span>
         </div>`;
 
+    // ໝາຍເຫດ v2: ກາຕູນທັງໃບຕອນນີ້ແມ່ນ <a> ອັນດຽວ (ກ່ອນໜ້ານີ້ແມ່ນ <a class="cat-banner">
+    // ຢູ່ໃນ <div class="cat-item"> ອີກເທື່ອໜຶ່ງ ແລະ .cat-meta ເປັນ div ແຍກຢູ່ນອກ <a> —
+    // ໝາຍຄວາມວ່າສ່ວນ meta ກົດບໍ່ໄດ້ມາກ່ອນ). ດຽວນີ້ທັງກາຕູນກົດໄດ້ຈຸດດຽວ, ມີ focus ring
+    // ດຽວ, ແລະ tagIcon/tagText ຈາກ SLOT_DECOR ທີ່ຄຳນວນໄວ້ຢູ່ແລ້ວດ້ານເທິງ (ແຕ່ບໍ່ເຄີຍຖືກ
+    // ໃຊ້ຈິງ) ຕອນນີ້ຖືກ render ເປັນແຖບປ້າຍນ້ອຍດ້ານເທິງຫົວຂໍ້ໃຫຍ່ ຄືໃນຮູບຕົວຢ່າງ
+    const tagIcon = decor.tagIcon || '';
+
     return `
-      <div class="cat-item">
-        <a class="cat-banner" href="category.html?cat=${category.index}">
+      <a class="cat-item" href="category.html?cat=${category.index}">
+        <div class="cat-banner">
           <div class="cat-banner-bg"></div>
           <div class="cat-banner-media${category.image ? ' has-image' : ''}">${mediaHTML}</div>
+          <div class="cat-glare"></div>
           <div class="cat-banner-content">
+            <div class="cat-tag-row"><span class="accent-bar"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${tagIcon}</svg>${escapeHtml(tagText)}</div>
             <div class="cat-big-title display-en en">${escapeHtml(bigTitle)}</div>
-                      </div>
+          </div>
           <div class="cat-click"><span class="dot"></span>Click Here!</div>
-        </a>
-        <div class="cat-meta">
-          <div class="cat-meta-name">${escapeHtml(category.name)}</div>
-          <div class="cat-meta-desc">${escapeHtml(desc)}</div>
-          <div class="cat-meta-count">${productCount.toLocaleString('en-US')} ລາຍການ • ຄົງເຫຼືອ ${stockCount.toLocaleString('en-US')} ຊິ້ນ</div>
         </div>
-      </div>`;
+        <div class="cat-meta">
+          <div class="cat-meta-text">
+            <div class="cat-meta-name">${escapeHtml(category.name)}</div>
+            <div class="cat-meta-desc">${escapeHtml(desc)}</div>
+            <div class="cat-meta-count">${productCount.toLocaleString('en-US')} ລາຍການ • ຄົງເຫຼືອ ${stockCount.toLocaleString('en-US')} ຊິ້ນ</div>
+          </div>
+          <div class="cat-meta-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </div>
+        </div>
+      </a>`;
   }
+
+  // ແຖບແສງນຸ້ມໆທີ່ຕິດຕາມເມົາສ໌ເທິງກາຕູນ (.cat-glare) — ໃຊ້ delegation ຢູ່ນອກ
+  // renderCategories() ຄັ້ງດຽວ ເພາະ innerHTML ຖືກສ້າງໃໝ່ທຸກຄັ້ງທີ່ fetch ຂໍ້ມູນ
+  // (ຖ້າຜູກໃສ່ກາຕູນເລີຍ, ຈະຫາຍໄປພ້ອມກັບ innerHTML ເກົ່າ). ບໍ່ມີຜົນຫຍັງເທິງມືຖື —
+  // CSS ເປີດ .cat-glare ສະເພາະ @media (hover:hover) and (pointer:fine) ຢູ່ແລ້ວ
+  stack.addEventListener('pointermove', (e) => {
+    const item = e.target.closest('.cat-item');
+    if (!item) return;
+    const rect = item.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    item.style.setProperty('--mx', x + '%');
+    item.style.setProperty('--my', y + '%');
+  });
 
   function renderCategories(data) {
     stack.innerHTML = data.categories.map((category) => {
