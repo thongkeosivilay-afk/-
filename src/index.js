@@ -989,13 +989,30 @@ async function handlePublicStorefront(request, env) {
 
     const settings = settingsRows[0] || {};
 
-    // ດຶງສະຕັອກຈິງ (ຕົວເລກເທົ່ານັ້ນ) ຂອງແຕ່ລະສິນຄ້າ/ໄລຍະເວລາ ແບບຂະໜານກັນ
-    const productsWithStock = await Promise.all((products || []).map(async (p) => {
-      const stock = await supabaseRpc(env, 'product_stock', { p_product_id: p.id });
+    // ດຶງສະຕັອກຈິງ (ຕົວເລກເທົ່ານັ້ນ) ຂອງທຸກສິນຄ້າ/ທຸກໄລຍະເວລາ ດ້ວຍ RPC ລວມ 2 ຄັ້ງເທົ່ານັ້ນ
+    // (ເມື່ອກ່ອນຍິງ RPC ແຍກທີລະສິນຄ້າ/ທີລະໄລຍະເວລາ ເຮັດໃຫ້ຮ້ານທີ່ມີສິນຄ້າຫຼາຍໆຊົນເພດານ
+    // "Too many subrequests" ຂອງ Cloudflare Workers ແຜນ Free (50 ຄັ້ງ/1 request) —
+    // ດຽວນີ້ໃຫ້ Postgres ເປັນຄົນວົນ loop ເອງຝັ່ງ server ຜ່ານ get_bulk_product_stock /
+    // get_bulk_duration_stock (ຕ້ອງສ້າງໄວ້ໃນ Supabase ກ່ອນ — ເບິ່ງ bulk_stock_functions.sql)
+    const productIds = (products || []).map((p) => p.id);
+    const durationIds = (durations || []).map((d) => d.id);
+
+    const [bulkProductStock, bulkDurationStock] = await Promise.all([
+      productIds.length ? supabaseRpc(env, 'get_bulk_product_stock', { product_ids: productIds }) : [],
+      durationIds.length ? supabaseRpc(env, 'get_bulk_duration_stock', { duration_ids: durationIds }) : [],
+    ]);
+
+    const productStockMap = new Map((bulkProductStock || []).map((r) => [r.product_id, r.stock ?? 0]));
+    const durationStockMap = new Map((bulkDurationStock || []).map((r) => [r.duration_id, r.stock ?? 0]));
+
+    const productsWithStock = (products || []).map((p) => {
       const ownDurations = (durations || []).filter((d) => d.product_id === p.id);
-      const durationsWithStock = await Promise.all(ownDurations.map(async (d) => {
-        const dStock = await supabaseRpc(env, 'product_duration_stock', { p_duration_id: d.id });
-        return { id: d.id, label: d.label, price: d.price, resellerPrice: d.reseller_price, stock: dStock ?? 0 };
+      const durationsWithStock = ownDurations.map((d) => ({
+        id: d.id,
+        label: d.label,
+        price: d.price,
+        resellerPrice: d.reseller_price,
+        stock: durationStockMap.get(d.id) ?? 0,
       }));
 
       return {
@@ -1009,11 +1026,11 @@ async function handlePublicStorefront(request, env) {
         paused: !!p.paused,
         paused_note: p.paused_note || null,
         description: p.description || null,
-        stock: stock ?? 0,
+        stock: productStockMap.get(p.id) ?? 0,
         durations: durationsWithStock,
         soldCount: soldCountsByName.get(p.name) || 0,
       };
-    }));
+    });
 
     // category_{i}_enabled ຄ່າເລີ່ມຕົ້ນ = ເປີດ (true) ຖ້າແອດມິນຍັງບໍ່ເຄີຍປິດ/ຄອລັມຍັງເປັນ null
     // (ແຖວເກົ່າກ່ອນມີຄອລັມນີ້) — ຕ້ອງເປັນ false ຢ່າງຈະແຈ້ງເທົ່ານັ້ນຈຶ່ງຈະຖືວ່າ "ປິດ"
