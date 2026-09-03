@@ -2285,6 +2285,31 @@ async function initAdminPanel() {
     });
   });
 
+  // ---- ໄລຍະເວລາແບບກຳນົດເອງ (ຕັ້ງຊື່ໄດ້ຕາມໃຈ) — ເພີ່ມແລ້ວເຂົ້າຮ່ວມລິດດຽວກັນກັບ preset ເລີຍ ----
+  function createCustomDurationRow() {
+    const row = document.createElement('div');
+    row.className = 'duration-opt-row custom-row';
+    row.innerHTML = `
+      <input type="text" class="cdr-label" placeholder="ຊື່ໄລຍະເວລາ ເຊັ່ນ: 15ວັນ, 2ເດືອນ">
+      <input type="number" class="cdr-price dur-price" min="0" step="0.01" placeholder="ລາຄາ (ກີບ)" style="display:block;">
+      <button type="button" class="cdr-remove" title="ລຶບ">×</button>
+    `;
+    row.querySelector('.cdr-remove').addEventListener('click', () => row.remove());
+    return row;
+  }
+
+  const addDurationRowBtn = document.createElement('button');
+  addDurationRowBtn.type = 'button';
+  addDurationRowBtn.id = 'addCustomDurationBtn';
+  addDurationRowBtn.className = 'duration-add-row';
+  addDurationRowBtn.textContent = '+ ເພີ່ມໄລຍະເວລາເອງ';
+  addDurationRowBtn.addEventListener('click', () => {
+    const row = createCustomDurationRow();
+    durationOptionsList.insertBefore(row, addDurationRowBtn);
+    row.querySelector('.cdr-label').focus();
+  });
+  durationOptionsList.appendChild(addDurationRowBtn);
+
   // ---- ລິ້ງໂບນັດ builder (ຕອນເພີ່ມສິນຄ້າໃໝ່) — ເພີ່ມໄດ້ບໍ່ຈຳກັດ ----
   const pLinksEnabled = document.getElementById('pLinksEnabled');
   const linksOptionsWrap = document.getElementById('linksOptionsWrap');
@@ -2338,8 +2363,15 @@ async function initAdminPanel() {
     let durationRows = [];
     if (durationEnabled) {
       durationOptionsList.querySelectorAll('.duration-opt-row').forEach(row => {
+        if (row.classList.contains('custom-row')) {
+          const label = row.querySelector('.cdr-label').value.trim();
+          if (!label) return;
+          const durPrice = parseFloat(row.querySelector('.cdr-price').value);
+          durationRows.push({ label, price: isNaN(durPrice) ? 0 : durPrice });
+          return;
+        }
         const cb = row.querySelector('.dur-check');
-        if (!cb.checked) return;
+        if (!cb || !cb.checked) return;
         const label = row.dataset.label;
         const durPrice = parseFloat(row.querySelector('.dur-price').value);
         durationRows.push({ label, price: isNaN(durPrice) ? 0 : durPrice });
@@ -2432,6 +2464,7 @@ async function initAdminPanel() {
       durationOptionsWrap.style.display = 'none';
       basePriceField.style.display = 'block';
       durationOptionsList.querySelectorAll('.dur-price').forEach(inp => { inp.style.display = 'none'; inp.value = ''; });
+      durationOptionsList.querySelectorAll('.custom-row').forEach(row => row.remove());
       pLinksEnabled.checked = false;
       linksOptionsWrap.style.display = 'none';
       linkRowsList.innerHTML = '';
