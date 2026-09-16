@@ -1300,7 +1300,9 @@ async function handleTopupHistory(request, env) {
 
   try {
     const rows = await supabaseSelect(env, 'topup_requests', {
-      select: 'id,amount,status,slip_url,created_at',
+      // viewed_at: ຄໍລໍາໃໝ່ (ເບິ່ງ migration_add_topup_viewed_at.sql) — ໃຊ້ບອກຝັ່ງ
+      // ລູກຄ້າແບບ realtime ວ່າແອດມິນເປີດເບິ່ງສະລິບຢູ່ ກ່ອນຈະຢືນຢັນ/ປະຕິເສດ
+      select: 'id,amount,status,slip_url,created_at,viewed_at',
       user_id: `eq.${user.id}`,
       order: 'created_at.desc',
       limit: '200',
