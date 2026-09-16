@@ -7,6 +7,7 @@
 <title>ເຕີມເງິນ</title>
 <link href="style.css" rel="stylesheet"/>
 <link href="page-transition.css" rel="stylesheet"/>
+<link href="topup-waiting.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&amp;family=Noto+Sans+Lao+Looped:wght@600;700;800&amp;family=Orbitron:wght@600;700;800;900&amp;family=Rajdhani:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
@@ -146,21 +147,42 @@
 </section>
 <!-- ========== STEP 3: ລໍຖ້າກວດສອບ ========== -->
 <section class="u-hidden" id="topupStepWaiting">
-<div class="topup-card topup-waiting">
-<div class="topup-waiting-icon">
-<svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>
+<div class="topup-card tuw-card" data-state="pending" id="tuwCard">
+<div class="tuw-glow" id="tuwGlow"></div>
+
+<div class="tuw-toast" id="tuwToast">
+<svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9L2.8 17a2 2 0 001.7 3h15a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" id="tuwToastIcon"></path></svg>
+<span id="tuwToastText">ແອດມິນກຳລັງກວດສະລິບຂອງທ່ານ</span>
 </div>
-<h2>ກຳລັງລໍຖ້າການກວດສອບ</h2>
-<p>ແອດມິນຈະກວດສະລິບການໂອນຂອງທ່ານ ແລະ ຢືນຢັນຍອດເງິນເຂົ້າບັນຊີໃນໄວໆນີ້</p>
+
+<div class="tuw-icon-orb" id="tuwIcon"></div>
+
+<h2 id="tuwHeadline">ກຳລັງລໍຖ້າການກວດສອບ</h2>
+<p id="tuwSub">ແອດມິນຈະກວດສະລິບການໂອນຂອງທ່ານ<br/>ແລະຢືນຢັນຍອດເງິນເຂົ້າບັນຊີໃນໄວໆນີ້</p>
+
+<div class="tuw-timeline">
+<div class="tuw-node done"><svg fill="none" viewbox="0 0 24 24"><path d="M5 13l4 4L19 7" stroke="#2ecc71" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.6"></path></svg></div>
+<div class="tuw-line lit"></div>
+<div class="tuw-node current" id="tuwNode2"><svg fill="none" viewbox="0 0 24 24"><circle cx="12" cy="12" fill="#ffb020" r="4"></circle></svg></div>
+<div class="tuw-line" id="tuwLine2"></div>
+<div class="tuw-node" id="tuwNode3"><svg fill="none" viewbox="0 0 24 24"><circle cx="12" cy="12" fill="#555" r="3"></circle></svg></div>
+</div>
+<div class="tuw-timeline-labels">
+<span>ສົ່ງລາຍການ</span><span id="tuwStep2Label">ກຳລັງກວດສອບ</span><span>ເຕີມເງິນສຳເລັດ</span>
+</div>
+
 <div class="topup-waiting-info">
 <div class="row"><span>ລະຫັດອ້າງອີງ</span><b id="topupRef">-</b></div>
 <div class="row"><span>ຍອດເງິນ</span><b id="topupWaitAmount">-</b></div>
-<div class="row status"><span>ສະຖານະ</span><b>ລໍຖ້າກວດສອບ</b></div>
+<div class="row status"><span>ສະຖານະ</span><b id="tuwStatusChip">ລໍຖ້າກວດສອບ</b></div>
 </div>
 </div>
+<div class="tuw-btn-row">
+<a class="topup-submit" href="topup-history.html">ເບິ່ງປະຫວັດເຕີມເງິນ</a>
 <button class="topup-submit topup-submit-alt" data-nav-href="index.html" type="button">
         ກັບໄປໜ້າຫຼັກ
       </button>
+</div>
 </section>
 </main>
 <!-- Footer -->

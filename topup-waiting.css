@@ -1,0 +1,124 @@
+/* =========================================================
+   topup-waiting.css
+   ສ່ວນເສີມສະເພາະ "ໜ້າລໍຖ້າກວດສອບ" (Step 3 ໃນ topup.html) ໃຫ້ເປັນແບບ
+   Premium Gaming/Fintech + ອັບເດດສະຖານະແບບ realtime (poll ໂດຍ topup.js
+   ຜ່ານ /api/topup/history — ເບິ່ງ comment ໃນ topup.js)
+
+   ບໍ່ໄດ້ແກ້ style.css ຕົ້ນສະບັບ (ລຸດຄວາມສ່ຽງກັບໜ້າອື່ນທັງໝົດ) — ໄຟລ໌ນີ້
+   link ເພີ່ມຕໍ່ຈາກ style.css ໃນ topup.html ຢ່າງດຽວ ໃຊ້ໂຕນສີ/ຟອນຕ໌ດຽວກັນ
+   ໝົດ: var(--tu-red), var(--tu-amber), var(--green), var(--card),
+   var(--card-border), var(--bg-raise), var(--text-faint), var(--radius),
+   var(--tu-font-display), var(--tu-font-num) (ປະກາດໄວ້ໃນ .topup-main
+   ຢູ່ style.css ແລ້ວ — ອົງປະກອບຂ້າງລຸ່ມນີ້ຢູ່ພາຍໃນ .topup-main ທັງໝົດ
+   ຈຶ່ງໃຊ້ var ພວກນີ້ໄດ້ເລີຍ)
+   ========================================================= */
+
+.tuw-card{
+  position: relative;
+  text-align: center;
+  padding: 26px 18px 20px;
+  overflow: hidden;
+}
+
+/* ເສັ້ນແສງວິ່ງຮອບຂອບການ໌ດ (ໃຊ້ conic-gradient masked ເປັນແຄ່ຂອບ) */
+.tuw-card::before{
+  content:'';
+  position:absolute; inset:0; border-radius:inherit; padding:1px;
+  background: conic-gradient(from var(--tuw-angle,0deg),
+    transparent 0deg, transparent 250deg,
+    var(--tuw-a, var(--tu-amber)) 300deg,
+    rgba(255,255,255,.85) 320deg,
+    var(--tuw-a, var(--tu-amber)) 340deg, transparent 360deg);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: tuwSweep 5.5s linear infinite;
+  pointer-events: none;
+}
+@keyframes tuwSweep{ from{ --tuw-angle: 0deg; } to{ --tuw-angle: 360deg; } }
+@property --tuw-angle{ syntax: '<angle>'; inherits:false; initial-value:0deg; }
+
+.tuw-glow{
+  position:absolute; inset:-30% 10% auto 10%; height:55%;
+  background: radial-gradient(closest-side, var(--tuw-glow, rgba(255,176,32,.32)), transparent 70%);
+  filter: blur(10px); opacity:.55; z-index:0;
+  animation: tuwBreathe 5s ease-in-out infinite;
+  transition: background .4s ease;
+}
+@keyframes tuwBreathe{ 0%,100%{ opacity:.4; transform:scale(1); } 50%{ opacity:.65; transform:scale(1.05); } }
+.tuw-card > *:not(.tuw-glow){ position:relative; z-index:1; }
+
+@media (prefers-reduced-motion: reduce){
+  .tuw-card *{ animation-duration:.001ms !important; }
+}
+
+/* ---------- toast ແຈ້ງເຕືອນແບບ realtime ---------- */
+.tuw-toast{
+  display:flex; align-items:center; gap:9px; text-align:left;
+  background: rgba(122,162,255,.1); border:1px solid rgba(122,162,255,.35); color:#9ab7ff;
+  font-size:11.5px; font-weight:600; border-radius:12px;
+  padding:0 12px; max-height:0; opacity:0; overflow:hidden;
+  transition: max-height .35s ease, opacity .35s ease, margin .35s ease, padding .35s ease;
+}
+.tuw-toast.show{ max-height:60px; opacity:1; padding:10px 12px; margin-bottom:14px; }
+.tuw-toast.success{ background: rgba(46,204,113,.1); border-color:rgba(46,204,113,.35); color:#8ff0b6; }
+.tuw-toast.failed{ background: rgba(255,0,1,.1); border-color:rgba(255,0,1,.35); color:#ff9d9d; }
+.tuw-toast svg{ width:15px; height:15px; flex-shrink:0; }
+
+/* ---------- icon ---------- */
+.tuw-icon-orb{ width:76px; height:76px; margin:0 auto 16px; position:relative; display:flex; align-items:center; justify-content:center; }
+.tuw-icon-orb .ring{ position:absolute; inset:0; border-radius:50%; border:2px solid transparent; }
+.tuw-icon-orb .ring-outer{ border-top-color:var(--tuw-a, var(--tu-amber)); border-right-color:var(--tuw-a, var(--tu-amber)); opacity:.55; animation:tuwSpin 2.4s linear infinite; }
+.tuw-icon-orb .ring-mid{ inset:9px; border:1.5px solid var(--tuw-a, var(--tu-amber)); opacity:.3; animation:tuwPulseRing 2.2s ease-in-out infinite; }
+@keyframes tuwSpin{ to{ transform:rotate(360deg); } }
+@keyframes tuwPulseRing{ 0%,100%{ transform:scale(1); opacity:.25; } 50%{ transform:scale(1.08); opacity:.5; } }
+.tuw-icon-core{
+  width:46px; height:46px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.14), rgba(255,255,255,.01));
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06) inset, 0 0 22px -4px var(--tuw-a, var(--tu-amber));
+}
+.tuw-icon-core svg{ width:22px; height:22px; }
+.tuw-icon-orb .wave{ position:absolute; inset:-3px; border-radius:50%; border:1px solid var(--tuw-a, var(--tu-amber)); opacity:0; animation:tuwWaveOut 3s ease-out infinite; }
+@keyframes tuwWaveOut{ 0%{ transform:scale(.8); opacity:.5; } 100%{ transform:scale(1.7); opacity:0; } }
+
+/* ---------- headline / sub ---------- */
+#tuwHeadline{ font-family:var(--tu-font-display); font-size:16px; font-weight:800; letter-spacing:.02em; margin-bottom:8px; color:var(--tuw-a, var(--tu-amber)); }
+#tuwSub{ font-size:12px; color:var(--text-faint); line-height:1.7; margin-bottom:18px; }
+
+/* ---------- mini timeline ---------- */
+.tuw-timeline{ display:flex; align-items:center; justify-content:center; margin-bottom:6px; }
+.tuw-node{
+  width:22px; height:22px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  border:1.5px solid var(--card-border); background:var(--bg-raise); transition: all .4s ease;
+}
+.tuw-node svg{ width:10px; height:10px; }
+.tuw-node.done{ border-color:var(--green); background:rgba(46,204,113,.14); box-shadow:0 0 10px -2px var(--green); }
+.tuw-node.current{ border-color:var(--tuw-a, var(--tu-amber)); background:rgba(255,176,32,.14); box-shadow:0 0 10px -2px var(--tuw-a, var(--tu-amber)); animation:tuwNodePulse 1.8s ease-in-out infinite; }
+.tuw-node.failed{ border-color:var(--tu-red); background:rgba(255,0,1,.14); box-shadow:0 0 10px -2px var(--tu-red); }
+@keyframes tuwNodePulse{ 0%,100%{ box-shadow:0 0 8px -2px var(--tuw-a, var(--tu-amber)); } 50%{ box-shadow:0 0 14px 0 var(--tuw-a, var(--tu-amber)); } }
+.tuw-line{ width:38px; height:2px; background:var(--card-border); position:relative; overflow:hidden; }
+.tuw-line.lit::after{ content:''; position:absolute; left:-100%; top:0; height:100%; width:60%; background:linear-gradient(90deg,transparent,var(--tuw-a, var(--tu-amber)),transparent); animation:tuwLineFlow 1.8s linear infinite; }
+@keyframes tuwLineFlow{ to{ left:160%; } }
+
+.tuw-timeline-labels{ display:flex; justify-content:space-between; font-size:9.5px; color:var(--text-faint); margin:6px 4px 20px; }
+.tuw-timeline-labels span:nth-child(2){ color:var(--tuw-a, var(--tu-amber)); font-weight:700; }
+
+#tuwStatusChip{ color:var(--tuw-a, var(--tu-amber)) !important; }
+
+/* ---------- state theming (สลับสีตามสถานะจริง) ---------- */
+.tuw-card[data-state="pending"]{ --tuw-a:var(--tu-amber); --tuw-glow:rgba(255,176,32,.32); }
+.tuw-card[data-state="reviewing"]{ --tuw-a:#7aa2ff; --tuw-glow:rgba(122,162,255,.3); }
+.tuw-card[data-state="success"]{ --tuw-a:var(--green); --tuw-glow:rgba(46,204,113,.32); }
+.tuw-card[data-state="failed"]{ --tuw-a:var(--tu-red); --tuw-glow:rgba(255,0,1,.3); }
+
+/* ---------- buttons below card ---------- */
+.tuw-btn-row{ display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+.tuw-btn-row .topup-submit{ text-decoration:none; }
+
+@media (max-width: 380px){
+  .tuw-icon-orb{ width:66px; height:66px; }
+  .tuw-icon-core{ width:40px; height:40px; }
+  .tuw-line{ width:26px; }
+}

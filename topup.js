@@ -40,6 +40,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const refEl = document.querySelector('#topupRef');
   const waitAmountEl = document.querySelector('#topupWaitAmount');
 
+  // ---- ອົງປະກອບການ໌ດ "ລໍຖ້າກວດສອບ" ແບບ premium + realtime (ເບິ່ງ topup-waiting.css) ----
+  const tuwCard = document.querySelector('#tuwCard');
+  const tuwIcon = document.querySelector('#tuwIcon');
+  const tuwHeadline = document.querySelector('#tuwHeadline');
+  const tuwSub = document.querySelector('#tuwSub');
+  const tuwStatusChip = document.querySelector('#tuwStatusChip');
+  const tuwNode2 = document.querySelector('#tuwNode2');
+  const tuwNode3 = document.querySelector('#tuwNode3');
+  const tuwLine2 = document.querySelector('#tuwLine2');
+  const tuwStep2Label = document.querySelector('#tuwStep2Label');
+  const tuwToast = document.querySelector('#tuwToast');
+  const tuwToastIcon = document.querySelector('#tuwToastIcon');
+  const tuwToastText = document.querySelector('#tuwToastText');
+
   /* ---------- toast ຂໍ້ຄວາມແຈ້ງເຕືອນ (ຂຽນເອງໃນນີ້ເລີຍ ເພາະໜ້ານີ້ບໍ່ໄດ້ link auth.css
      ທີ່ມີ .toast ຢູ່) ---------- */
   let toastTimer = null;
@@ -69,6 +83,178 @@ document.addEventListener('DOMContentLoaded', () => {
   function redirectToLogin() {
     window.location.href = '/login.html?next=' + encodeURIComponent('/topup.html');
   }
+
+  /* =========================================================
+     ການ໌ດ "ລໍຖ້າກວດສອບ" ແບບ premium + realtime
+     ---------------------------------------------------------
+     ບໍ່ໄດ້ໃຊ້ Supabase Realtime (websocket) ໂດຍກົງຈາກ browser ຝັ່ງລູກຄ້າ
+     ເພາະທຸກຄຳຮ້ອງຂໍ Supabase ຂອງເວັບນີ້ຖືກ proxy ຜ່ານ Worker ດ້ວຍ service_role
+     key ຫມົດ (ເບິ່ງ admin-supabase-config.js) — ແທນທີ່ຈະເປີດຊ່ອງທາງໃໝ່,
+     ໃຊ້ວິທີ poll endpoint ທີ່ມີຢູ່ແລ້ວ (/api/topup/history) ທຸກ 4 ວິນາທີ
+     ແທນ ເຊິ່ງໃຫ້ຄວາມຮູ້ສຶກ "ອັບເດດສົດ" ເໝືອນກັນ ໂດຍບໍ່ຕ້ອງເປີດ endpoint/
+     ຊ່ອງທາງໃໝ່ທີ່ຍັງບໍ່ໄດ້ກວດສອບຄວາມປອດໄພ
+
+     ຄໍລໍາ viewed_at (ແອດມິນເປີດເບິ່ງສະລິບແລ້ວ) ເປັນຄໍລໍາໃໝ່ທີ່ຕ້ອງຣັນ
+     migration_add_topup_viewed_at.sql ໃນ Supabase ກ່ອນ + deploy src/index.js
+     ອັນໃໝ່ (ເພີ່ມ viewed_at ເຂົ້າ select ຂອງ handleTopupHistory) ບໍ່ຢ່າງນັ້ນ
+     ຄ່ານີ້ຈະບໍ່ມາ ແລະ state ຈະຄ້າງຢູ່ "ລໍຖ້າກວດສອບ" ຈົນກວ່າແອດມິນຈະ
+     ຢືນຢັນ/ປະຕິເສດ (ຍັງໃຊ້ໄດ້ປົກກະຕິ ພຽງແຕ່ບໍ່ມີຂັ້ນ "ກຳລັງກວດສອບ") */
+
+  const TUW_ICONS = {
+    pending: `
+      <div class="ring ring-outer"></div>
+      <div class="ring ring-mid"></div>
+      <div class="wave"></div>
+      <div class="tuw-icon-core">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--tuw-a)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.8"/></svg>
+      </div>`,
+    reviewing: `
+      <div class="ring ring-outer" style="border-top-color:#7aa2ff;border-right-color:#7aa2ff;"></div>
+      <div class="ring ring-mid" style="border-color:#7aa2ff;"></div>
+      <div class="wave" style="border-color:#7aa2ff;"></div>
+      <div class="tuw-icon-core" style="box-shadow:0 0 0 1px rgba(255,255,255,.06) inset, 0 0 22px -4px #7aa2ff;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#7aa2ff" stroke-width="1.8"><rect x="4" y="4" width="16" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.4"/><path d="M4 16l5-4 4 3 3-2 4 3"/></svg>
+      </div>`,
+    success: `
+      <div class="ring ring-mid" style="animation:none;opacity:.3;"></div>
+      <div class="wave"></div>
+      <div class="tuw-icon-core">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 13l4.5 4.5L19 7" style="stroke-dasharray:24;stroke-dashoffset:24;animation:tuwDraw 550ms 150ms ease forwards;"/>
+        </svg>
+      </div>`,
+    failed: `
+      <div class="ring ring-mid" style="animation:none;opacity:.3;"></div>
+      <div class="tuw-icon-core">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--tu-red)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10M17 7L7 17"/></svg>
+      </div>`,
+  };
+  if (!document.getElementById('tuwDrawKeyframe')) {
+    const s = document.createElement('style');
+    s.id = 'tuwDrawKeyframe';
+    s.textContent = '@keyframes tuwDraw{ to{ stroke-dashoffset:0; } }';
+    document.head.appendChild(s);
+  }
+
+  const TUW_CONTENT = {
+    pending: {
+      headline: 'ກຳລັງລໍຖ້າການກວດສອບ',
+      sub: 'ແອດມິນຈະກວດສະລິບການໂອນຂອງທ່ານ<br>ແລະຢືນຢັນຍອດເງິນເຂົ້າບັນຊີໃນໄວໆນີ້',
+      chip: 'ລໍຖ້າກວດສອບ', step2Label: 'ກຳລັງກວດສອບ',
+    },
+    reviewing: {
+      headline: 'ແອດມິນກຳລັງກວດສອບ',
+      sub: 'ແອດມິນກຳລັງເປີດເບິ່ງສະລິບໂອນເງິນ<br>ຂອງທ່ານຢູ່ ກະລຸນາລໍຖ້າສັກຄູ່',
+      chip: 'ກຳລັງກວດສອບ', step2Label: 'ກຳລັງກວດສອບ',
+    },
+    success: {
+      headline: 'ເຕີມເງິນສຳເລັດ',
+      sub: 'ລະບົບໄດ້ເຕີມເງິນເຂົ້າບັນຊີຂອງທ່ານ<br>ຮຽບຮ້ອຍແລ້ວ ຂອບໃຈທີ່ໃຊ້ບໍລິການ',
+      chip: 'ສຳເລັດ', step2Label: 'ກວດສອບແລ້ວ',
+    },
+    failed: {
+      headline: 'ລາຍການບໍ່ຜ່ານການກວດສອບ',
+      sub: 'ກະລຸນາກວດສອບຂໍ້ມູນການໂອນເງິນ<br>ຫຼືຕິດຕໍ່ຝ່າຍບໍລິການລູກຄ້າ',
+      chip: 'ບໍ່ສຳເລັດ', step2Label: 'ກວດສອບບໍ່ຜ່ານ',
+    },
+  };
+
+  function setTuwState(state) {
+    if (!tuwCard) return;
+    tuwCard.dataset.state = state;
+    if (tuwIcon) tuwIcon.innerHTML = TUW_ICONS[state] || TUW_ICONS.pending;
+    const c = TUW_CONTENT[state] || TUW_CONTENT.pending;
+    if (tuwHeadline) tuwHeadline.innerHTML = c.headline;
+    if (tuwSub) tuwSub.innerHTML = c.sub;
+    if (tuwStatusChip) tuwStatusChip.textContent = c.chip;
+    if (tuwStep2Label) tuwStep2Label.textContent = c.step2Label;
+
+    if (!tuwNode2 || !tuwNode3 || !tuwLine2) return;
+    if (state === 'success') {
+      tuwNode2.className = 'tuw-node done';
+      tuwNode2.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#2ecc71" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      tuwNode3.className = 'tuw-node done';
+      tuwNode3.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="#2ecc71" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      tuwLine2.className = 'tuw-line lit';
+    } else if (state === 'failed') {
+      tuwNode2.className = 'tuw-node failed';
+      tuwNode2.innerHTML = '<svg viewBox="0 0 24 24" fill="none"><path d="M7 7l10 10M17 7L7 17" stroke="#ff0001" stroke-width="2.2" stroke-linecap="round"/></svg>';
+      tuwNode3.className = 'tuw-node';
+      tuwLine2.className = 'tuw-line';
+    } else {
+      const dotColor = state === 'reviewing' ? '#7aa2ff' : '#ffb020';
+      tuwNode2.className = 'tuw-node current';
+      tuwNode2.innerHTML = `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="${dotColor}"/></svg>`;
+      tuwNode3.className = 'tuw-node';
+      tuwLine2.className = 'tuw-line';
+    }
+  }
+
+  function showTuwToast(text, kind) {
+    if (!tuwToast) return;
+    tuwToastText.textContent = text;
+    tuwToast.className = 'tuw-toast show' + (kind ? ' ' + kind : '');
+    if (kind === 'success') tuwToastIcon.setAttribute('d', 'M5 13l4 4L19 7');
+    else if (kind === 'failed') tuwToastIcon.setAttribute('d', 'M7 7l10 10M17 7L7 17');
+    else tuwToastIcon.setAttribute('d', 'M12 9v4M12 17h.01M10.3 3.9L2.8 17a2 2 0 001.7 3h15a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z');
+    clearTimeout(showTuwToast._t);
+    showTuwToast._t = setTimeout(() => { tuwToast.className = 'tuw-toast'; }, 5000);
+  }
+
+  let tuwPollTimer = null;
+  let tuwLastKey = null; // ກັນອັບເດດ UI ຊ້ຳໆ ຖ້າຂໍ້ມູນຍັງບໍ່ປ່ຽນຈາກຮອບກ່ອນ
+
+  async function pollTopupStatus() {
+    if (!currentTopupId) return;
+    try {
+      const res = await fetch('/api/topup/history');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) return; // ງຽບໄວ້ — ຮອບໜ້າ poll ໃໝ່ອີກ
+
+      const item = (data.items || []).find((r) => String(r.id) === String(currentTopupId));
+      if (!item) return;
+
+      const key = item.status + '|' + (item.viewed_at || '');
+      if (key === tuwLastKey) return;
+      tuwLastKey = key;
+
+      if (item.status === 'approved') {
+        setTuwState('success');
+        showTuwToast('ເຕີມເງິນສຳເລັດ! ຍອດເຂົ້າບັນຊີແລ້ວ', 'success');
+        stopTuwPolling();
+      } else if (item.status === 'rejected') {
+        setTuwState('failed');
+        showTuwToast('ລາຍການບໍ່ຜ່ານການກວດສອບ', 'failed');
+        stopTuwPolling();
+      } else if (item.viewed_at) {
+        setTuwState('reviewing');
+        showTuwToast('ແອດມິນກຳລັງກວດສະລິບຂອງທ່ານ', 'reviewing');
+      } else {
+        setTuwState('pending');
+      }
+    } catch (err) {
+      console.error('ກວດສະຖານະເຕີມເງິນບໍ່ສຳເລັດ', err);
+    }
+  }
+
+  function startTuwPolling() {
+    stopTuwPolling();
+    setTuwState('pending');
+    pollTopupStatus();
+    tuwPollTimer = setInterval(pollTopupStatus, 4000);
+  }
+  function stopTuwPolling() {
+    if (tuwPollTimer) { clearInterval(tuwPollTimer); tuwPollTimer = null; }
+  }
+
+  // ພັກ poll ຕອນສະລັບແທັບ/ຍໍ້ໜ້າຈໍໄປ ແລ້ວກັບມາ poll ຕໍ່ອັດຕະໂນມັດຕອນກັບມາເບິ່ງໜ້ານີ້
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopTuwPolling();
+    } else if (stepWaiting && !stepWaiting.classList.contains('u-hidden')) {
+      startTuwPolling();
+    }
+  });
 
   const BANKS = {
     1: { name: 'ບັນຊີທະນາຄານ 1' },
@@ -327,12 +513,16 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // ບັນທຶກເຂົ້າ topup_requests ສຳເລັດແລ້ວແທ້ໆ -> ຫ້ອງແອດມິນຈະເຫັນລາຍການນີ້ທັນທີ
-      refEl.textContent = data.id || currentTopupId || '-';
+      // ໃຊ້ id ແຖວຈິງທີ່ backend ຄືນມາ (ອາດຕ່າງຈາກ topupId ຊົ່ວຄາວຕອນ step ກ່ອນ)
+      // ເປັນຕົວອ້າງອີງໃນການ poll ສະຖານະຕໍ່ໄປ
+      currentTopupId = data.id || currentTopupId;
+      refEl.textContent = currentTopupId || '-';
       waitAmountEl.textContent = formatKip(selectedAmount);
       stepPay.style.display = 'none';
       stepWaiting.classList.remove('u-hidden');
       stepWaiting.style.display = '';
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      startTuwPolling();
     } catch (err) {
       console.error('ຢືນຢັນການໂອນບໍ່ສຳເລັດ', err);
       showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);

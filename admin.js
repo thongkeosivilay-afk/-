@@ -869,7 +869,11 @@ function renderTopupList(requests) {
   `).join('');
 
   list.querySelectorAll('.topup-slip-wrap img').forEach(img => {
-    img.addEventListener('click', () => openSlipLightbox(img.src));
+    img.addEventListener('click', () => {
+      openSlipLightbox(img.src);
+      const id = img.closest('.topup-card')?.dataset.id;
+      markTopupViewing(id);
+    });
   });
 
   list.querySelectorAll('.topup-card').forEach(card => {
@@ -877,6 +881,25 @@ function renderTopupList(requests) {
     card.querySelector('.approve').addEventListener('click', () => decideTopup(id, 'approved', card));
     card.querySelector('.reject').addEventListener('click', () => decideTopup(id, 'rejected', card));
   });
+}
+
+// ---- ບອກລູກຄ້າແບບ realtime (ຜ່ານ poll ຝັ່ງ topup.js) ວ່າແອດມິນກຳລັງເປີດເບິ່ງສະລິບ
+//      ຢູ່ — ບໍ່ແຕະ status ຫຼັກ (ຍັງເປັນ 'pending' ຄືເກົ່າ ບໍ່ຫາຍໄປຈາກ queue) ໃຊ້
+//      ຄໍລໍາໃໝ່ຕ່າງຫາກຊື່ viewed_at ແທນ (ຕ້ອງຣັນ migration_add_topup_viewed_at.sql
+//      ໃນ Supabase ກ່ອນ ບໍ່ຢ່າງນັ້ນຄໍລໍານີ້ຈະບໍ່ມີ — ຄ່ອຍ error ງຽບໆ ບໍ່ໃຫ້ກະທົບ
+//      ການອະນຸມັດ/ປະຕິເສດຫຼັກ) ----
+const tuwViewedIds = new Set();
+async function markTopupViewing(id) {
+  if (!id || tuwViewedIds.has(id)) return;
+  tuwViewedIds.add(id);
+  try {
+    await supabaseClient
+      .from('topup_requests')
+      .update({ viewed_at: new Date().toISOString() })
+      .eq('id', id);
+  } catch (err) {
+    console.warn('ອັບເດດ viewed_at ບໍ່ສຳເລັດ (ອາດຍັງບໍ່ໄດ້ຣັນ migration_add_topup_viewed_at.sql)', err);
+  }
 }
 
 async function decideTopup(id, status, card) {
