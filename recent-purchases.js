@@ -4,6 +4,10 @@
    handleRecentPurchases ໃນ src/index.js) ແລ້ວສ້າງແຖບ carousel ທີ່ໄຫຼ
    ອັດຕະໂນມັດຈາກຂວາ -> ຊ້າຍແບບວົນຕໍ່ເນື່ອງ (ບໍ່ມີຈັງຫວະກະໂດດກັບຕົ້ນລາຍການ)
 
+   ການໄຫຼແມ່ນຂັບເຄື່ອນດ້ວຍ CSS @keyframes ລ້ວນໆ (ເບິ່ງ .rp-track ໃນ
+   style.css) — JS ມີໜ້າທີ່ພຽງແຕ່ດຶງຂໍ້ມູນ, ສ້າງ HTML ຂອງການ໌ດ ແລະ ຄຳນວນ
+   ຄວາມໄວ (--rp-duration) ຄັ້ງດຽວຕອນເລີ່ມ ບໍ່ມີ loop ຂອງ JS ວິ່ງຕະຫຼອດເວລາອີກ
+
    ບໍ່ມີການສ້າງຂໍ້ມູນປອມ — ຖ້າ API ຄືນລາຍການວ່າງ (ຍັງບໍ່ມີການສັ່ງຊື້ status
    'completed' ຈິງເລີຍ) ຈະເຊື່ອງ section ນີ້ທັງໝົດໄປເລີຍ ບໍ່ໂຊວ໌ carousel ຫວ່າງໆ
    ========================================================= */
@@ -38,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function cardHTML(item) {
     const media = item.image
-      ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.productName)}" loading="lazy">`
+      ? `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.productName)}" width="42" height="42" loading="lazy" decoding="async">`
       : `<div class="rp-icon-fallback">
            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="7" width="18" height="14" rx="2"/><path d="M3 11h18"/><path d="M8 7V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v3"/></svg>
          </div>`;
@@ -50,7 +54,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       : '';
     return `
       <div class="rp-card">
-        ${media}
+        <div class="rp-thumb">
+          ${media}
+          <span class="rp-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </span>
+        </div>
         <div class="rp-info">
           <div class="rp-name">${escapeHtml(item.productName)}</div>
           ${buyerRow}
@@ -70,9 +79,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   function initCarousel(items) {
     // ຊ້ຳຫຼາຍຊຸດຕໍ່ກັນເປັນແຖບຍາວ -> ໄຫຼວົນແບບບໍ່ມີຮອຍຕໍ່ (ບໍ່ຕ້ອງ "ກະໂດດ" ກັບຈຸດເລີ່ມຕົ້ນ)
     // ຢ່າງໜ້ອຍ 2 ຊຸດສະເໝີ, ໃຊ້ 4 ຊຸດຖ້າລາຍການໜ້ອຍ ເພາະ viewport ອາດກວ້າງກວ່າ 1 ຊຸດ
-    const setsNeeded = items.length < 6 ? 4 : 3;
+    const cycles = items.length < 6 ? 4 : 3;
     let html = '';
-    for (let i = 0; i < setsNeeded; i++) items.forEach((it) => { html += cardHTML(it); });
+    for (let i = 0; i < cycles; i++) items.forEach((it) => { html += cardHTML(it); });
     track.innerHTML = html;
     // ໝາຍເຫດ: ຕ້ອງ remove('u-hidden') ນຳ ບໍ່ແມ່ນແຄ່ລຶບ inline style ຢ່າງດຽວ — index.html ໃສ່
     // class="rp-carousel u-hidden" ໄວ້ຕັ້ງແຕ່ຕົ້ນ (ເຊື່ອງໄວ້ກ່ອນຈົນກວ່າຈະຮູ້ວ່າມີຂໍ້ມູນຈິງ) ແລະ
@@ -81,72 +90,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     carousel.classList.remove('u-hidden');
     carousel.style.display = '';
 
-    const SPEED_PX_PER_SEC = 90; // ເລື່ອນໄວຂຶ້ນ
-    let oneSetWidth = 0;
-    let offset = 0;
-    let rafId = null;
-    let lastTs = null;
+    // ໄຫຼດ້ວຍ CSS @keyframes (ເບິ່ງ .rp-track ໃນ style.css) ແທນ JS requestAnimationFrame loop
+    // ເກົ່າ — browser ຮັນ animation ນີ້ຢູ່ compositor thread ແຍກ, ຈຶ່ງບໍ່ກະຕຸກເມື່ອ main thread
+    // ມີວຽກອື່ນ (fetch, ຮູບກຳລັງໂຫລດ, scroll ໜ້າ) ແລະ ບໍ່ຕ້ອງວັດຂະໜາດດ້ວຍ JS ເລີຍ ເພາະການ໌ດ
+    // ແຕ່ລະໃບກຳນົດຄວາມກວ້າງໄວ້ຄົງທີ່ໃນ CSS ແລ້ວ (.rp-card{width:196px}) — ໃຊ້ %/var() ແທນ px ຈຶ່ງ
+    // ບໍ່ຂຶ້ນກັບການວັດ offsetLeft ທີ່ອາດຄາດເຄື່ອນຕອນຮູບຍັງບໍ່ທັນໂຫລດແລ້ວເຮັດໃຫ້ layout ສັ່ນ
+    const CARD_W = 196, GAP = 12, SPEED_PX_PER_SEC = 90;
+    const secondsPerCard = (CARD_W + GAP) / SPEED_PX_PER_SEC;
+    const duration = Math.max(10, items.length * secondsPerCard);
+    track.style.setProperty('--rp-cycles', String(cycles));
+    track.style.setProperty('--rp-duration', `${duration.toFixed(2)}s`);
 
-    function measure() {
-      const cards = track.children;
-      const perSet = items.length;
-      if (cards.length < perSet + 1) return;
-      oneSetWidth = cards[perSet].offsetLeft - cards[0].offsetLeft;
-    }
-
-    function applyTransform() {
-      track.style.transform = `translate3d(${-offset}px,0,0)`;
-    }
-
-    // ໄຫຼວົນທິດດຽວສະເໝີ (offset ວິ່ງໄປຂ້າງໜ້າເລື່ອຍໆ, ບໍ່ jump ກັບ 0)
-    function normalizeOffset() {
-      if (oneSetWidth <= 0) return;
-      while (offset >= oneSetWidth) offset -= oneSetWidth;
-      while (offset < 0) offset += oneSetWidth;
-    }
-
-    function tick(ts) {
-      if (lastTs === null) lastTs = ts;
-      const dt = Math.min(0.05, (ts - lastTs) / 1000); // clamp กัน dt กระโดดตอนสลับแท็บ/lag
-      lastTs = ts;
-
-      if (oneSetWidth > 0) {
-        offset += SPEED_PX_PER_SEC * dt;
-        normalizeOffset();
-        applyTransform();
-      }
-      rafId = requestAnimationFrame(tick);
-    }
-
-    // ປິດການລາກ/ກົດເລື່ອນດ້ວຍມື — ໄຫຼອັດຕະໂນມັດຢ່າງດຽວ, ຫ້າມຜູ້ໃຊ້ຂັດຈັງຫວະ
-    carousel.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
-    carousel.addEventListener('mousedown', (e) => e.preventDefault());
+    // ໝາຍເຫດ: ບໍ່ມີ touchmove preventDefault ອີກຕໍ່ໄປ — ອັນນັ້ນແມ່ນຕົ້ນເຫດທີ່ເຮັດໃຫ້ໜ້າຈໍ "ຄ້າງ"
+    // ຕອນຜູ້ໃຊ້ພະຍາຍາມເລື່ອນໜ້າ (scroll ແນວຕັ້ງ) ໂດຍນິ້ວເລີ່ມແຕະຢູ່ເທິງແຖບນີ້ — touch-action:pan-y
+    // ໃນ CSS ພຽງພໍແລ້ວທີ່ຈະບໍ່ໃຫ້ລາກລວງແຖວນອນໄດ້ ໂດຍບໍ່ໄປກີດຂວາງການເລື່ອນໜ້າແນວຕັ້ງ
     carousel.addEventListener('dragstart', (e) => e.preventDefault());
-
-    // ຢຸດ rAF ຕອນແທັບບໍ່ visible ແລ້ວຄ່ອຍເລີ່ມໃໝ່ຕອນກັບມາ -> ກັນ dt ໃຫຍ່ຜິດປົກກະຕິເຮັດໃຫ້ກະໂດດ
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = null;
-      } else if (!rafId) {
-        lastTs = null;
-        rafId = requestAnimationFrame(tick);
-      }
-    });
-
-    // ResizeObserver: re-measure ອັດຕະໂນມັດທຸກຄັ້ງທີ່ຂະໜາດແຖບປ່ຽນ (ຮູບໂຫລດແລ້ວ/ໜ້າຈໍໝູນ/ font ໂຫລດ)
-    // ແທນທີ່ຈະອີງແຕ່ window 'load'/'resize' ຢ່າງດຽວ ເຮັດໃຫ້ຄ່າ oneSetWidth ຖືກຕ້ອງແທ້ຕະຫຼອດ
-    if ('ResizeObserver' in window) {
-      const ro = new ResizeObserver(() => measure());
-      ro.observe(track);
-    } else {
-      window.addEventListener('resize', measure);
-    }
-
-    requestAnimationFrame(() => {
-      measure();
-      rafId = requestAnimationFrame(tick);
-    });
 
     setInterval(refreshTimeLabels, 30000); // ອັບເດດປ້າຍເວລາທຸກ 30 ວິນາທີ
   }
