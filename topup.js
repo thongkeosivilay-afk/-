@@ -1,3 +1,49 @@
+/* ---------- helper: บีบรูปที่ใหญ่เกินก่อนอัปโหลด ----------
+   Netlify Functions รับ request ได้ไม่เกิน ~6MB (รูปที่ส่งแบบไฟล์จะกินราว 4.5MB จริง)
+   รูปจากมือถือมักใหญ่กว่านั้น จึงย่อ/บีบใน browser ก่อนส่งเสมอถ้าไฟล์ใหญ่เกิน 3.5MB
+   ถ้าบีบไม่สำเร็จด้วยเหตุใดก็ตาม จะส่งไฟล์เดิมไปตามปกติ (ไม่ทำให้ flow เดิมพัง) */
+async function compressImageIfLarge(file, maxBytes) {
+  const LIMIT = maxBytes || 3.5 * 1024 * 1024;
+  try {
+    if (!file || !file.type || !/^image\/(jpeg|png|webp)$/.test(file.type)) return file;
+    if (file.size <= LIMIT) return file;
+
+    const bitmapUrl = URL.createObjectURL(file);
+    const img = await new Promise((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = reject;
+      el.src = bitmapUrl;
+    });
+    URL.revokeObjectURL(bitmapUrl);
+
+    const isPng = file.type === 'image/png';
+    let maxDim = 2000;
+    let quality = 0.85;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+      canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // PNG อาจโปร่งใส -> ลอง webp ก่อน (รองรับ alpha) ที่เหลือใช้ jpeg
+      const wantType = isPng ? 'image/webp' : 'image/jpeg';
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, wantType, quality));
+      if (blob && blob.type === wantType && blob.size > 0 && blob.size <= LIMIT) {
+        const ext = wantType === 'image/webp' ? 'webp' : 'jpg';
+        const base = (file.name || 'image').replace(/\.[^.]+$/, '');
+        return new File([blob], `${base}.${ext}`, { type: wantType });
+      }
+      maxDim = Math.round(maxDim * 0.75);
+      quality = Math.max(0.6, quality - 0.05);
+    }
+  } catch (err) {
+    console.warn('compressImageIfLarge: บีบรูปไม่สำเร็จ ใช้ไฟล์เดิม', err);
+  }
+  return file;
+}
+
 /* =========================================================
    topup.js — ການເຮັດວຽກຂອງໜ້າ topup.html
    1) ເລືອກທະນາຄານ + ຈຳນວນເງິນ (preset ຫຼືພິມເອງ)
@@ -496,7 +542,8 @@ document.addEventListener('DOMContentLoaded', () => {
       form.append('topupId', currentTopupId || '');
       form.append('bank', String(selectedBank));
       form.append('amount', String(selectedAmount));
-      form.append('slip', selectedSlip);
+      const slipToSend = await compressImageIfLarge(selectedSlip);
+      form.append('slip', slipToSend, slipToSend.name);
 
       const res = await fetch('/api/topup/confirm', { method: 'POST', body: form });
       const data = await res.json().catch(() => ({}));
