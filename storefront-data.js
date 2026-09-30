@@ -138,6 +138,11 @@
     const tagline = (store && store.tagline && String(store.tagline).trim()) || DEFAULT_TAGLINE;
     const taglineHTML = tagline.split('\n').map(escapeHtmlLocal).join('<br>');
 
+    // ชื่อบนแท็บเบราว์เซอร์ — ใช้ชื่อร้านที่ตั้งใน "ຕັ້ງຄ່າຮ້ານ" (ถ้าไม่ได้ตั้งไว้ จะคง <title> เดิมของหน้าไว้)
+    if (store && store.name && String(store.name).trim()) {
+      document.title = name;
+    }
+
     // ໂລໂກ້ຮ້ານ (settings.logo_url ຈາກ "ຕັ້ງຄ່າຮ້ານ") — ຖ້າແອດມິນອັບໂຫລດໄວ້ ໃຫ້ສະແດງແທນໄອຄອນເລີ່ມຕົ້ນ
     // (svg ຖົງເລີ່ມຕົ້ນ) ໃນທຸກບ່ອນທີ່ມີ .logo (header ຂອງ index.html / category.html)
     const logoUrl = store && store.logoUrl ? String(store.logoUrl).trim() : '';
