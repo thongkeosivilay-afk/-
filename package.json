@@ -3,14 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Dekmash Shop — static site + Netlify Functions (Supabase backend)",
+  "description": "Dekmash Shop — static site + Cloudflare Worker (Supabase backend)",
   "scripts": {
-    "build": "node scripts/build.mjs"
-  },
-  "dependencies": {
-    "@netlify/blobs": "^8.1.0"
-  },
-  "engines": {
-    "node": ">=20"
+    "deploy": "wrangler deploy"
   }
 }

@@ -2,6 +2,10 @@ name = "dekmashshop"
 main = "src/index.js"
 compatibility_date = "2026-01-01"
 
+# กันไม่ให้ทุกครั้งที่ deploy ไปลบตัวแปร (Variables) ที่ตั้งไว้ใน Cloudflare Dashboard
+# เช่น DISCORD_CLIENT_ID — ถ้าไม่มีบรรทัดนี้ deploy จาก GitHub จะเขียนทับจนล็อกอินพัง
+keep_vars = true
+
 [assets]
 directory = "./"
 binding = "ASSETS"
