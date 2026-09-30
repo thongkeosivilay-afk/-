@@ -59,8 +59,13 @@
   }
   /* โลโก้ในแถบใหญ่ขึ้น (โลโก้ท้ายหน้า .footer-logo ไม่กระทบ) */
   header .logo{ width:58px; height:58px; border-radius:16px; }
-  /* ซ่อนชื่อเว็บในแถบ */
-  header .brand-name{ display:none; }
+  /* แสดงชื่อเว็บในแถบ (ย่อเป็น ... ถ้ายาวเกิน เพื่อไม่ชนปุ่มลงชื่อเข้าใช้) */
+  header .brand{ min-width:0; flex:1 1 auto; }
+  header .brand-name{
+    display:block; min-width:0;
+    color:#fff; font-size:16px; font-weight:800; line-height:1.2;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
   .brand{ display:flex; align-items:center; gap:10px; }
   .logo{
     width:46px; height:46px; border-radius:13px;
