@@ -6,7 +6,18 @@
    - ใช้ transform/opacity ล้วนๆ กัน jank และเคารพ prefers-reduced-motion
    ========================================================= */
 (function () {
-  var EXIT_MS = 320; // ต้องตรงกับ .pt-exit ใน page-transition.css
+  // เครื่องสเปกต่ำ / เปิด Data Saver -> เปิดโหมด lite (ปิดแอนิเมชั่นตกแต่งที่วนซ้ำ)
+  try {
+    var nav = navigator;
+    var conn = nav.connection || {};
+    if ((nav.hardwareConcurrency && nav.hardwareConcurrency <= 4) ||
+        (nav.deviceMemory && nav.deviceMemory <= 4) ||
+        conn.saveData) {
+      document.documentElement.classList.add('perf-lite');
+    }
+  } catch (e) {}
+
+  var EXIT_MS = 140; // ต้องตรงกับ .pt-exit ใน page-transition.css
 
   var wrapper = document.querySelector('.shell, .auth-shell');
   if (!wrapper) return;

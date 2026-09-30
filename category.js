@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function mediaHTML(product) {
     if (product.image_url) {
-      return `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" class="prod-img">`;
+      return `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" class="prod-img" loading="lazy" decoding="async">`;
     }
     return `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">

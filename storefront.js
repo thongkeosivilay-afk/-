@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ຈາກກາຕູນຕາມການຮ້ອງຂໍ (SLOT_DECOR ຍັງມີໄວ້ໃນໄຟລ໌ ໃນກໍລະນີໃຊ້ບ່ອນອື່ນ)
 
     const mediaHTML = category.image
-      ? `<img src="${escapeHtml(category.image)}" alt="${escapeHtml(category.name)}">`
+      ? `<img src="${escapeHtml(category.image)}" alt="${escapeHtml(category.name)}" decoding="async">`
       : `
         <div class="cat-img-placeholder">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>
