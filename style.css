@@ -38,7 +38,7 @@
   a{color:inherit; text-decoration:none;}
   button{font-family:inherit; cursor:pointer;}
 
-  .shell{ max-width:480px; margin:0 auto; min-height:100vh; position:relative; background:var(--bg); overflow:hidden; overflow:clip; /* clip = ตัดขอบเหมือน hidden แต่ไม่ทำให้ header sticky พัง */ }
+  .shell{ max-width:480px; margin:0 auto; min-height:100vh; position:relative; background:var(--bg); overflow:hidden; overflow:clip; padding-top:86px; /* เว้นที่ให้แถบ header ที่ลอยติดจอ */ }
 
   /* ---------- Top glow removed per request ---------- */
 
@@ -46,8 +46,9 @@
   header{
     display:flex; align-items:center; justify-content:space-between;
     padding:8px 10px 8px 12px;
-    margin:10px 12px 0;
-    position:sticky; top:10px; z-index:40;
+    /* fixed แทน sticky: sticky ค้างบน iOS Safari เพราะมี overflow ครอบอยู่ — fixed ติดจอแน่นอนทุกเบราว์เซอร์ */
+    position:fixed; top:10px; left:0; right:0; z-index:40;
+    width:calc(min(100%, 480px) - 24px); margin:0 auto;
     /* แถบกระจกใส + เบลอ: เลื่อนหน้าแล้วเห็นเนื้อหาด้านหลังฟุ้งๆ ผ่านแถบ */
     background:rgba(12,12,12,.55);
     -webkit-backdrop-filter:blur(18px) saturate(160%);
