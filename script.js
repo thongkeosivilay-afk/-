@@ -205,31 +205,55 @@ document.addEventListener('DOMContentLoaded', () => {
     catItems.forEach((item) => revealObserver.observe(item));
   }
 
-  /* ---------- Account dropdown menu helpers ---------- */
-  function acctEscapeHtml(str) {
-    return String(str || '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
-  }
-  function acctFormatKip(n) {
-    return Number(n || 0).toLocaleString('de-DE') + ' ₭';
+  /* ---------- Bottom tab bar (แทน dropdown เดิม) ----------
+     กดโปรไฟล์ (ปุ่ม .login-btn ตอนล็อกอินแล้ว) -> แถบไอคอนเด้งขึ้นจากด้านล่าง
+     กดไอคอน -> แถบสีแดงเลื่อนไปหาไอคอนนั้น แล้วพาไปหน้านั้น
+     กดที่ว่าง / กดโปรไฟล์ซ้ำ / กด Esc -> แถบหุบลง */
+  const TB_ICON = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const TB_TABS = [
+    { key: 'admin',   label: 'ແອດມິນ',          href: 'admin.html',          adminOnly: true,
+      icon: TB_ICON('<path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/><path d="m9 12 2 2 4-4"/>') },
+    { key: 'shop',    label: 'ຮ້ານຄ້າ',          href: 'index.html#categories',
+      icon: TB_ICON('<path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/>') },
+    { key: 'reseller', label: 'ຕົວແທນ',          href: 'reseller.html',
+      icon: TB_ICON('<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>') },
+    { key: 'topup',   label: 'ເຕີມເງິນ',         href: 'topup.html',
+      icon: TB_ICON('<rect x="2" y="6" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/>') },
+    { key: 'orders',  label: 'ປະຫວັດການຊື້',     href: 'orders.html',
+      icon: TB_ICON('<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/>') },
+    { key: 'history', label: 'ປະຫວັດເຕີມເງິນ',   href: 'topup-history.html',
+      icon: TB_ICON('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>') },
+  ];
+  const TB_LOGOUT_ICON = TB_ICON('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>');
+
+  // หน้าปัจจุบัน -> แท็บไหนต้อง active (รองรับทั้ง /topup และ /topup.html)
+  function tbCurrentKey() {
+    const page = (location.pathname.split('/').pop() || '').replace(/\.html$/i, '').toLowerCase();
+    switch (page) {
+      case '': case 'index': case 'category': case 'product': return 'shop';
+      case 'admin': return 'admin';
+      case 'reseller': return 'reseller';
+      case 'topup': return 'topup';
+      case 'orders': return 'orders';
+      case 'topup-history': return 'history';
+      default: return null;
+    }
   }
 
   function renderAccountMenu(loginBtn, user) {
-    // ຫໍ່ .login-btn ດ້ວຍ .acct-slot ເພື່ອວາງ dropdown ໄວ້ຂ້າງໆ
-    const wrap = document.createElement('div');
-    wrap.className = 'acct-slot';
-    loginBtn.replaceWith(wrap);
-    wrap.appendChild(loginBtn);
-
-    loginBtn.classList.add('is-authed');
     if (user.isReseller) {
       loginBtn.classList.add('is-reseller');
       document.querySelector('header')?.classList.add('is-reseller');
       document.querySelector('.logo')?.classList.add('is-reseller');
     }
+
+    // ---- ปุ่มโปรไฟล์ในหัวเว็บ (รูป + ชื่อ) ----
+    loginBtn.classList.add('is-authed');
     loginBtn.innerHTML = '';
     loginBtn.type = 'button';
     loginBtn.setAttribute('aria-haspopup', 'true');
     loginBtn.setAttribute('aria-expanded', 'false');
+    loginBtn.setAttribute('aria-controls', 'acctTabbar');
     if (user.avatar) {
       const img = document.createElement('img');
       img.src = user.avatar;
@@ -241,83 +265,84 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.appendChild(nameSpan);
     loginBtn.title = user.username;
 
-    const badgeHtml = user.isAdmin
-      ? `<span class="acct-dd-badge is-admin"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/></svg> ADMIN</span>`
-      : user.isReseller
-        ? `<span class="acct-dd-badge is-reseller"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg> ຕົວແທນ</span>`
-        : `<span class="acct-dd-badge"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg> ຜູ້ໃຊ້</span>`;
+    // ---- สร้างแถบไอคอนด้านล่าง ----
+    const tabs = TB_TABS.filter((t) => !t.adminOnly || user.isAdmin);
+    const currentKey = tbCurrentKey();
 
-    const adminLinkHtml = user.isAdmin
-      ? `<a class="acct-dd-link" href="admin.html" role="menuitem">
-           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/><path d="m9 12 2 2 4-4"/></svg>
-           ຫ້ອງຄວບຄຸມແອດມິນ
-         </a>`
-      : '';
+    const bar = document.createElement('nav');
+    bar.className = 'tabbar';
+    bar.id = 'acctTabbar';
+    bar.setAttribute('aria-label', 'ເມນູບັນຊີ');
+    bar.setAttribute('aria-hidden', 'true');
+    bar.innerHTML =
+      '<span class="tabbar-pill"></span>' +
+      tabs.map((t, i) =>
+        `<a href="${t.href}" class="tabbar-item${t.key === currentKey ? ' active' : ''}" data-key="${t.key}" aria-label="${t.label}" title="${t.label}" style="--i:${i}">${t.icon}</a>`
+      ).join('') +
+      `<button type="button" class="tabbar-item danger" id="acctTabLogout" aria-label="ອອກຈາກລະບົບ" title="ອອກຈາກລະບົບ" style="--i:${tabs.length}">${TB_LOGOUT_ICON}</button>`;
+    document.body.appendChild(bar);
 
-    const dropdown = document.createElement('div');
-    dropdown.className = 'acct-dropdown';
-    dropdown.id = 'acctDropdown';
-    dropdown.setAttribute('role', 'menu');
-    dropdown.setAttribute('aria-hidden', 'true');
-    dropdown.innerHTML = `
-      <div class="acct-dd-user">
-        <div class="acct-dd-name">${acctEscapeHtml(user.username)}</div>
-        ${badgeHtml}
-        <div class="acct-dd-balance">ຍອດເງິນ: <b>${acctFormatKip(user.balance)}</b></div>
-      </div>
-      <nav class="acct-dd-nav">
-        ${adminLinkHtml}
-        <a class="acct-dd-link" href="index.html#categories" role="menuitem">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/></svg>
-          ຮ້ານຄ້າ
-        </a>
-        <a class="acct-dd-link" href="reseller.html" role="menuitem">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>
-          ສະໝັກຕົວແທນ
-        </a>
-        <a class="acct-dd-link" href="topup.html" role="menuitem">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>
-          ເຕີມເງິນ
-        </a>
-        <a class="acct-dd-link" href="orders.html" role="menuitem">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
-          ປະຫວັດການຊື້
-        </a>
-        <a class="acct-dd-link" href="topup-history.html" role="menuitem">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>
-          ປະຫວັດເຕີມເງິນ
-        </a>
-      </nav>
-      <div class="acct-dd-divider"></div>
-      <nav class="acct-dd-nav">
-        <button type="button" class="acct-dd-link danger" id="acctDdLogout" role="menuitem">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          ອອກຈາກລະບົບ
-        </button>
-      </nav>
-    `;
-    wrap.appendChild(dropdown);
+    const pill = bar.querySelector('.tabbar-pill');
+    const items = [...bar.querySelectorAll('a.tabbar-item')];
+    const activeItem = () => items.find((x) => x.classList.contains('active'));
+    const isOpen = () => bar.classList.contains('show');
 
-    const closeDropdown = () => {
-      dropdown.classList.remove('show');
-      dropdown.setAttribute('aria-hidden', 'true');
+    // เลื่อนแถบสีแดงไปใต้ไอคอนที่เลือก (anim=false = วาร์ปไปเลย ไม่ต้องไหลมา)
+    const movePill = (el, anim = true) => {
+      if (!el) { pill.style.opacity = 0; return; }
+      pill.style.transition = anim ? '' : 'none';
+      pill.style.width = el.offsetWidth + 'px';
+      pill.style.transform = `translateX(${el.offsetLeft}px)`;
+      pill.style.opacity = 1;
+      if (!anim) { void pill.offsetWidth; pill.style.transition = ''; }
+    };
+
+    const closeBar = () => {
+      bar.classList.remove('show');
+      bar.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('tabbar-open');
       loginBtn.setAttribute('aria-expanded', 'false');
     };
-    const openDropdown = () => {
-      dropdown.classList.add('show');
-      dropdown.setAttribute('aria-hidden', 'false');
+    const openBar = () => {
+      bar.classList.add('show');
+      bar.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('tabbar-open');
       loginBtn.setAttribute('aria-expanded', 'true');
+      movePill(activeItem(), false);
     };
 
     loginBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      dropdown.classList.contains('show') ? closeDropdown() : openDropdown();
+      isOpen() ? closeBar() : openBar();
     });
-    dropdown.addEventListener('click', (e) => e.stopPropagation());
-    document.addEventListener('click', closeDropdown);
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDropdown(); });
 
-    dropdown.querySelector('#acctDdLogout').addEventListener('click', () => {
+    // กดที่ว่างนอกแถบ -> หุบ (ไม่ใช้ stopPropagation บนแถบ เพราะ page-transition.js
+    // ฟังคลิกที่ document เพื่อเล่นแอนิเมชั่นสลับหน้า ถ้าตัดไว้ลิงก์จะไม่เล่นแอนิเมชั่น)
+    document.addEventListener('click', (e) => {
+      if (!isOpen()) return;
+      if (bar.contains(e.target) || loginBtn.contains(e.target)) return;
+      closeBar();
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBar(); });
+    window.addEventListener('resize', () => { if (isOpen()) movePill(activeItem(), false); });
+
+    items.forEach((el) => {
+      el.addEventListener('click', (e) => {
+        const alreadyHere = el.classList.contains('active');
+        if (alreadyHere) {
+          // อยู่หน้านี้อยู่แล้ว: ไม่ต้องโหลดซ้ำ (ยกเว้นลิงก์ #categories บนหน้าแรก ให้เลื่อนตามปกติ)
+          if (!(el.getAttribute('href') || '').includes('#')) e.preventDefault();
+          closeBar();
+          return;
+        }
+        // หน้าอื่น: เลื่อนแถบสีแดงไปหาไอคอน แล้วปล่อยให้ลิงก์ทำงานต่อ
+        // (page-transition.js จะเล่นแอนิเมชั่นออก แล้วค่อยเปลี่ยนหน้า)
+        items.forEach((x) => x.classList.toggle('active', x === el));
+        movePill(el);
+      });
+    });
+
+    bar.querySelector('#acctTabLogout').addEventListener('click', () => {
       window.location.href = '/auth/logout';
     });
   }
