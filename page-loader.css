@@ -8,7 +8,7 @@ html.pl-lock{ overflow:hidden; }
 #page-loader{
   position:fixed; inset:0; z-index:99999;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:26px;
-  background:radial-gradient(circle at 50% 42%, #1a0000 0%, #070000 55%, #000 100%);
+  background:transparent; /* พื้นหลังอยู่ที่ .pl-panel 2 แผ่น (บน/ล่าง) เพื่อใช้แยกเปิดตอนจบ */
   opacity:1; visibility:visible;
   transition:opacity .2s ease, visibility 0s linear .2s;
   /* กันค้าง: ถ้า JS พังจริงๆ ให้ซ่อนเองหลัง 10 วินาที */
@@ -16,6 +16,26 @@ html.pl-lock{ overflow:hidden; }
 }
 #page-loader.pl-hide{ opacity:0; visibility:hidden; pointer-events:none; }
 @keyframes pl-failsafe{ to{ opacity:0; visibility:hidden; pointer-events:none; } }
+
+/* แผ่นพื้นหลัง บน/ล่าง — ดูเป็นพื้นหลังผืนเดียวกันตอนโหลด แล้วแยกสไลด์ออกตอนจบ */
+.pl-panel{
+  position:absolute; left:0; right:0; height:50%;
+  background:radial-gradient(circle at 50% 42%, #1a0000 0%, #070000 55%, #000 100%);
+  background-size:100% 200%;
+  will-change:transform;
+}
+.pl-panel.pl-top{ top:0; background-position:0 0; }
+.pl-panel.pl-bottom{ bottom:0; background-position:0 100%; }
+.pl-stage, .pl-dots{ position:relative; z-index:2; }
+
+/* เส้นแสงแดงตรงรอยแยกตอนเปิด */
+.pl-seam{
+  position:absolute; left:0; right:0; top:50%; height:2px; margin-top:-1px; z-index:3;
+  background:linear-gradient(90deg, transparent, #ff2a2b 20%, #fff 50%, #ff2a2b 80%, transparent);
+  box-shadow:0 0 18px 3px rgba(255,0,1,.75);
+  opacity:0; transform:scaleX(0);
+  pointer-events:none;
+}
 
 .pl-stage{ position:relative; width:150px; height:150px; display:flex; align-items:center; justify-content:center; }
 
@@ -69,4 +89,73 @@ html.pl-lock{ overflow:hidden; }
   .pl-ring, .pl-ring.pl-ring-2, .pl-dots i{ animation:none; }
   .pl-logo{ animation:pl-fade 1.6s ease-in-out infinite; }
   @keyframes pl-fade{ 0%,100%{ opacity:.6; } 50%{ opacity:1; } }
+}
+
+
+/* =========================================================
+   แอนิเมชั่น "โหลดเสร็จ" (.pl-exit)
+   1) โลโก้พุ่งเรืองแสง + คลื่นกระแทกวงแหวนขยายออก
+   2) เส้นแสงแดงฉีกกลางจอ
+   3) พื้นหลังแยกบน/ล่างสไลด์ออก เผยหน้าเว็บ
+   ใช้ transform + opacity ล้วนๆ (GPU) — ไม่กระตุก
+   ========================================================= */
+#page-loader.pl-exit{ pointer-events:none; animation:none; }
+
+/* 1) โลโก้ + วงแหวน */
+#page-loader.pl-exit .pl-stage{
+  animation:pl-burst .3s cubic-bezier(.3,.7,.3,1) forwards;
+}
+#page-loader.pl-exit .pl-logo{
+  animation:none;
+  filter:drop-shadow(0 0 30px rgba(255,0,1,.95));
+}
+#page-loader.pl-exit .pl-ring,
+#page-loader.pl-exit .pl-ring.pl-ring-2{ animation-duration:.25s; }
+#page-loader.pl-exit .pl-dots{ animation:pl-dots-out .15s ease forwards; }
+@keyframes pl-burst{
+  0%  { transform:scale(1);    opacity:1; }
+  35% { transform:scale(.88);  opacity:1; }   /* ย่อเก็บแรงนิดนึงก่อนพุ่ง */
+  100%{ transform:scale(1.9);  opacity:0; }
+}
+@keyframes pl-dots-out{ to{ opacity:0; transform:translateY(8px); } }
+
+/* คลื่นกระแทก */
+#page-loader.pl-exit .pl-stage::after{
+  content:""; position:absolute; inset:0; border-radius:50%;
+  border:3px solid rgba(255,42,43,.9);
+  box-shadow:0 0 24px rgba(255,0,1,.7), inset 0 0 24px rgba(255,0,1,.45);
+  animation:pl-shock .42s cubic-bezier(.2,.8,.2,1) forwards;
+}
+@keyframes pl-shock{
+  from{ transform:scale(.6); opacity:.95; }
+  to  { transform:scale(3.2); opacity:0; }
+}
+
+/* 2) เส้นแสงกลางจอ */
+#page-loader.pl-exit .pl-seam{ animation:pl-seam .5s ease forwards; animation-delay:.12s; }
+@keyframes pl-seam{
+  0%  { opacity:0; transform:scaleX(0); }
+  35% { opacity:1; transform:scaleX(1); }
+  75% { opacity:1; transform:scaleX(1); }
+  100%{ opacity:0; transform:scaleX(1); }
+}
+
+/* 3) แผ่นพื้นหลังแยกออก */
+#page-loader.pl-exit .pl-panel.pl-top{
+  animation:pl-slide-up .48s cubic-bezier(.76,0,.24,1) .24s forwards;
+}
+#page-loader.pl-exit .pl-panel.pl-bottom{
+  animation:pl-slide-down .48s cubic-bezier(.76,0,.24,1) .24s forwards;
+}
+@keyframes pl-slide-up  { to{ transform:translate3d(0,-101%,0); } }
+@keyframes pl-slide-down{ to{ transform:translate3d(0, 101%,0); } }
+
+/* ปิดโมชั่นในระบบ: ใช้เฟดออกเรียบๆ แทน */
+@media (prefers-reduced-motion: reduce){
+  #page-loader.pl-exit .pl-stage,
+  #page-loader.pl-exit .pl-stage::after,
+  #page-loader.pl-exit .pl-seam,
+  #page-loader.pl-exit .pl-panel,
+  #page-loader.pl-exit .pl-dots{ animation:none; }
+  .pl-seam{ display:none; }
 }

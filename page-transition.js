@@ -24,18 +24,8 @@
 
   // โชว์หน้าโหลด (โลโก้ + วงแหวน) ทันทีที่กดลิงก์ — ไม่ต้องรอหน้าใหม่โหลดก่อนถึงจะเห็นแอนิเมชั่น
   function showLoader() {
-    if (document.getElementById('page-loader')) return;
-    var el = document.createElement('div');
-    el.id = 'page-loader';
-    el.setAttribute('role', 'status');
-    el.innerHTML =
-      '<div class="pl-stage">' +
-        '<div class="pl-ring pl-ring-2"></div>' +
-        '<div class="pl-ring"></div>' +
-        '<img class="pl-logo" src="assets/logo.png" alt="">' +
-      '</div>' +
-      '<div class="pl-dots"><i></i><i></i><i></i></div>';
-    document.documentElement.appendChild(el);
+    if (document.getElementById('page-loader') || !window.__plBuild) return;
+    document.documentElement.appendChild(window.__plBuild());
   }
   // กลับมาจาก bfcache -> เอาหน้าโหลดที่ค้างออก
   window.addEventListener('pageshow', function (e) {
