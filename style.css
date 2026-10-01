@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
 /* =========================================================
    style.css — ຮວມ CSS ທັງໝົດຂອງໜ້າເວັບ NEXUS STORE
    ແບ່ງເປັນສ່ວນຕາມ comment header ຂ້າງລຸ່ມ:
@@ -38,14 +39,14 @@
   a{color:inherit; text-decoration:none;}
   button{font-family:inherit; cursor:pointer;}
 
-  .shell{ max-width:480px; margin:0 auto; min-height:100vh; position:relative; background:var(--bg); overflow:hidden; overflow:clip; padding-top:100px; /* เว้นที่ให้แถบ header ที่ลอยติดจอ (โลโก้/ชื่อร้านขยายใหญ่ขึ้น) */ }
+  .shell{ max-width:480px; margin:0 auto; min-height:100vh; position:relative; background:var(--bg); overflow:hidden; overflow:clip; padding-top:96px; /* เว้นที่ให้แถบ header ที่ลอยติดจอ (แถบพอดีโลโก้) */ }
 
   /* ---------- Top glow removed per request ---------- */
 
   /* ---------- Header ---------- */
   header{
     display:flex; align-items:center; justify-content:space-between;
-    padding:8px 10px 8px 12px;
+    padding:4px 8px 4px 4px;
     /* fixed แทน sticky: sticky ค้างบน iOS Safari เพราะมี overflow ครอบอยู่ — fixed ติดจอแน่นอนทุกเบราว์เซอร์ */
     position:fixed; top:10px; left:0; right:0; z-index:40;
     width:calc(min(100%, 480px) - 24px); margin:0 auto;
@@ -63,7 +64,8 @@
   header .brand{ min-width:0; flex:1 1 auto; }
   header .brand-name{
     display:block; min-width:0;
-    color:#fff; font-size:21px; font-weight:800; line-height:1.2;
+    font-family:'Lilita One','Noto Sans Lao',sans-serif; /* ฟอนต์อ้วนๆ */
+    color:#fff; font-size:24px; font-weight:400; letter-spacing:.5px; line-height:1.2;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .brand{ display:flex; align-items:center; gap:10px; }
