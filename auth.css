@@ -237,3 +237,8 @@ button, input{ font-family:inherit; }
 .toast.error{ border-color:rgba(255,0,1,.5); }
 .toast svg{ width:16px; height:16px; color:var(--gold); flex-shrink:0; }
 .toast.error svg{ color:var(--red-glow); }
+
+
+/* กันเว็บซูมเอง: iOS ซูมหน้าตอนแตะช่องกรอกที่ตัวอักษร < 16px */
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation; }
+input, select, textarea{ font-size:16px !important; }

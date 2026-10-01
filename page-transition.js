@@ -17,10 +17,30 @@
     }
   } catch (e) {}
 
-  var EXIT_MS = 140; // ต้องตรงกับ .pt-exit ใน page-transition.css
+  var EXIT_MS = 100; // ต้องตรงกับ .pt-exit ใน page-transition.css
 
   var wrapper = document.querySelector('.shell, .auth-shell');
   if (!wrapper) return;
+
+  // โชว์หน้าโหลด (โลโก้ + วงแหวน) ทันทีที่กดลิงก์ — ไม่ต้องรอหน้าใหม่โหลดก่อนถึงจะเห็นแอนิเมชั่น
+  function showLoader() {
+    if (document.getElementById('page-loader')) return;
+    var el = document.createElement('div');
+    el.id = 'page-loader';
+    el.setAttribute('role', 'status');
+    el.innerHTML =
+      '<div class="pl-stage">' +
+        '<div class="pl-ring pl-ring-2"></div>' +
+        '<div class="pl-ring"></div>' +
+        '<img class="pl-logo" src="assets/logo.png" alt="">' +
+      '</div>' +
+      '<div class="pl-dots"><i></i><i></i><i></i></div>';
+    document.documentElement.appendChild(el);
+  }
+  // กลับมาจาก bfcache -> เอาหน้าโหลดที่ค้างออก
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) { var l = document.getElementById('page-loader'); if (l && l.parentNode) l.parentNode.removeChild(l); }
+  });
 
   var navigating = false;
 
@@ -81,6 +101,6 @@
     navigating = true;
     wrapper.style.willChange = 'transform, opacity';
     wrapper.classList.add('pt-exit');
-    setTimeout(function () { location.href = href; }, EXIT_MS);
+    showLoader(); setTimeout(function () { location.href = href; }, EXIT_MS);
   });
 })();

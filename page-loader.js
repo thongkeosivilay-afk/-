@@ -6,7 +6,7 @@
    ========================================================= */
 (function () {
   var root = document.documentElement;
-  var MIN_SHOW_MS = 450;   // โชว์อย่างน้อยเท่านี้ ไม่ให้วาบแล้วหาย
+  var MIN_SHOW_MS = 300;   // โชว์อย่างน้อยเท่านี้ ไม่ให้วาบแล้วหาย
   var MAX_WAIT_MS = 8000;  // รอนานสุด แล้วเปิดหน้าให้เลย
   var start = Date.now();
   var done = false;
@@ -36,7 +36,7 @@
         requestAnimationFrame(function () {
           el.classList.add('pl-hide');
           root.classList.remove('pl-lock');
-          setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 700);
+          setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
         });
       });
     }, wait);
@@ -56,14 +56,14 @@
     (function poll() {
       if (window.StorefrontData && window.StorefrontData.fetchData) {
         window.StorefrontData.fetchData().then(res, res);
-      } else if (++tries > 40) { res(); }      // หน้านี้ไม่ได้ใช้ข้อมูลร้าน
-      else setTimeout(poll, 50);
+      } else if (++tries > 100) { res(); }      // หน้านี้ไม่ได้ใช้ข้อมูลร้าน
+      else setTimeout(poll, 20);
     })();
   });
 
   Promise.all([pageLoaded, dataReady]).then(function () {
     // เว้นจังหวะให้ script ของแต่ละหน้าเติมข้อมูลลง DOM ก่อน
-    setTimeout(finish, 120);
+    setTimeout(finish, 30);
   });
 
   // กด "ย้อนกลับ" แล้วหน้ากลับมาจาก bfcache -> อย่าให้ overlay ค้าง
