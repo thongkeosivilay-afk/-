@@ -12,6 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const listEl = document.querySelector('#thList');
   if (!loadingEl || !emptyEl || !listEl) return; // ไม่ใช่หน้า topup-history
 
+  // ชื่อร้าน/โลโก้/แถบประกาศ — หน้านี้เคยลืมเรียก ทำให้ชื่อร้านไม่ขึ้นและโลโก้ท้ายหน้าว่างเปล่า
+  if (window.StorefrontData) {
+    window.StorefrontData.fetchData()
+      .then((data) => window.StorefrontData.applyStoreBranding(data.store))
+      .catch((err) => console.error('topup-history.js: applyStoreBranding failed', err));
+  }
+
   const statTotalEl = document.querySelector('#thStatTotal');
   const statDoneEl = document.querySelector('#thStatDone');
   const statAmountEl = document.querySelector('#thStatAmount');

@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const dashboard = document.getElementById('rsDashboard');
   if (!formCard) return; // ไม่ใช่หน้า reseller
 
+  // ชื่อร้าน/โลโก้/แถบประกาศ (header, footer, ...) — หน้านี้เคยลืมเรียก ทำให้ชื่อร้าน
+  // ไม่ขึ้นและโลโก้ท้ายหน้าว่างเปล่า จึงเพิ่มเรียกเหมือนหน้าอื่น (index.html/category.html ฯลฯ)
+  if (window.StorefrontData) {
+    window.StorefrontData.fetchData()
+      .then((data) => window.StorefrontData.applyStoreBranding(data.store))
+      .catch((err) => console.error('reseller.js: applyStoreBranding failed', err));
+  }
+
   const RESELLER_TIER_LABELS = { '7d': '7 ມື້', '14d': '14 ມື້', '30d': '30 ມື້', 'lifetime': 'ຖາວອນ' };
 
   const fmtMoney = (n) => Number(n || 0).toLocaleString('de-DE');

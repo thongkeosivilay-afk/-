@@ -63,6 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const stepWaiting = document.querySelector('#topupStepWaiting');
   if (!stepAmount || !stepPay || !stepWaiting) return; // ไม่ใช่หน้า topup
 
+  // ชื่อร้าน/โลโก้/แถบประกาศ — หน้านี้เคยลืมเรียก ทำให้ชื่อร้านไม่ขึ้นและโลโก้ท้ายหน้าว่างเปล่า
+  if (window.StorefrontData) {
+    window.StorefrontData.fetchData()
+      .then((data) => window.StorefrontData.applyStoreBranding(data.store))
+      .catch((err) => console.error('topup.js: applyStoreBranding failed', err));
+  }
+
   const methods = document.querySelectorAll('.topup-method');
   const bankTitle = document.querySelector('#topupBankTitle');
   const bankDesc = document.querySelector('#topupBankDesc');

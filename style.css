@@ -38,7 +38,7 @@
   a{color:inherit; text-decoration:none;}
   button{font-family:inherit; cursor:pointer;}
 
-  .shell{ max-width:480px; margin:0 auto; min-height:100vh; position:relative; background:var(--bg); overflow:hidden; overflow:clip; padding-top:86px; /* เว้นที่ให้แถบ header ที่ลอยติดจอ */ }
+  .shell{ max-width:480px; margin:0 auto; min-height:100vh; position:relative; background:var(--bg); overflow:hidden; overflow:clip; padding-top:100px; /* เว้นที่ให้แถบ header ที่ลอยติดจอ (โลโก้/ชื่อร้านขยายใหญ่ขึ้น) */ }
 
   /* ---------- Top glow removed per request ---------- */
 
@@ -58,12 +58,12 @@
     box-shadow:0 8px 28px -10px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.06);
   }
   /* โลโก้ในแถบใหญ่ขึ้น (โลโก้ท้ายหน้า .footer-logo ไม่กระทบ) */
-  header .logo{ width:58px; height:58px; border-radius:16px; }
+  header .logo{ width:70px; height:70px; border-radius:18px; }
   /* แสดงชื่อเว็บในแถบ (ย่อเป็น ... ถ้ายาวเกิน เพื่อไม่ชนปุ่มลงชื่อเข้าใช้) */
   header .brand{ min-width:0; flex:1 1 auto; }
   header .brand-name{
     display:block; min-width:0;
-    color:#fff; font-size:16px; font-weight:800; line-height:1.2;
+    color:#fff; font-size:21px; font-weight:800; line-height:1.2;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   .brand{ display:flex; align-items:center; gap:10px; }
@@ -76,6 +76,7 @@
     overflow:hidden;
   }
   .logo svg{ width:24px; height:24px; }
+  header .logo svg{ width:32px; height:32px; }
   /* ໂລໂກ້ທີ່ແອດມິນອັບໂຫລດເອງ — ພື້ນຫຼັງແດງເລີ່ມຕົ້ນອອກ, ໃຫ້ຮູບເຕັມກ່ອງແທນ */
   .logo.has-custom-logo{ background:none; box-shadow:none; }
   .logo img{ width:100%; height:100%; object-fit:contain; display:block; }
@@ -1063,13 +1064,16 @@
     margin:14px 0 16px; flex-wrap:wrap;
   }
   .footer-social-link{
-    width:38px; height:38px; border-radius:50%;
+    width:44px; height:44px; border-radius:50%;
     display:flex; align-items:center; justify-content:center;
     color:#fff; flex-shrink:0;
-    transition:transform .15s ease, filter .15s ease;
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.25);
+    border:1px solid rgba(255,255,255,.14);
+    transition:transform .15s ease, filter .15s ease, box-shadow .15s ease;
   }
-  .footer-social-link svg{ width:17px; height:17px; }
-  .footer-social-link:hover{ transform:translateY(-2px); filter:brightness(1.12); }
+  .footer-social-link svg{ width:19px; height:19px; }
+  .footer-social-link:hover{ transform:translateY(-3px) scale(1.05); filter:brightness(1.15); box-shadow:0 10px 18px -4px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.3); }
+  .footer-social-link:active{ transform:translateY(-1px) scale(.97); }
   footer .fcopy{ font-size:11px; color:var(--text-faint); line-height:1.7; }
 
   ::selection{ background:var(--red); color:#fff; }
@@ -1454,12 +1458,15 @@
   }
   .contact-link:active{ transform:scale(.98); }
   .contact-link-icon{
-    width:32px; height:32px; border-radius:9px; flex:none;
+    width:38px; height:38px; border-radius:12px; flex:none;
     display:flex; align-items:center; justify-content:center;
+    box-shadow:0 6px 14px -4px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.25);
   }
-  .contact-link-icon svg{ width:17px; height:17px; color:#fff; }
+  .contact-link-icon svg{ width:19px; height:19px; color:#fff; }
   .contact-link-name{ flex:1; text-align:left; font-size:14px; font-weight:700; }
   .contact-link-arrow{ width:15px; height:15px; color:var(--text-faint); flex:none; }
+  .contact-link:hover .contact-link-icon{ transform:scale(1.06); }
+  .contact-link-icon{ transition:transform .15s ease; }
   .contact-modal-empty{ font-size:13px; color:var(--text-faint); line-height:1.7; padding:8px 4px 2px; }
 
 
