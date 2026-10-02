@@ -24,6 +24,20 @@
       try { sessionStorage.setItem(KEY, '1'); } catch (e) {}
     });
 
+    // ฉากเปิดตัวจบแล้ว (หลังตัว loader หายไป ~3 วินาที) -> ใส่ fx-seen เพื่อปลดสไตล์ฉากเปิดตัวออก
+    // ไม่งั้นสไตล์ฉากเปิดตัวจะ "ชนะ" .fx-spin ทำให้แตะโลโก้แล้วไม่หมุนในหน้าแรกของ session
+    var markIntroDone = function () {
+      setTimeout(function () { root.classList.add('fx-seen'); }, 3200);
+    };
+    if (!root.classList.contains('pl-lock')) {
+      markIntroDone();
+    } else {
+      var plWatch = new MutationObserver(function () {
+        if (!root.classList.contains('pl-lock')) { plWatch.disconnect(); markIntroDone(); }
+      });
+      plWatch.observe(root, { attributes: true, attributeFilter: ['class'] });
+    }
+
     /* ---------- แยกตัวอักษรชื่อร้าน ---------- */
     var nameEl = header.querySelector('.brand-name');
     if (nameEl) {

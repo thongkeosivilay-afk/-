@@ -297,13 +297,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!anim) { void pill.offsetWidth; pill.style.transition = ''; }
     };
 
+    let fabTimer = null;
     const closeBar = () => {
+      if (!isOpen()) return; // ไม่ได้เปิดอยู่ ก็ไม่ต้องเล่นอนิเมชั่นปิด (เช่นกด Esc ตอนแถบปิดอยู่)
+      // อนิเมชั่นปิด (tabbar-close-fx.js): ต้องเรียก "ก่อน" เอา .show ออก เพื่อวัดตำแหน่งแถบตอนยังเปิดเต็ม
+      const animating = !!(window.TabbarFX && window.TabbarFX.close(bar, loginBtn));
       bar.classList.remove('show');
       bar.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('tabbar-open');
+      clearTimeout(fabTimer);
+      if (animating) {
+        // ปุ่มแชทค่อยลอยลงตอนแถบหายไปแล้ว ไม่ให้ซ้อนกับฉากบีบแถบ
+        fabTimer = setTimeout(() => document.body.classList.remove('tabbar-open'), 380);
+      } else {
+        document.body.classList.remove('tabbar-open');
+      }
       loginBtn.setAttribute('aria-expanded', 'false');
     };
     const openBar = () => {
+      clearTimeout(fabTimer);
+      if (window.TabbarFX) window.TabbarFX.cancel(bar); // เปิดซ้ำระหว่างกำลังปิด -> ยกเลิกฉากปิดทันที
       bar.classList.add('show');
       bar.setAttribute('aria-hidden', 'false');
       document.body.classList.add('tabbar-open');
