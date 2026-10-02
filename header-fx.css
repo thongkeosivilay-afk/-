@@ -1,0 +1,208 @@
+/* =========================================================
+   header-fx.css — อนิเมชั่นแถบ header (โลโก้ + ชื่อร้าน + ปุ่มโปรไฟล์)
+   หลักการ: ใช้ transform / translate / scale / rotate / opacity เป็นหลัก
+   (เล่นบน GPU ไม่ทำให้กระตุก) + เอฟเฟกต์ "แสงวิ่งรอบขอบ" สไตล์เดียวกับการ์ดสินค้า
+   ทำงานคู่กับ header-fx.js — เคารพ prefers-reduced-motion
+   ========================================================= */
+
+@property --hdr-angle{
+  syntax:'<angle>';
+  inherits:false;
+  initial-value:0deg;
+}
+
+header{
+  --hdr-angle:0deg;
+  --fx-spring:cubic-bezier(.34,1.56,.64,1);
+  --fx-out:cubic-bezier(.22,1,.36,1);
+  transform-origin:50% 0;
+  transition:scale .5s var(--fx-spring), background-color .4s ease, border-color .4s ease;
+}
+
+/* ---------- 1) แสงวิ่งรอบขอบแถบ ---------- */
+header::before{
+  content:"";
+  position:absolute; inset:-1px;
+  border-radius:inherit;
+  padding:1.5px;
+  background:conic-gradient(from var(--hdr-angle),
+    rgba(255,255,255,.04) 0deg,
+    rgba(255,60,40,.06) 30deg,
+    rgba(255,80,45,.75) 56deg,
+    #fff 66deg,
+    rgba(255,100,55,.85) 76deg,
+    rgba(255,60,40,.06) 104deg,
+    rgba(255,255,255,.04) 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;
+          mask-composite:exclude;
+  pointer-events:none;
+  z-index:0;
+  animation:fx-beam 6s linear infinite;
+}
+header.is-reseller::before{ animation-duration:4s; }
+@keyframes fx-beam{ to{ --hdr-angle:360deg; } }
+
+/* โหมดตัวแทน: แสงแดงหายใจรอบแถบ */
+header.is-reseller::after{
+  content:"";
+  position:absolute; inset:0;
+  border-radius:inherit;
+  box-shadow:0 0 28px 2px rgba(255,0,1,.5);
+  opacity:.22;
+  pointer-events:none;
+  z-index:-1;
+  animation:fx-breathe 3.2s ease-in-out infinite;
+}
+@keyframes fx-breathe{
+  0%,100%{ opacity:.18; }
+  50%    { opacity:.6; }
+}
+
+/* ---------- 2) เลื่อนลง -> แถบหดนิดๆ + ทึบขึ้น (header.is-scrolled ใส่โดย JS) ---------- */
+header.is-scrolled{
+  scale:.965;
+  background:rgba(10,10,10,.74);
+}
+
+/* ---------- 3) โลโก้: ลอยเบาๆ + แสงแดงหายใจด้านหลัง + หมุนเมื่อแตะ ---------- */
+header .brand{ position:relative; }
+header .brand::before{
+  content:"";
+  position:absolute; left:-13px; top:50%;
+  width:96px; height:96px; margin-top:-48px;
+  background:radial-gradient(circle, rgba(255,0,1,.55) 0%, rgba(255,0,1,.18) 42%, rgba(255,0,1,0) 68%);
+  pointer-events:none;
+  z-index:-1;
+  animation:fx-glow 3.4s ease-in-out infinite;
+}
+@keyframes fx-glow{
+  0%,100%{ transform:scale(.88); opacity:.35; }
+  50%    { transform:scale(1.12); opacity:.85; }
+}
+
+header .logo{
+  animation:fx-float 4.4s ease-in-out infinite;
+  will-change:translate;
+  touch-action:manipulation;
+}
+@keyframes fx-float{
+  0%,100%{ translate:0 0; }
+  50%    { translate:0 -2.5px; }
+}
+header .logo.fx-spin{
+  animation:fx-spin .9s var(--fx-spring), fx-float 4.4s ease-in-out infinite;
+}
+@keyframes fx-spin{
+  0%  { rotate:0deg;   scale:1; }
+  35% { scale:.88; }
+  100%{ rotate:360deg; scale:1; }
+}
+
+/* ---------- 4) ชื่อร้าน: ตัวอักษรไล่ขึ้นทีละตัว + คลื่นแสงแดงวิ่งผ่านเป็นระยะ ---------- */
+header .brand-name .fx-ch{
+  display:inline-block;
+  white-space:pre;
+  will-change:transform;
+  animation:fx-ch-wave 6s ease-in-out calc(2.6s + var(--i, 0) * 75ms) infinite;
+}
+@keyframes fx-ch-wave{
+  0%,20%,100%{ transform:translateY(0);    color:#fff; }
+  7%         { transform:translateY(-2px); color:#ff4a4a; }
+  13%        { transform:translateY(0);    color:#fff; }
+}
+
+/* ---------- 5) ปุ่มโปรไฟล์ / ล็อกอิน: แสงกวาด + วงแหวนหมุนรอบรูป + สปริงตอนกด ---------- */
+header .login-btn{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  transition:transform .15s ease, box-shadow .15s ease, scale .35s var(--fx-spring);
+}
+header .login-btn:active{ scale:.93; }
+
+header .login-btn::after{
+  content:"";
+  position:absolute; top:-25%; bottom:-25%; left:0;
+  width:42%;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.26), transparent);
+  transform:skewX(-20deg);
+  translate:-130% 0;
+  pointer-events:none;
+  z-index:2;
+  animation:fx-sweep 4.8s ease-in-out 1.8s infinite;
+}
+@keyframes fx-sweep{
+  0%      { translate:-130% 0; }
+  32%,100%{ translate:340% 0; }
+}
+
+header .login-btn.is-authed::before{
+  content:"";
+  position:absolute; left:5px; top:50%;
+  width:26px; height:26px; margin-top:-13px;
+  border-radius:50%;
+  background:conic-gradient(from 0deg, rgba(255,0,1,0) 0deg, rgba(255,0,1,.9) 200deg, #fff 300deg, rgba(255,0,1,0) 340deg);
+  scale:1.2;
+  z-index:-1;
+  pointer-events:none;
+  animation:fx-ring 2.2s linear infinite;
+}
+@keyframes fx-ring{ to{ rotate:360deg; } }
+header .login-btn.is-authed img{ position:relative; }
+
+/* ---------- 6) ฉากเปิดตัว (เล่นครั้งเดียวต่อ session, เริ่มหลังหน้าโหลดจบ) ---------- */
+html:not(.pl-lock):not(.fx-seen) header{
+  animation:fx-drop .95s cubic-bezier(.2,1.25,.35,1) .12s backwards;
+}
+@keyframes fx-drop{
+  from{ translate:0 -140%; opacity:0; scale:.92; }
+  to  { translate:0 0;     opacity:1; scale:1; }
+}
+
+html:not(.pl-lock):not(.fx-seen) header .logo{
+  animation:
+    fx-logo-in 1s cubic-bezier(.2,1.5,.3,1) .35s backwards,
+    fx-float 4.4s ease-in-out 1.4s infinite;
+}
+@keyframes fx-logo-in{
+  from{ scale:.2; rotate:-200deg; opacity:0; }
+  to  { scale:1;  rotate:0deg;    opacity:1; }
+}
+
+html:not(.pl-lock):not(.fx-seen) header .brand-name .fx-ch{
+  animation:
+    fx-ch-in .7s cubic-bezier(.2,1.35,.3,1) calc(.55s + var(--i, 0) * 55ms) backwards,
+    fx-ch-wave 6s ease-in-out calc(2.8s + var(--i, 0) * 75ms) infinite;
+}
+@keyframes fx-ch-in{
+  from{ translate:0 110%; rotate:14deg; opacity:0; }
+  to  { translate:0 0;    rotate:0deg;  opacity:1; }
+}
+
+html:not(.pl-lock):not(.fx-seen) header .login-btn{
+  animation:fx-chip-in .85s cubic-bezier(.2,1.35,.3,1) .6s backwards;
+}
+@keyframes fx-chip-in{
+  from{ translate:46px 0; scale:.75; opacity:0; }
+  to  { translate:0 0;    scale:1;   opacity:1; }
+}
+
+/* ---------- ผู้ใช้ปิดโมชั่นในระบบ -> ปิดทุกอย่าง ---------- */
+@media (prefers-reduced-motion: reduce){
+  header::before,
+  header::after,
+  header .brand::before,
+  header .logo,
+  header .logo.fx-spin,
+  header .brand-name .fx-ch,
+  header .login-btn::after,
+  header .login-btn.is-authed::before,
+  html:not(.pl-lock):not(.fx-seen) header,
+  html:not(.pl-lock):not(.fx-seen) header .logo,
+  html:not(.pl-lock):not(.fx-seen) header .brand-name .fx-ch,
+  html:not(.pl-lock):not(.fx-seen) header .login-btn{
+    animation:none !important;
+  }
+  header.is-scrolled{ scale:1; }
+}
