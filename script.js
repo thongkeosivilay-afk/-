@@ -211,17 +211,17 @@ document.addEventListener('DOMContentLoaded', () => {
      กดที่ว่าง / กดโปรไฟล์ซ้ำ / กด Esc -> แถบหุบลง */
   const TB_ICON = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
   const TB_TABS = [
-    { key: 'admin',   label: 'ແອດມິນ',          href: 'admin.html',          adminOnly: true,
+    { key: 'admin',   label: 'ແອດມິນ', short: 'ແອດມິນ',          href: 'admin.html',          adminOnly: true,
       icon: TB_ICON('<path d="M12 2 3 7v6c0 5 4 9 9 9s9-4 9-9V7l-9-5Z"/><path d="m9 12 2 2 4-4"/>') },
-    { key: 'shop',    label: 'ຮ້ານຄ້າ',          href: 'index.html#categories',
+    { key: 'shop',    label: 'ຮ້ານຄ້າ', short: 'ຮ້ານຄ້າ',          href: 'index.html#categories',
       icon: TB_ICON('<path d="M20 7L12 3 4 7l8 4 8-4Z"/><path d="M4 7v10l8 4 8-4V7"/>') },
-    { key: 'reseller', label: 'ຕົວແທນ',          href: 'reseller.html',
+    { key: 'reseller', label: 'ຕົວແທນ', short: 'ຕົວແທນ',          href: 'reseller.html',
       icon: TB_ICON('<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/>') },
-    { key: 'topup',   label: 'ເຕີມເງິນ',         href: 'topup.html',
+    { key: 'topup',   label: 'ເຕີມເງິນ', short: 'ເຕີມເງິນ',         href: 'topup.html',
       icon: TB_ICON('<rect x="2" y="6" width="20" height="14" rx="2.5"/><path d="M2 10h20"/><path d="M6 15h4"/>') },
-    { key: 'orders',  label: 'ປະຫວັດການຊື້',     href: 'orders.html',
+    { key: 'orders',  label: 'ປະຫວັດການຊື້', short: 'ປະຫວັດຊື້',     href: 'orders.html',
       icon: TB_ICON('<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/>') },
-    { key: 'history', label: 'ປະຫວັດເຕີມເງິນ',   href: 'topup-history.html',
+    { key: 'history', label: 'ປະຫວັດເຕີມເງິນ', short: 'ປະຫວັດເຕີມ',   href: 'topup-history.html',
       icon: TB_ICON('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>') },
   ];
   const TB_LOGOUT_ICON = TB_ICON('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>');
@@ -277,10 +277,70 @@ document.addEventListener('DOMContentLoaded', () => {
     bar.innerHTML =
       '<span class="tabbar-pill"></span>' +
       tabs.map((t, i) =>
-        `<a href="${t.href}" class="tabbar-item${t.key === currentKey ? ' active' : ''}" data-key="${t.key}" aria-label="${t.label}" title="${t.label}" style="--i:${i}">${t.icon}</a>`
+        `<a href="${t.href}" class="tabbar-item${t.key === currentKey ? ' active' : ''}" data-key="${t.key}" aria-label="${t.label}" title="${t.label}" style="--i:${i}">${t.icon}<span class="tabbar-label">${t.short || t.label}</span></a>`
       ).join('') +
-      `<button type="button" class="tabbar-item danger" id="acctTabLogout" aria-label="ອອກຈາກລະບົບ" title="ອອກຈາກລະບົບ" style="--i:${tabs.length}">${TB_LOGOUT_ICON}</button>`;
+      `<button type="button" class="tabbar-item danger" id="acctTabLogout" aria-label="ອອກຈາກລະບົບ" title="ອອກຈາກລະບົບ" style="--i:${tabs.length}">${TB_LOGOUT_ICON}<span class="tabbar-label">ອອກ</span></button>`;
     document.body.appendChild(bar);
+
+    // ---- การ์ดโปรไฟล์ที่ไหลลงมาจากปุ่มโปรไฟล์: ยอดเงิน + สถิติ + ทางลัด ----
+    const kip = (n) => Number(n || 0).toLocaleString('de-DE');
+    const roleText = user.isAdmin ? 'ADMIN' : (user.isReseller ? 'ຕົວແທນ' : 'ຜູ້ໃຊ້');
+    const card = document.createElement('div');
+    card.className = 'acct-card';
+    card.id = 'acctCard';
+    card.setAttribute('aria-hidden', 'true');
+    card.innerHTML =
+      '<div class="acct-card-top">' +
+        '<div class="acct-ava">' + (user.avatar ? `<img src="${escHtml(user.avatar)}" alt="">` : `<div class="acct-card-ph">${escHtml((user.username || '?').trim().slice(0, 1).toUpperCase())}</div>`) + '</div>' +
+        `<div class="acct-card-id"><b>${escHtml(user.username)}</b><span class="acct-role${user.isAdmin ? ' is-admin' : ''}">${roleText}</span></div>` +
+      '</div>' +
+      '<div class="acct-balance"><span><i class="acct-dot"></i>ຍອດເງິນ</span><b id="acctBal">0 ₭</b></div>' +
+      '<div class="acct-stats">' +
+        '<div><b id="acctOrders">–</b><span>ຄຳສັ່ງຊື້</span></div>' +
+        '<div><b id="acctSpent">–</b><span>ໃຊ້ຈ່າຍແລ້ວ ₭</span></div>' +
+      '</div>' +
+      '<div class="acct-actions">' +
+        '<a href="topup.html" class="acct-btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>ເຕີມເງິນ</a>' +
+      '</div>';
+    document.body.appendChild(card);
+    let statsLoaded = false;
+    const loadCardStats = async () => {
+      if (statsLoaded) return;
+      statsLoaded = true;
+      try {
+        const r = await fetch('/api/account/stats', { cache: 'no-store' });
+        if (!r.ok) { statsLoaded = false; return; }
+        const st = await r.json();
+        card.querySelector('#acctOrders').textContent = st.ordersCompleted ?? 0;
+        card.querySelector('#acctSpent').textContent = kip(st.totalSpent);
+      } catch (e) { statsLoaded = false; }
+    };
+    const placeCard = () => {
+      const r = loginBtn.getBoundingClientRect();
+      const right = Math.max(12, window.innerWidth - r.right);
+      card.style.top = (r.bottom + 14) + 'px';
+      card.style.right = right + 'px';
+      const left = window.innerWidth - right - card.offsetWidth;
+      const ax = Math.min(card.offsetWidth - 26, Math.max(26, r.left + r.width / 2 - left));
+      card.style.setProperty('--ax', ax + 'px');
+      card.style.transformOrigin = ax + 'px 0';
+    };
+    // ตัวเลขยอดเงินวิ่งขึ้นจาก 0 ทุกครั้งที่เปิดการ์ด
+    const balEl = card.querySelector('#acctBal');
+    let countRaf = 0;
+    const countUp = () => {
+      const target = Number(user.balance || 0);
+      cancelAnimationFrame(countRaf);
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { balEl.textContent = kip(target) + ' ₭'; return; }
+      const t0 = performance.now(), dur = 1100;
+      const step = (t) => {
+        const p = Math.min(1, (t - t0) / dur);
+        balEl.textContent = kip(Math.round(target * (1 - Math.pow(1 - p, 4)))) + ' ₭';
+        if (p < 1) countRaf = requestAnimationFrame(step);
+      };
+      balEl.textContent = '0 ₭';
+      countRaf = requestAnimationFrame(step);
+    };
 
     const pill = bar.querySelector('.tabbar-pill');
     const items = [...bar.querySelectorAll('a.tabbar-item')];
@@ -312,6 +372,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('tabbar-open');
       }
       loginBtn.setAttribute('aria-expanded', 'false');
+      card.classList.remove('show');
+      card.setAttribute('aria-hidden', 'true');
     };
     const openBar = () => {
       clearTimeout(fabTimer);
@@ -321,6 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
       document.body.classList.add('tabbar-open');
       loginBtn.setAttribute('aria-expanded', 'true');
       movePill(activeItem(), false);
+      placeCard();
+      card.classList.add('show');
+      setTimeout(countUp, 220);
+      card.setAttribute('aria-hidden', 'false');
+      loadCardStats();
     };
 
     loginBtn.addEventListener('click', (e) => {
@@ -332,11 +399,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // ฟังคลิกที่ document เพื่อเล่นแอนิเมชั่นสลับหน้า ถ้าตัดไว้ลิงก์จะไม่เล่นแอนิเมชั่น)
     document.addEventListener('click', (e) => {
       if (!isOpen()) return;
-      if (bar.contains(e.target) || loginBtn.contains(e.target)) return;
+      if (bar.contains(e.target) || card.contains(e.target) || loginBtn.contains(e.target)) return;
       closeBar();
     });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBar(); });
-    window.addEventListener('resize', () => { if (isOpen()) movePill(activeItem(), false); });
+    window.addEventListener('scroll', () => { if (isOpen()) placeCard(); }, { passive: true });
+    window.addEventListener('resize', () => { if (isOpen()) { movePill(activeItem(), false); placeCard(); } });
 
     items.forEach((el) => {
       el.addEventListener('click', (e) => {

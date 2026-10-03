@@ -1559,3 +1559,111 @@ html.perf-lite .prod-card{ transition:none; }
 html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; touch-action:manipulation; }
 /* iOS จะซูมหน้าเองตอนแตะช่องกรอกที่ตัวอักษร < 16px — บังคับ 16px กันซูม */
 input, select, textarea{ font-size:16px !important; }
+
+  /* =========================================================
+     เมนูบัญชี: ป้ายชื่อใต้ไอคอน + การ์ดโปรไฟล์ (ยอดเงิน/สถิติ) ที่ไหลลงจากปุ่มโปรไฟล์
+     ========================================================= */
+  .tabbar-item{ flex-direction:column; gap:3px; height:56px; border-radius:22px; min-width:0; }
+  .tabbar-item svg{ width:22px; height:22px; }
+  .tabbar-label{
+    max-width:100%; padding:0 2px; box-sizing:border-box;
+    font:600 10px/1.1 'Noto Sans Lao','Rajdhani',sans-serif; letter-spacing:0;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .tabbar-pill{ height:56px; border-radius:22px; }
+  body.tabbar-open .chat-fab{ bottom:calc(102px + env(safe-area-inset-bottom, 0px)); }
+
+  @property --ang{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+  @keyframes acctSpin{ to{ transform:rotate(360deg); } }
+  @keyframes acctAng{ to{ --ang:360deg; } }
+  @keyframes acctSweep{ 0%,55%{ transform:translateX(-130%) skewX(-20deg); } 100%{ transform:translateX(330%) skewX(-20deg); } }
+  @keyframes acctPulse{ 0%,100%{ box-shadow:0 6px 18px -6px rgba(255,0,1,.7), 0 0 0 0 rgba(255,0,1,.45); } 50%{ box-shadow:0 6px 22px -4px rgba(255,0,1,.9), 0 0 0 8px rgba(255,0,1,0); } }
+  @keyframes acctDot{ 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.35; transform:scale(.6); } }
+
+  .acct-card{
+    position:fixed; z-index:1090; width:min(300px, calc(100vw - 24px)); box-sizing:border-box;
+    padding:16px; border-radius:24px; color:var(--text, #fff);
+    background:
+      radial-gradient(120% 70% at 100% 0%, rgba(255,0,1,.22), transparent 60%),
+      linear-gradient(180deg, rgba(26,26,26,.94), rgba(14,14,14,.94));
+    -webkit-backdrop-filter:blur(22px) saturate(170%); backdrop-filter:blur(22px) saturate(170%);
+    box-shadow:0 22px 50px -12px rgba(0,0,0,.9), 0 0 36px -10px rgba(255,0,1,.6), inset 0 1px 0 rgba(255,255,255,.08);
+    opacity:0; visibility:hidden; pointer-events:none;
+    transform:translateY(-18px) scale(.6) rotateX(-25deg);
+    transition:transform .3s cubic-bezier(.4,0,1,1), opacity .2s ease, visibility 0s linear .3s;
+  }
+  /* ขอบไล่สีแดงหมุนวน */
+  .acct-card::before{
+    content:''; position:absolute; inset:0; border-radius:inherit; padding:1.5px; pointer-events:none;
+    background:conic-gradient(from var(--ang), rgba(255,0,1,.9), rgba(255,255,255,.08) 30%, rgba(255,0,1,.15) 55%, rgba(255,90,90,.9) 80%, rgba(255,0,1,.9));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+    mask:linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    animation:acctAng 4s linear infinite;
+  }
+  /* หัวลูกศรชี้ไปที่ปุ่มโปรไฟล์ */
+  .acct-card::after{
+    content:''; position:absolute; top:-6px; left:calc(var(--ax, 250px) - 6px); width:12px; height:12px;
+    background:rgba(34,14,14,.97); transform:rotate(45deg); border-radius:3px 0 0 0;
+    border-top:1.5px solid rgba(255,60,60,.8); border-left:1.5px solid rgba(255,60,60,.8);
+  }
+  .acct-card.show{
+    opacity:1; visibility:visible; pointer-events:auto; transform:none;
+    transition:transform .65s cubic-bezier(.2,1.5,.35,1), opacity .2s ease, visibility 0s;
+  }
+  /* ของข้างในเด้งเข้ามาทีละชิ้น */
+  .acct-card > div{ opacity:0; transform:translateY(14px) scale(.96); }
+  .acct-card.show > div{ opacity:1; transform:none; transition:opacity .35s ease, transform .6s cubic-bezier(.2,1.6,.35,1); }
+  .acct-card.show > div:nth-child(1){ transition-delay:.12s; }
+  .acct-card.show > div:nth-child(2){ transition-delay:.2s; }
+  .acct-card.show > div:nth-child(3){ transition-delay:.28s; }
+  .acct-card.show > div:nth-child(4){ transition-delay:.36s; }
+
+  .acct-card-top{ display:flex; align-items:center; gap:12px; }
+  .acct-ava{ position:relative; width:52px; height:52px; flex-shrink:0; }
+  .acct-ava::before{
+    content:''; position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(#ff0001, #ffb3b3, transparent 55%, #ff0001); animation:acctSpin 2.8s linear infinite;
+    filter:drop-shadow(0 0 6px rgba(255,0,1,.7));
+  }
+  .acct-ava img, .acct-card-ph{ position:absolute; inset:3px; width:46px; height:46px; border-radius:50%; object-fit:cover; border:2px solid #111; box-sizing:border-box; }
+  .acct-card-ph{ display:flex; align-items:center; justify-content:center; font:800 19px 'Orbitron',sans-serif; background:#2a0a0a; }
+  .acct-card-id{ min-width:0; display:flex; flex-direction:column; gap:4px; }
+  .acct-card-id b{ font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .acct-role{ align-self:flex-start; font:700 10px 'Rajdhani','Noto Sans Lao',sans-serif; letter-spacing:.08em; padding:2px 9px; border-radius:20px; color:rgba(255,255,255,.8); background:rgba(255,255,255,.09); }
+  .acct-role.is-admin{ color:#fff; background:linear-gradient(90deg, #ff0001, #b80000); box-shadow:0 0 12px -2px rgba(255,0,1,.7); }
+
+  .acct-balance{
+    position:relative; overflow:hidden; margin-top:14px; padding:12px 14px; border-radius:16px;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    background:linear-gradient(135deg, rgba(255,0,1,.34), rgba(120,0,0,.2)); border:1px solid rgba(255,70,70,.4);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 8px 22px -12px rgba(255,0,1,.8);
+  }
+  .acct-balance::after{
+    content:''; position:absolute; top:0; bottom:0; left:0; width:36%; pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent); animation:acctSweep 3.4s ease-in-out infinite;
+  }
+  .acct-balance span{ display:flex; align-items:center; gap:7px; font-size:12px; opacity:.85; }
+  .acct-dot{ width:7px; height:7px; border-radius:50%; background:#3dff8a; box-shadow:0 0 8px #3dff8a; animation:acctDot 1.6s ease-in-out infinite; }
+  .acct-balance b{ font:700 22px 'Rajdhani',sans-serif; letter-spacing:.02em; text-shadow:0 0 14px rgba(255,0,1,.7); font-variant-numeric:tabular-nums; }
+
+  .acct-stats{ margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .acct-stats div{ padding:9px 11px; border-radius:14px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); display:flex; flex-direction:column; gap:2px; }
+  .acct-stats b{ font:700 17px 'Rajdhani',sans-serif; }
+  .acct-stats span{ font-size:10.5px; opacity:.6; }
+
+  .acct-actions{ margin-top:10px; }
+  .acct-btn{
+    position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:8px;
+    text-decoration:none; padding:12px 0; border-radius:14px; font:700 14px 'Noto Sans Lao',sans-serif; color:#fff;
+    transition:transform .2s cubic-bezier(.3,1.6,.5,1);
+  }
+  .acct-btn:active{ transform:scale(.95); }
+  .acct-btn svg{ width:17px; height:17px; }
+  .acct-btn.primary{ background:linear-gradient(180deg, #ff2a2b, #d40000); animation:acctPulse 2.2s ease-in-out infinite; }
+  .acct-btn.primary::after{
+    content:''; position:absolute; top:0; bottom:0; left:0; width:30%; pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent); animation:acctSweep 2.8s ease-in-out infinite .6s;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .acct-card::before, .acct-ava::before, .acct-balance::after, .acct-btn.primary, .acct-btn.primary::after, .acct-dot{ animation:none; }
+  }
