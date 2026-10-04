@@ -1667,3 +1667,44 @@ input, select, textarea{ font-size:16px !important; }
   @media (prefers-reduced-motion: reduce){
     .acct-card::before, .acct-ava::before, .acct-balance::after, .acct-btn.primary, .acct-btn.primary::after, .acct-dot{ animation:none; }
   }
+
+  /* ===== v3: แอนิเมชั่นเด่นขึ้น + ทำงานแม้ยอดเงินเป็น 0 ===== */
+  @keyframes acctRise{ 0%{ transform:translateY(0) scale(.5); opacity:0; } 15%{ opacity:1; } 100%{ transform:translateY(-210px) scale(1.2); opacity:0; } }
+  @keyframes acctScan{ 0%{ top:-14%; opacity:0; } 15%,85%{ opacity:1; } 100%{ top:104%; opacity:0; } }
+  @keyframes acctBreathe{
+    0%,100%{ box-shadow:0 22px 50px -12px rgba(0,0,0,.9), 0 0 26px -8px rgba(255,0,1,.55), inset 0 1px 0 rgba(255,255,255,.08); }
+    50%{ box-shadow:0 22px 50px -12px rgba(0,0,0,.9), 0 0 56px -2px rgba(255,0,1,.95), inset 0 1px 0 rgba(255,255,255,.08); } }
+  @keyframes acctRing{ 0%{ transform:translate(-50%,-50%) scale(.3); opacity:1; } 100%{ transform:translate(-50%,-50%) scale(3.6); opacity:0; } }
+
+  .acct-card{ transform:translateY(-36px) scale(.35) rotateX(-45deg); filter:blur(10px);
+    transition:transform .3s cubic-bezier(.4,0,1,1), opacity .2s ease, filter .25s ease, visibility 0s linear .3s; }
+  .acct-card.show{ filter:none; animation:acctBreathe 2.4s ease-in-out .9s infinite;
+    transition:transform .95s cubic-bezier(.2,1.7,.3,1), opacity .25s ease, filter .5s ease, visibility 0s; }
+  .acct-card::before{ padding:2px; animation-duration:2.4s;
+    background:conic-gradient(from var(--ang), transparent 0deg, rgba(255,0,1,.2) 100deg, #ff0001 230deg, #fff 300deg, #ff3b3b 335deg, transparent 360deg); }
+
+  .acct-card > div{ opacity:0; transform:translateX(36px) scale(.92); filter:blur(6px); position:relative; z-index:1; }
+  .acct-card.show > div{ opacity:1; transform:none; filter:none;
+    transition:opacity .4s ease, transform .8s cubic-bezier(.2,1.7,.3,1), filter .4s ease; }
+  .acct-card.show > div:nth-child(1){ transition-delay:.22s; }
+  .acct-card.show > div:nth-child(2){ transition-delay:.34s; }
+  .acct-card.show > div:nth-child(3){ transition-delay:.46s; }
+  .acct-card.show > div:nth-child(4){ transition-delay:.58s; }
+
+  .acct-card > .acct-embers{ position:absolute; inset:0; border-radius:inherit; overflow:hidden; pointer-events:none; opacity:1; transform:none; filter:none; z-index:0; transition:none; }
+  .acct-embers i{ position:absolute; bottom:-8px; width:4px; height:4px; border-radius:50%; background:#ff4040; box-shadow:0 0 8px 2px rgba(255,0,1,.85); opacity:0; animation:acctRise 3.4s ease-in infinite; }
+  .acct-embers i:nth-child(1){ left:10%; animation-delay:0s; }
+  .acct-embers i:nth-child(2){ left:24%; animation-delay:1.1s; animation-duration:4.1s; }
+  .acct-embers i:nth-child(3){ left:38%; animation-delay:.5s; }
+  .acct-embers i:nth-child(4){ left:55%; animation-delay:1.7s; animation-duration:3.8s; }
+  .acct-embers i:nth-child(5){ left:68%; animation-delay:.9s; }
+  .acct-embers i:nth-child(6){ left:81%; animation-delay:2.2s; animation-duration:4.4s; }
+  .acct-embers i:nth-child(7){ left:93%; animation-delay:1.4s; }
+  .acct-embers::after{ content:''; position:absolute; left:0; right:0; height:48px; top:-14%;
+    background:linear-gradient(180deg, transparent, rgba(255,60,60,.2), transparent); animation:acctScan 3s linear infinite; }
+
+  .acct-ripple{ position:fixed; width:56px; height:56px; border-radius:50%; pointer-events:none; z-index:1089;
+    border:2px solid rgba(255,50,50,.95); box-shadow:0 0 18px rgba(255,0,1,.85), inset 0 0 14px rgba(255,0,1,.5);
+    animation:acctRing .95s cubic-bezier(.2,.7,.3,1) both; }
+  .acct-ripple.r2{ animation-delay:.16s; }
+  @media (prefers-reduced-motion: reduce){ .acct-embers, .acct-ripple{ display:none; } .acct-card.show{ animation:none; } }

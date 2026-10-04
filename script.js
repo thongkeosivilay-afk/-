@@ -301,7 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
       '</div>' +
       '<div class="acct-actions">' +
         '<a href="topup.html" class="acct-btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>ເຕີມເງິນ</a>' +
-      '</div>';
+      '</div>' +
+      '<div class="acct-embers"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>';
     document.body.appendChild(card);
     let statsLoaded = false;
     const loadCardStats = async () => {
@@ -311,8 +312,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const r = await fetch('/api/account/stats', { cache: 'no-store' });
         if (!r.ok) { statsLoaded = false; return; }
         const st = await r.json();
-        card.querySelector('#acctOrders').textContent = st.ordersCompleted ?? 0;
-        card.querySelector('#acctSpent').textContent = kip(st.totalSpent);
+        animateNum(card.querySelector('#acctOrders'), st.ordersCompleted, '', 1000);
+        animateNum(card.querySelector('#acctSpent'), st.totalSpent, '', 1000);
       } catch (e) { statsLoaded = false; }
     };
     const placeCard = () => {
@@ -325,21 +326,36 @@ document.addEventListener('DOMContentLoaded', () => {
       card.style.setProperty('--ax', ax + 'px');
       card.style.transformOrigin = ax + 'px 0';
     };
-    // ตัวเลขยอดเงินวิ่งขึ้นจาก 0 ทุกครั้งที่เปิดการ์ด
+    // ตัวเลขวิ่ง: ถ้ามีค่า → วิ่งขึ้นจาก 0 / ถ้าเป็น 0 → สุ่มเลขเร็วๆ แล้วหมุนลงมาเหลือ 0 (เห็นแอนิเมชั่นเสมอ)
     const balEl = card.querySelector('#acctBal');
-    let countRaf = 0;
-    const countUp = () => {
-      const target = Number(user.balance || 0);
-      cancelAnimationFrame(countRaf);
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { balEl.textContent = kip(target) + ' ₭'; return; }
-      const t0 = performance.now(), dur = 1100;
+    const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const animateNum = (el, target, suffix, dur) => {
+      target = Number(target || 0);
+      cancelAnimationFrame(el._raf || 0);
+      if (reduceMotion()) { el.textContent = kip(target) + suffix; return; }
+      const t0 = performance.now();
       const step = (t) => {
         const p = Math.min(1, (t - t0) / dur);
-        balEl.textContent = kip(Math.round(target * (1 - Math.pow(1 - p, 4)))) + ' ₭';
-        if (p < 1) countRaf = requestAnimationFrame(step);
+        const v = target > 0
+          ? Math.round(target * (1 - Math.pow(1 - p, 4)))
+          : (p < 1 ? Math.round(Math.random() * 99999 * (1 - p)) : 0);
+        el.textContent = kip(v) + suffix;
+        if (p < 1) el._raf = requestAnimationFrame(step);
       };
-      balEl.textContent = '0 ₭';
-      countRaf = requestAnimationFrame(step);
+      el._raf = requestAnimationFrame(step);
+    };
+    const countUp = () => animateNum(balEl, user.balance, ' ₭', 1200);
+    const burst = () => {
+      if (reduceMotion()) return;
+      const r = loginBtn.getBoundingClientRect();
+      [0, 1].forEach((n) => {
+        const el = document.createElement('span');
+        el.className = 'acct-ripple' + (n ? ' r2' : '');
+        el.style.left = (r.left + r.width / 2) + 'px';
+        el.style.top = (r.top + r.height / 2) + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1300);
+      });
     };
 
     const pill = bar.querySelector('.tabbar-pill');
@@ -385,7 +401,8 @@ document.addEventListener('DOMContentLoaded', () => {
       movePill(activeItem(), false);
       placeCard();
       card.classList.add('show');
-      setTimeout(countUp, 220);
+      burst();
+      setTimeout(countUp, 260);
       card.setAttribute('aria-hidden', 'false');
       loadCardStats();
     };
