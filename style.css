@@ -1567,8 +1567,8 @@ input, select, textarea{ font-size:16px !important; }
   .tabbar-item svg{ width:22px; height:22px; }
   .tabbar-label{
     max-width:100%; padding:0 2px; box-sizing:border-box;
-    font:600 10px/1.1 'Noto Sans Lao','Rajdhani',sans-serif; letter-spacing:0;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font:600 9px/1.1 'Noto Sans Lao','Rajdhani',sans-serif; letter-spacing:0;
+    white-space:nowrap; overflow:visible; text-align:center;
   }
   .tabbar-pill{ height:56px; border-radius:22px; }
   body.tabbar-open .chat-fab{ bottom:calc(102px + env(safe-area-inset-bottom, 0px)); }
