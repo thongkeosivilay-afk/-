@@ -1708,3 +1708,52 @@ input, select, textarea{ font-size:16px !important; }
     animation:acctRing .95s cubic-bezier(.2,.7,.3,1) both; }
   .acct-ripple.r2{ animation-delay:.16s; }
   @media (prefers-reduced-motion: reduce){ .acct-embers, .acct-ripple{ display:none; } .acct-card.show{ animation:none; } }
+
+
+  /* =========================================================
+     ปุ่ม "จัดอันดับยอดเติม" ในการ์ดบัญชี + แอนิเมชั่นเปิดหน้าอันดับ
+     ========================================================= */
+  .acct-btn.rank{
+    margin-top:8px; background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,0,1,.45);
+    box-shadow:inset 0 0 14px rgba(255,0,1,.12);
+  }
+  .acct-btn.rank svg{ color:#ffd36b; filter:drop-shadow(0 0 5px rgba(255,190,60,.55)); }
+  .acct-btn.rank::after{
+    content:''; position:absolute; top:0; bottom:0; left:0; width:30%; pointer-events:none;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent); animation:acctSweep 3.6s ease-in-out infinite 1.4s;
+  }
+
+  .rk-warp{
+    position:fixed; inset:0; z-index:2000; overflow:hidden; pointer-events:all;
+    background:radial-gradient(circle at var(--x) var(--y), #ff2a2b 0%, #990001 28%, #1a0204 62%, #000 100%);
+    clip-path:circle(0px at var(--x) var(--y));
+    animation:rkWarpOpen .62s cubic-bezier(.7,0,.25,1) forwards;
+  }
+  @keyframes rkWarpOpen{ to{ clip-path:circle(150vmax at var(--x) var(--y)); } }
+  .rk-slash{
+    position:absolute; left:-20%; width:140%; height:3px; top:50%;
+    background:linear-gradient(90deg, transparent, #fff, transparent);
+    box-shadow:0 0 18px 3px rgba(255,60,60,.9);
+    opacity:0; transform:translateX(-100%) rotate(-24deg);
+    animation:rkSlash .55s cubic-bezier(.2,.8,.2,1) forwards;
+  }
+  .rk-slash.s1{ top:34%; animation-delay:.18s; }
+  .rk-slash.s2{ top:52%; animation-delay:.28s; height:5px; }
+  .rk-slash.s3{ top:70%; animation-delay:.38s; }
+  @keyframes rkSlash{
+    0%{ opacity:0; transform:translateX(-100%) rotate(-24deg); }
+    30%{ opacity:1; }
+    100%{ opacity:0; transform:translateX(100%) rotate(-24deg); }
+  }
+  .rk-warp-txt{
+    position:absolute; left:0; right:0; top:50%; transform:translateY(-50%); text-align:center;
+    font-family:'Orbitron','Rajdhani',sans-serif; color:#fff; opacity:0;
+    animation:rkTxt .6s cubic-bezier(.2,1.2,.3,1) .22s forwards;
+  }
+  .rk-warp-txt span{ display:block; font-size:13px; letter-spacing:.7em; margin-right:-.7em; opacity:.85; }
+  .rk-warp-txt b{ display:block; font-size:30px; font-weight:800; letter-spacing:.16em; margin-right:-.16em; text-shadow:0 0 22px rgba(255,255,255,.7), 0 0 40px rgba(255,0,1,.9); }
+  @keyframes rkTxt{ 0%{ opacity:0; transform:translateY(-50%) scale(1.7); filter:blur(8px); } 100%{ opacity:1; transform:translateY(-50%) scale(1); filter:blur(0); } }
+  .rk-flash{ position:absolute; inset:0; background:#fff; opacity:0; animation:rkFlash .22s ease-out .6s forwards; }
+  @keyframes rkFlash{ 0%{ opacity:0; } 60%{ opacity:.55; } 100%{ opacity:0; } }
+  @media (prefers-reduced-motion: reduce){ .acct-btn.rank::after{ animation:none; } }

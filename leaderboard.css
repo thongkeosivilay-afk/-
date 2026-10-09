@@ -1,0 +1,268 @@
+/* leaderboard.css — หน้า "จัดอันดับยอดเติม" (ธีมแดงเดิมของเว็บ, โครงตามภาพต้นแบบ) */
+:root{
+  --bg:#000;
+  --card-bg:#0b0808;
+  --red:#ff0001;
+  --red-deep:#990001;
+  --red-lite:#ff5a5b;          /* ตัวเลขเงิน / ข้อความเด่น */
+  --red-line:rgba(255,0,1,.42); /* เส้นขอบการ์ด */
+  --red-line-dim:rgba(255,60,60,.16);
+  --pill-bg:#14060a;
+  --text:#fff;
+  --gray:#8d8a8a;
+  --gray-dim:#6c6969;
+  --safe-top:env(safe-area-inset-top,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#000}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Kanit','Noto Sans Thai','Noto Sans Lao',sans-serif;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+.lb-shell{max-width:480px;margin:0 auto;min-height:100vh;position:relative;z-index:1}
+
+/* ---------- Ticker ---------- */
+.ticker{
+  padding-top:var(--safe-top);height:calc(28px + var(--safe-top));
+  border-bottom:1px solid rgba(255,0,1,.22);
+  overflow:hidden;white-space:nowrap;position:relative;
+  box-shadow:0 1px 0 rgba(255,0,1,.06);
+}
+.ticker-track{display:inline-flex;align-items:center;height:28px;animation:tick 26s linear infinite;will-change:transform}
+.ticker-item{display:inline-flex;align-items:center;gap:8px;margin-right:64px;font-size:13px;font-weight:500;color:#cfcdcd}
+.bell{width:16px;height:16px;color:var(--red)}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* ---------- Header ---------- */
+.hdr-wrap{
+  position:sticky;top:calc(var(--safe-top) + 3px);z-index:40;
+  height:44px;margin:14px 0 0;padding:0 5px;
+}
+.hdr{
+  height:44px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 8px 0 27px;border-radius:22px;border:1px solid transparent;
+  transition:background-color .3s ease,border-color .3s ease,padding .3s ease,box-shadow .3s ease;
+}
+.hdr.is-scrolled{
+  padding:0 8px 0 20px;
+  background:rgba(14,6,8,.78);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border-color:rgba(255,0,1,.4);
+  box-shadow:0 0 18px rgba(255,0,1,.18);
+}
+.hdr-logo img{width:24px;height:24px;object-fit:contain;display:block;filter:drop-shadow(0 0 6px rgba(255,0,1,.7))}
+.hdr-right{display:flex;align-items:center;gap:6px;margin-left:auto}
+.hdr-discord{width:28px;height:28px;border-radius:50%;background:#16100f;border:1px solid #2c2323;display:grid;place-items:center}
+.hdr-discord svg{width:17px;height:17px;color:#fff}
+.hdr-coin{
+  height:34px;display:flex;align-items:center;gap:8px;padding:0 10px 0 5px;border-radius:17px;
+  background:var(--pill-bg);border:1.5px solid rgba(255,0,1,.5);
+}
+.coin-ico{width:24px;height:24px;border-radius:50%;background:#2a0709;border:1px solid rgba(255,0,1,.45);display:grid;place-items:center}
+.coin-ico svg{width:13px;height:13px;color:#fff}
+.coin-amt{font-size:16px;font-weight:700;line-height:1}
+.coin-txt{font-size:15px;font-weight:700;line-height:1;color:var(--red);margin-left:-2px}
+.hdr-avatar{position:relative;width:35px;height:35px;display:grid;place-items:center}
+.hdr-avatar .av-ring{width:31px;height:31px;border-radius:50%;background:#1d0507;border:2px solid var(--red);display:grid;place-items:center;box-shadow:0 0 10px rgba(255,0,1,.55)}
+.hdr-avatar b{font-size:16px;font-weight:800;color:var(--red-lite)}
+.hdr-avatar .crown{position:absolute;left:-5px;top:-4px;width:18px;height:12px;transform:rotate(-14deg);z-index:2}
+.hdr-menu{width:35px;height:35px;border-radius:50%;background:#181414;border:1px solid #3a3333;display:grid;place-items:center}
+.hdr-menu svg{width:19px;height:19px;color:#fff}
+
+/* ---------- Title ---------- */
+.lb-main{padding:49px 0 0}
+.lb-title{text-align:center}
+.eyebrow-pill{
+  display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 15px 0 13px;border-radius:14px;
+  background:var(--pill-bg);border:1px solid rgba(255,0,1,.45);
+  font-size:12px;font-weight:700;letter-spacing:.11em;color:#fff;
+}
+.eyebrow-pill svg{width:13px;height:13px;color:var(--red-lite)}
+.lb-title h1{
+  margin-top:12px;font-size:29px;line-height:1.35;font-weight:800;color:#fff;
+  text-shadow:0 0 18px rgba(255,255,255,.3);
+}
+.lb-title p{margin-top:4px;font-size:14px;font-weight:400;color:var(--gray)}
+
+/* ---------- Cards ---------- */
+.top3,.rest{padding:0 10.3%;display:flex;flex-direction:column}
+.top3{margin-top:46px;gap:12px}
+.rest{gap:14px}
+
+.lb-card{
+  position:relative;display:flex;align-items:center;
+  background:var(--card-bg);border:1.5px solid var(--red-line-dim);border-radius:24px;
+}
+.lb-card.top{height:91px;padding-left:15px;border-radius:26px}
+.lb-card.top.r1{height:126px;padding-left:0;border-color:var(--red-line);box-shadow:0 0 30px -8px rgba(255,0,1,.28)}
+.lb-card.top.r3{border-color:var(--red-line)}
+.rest .lb-card{height:80px;padding-left:15px;border-radius:26px}
+
+.frame{position:relative;flex:none;display:grid;place-items:center}
+.avatar{
+  border-radius:50%;overflow:hidden;display:grid;place-items:center;
+  background:#1a0608;border:2px solid var(--red-deep);
+  box-shadow:0 0 12px rgba(255,0,1,.35);
+}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar b{font-weight:800;color:var(--red-lite)}
+
+/* อันดับ 4-10 */
+.rest .frame{width:41px;height:41px;margin-right:14px}
+.rest .avatar{width:41px;height:41px}
+.rest .avatar b{font-size:19px}
+
+/* อันดับ 2-3: ช่องรูปใหญ่ 76px + รูปในวงแหวน 46px */
+.r2 .frame,.r3 .frame{width:76px;height:76px;margin-right:2px;margin-left:1px}
+.r2 .frame::before,.r3 .frame::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#1a0508 55%,#0d0305);box-shadow:0 0 18px rgba(255,0,1,.35)}
+.r2 .avatar,.r3 .avatar{position:relative;width:46px;height:46px;border-color:var(--red)}
+.r2 .avatar b,.r3 .avatar b{font-size:22px}
+
+/* อันดับ 1: กรอบใหญ่เกยขอบซ้ายการ์ด */
+.r1 .frame{width:118px;height:118px;margin-left:0;margin-right:-6px;margin-top:0}
+.r1 .frame>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.frame-ring{
+  position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,#150406 95%,transparent 96%),
+             conic-gradient(from 0deg,#990001,#ff3a3b,#3a0204,#ff0001,#990001);
+  box-shadow:0 0 20px rgba(255,0,1,.4),inset 0 0 12px rgba(255,0,1,.25);
+}
+.r1 .avatar{position:relative;width:50px;height:50px;border-color:#ff0001}
+.r1 .avatar b{font-size:26px}
+
+.info{min-width:0;display:flex;flex-direction:column;justify-content:center}
+.nm{font-size:15px;font-weight:700;line-height:1.25;color:#fff}
+.amt{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em;color:var(--red-lite)}
+.dt{font-size:11.5px;font-weight:400;line-height:1.3;color:var(--gray-dim)}
+.rest .nm{font-size:14px}
+.rest .amt{font-size:18px}
+.rest .dt{font-size:11px}
+
+.r1 .nm{font-size:18px;margin-top:2px}
+.r1 .amt{font-size:27px;line-height:1.15}
+.r1 .dt{font-size:12px;margin-top:2px}
+.legend{
+  align-self:flex-start;display:inline-flex;align-items:center;gap:7px;height:19px;padding:0 10px 0 8px;border-radius:10px;
+  background:#1a060a;border:1px solid rgba(255,0,1,.5);
+  font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#fff;margin:0 0 3px;
+}
+.legend svg{width:13px;height:13px;color:var(--red-lite)}
+
+/* ตัวเลขอันดับ (ตัวเอียงมีเส้นขอบ) */
+.rk{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-style:italic;font-weight:600;line-height:1;pointer-events:none;
+  color:transparent;-webkit-text-stroke:1.5px rgba(255,0,1,.4);font-size:50px;
+}
+.r1 .rk{font-size:62px;-webkit-text-stroke:2px #ff2a2b;right:16px}
+.r2 .rk{font-size:56px;-webkit-text-stroke:2px #5d5a5a}
+.r3 .rk{font-size:56px;-webkit-text-stroke:2px #7a4a1a}
+.r4 .rk{-webkit-text-stroke-color:rgba(255,0,1,.55)}
+.r5 .rk{-webkit-text-stroke-color:rgba(255,0,1,.42)}
+.r6 .rk{-webkit-text-stroke-color:rgba(255,0,1,.25)}
+.r7 .rk{-webkit-text-stroke-color:rgba(255,0,1,.4)}
+.r8 .rk{-webkit-text-stroke-color:rgba(255,0,1,.5)}
+.r9 .rk{-webkit-text-stroke-color:rgba(255,0,1,.55)}
+.r10 .rk{-webkit-text-stroke-color:rgba(255,0,1,.45);font-size:56px;right:12px;letter-spacing:-.06em}
+
+/* ---------- Divider ---------- */
+.rank-divider{
+  margin:52px 10.3% 0;display:flex;align-items:center;gap:0;
+}
+.rank-divider::before,.rank-divider::after{content:"";flex:1;height:1px;background:#252020}
+.rank-divider span{padding:0 50px;font-size:13px;font-weight:600;color:var(--gray);white-space:nowrap;letter-spacing:.02em;word-spacing:.15em}
+.rest{margin-top:41px}
+
+/* ---------- Footer / Chat ---------- */
+.lb-footer{margin:95px 13px 0;height:100px;border-top:1px solid #1e1a1a}
+.chat-fab{
+  position:fixed;right:max(13px,calc(50% - 240px + 13px));bottom:calc(24px + env(safe-area-inset-bottom,0px));
+  width:50px;height:50px;border-radius:50%;z-index:50;
+  background:radial-gradient(circle at 30% 30%,var(--red),var(--red-deep));
+  box-shadow:0 8px 18px rgba(255,0,1,.28);display:grid;place-items:center;
+}
+.chat-fab svg{width:24px;height:24px}
+.chat-badge{
+  position:absolute;right:-2px;top:-3px;min-width:16px;height:16px;border-radius:8px;padding:0 4px;
+  background:#fff;color:#000;font-size:11px;font-weight:700;display:grid;place-items:center;line-height:1;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width:370px){
+  .top3,.rest{padding:0 8%}
+  .rank-divider{margin-left:8%;margin-right:8%}
+  .rank-divider span{padding:0 32px}
+  .r1 .frame{width:104px;height:104px}
+  .r1 .amt{font-size:26px}
+  .rest .amt{font-size:16px}
+  .rk{font-size:42px}.r1 .rk{font-size:58px}.r2 .rk,.r3 .rk{font-size:48px}
+}
+@media (min-width:481px){
+  .hdr-wrap{max-width:480px;margin-left:auto;margin-right:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  .ticker-track{animation:none}
+}
+
+
+/* ---------- Intro animation (เปิดหน้า) ---------- */
+.lb-cover{
+  position:fixed;inset:0;z-index:100;pointer-events:none;
+  background:radial-gradient(circle at 50% 42%,#ff2a2b 0%,#990001 26%,#1a0204 62%,#000 100%);
+  clip-path:circle(150vmax at 50% 42%);
+  animation:lbCover .8s cubic-bezier(.7,0,.2,1) .05s forwards;
+}
+@keyframes lbCover{to{clip-path:circle(0px at 50% 42%)}}
+
+@keyframes lbDrop{from{opacity:0;transform:translateY(-18px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes lbTitle{from{opacity:0;letter-spacing:.35em;filter:blur(10px);transform:scale(1.12)}to{opacity:1;letter-spacing:0;filter:blur(0);transform:none}}
+@keyframes lbFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes lbCard{
+  0%{opacity:0;transform:translateY(46px) scale(.94)}
+  100%{opacity:1;transform:none}
+}
+@keyframes lbRank{0%{opacity:0;transform:translateY(-50%) scale(1.9)}60%{opacity:1}100%{opacity:1;transform:translateY(-50%) scale(1)}}
+@keyframes lbRing{0%{transform:rotate(-200deg) scale(.3);opacity:0}100%{transform:none;opacity:1}}
+@keyframes lbShock{0%{opacity:.9;transform:scale(.4)}100%{opacity:0;transform:scale(2.2)}}
+@keyframes lbSweep{0%{transform:translateX(-120%) skewX(-20deg)}100%{transform:translateX(420%) skewX(-20deg)}}
+@keyframes lbLine{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.eyebrow-pill{animation:lbDrop .6s cubic-bezier(.2,1.2,.3,1) .7s both}
+.lb-title h1{animation:lbTitle .8s cubic-bezier(.2,.8,.2,1) .85s both}
+.lb-title p{animation:lbFade .6s ease-out 1.15s both}
+
+.lb-card{animation:lbCard .7s cubic-bezier(.2,.9,.25,1) calc(var(--d,0) * 1ms + 1100ms) both;overflow:hidden}
+.lb-card.r1{overflow:visible}
+.lb-card::after{ /* แสงกวาดผ่านการ์ดตอนเข้า */
+  content:"";position:absolute;top:0;bottom:0;left:0;width:22%;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(90deg,transparent,rgba(255,60,60,.28),transparent);
+  transform:translateX(-120%) skewX(-20deg);
+  animation:lbSweep .9s ease-out calc(var(--d,0) * 1ms + 1500ms) 1 both;
+}
+.lb-card.r1::after{display:none}
+.lb-card .rk{animation:lbRank .6s cubic-bezier(.2,1.1,.3,1) calc(var(--d,0) * 1ms + 1550ms) both}
+.r1 .frame-ring{animation:lbRing 1s cubic-bezier(.2,.9,.25,1) 1.15s both}
+.r1 .avatar{animation:lbFade .6s ease-out 1.5s both}
+.r1::before{ /* คลื่นกระแทกจากกรอบอันดับ 1 */
+  content:"";position:absolute;left:0;top:4px;width:118px;height:118px;border-radius:50%;pointer-events:none;
+  border:2px solid rgba(255,40,40,.9);box-shadow:0 0 24px rgba(255,0,1,.7);
+  animation:lbShock .9s ease-out 1.75s both;
+}
+.rank-divider::before,.rank-divider::after{transform:scaleX(0);animation:lbLine .7s ease-out 1.9s forwards}
+.rank-divider::before{transform-origin:right}.rank-divider::after{transform-origin:left}
+.rank-divider span{animation:lbFade .5s ease-out 2s both}
+.hdr-wrap{animation:lbFade .6s ease-out .75s both}
+
+@media (prefers-reduced-motion:reduce){
+  .lb-cover{display:none}
+  .eyebrow-pill,.lb-title h1,.lb-title p,.lb-card,.lb-card::after,.lb-card .rk,.r1 .frame-ring,.r1 .avatar,.r1::before,
+  .rank-divider::before,.rank-divider::after,.rank-divider span,.hdr-wrap{animation:none!important}
+  .rank-divider::before,.rank-divider::after{transform:none}
+}
+
+.lb-empty{padding:40px 0;text-align:center;font-size:14px;color:var(--gray)}
+.amt{white-space:nowrap}

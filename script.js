@@ -301,9 +301,30 @@ document.addEventListener('DOMContentLoaded', () => {
       '</div>' +
       '<div class="acct-actions">' +
         '<a href="topup.html" class="acct-btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>ເຕີມເງິນ</a>' +
+        '<a href="leaderboard.html" class="acct-btn rank" id="acctRank"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M8 6H5a1 1 0 0 0-1 1c0 2.2 1.6 3.800 4 4M16 6h3a1 1 0 0 1 1 1c0 2.200-1.600 3.800-4 4M12 13v4M8.500 20h7M10 17h4"/></svg>ຈັດອັນດັບຍອດເຕີມ</a>' +
       '</div>' +
       '<div class="acct-embers"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>';
     document.body.appendChild(card);
+
+    // ---- ปุ่ม "จัดอันดับยอดเติม": แสงแดงพุ่งขยายจากปุ่มเต็มจอ แล้วเปิดหน้าอันดับ ----
+    const rankBtn = card.querySelector('#acctRank');
+    rankBtn.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      const href = rankBtn.getAttribute('href');
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { location.href = href; return; }
+      if (document.getElementById('rkWarp')) return;
+      const r = rankBtn.getBoundingClientRect();
+      const warp = document.createElement('div');
+      warp.id = 'rkWarp';
+      warp.className = 'rk-warp';
+      warp.style.setProperty('--x', (r.left + r.width / 2) + 'px');
+      warp.style.setProperty('--y', (r.top + r.height / 2) + 'px');
+      warp.innerHTML = '<i class="rk-slash s1"></i><i class="rk-slash s2"></i><i class="rk-slash s3"></i>' +
+        '<div class="rk-warp-txt"><span>TOP</span><b>SPENDERS</b></div><i class="rk-flash"></i>';
+      document.body.appendChild(warp);
+      document.body.classList.remove('tabbar-open');
+      setTimeout(() => { location.href = href; }, 820);
+    });
     let statsLoaded = false;
     const loadCardStats = async () => {
       if (statsLoaded) return;
