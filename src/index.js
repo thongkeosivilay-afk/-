@@ -25,6 +25,7 @@
                                       หักเงิน, ออกรหัส, insert แถวใน orders) ดู SQL ท้ายไฟล์นี้
      GET  /api/orders/history     -> ลูกค้า (ต้อง login) ดึงประวัติการสั่งซื้อของตัวเองเท่านั้น
                                       (orders.html)
+     GET  /api/public/top-spenders -> (public) อันดับ 1-10 ยอดเติมสะสมสูงสุด จาก topup_requests (approved) ชื่อถูกปิดบังบางส่วน
      GET  /api/account/stats      -> ลูกค้า (ต้อง login) สรุปยอดสั่งซื้อสำเร็จ/ยอดใช้จ่ายรวม
                                       (ยังไม่มีหน้าเรียกใช้จริงตอนนี้ เก็บ endpoint ไว้เผื่อทำหน้าบัญชีทีหลัง)
      GET  /api/account/reseller-status  -> ลูกค้า (ต้อง login) ดูสถานะตัวแทนของตัวเอง (ถ้ามี)
@@ -134,6 +135,9 @@ async function route(request, env) {
     }
     if (url.pathname === '/api/public/recent-purchases') {
       return handleRecentPurchases(request, env);
+    }
+    if (url.pathname === '/api/public/top-spenders') {
+      return handleTopSpenders(request, env);
     }
     if (url.pathname === '/api/topup/create') {
       return handleTopupCreate(request, env);
@@ -1161,6 +1165,74 @@ async function handleRecentPurchases(request, env) {
   } catch (err) {
     console.error('handleRecentPurchases failed:', err);
     return json({ error: 'ດຶງລາຍການສິນຄ້າຊື້ລ່າສຸດບໍ່ສຳເລັດ' }, 502);
+  }
+}
+
+/* ---------- 6c) GET /api/public/top-spenders ----------
+   หน้า leaderboard.html ใช้จัดอันดับ "ຈັດອັນດັບຍອດເຕີມ" — รวมยอด topup_requests ที่ status = approved
+   ต่อ user_id แล้วเรียงมาก→น้อย เอา 10 อันดับแรก
+   - ไม่ส่ง user_id / อีเมลเต็มออกไปเด็ดขาด (public endpoint): ส่งแค่ชื่อที่ปิดบัง (3 ตัวแรกของอีเมล + ***)
+   - ไม่มีตาราง users ที่เก็บวันสมัคร จึงใช้ "วันที่เติมเงินครั้งแรก" ของคนนั้นแทนวันสมัคร (joined)
+   - วันที่แสดงตามเวลา UTC+7 รูปแบบ dd/mm/yyyy ; cache ที่ edge/browser 60 วินาที */
+async function handleTopSpenders(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+  }
+
+  function maskName(email) {
+    const local = String(email || '').split('@')[0] || '';
+    if (!local) return '???***';
+    return (local.slice(0, 3) || local.slice(0, 1)) + '***';
+  }
+  function fmtDate(iso) {
+    const t = Date.parse(iso);
+    if (!Number.isFinite(t)) return '-';
+    const d = new Date(t + 7 * 60 * 60 * 1000);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
+  }
+
+  try {
+    const rows = await supabaseSelect(env, 'topup_requests', {
+      select: 'user_id,user_email,amount,created_at',
+      status: 'eq.approved',
+      limit: '50000',
+    });
+
+    const byUser = new Map();
+    for (const r of rows || []) {
+      const key = r.user_id || r.user_email;
+      const amt = Number(r.amount) || 0;
+      if (!key || amt <= 0) continue;
+      const cur = byUser.get(key) || { email: r.user_email, total: 0, first: r.created_at };
+      cur.total += amt;
+      if (!cur.email && r.user_email) cur.email = r.user_email;
+      if (r.created_at && (!cur.first || r.created_at < cur.first)) cur.first = r.created_at;
+      byUser.set(key, cur);
+    }
+
+    const items = [...byUser.values()]
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10)
+      .map((u, i) => ({
+        rank: i + 1,
+        name: maskName(u.email),
+        amount: u.total,
+        joined: fmtDate(u.first),
+        avatar: null,
+      }));
+
+    return new Response(JSON.stringify({ ok: true, items }), {
+      status: 200,
+      headers: {
+        'content-type': 'application/json; charset=utf-8',
+        'cache-control': 'public, max-age=60',
+      },
+    });
+  } catch (err) {
+    console.error('handleTopSpenders failed:', err);
+    return json({ error: 'ດຶງອັນດັບຍອດເຕີມບໍ່ສຳເລັດ' }, 502);
   }
 }
 
