@@ -62,7 +62,7 @@ var LEADERBOARD = [
       var u = list[i], amt = el.querySelector('.amt');
       if (reduce || !amt) return;
       var t0 = performance.now() + 1100 + d + 250, dur = 1000;
-      amt.textContent = money(0);
+      amt.dataset.final = money(u.amount); amt.textContent = money(0);
       (function tick(now){
         var p = Math.max(0, Math.min(1, (now - t0) / dur));
         amt.textContent = money(u.amount * (1 - Math.pow(1 - p, 4)));
@@ -83,6 +83,8 @@ var LEADERBOARD = [
   function show(list){
     if (!list.length) { showMessage('ยังไม่มีข้อมูลอันดับ'); return; }
     render(list);
+    fitAmounts();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAmounts);
     document.querySelector('.rank-divider').style.display = list.length > 3 ? '' : 'none';
     intro(list);
   }
@@ -96,14 +98,17 @@ var LEADERBOARD = [
   }
   loadData();
 
-  // header: โปร่งใสตอนอยู่บนสุด -> กลายเป็นแถบเมื่อเลื่อนผ่านแถบประกาศ
-  var hdr = document.getElementById('hdr'), ticking = false;
-  function onScroll(){
-    ticking = false;
-    hdr.classList.toggle('is-scrolled', window.scrollY > 40);
+  // ตัวเลขเงินยาว: ลดขนาดตัวอักษรอัตโนมัติให้อยู่ในกรอบการ์ด (ไม่ล้นออก)
+  function fitAmounts(){
+    document.querySelectorAll('.lb-card').forEach(function(card){
+      var amt = card.querySelector('.amt'); if (!amt) return;
+      var u = amt.dataset.final; if (u) amt.textContent = u;   // วัดจากตัวเลขสุดท้ายเสมอ
+      amt.style.fontSize = '';
+      var max = card.clientWidth - amt.offsetLeft - 18;
+      var size = parseFloat(getComputedStyle(amt).fontSize);
+      while (amt.scrollWidth > max && size > 11) { size -= 0.5; amt.style.fontSize = size + 'px'; }
+    });
   }
-  window.addEventListener('scroll', function(){
-    if (!ticking) { ticking = true; requestAnimationFrame(onScroll); }
-  }, { passive:true });
-  onScroll();
+  window.fitAmounts = fitAmounts;
+  window.addEventListener('resize', fitAmounts);
 })();

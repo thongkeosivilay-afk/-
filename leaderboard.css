@@ -25,56 +25,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 
 .lb-shell{max-width:480px;margin:0 auto;min-height:100vh;position:relative;z-index:1}
 
-/* ---------- Ticker ---------- */
-.ticker{
-  padding-top:var(--safe-top);height:calc(28px + var(--safe-top));
-  border-bottom:1px solid rgba(255,0,1,.22);
-  overflow:hidden;white-space:nowrap;position:relative;
-  box-shadow:0 1px 0 rgba(255,0,1,.06);
-}
-.ticker-track{display:inline-flex;align-items:center;height:28px;animation:tick 26s linear infinite;will-change:transform}
-.ticker-item{display:inline-flex;align-items:center;gap:8px;margin-right:64px;font-size:13px;font-weight:500;color:#cfcdcd}
-.bell{width:16px;height:16px;color:var(--red)}
-@keyframes tick{to{transform:translateX(-50%)}}
-
-/* ---------- Header ---------- */
-.hdr-wrap{
-  position:sticky;top:calc(var(--safe-top) + 3px);z-index:40;
-  height:44px;margin:14px 0 0;padding:0 5px;
-}
-.hdr{
-  height:44px;display:flex;align-items:center;justify-content:space-between;
-  padding:0 8px 0 27px;border-radius:22px;border:1px solid transparent;
-  transition:background-color .3s ease,border-color .3s ease,padding .3s ease,box-shadow .3s ease;
-}
-.hdr.is-scrolled{
-  padding:0 8px 0 20px;
-  background:rgba(14,6,8,.78);
-  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
-  border-color:rgba(255,0,1,.4);
-  box-shadow:0 0 18px rgba(255,0,1,.18);
-}
-.hdr-logo img{width:24px;height:24px;object-fit:contain;display:block;filter:drop-shadow(0 0 6px rgba(255,0,1,.7))}
-.hdr-right{display:flex;align-items:center;gap:6px;margin-left:auto}
-.hdr-discord{width:28px;height:28px;border-radius:50%;background:#16100f;border:1px solid #2c2323;display:grid;place-items:center}
-.hdr-discord svg{width:17px;height:17px;color:#fff}
-.hdr-coin{
-  height:34px;display:flex;align-items:center;gap:8px;padding:0 10px 0 5px;border-radius:17px;
-  background:var(--pill-bg);border:1.5px solid rgba(255,0,1,.5);
-}
-.coin-ico{width:24px;height:24px;border-radius:50%;background:#2a0709;border:1px solid rgba(255,0,1,.45);display:grid;place-items:center}
-.coin-ico svg{width:13px;height:13px;color:#fff}
-.coin-amt{font-size:16px;font-weight:700;line-height:1}
-.coin-txt{font-size:15px;font-weight:700;line-height:1;color:var(--red);margin-left:-2px}
-.hdr-avatar{position:relative;width:35px;height:35px;display:grid;place-items:center}
-.hdr-avatar .av-ring{width:31px;height:31px;border-radius:50%;background:#1d0507;border:2px solid var(--red);display:grid;place-items:center;box-shadow:0 0 10px rgba(255,0,1,.55)}
-.hdr-avatar b{font-size:16px;font-weight:800;color:var(--red-lite)}
-.hdr-avatar .crown{position:absolute;left:-5px;top:-4px;width:18px;height:12px;transform:rotate(-14deg);z-index:2}
-.hdr-menu{width:35px;height:35px;border-radius:50%;background:#181414;border:1px solid #3a3333;display:grid;place-items:center}
-.hdr-menu svg{width:19px;height:19px;color:#fff}
-
 /* ---------- Title ---------- */
-.lb-main{padding:49px 0 0}
+.lb-main{padding:calc(var(--safe-top) + 64px) 0 0}
 .lb-title{text-align:center}
 .eyebrow-pill{
   display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 15px 0 13px;border-radius:14px;
@@ -123,7 +75,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 .r2 .avatar b,.r3 .avatar b{font-size:22px}
 
 /* อันดับ 1: กรอบใหญ่เกยขอบซ้ายการ์ด */
-.r1 .frame{width:118px;height:118px;margin-left:0;margin-right:-6px;margin-top:0}
+.r1 .frame{width:118px;height:118px;margin-left:0;margin-right:8px;margin-top:0}
 .r1 .frame>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .frame-ring{
   position:absolute;inset:0;border-radius:50%;
@@ -201,11 +153,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
   .rest .amt{font-size:16px}
   .rk{font-size:42px}.r1 .rk{font-size:58px}.r2 .rk,.r3 .rk{font-size:48px}
 }
-@media (min-width:481px){
-  .hdr-wrap{max-width:480px;margin-left:auto;margin-right:auto}
-}
 @media (prefers-reduced-motion:reduce){
-  .ticker-track{animation:none}
 }
 
 
@@ -255,14 +203,16 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 .rank-divider::before,.rank-divider::after{transform:scaleX(0);animation:lbLine .7s ease-out 1.9s forwards}
 .rank-divider::before{transform-origin:right}.rank-divider::after{transform-origin:left}
 .rank-divider span{animation:lbFade .5s ease-out 2s both}
-.hdr-wrap{animation:lbFade .6s ease-out .75s both}
 
 @media (prefers-reduced-motion:reduce){
   .lb-cover{display:none}
   .eyebrow-pill,.lb-title h1,.lb-title p,.lb-card,.lb-card::after,.lb-card .rk,.r1 .frame-ring,.r1 .avatar,.r1::before,
-  .rank-divider::before,.rank-divider::after,.rank-divider span,.hdr-wrap{animation:none!important}
+  .rank-divider::before,.rank-divider::after,.rank-divider span{animation:none!important}
   .rank-divider::before,.rank-divider::after{transform:none}
 }
 
 .lb-empty{padding:40px 0;text-align:center;font-size:14px;color:var(--gray)}
 .amt{white-space:nowrap}
+
+.info{flex:1 1 auto;min-width:0}
+.amt{display:block;width:max-content;max-width:none}
