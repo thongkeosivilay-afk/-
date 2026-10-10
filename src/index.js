@@ -512,10 +512,29 @@ async function rememberProfile(env, user) {
 /* ---------- ข้อมูลที่ผู้ใช้แก้เอง (KV: pcustom:<id>) = { username?, avatar? } เขียนโดย handleUpdateProfile/Avatar เท่านั้น ---------- */
 async function readCustom(env, userId) {
   let c = {};
+  // 1) Supabase (ตาราง user_profiles) = แหล่งจริง — อ่านสดทุกครั้ง ไม่มีแคช จึงไม่เกิดอาการรูป/ชื่อ "เด้งกลับ" หลังรีเฟรช
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const rows = await supabaseSelect(env, 'user_profiles', {
+        select: 'username,avatar_hash,avatar_version',
+        user_id: `eq.${userId}`,
+        limit: '1',
+      });
+      const r = rows && rows[0];
+      if (r) {
+        if (r.username) c.username = r.username;
+        if (r.avatar_hash && /^[0-9a-f]{24}$/.test(r.avatar_hash)) {
+          c.avatar = `/api/public/avatar/${r.avatar_hash}?v=${Number(r.avatar_version) || 0}`;
+        }
+      }
+    } catch (err) { console.error('readCustom: อ่าน user_profiles ไม่สำเร็จ', err); }
+    if (c.avatar && c.username) return c;
+  }
+  // 2) KV รุ่นเก่า (สำรอง — ผู้ใช้ที่เคยอัปโหลดไว้ก่อนย้ายมา Supabase)
   try {
-    const raw = await env.SESSIONS.get(`pcustom:${userId}`, { cacheTtl: 30 });
+    const raw = await env.SESSIONS.get(`pcustom:${userId}`);
     const p = raw ? JSON.parse(raw) : null;
-    if (p && typeof p === 'object') c = p;
+    if (p && typeof p === 'object') c = { ...p, ...c };
   } catch { /* ใช้ค่าว่าง */ }
   // รองรับข้อมูลเดิมที่เคยเก็บใน profile:<id> (รุ่นก่อน: custom:true / username)
   if (!c.avatar || !c.username) {
@@ -555,8 +574,17 @@ async function handleUpdateProfile(request, env) {
   if (await isRateLimited(env, `pfnamelimit:${user.id}`, 5, 60 * 60)) {
     return json({ error: 'ປ່ຽນຊື່ຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 1 ຊົ່ວໂມງ' }, 429);
   }
-  const custom = await readCustom(env, user.id);
-  await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify({ ...custom, username }));
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      await supabaseUpsert(env, 'user_profiles', 'user_id', { user_id: String(user.id), username, updated_at: new Date().toISOString() });
+    } catch (err) {
+      console.error('update-profile: เขียน user_profiles ไม่สำเร็จ', err);
+      return json({ error: 'ບັນທຶກບໍ່ສຳເລັດ ກະລຸນາລອງໃໝ່' }, 500);
+    }
+  } else {
+    const custom = await readCustom(env, user.id);
+    await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify({ ...custom, username }));
+  }
   await bumpRateLimit(env, `pfnamelimit:${user.id}`, 60 * 60);
   return json({ ok: true, username });
 }
@@ -576,7 +604,19 @@ async function handleUpdateAvatar(request, env) {
   const hash = await avatarHash(user.id);
   const custom = await readCustom(env, user.id);
 
+  const useDb = !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
+
   if (body.remove) {
+    if (useDb) {
+      try {
+        await supabaseUpsert(env, 'user_profiles', 'user_id', {
+          user_id: String(user.id), avatar_b64: null, avatar_hash: null, avatar_version: null, updated_at: new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error('avatar remove: เขียน user_profiles ไม่สำเร็จ', err);
+        return json({ error: 'ບັນທຶກບໍ່ສຳເລັດ ກະລຸນາລອງໃໝ່' }, 500);
+      }
+    }
     await env.SESSIONS.delete(`avatarimg:${hash}`);
     const provider = typeof user.avatar === 'string' && /^https:\/\//.test(user.avatar) ? user.avatar : null;
     const { avatar: _drop, ...rest } = custom;
@@ -597,9 +637,21 @@ async function handleUpdateAvatar(request, env) {
     return json({ error: 'ຮູບບໍ່ຖືກຕ້ອງ' }, 400);
   }
 
-  await env.SESSIONS.put(`avatarimg:${hash}`, b64);
-  const url = `/api/public/avatar/${hash}?v=${Date.now()}`;
-  await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify({ ...custom, avatar: url }));
+  const version = Date.now();
+  const url = `/api/public/avatar/${hash}?v=${version}`;
+  if (useDb) {
+    try {
+      await supabaseUpsert(env, 'user_profiles', 'user_id', {
+        user_id: String(user.id), avatar_b64: b64, avatar_hash: hash, avatar_version: version, updated_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error('avatar upload: เขียน user_profiles ไม่สำเร็จ', err);
+      return json({ error: 'ບັນທຶກຮູບບໍ່ສຳເລັດ ກະລຸນາລອງໃໝ່' }, 500);
+    }
+  } else {
+    await env.SESSIONS.put(`avatarimg:${hash}`, b64);
+    await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify({ ...custom, avatar: url }));
+  }
   await bumpRateLimit(env, `pfavatarlimit:${user.id}`, 60 * 60);
   return json({ ok: true, avatar: url });
 }
@@ -608,7 +660,14 @@ async function handleUpdateAvatar(request, env) {
 async function handlePublicAvatar(env, url) {
   const hash = url.pathname.split('/').pop();
   if (!/^[0-9a-f]{24}$/.test(hash)) return new Response('Not found', { status: 404 });
-  const raw = await env.SESSIONS.get(`avatarimg:${hash}`);
+  let raw = null;
+  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const rows = await supabaseSelect(env, 'user_profiles', { select: 'avatar_b64', avatar_hash: `eq.${hash}`, limit: '1' });
+      raw = rows && rows[0] && rows[0].avatar_b64 ? rows[0].avatar_b64 : null;
+    } catch (err) { console.error('public avatar: อ่าน user_profiles ไม่สำเร็จ', err); }
+  }
+  if (!raw) raw = await env.SESSIONS.get(`avatarimg:${hash}`); // สำรอง: รูปเก่าใน KV
   if (!raw) return new Response('Not found', { status: 404 });
   const bin = atob(raw);
   const bytes = new Uint8Array(bin.length);
@@ -2133,6 +2192,25 @@ async function supabaseInsert(env, table, row) {
     throw new Error(`Supabase insert "${table}" failed (${res.status}): ${text}`);
   }
   return res.json();
+}
+
+/* ---------- helper: UPSERT (insert หรืออัปเดตถ้า key ซ้ำ) ไป Supabase REST ด้วย service_role key ---------- */
+async function supabaseUpsert(env, table, conflictCol, row) {
+  const url = `${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}?on_conflict=${encodeURIComponent(conflictCol)}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(row),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase upsert "${table}" failed (${res.status}): ${text}`);
+  }
 }
 
 /* ---------- helper: อัพโหลดไฟล์ขึ้น Supabase storage bucket ด้วย service_role key
