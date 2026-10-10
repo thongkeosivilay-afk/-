@@ -418,4 +418,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+
+  // ຊື່ຮ້ານ/ໂລໂກ້ ໃນ header + footer (ຄືກັນກັບໜ້າຈັດອັນດັບ/ໜ້າຫຼັກ) — ກ່ອນນີ້ໜ້າໂປຣໄຟລ໌ບໍ່ໄດ້ເອີ້ນ
+  // ເລີຍ ຊື່ຮ້ານຈຶ່ງຫາຍ ແລະ ໂລໂກ້ເປັນຮູບເລີ່ມຕົ້ນຂະໜາດໃຫຍ່
+  if (window.StorefrontData) {
+    window.StorefrontData.fetchData()
+      .then((data) => { window.StorefrontData.applyStoreBranding(data.store); })
+      .catch((err) => { console.error('profile.js: applyStoreBranding failed', err); });
+  }
+
 });
