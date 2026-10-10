@@ -23,6 +23,7 @@
      POST /api/orders/create      -> ลูกค้า (ต้อง login) กด "ซื้อเลย" ใน category.html —
                                       เรียก RPC purchase_product แบบ atomic (เช็คสต็อก/ยอดเงิน,
                                       หักเงิน, ออกรหัส, insert แถวใน orders) ดู SQL ท้ายไฟล์นี้
+     POST /api/coupons/validate   -> ลูกค้า (ต้อง login) เช็คโค้ดส่วนลดก่อนซื้อ (คืน type/value/จำนวนสิทธิ์ที่เหลือของบัญชีนี้)
      GET  /api/orders/history     -> ลูกค้า (ต้อง login) ดึงประวัติการสั่งซื้อของตัวเองเท่านั้น
                                       (orders.html)
      GET  /api/public/top-spenders -> (public) อันดับ 1-10 ยอดเติมสะสมสูงสุด จาก topup_requests (approved) ชื่อถูกปิดบังบางส่วน
@@ -162,6 +163,9 @@ async function route(request, env) {
     }
     if (url.pathname === '/api/orders/history') {
       return handleOrdersHistory(request, env);
+    }
+    if (url.pathname === '/api/coupons/validate') {
+      return handleCouponValidate(request, env);
     }
     if (url.pathname === '/api/account/stats') {
       return handleAccountStats(request, env);
@@ -1768,6 +1772,16 @@ async function handleOrderCreate(request, env) {
     return json({ error: 'ບໍ່ພົບສິນຄ້າທີ່ຕ້ອງການຊື້' }, 400);
   }
 
+  // ໂຄ້ດສ່ວນຫຼຸດ (ບໍ່ບັງຄັບ) — ການຄິດສ່ວນຫຼຸດ/ນັບສິດຈິງເຮັດໃນ purchase_product (SQL) ທັງໝົດ
+  // ຝັ່ງນີ້ກວດແຕ່ຮູບແບບຂໍ້ຄວາມ ແລ້ວສົ່ງຕໍ່ເທົ່ານັ້ນ
+  let couponCode = null;
+  if (body.couponCode !== undefined && body.couponCode !== null && String(body.couponCode).trim() !== '') {
+    couponCode = String(body.couponCode).trim().toUpperCase();
+    if (!/^[A-Z0-9_-]{2,32}$/.test(couponCode)) {
+      return json({ error: 'ໂຄ້ດສ່ວນຫຼຸດບໍ່ຖືກຕ້ອງ ຫຼືໝົດອາຍຸແລ້ວ' }, 400);
+    }
+  }
+
   // ຂໍ້ຄວາມ error ຈາກ RAISE EXCEPTION ໃນ RPC (ເບິ່ງ SQL ທ້າຍໄຟລ໌) -> ຂໍ້ຄວາມພາສາລາວທີ່ໂຊວ໌ໃຫ້ລູກຄ້າ
   const ERROR_LABEL = {
     PRODUCT_NOT_FOUND: 'ບໍ່ພົບສິນຄ້ານີ້ (ອາດຖືກລຶບ/ເຊື່ອງໄປແລ້ວ)',
@@ -1775,6 +1789,9 @@ async function handleOrderCreate(request, env) {
     DURATION_NOT_FOUND: 'ບໍ່ພົບໄລຍະເວລາທີ່ເລືອກ',
     INSUFFICIENT_BALANCE: 'ຍອດເງິນໃນກະເປົາບໍ່ພຽງພໍ ກະລຸນາເຕີມເງິນກ່ອນ',
     OUT_OF_STOCK: 'ສິນຄ້ານີ້ໝົດສະຕັອກແລ້ວ',
+    COUPON_INVALID: 'ໂຄ້ດສ່ວນຫຼຸດບໍ່ຖືກຕ້ອງ ຫຼືໝົດອາຍຸແລ້ວ',
+    COUPON_USER_LIMIT: 'ທ່ານໃຊ້ໂຄ້ດນີ້ຄົບສິດແລ້ວ',
+    COUPON_LIMIT: 'ໂຄ້ດນີ້ຖືກໃຊ້ຄົບຈຳນວນບັນຊີແລ້ວ',
   };
 
   try {
@@ -1783,6 +1800,7 @@ async function handleOrderCreate(request, env) {
       p_user_email: user.email || null,
       p_product_id: productId,
       p_duration_id: durationId,
+      p_coupon_code: couponCode,
     });
 
     const row = Array.isArray(rows) ? rows[0] : rows;
@@ -1795,7 +1813,75 @@ async function handleOrderCreate(request, env) {
     const msg = String((err && err.message) || '');
     const matchedKey = Object.keys(ERROR_LABEL).find((key) => msg.includes(key));
     console.error('handleOrderCreate failed:', err);
-    return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, matchedKey === 'INSUFFICIENT_BALANCE' || matchedKey === 'OUT_OF_STOCK' ? 400 : 502);
+    return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, matchedKey === 'INSUFFICIENT_BALANCE' || matchedKey === 'OUT_OF_STOCK' || (matchedKey && matchedKey.startsWith('COUPON_')) ? 400 : 502);
+  }
+}
+
+/* ---------- 10b) POST /api/coupons/validate  { code } ----------
+   ລູກຄ້າ (ຕ້ອງ login) ກົດປຸ່ມ "ໃຊ້ໂຄ້ດ" ໃນ product.html — ກວດວ່າໂຄ້ດໃຊ້ໄດ້ບໍ ແລະ ບັນຊີນີ້ເຫຼືອສິດໃຊ້ຈັກຄັ້ງ
+   (ກວດແບບດຽວກັນກັບ purchase_product ແຕ່ "ບໍ່ນັບສິດ" — ການນັບສິດຈິງເກີດຕອນຊື້ສຳເລັດເທົ່ານັ້ນ)
+   ຕາຕະລາງ coupons/coupon_redemptions ຖືກ revoke ຈາກ anon/authenticated ແລ້ວ ອ່ານໄດ້ສະເພາະ service_role (Worker ນີ້)
+   ກັນເດົາໂຄ້ດ: ຈຳກັດ 12 ຄັ້ງ/ນາທີ/ບັນຊີ (ເກັບໃນ KV, best-effort) */
+async function handleCouponValidate(request, env) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  const user = await getSessionUser(request, env);
+  if (!user) {
+    return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນໃຊ້ໂຄ້ດສ່ວນຫຼຸດ', requireLogin: true }, 401);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY (ເບິ່ງ wrangler.toml + wrangler secret)' },
+      500
+    );
+  }
+
+  let body = {};
+  try { body = await request.json(); } catch { /* code ຈະເປັນຄ່າວ່າງ ແລ້ວຖືກ validate ດ້ານລຸ່ມ */ }
+
+  const INVALID = 'ໂຄ້ດບໍ່ຖືກຕ້ອງ ຫຼືໝົດອາຍຸແລ້ວ';
+  const code = String(body.code || '').trim().toUpperCase();
+  if (!/^[A-Z0-9_-]{2,32}$/.test(code)) return json({ error: INVALID }, 404);
+
+  try {
+    const rlKey = `cpnrl:${user.id}:${Math.floor(Date.now() / 60000)}`;
+    const tries = parseInt((await env.SESSIONS.get(rlKey)) || '0', 10) || 0;
+    if (tries >= 12) return json({ error: 'ລອງໂຄ້ດຫຼາຍເກີນໄປ ກະລຸນາລໍຖ້າ 1 ນາທີ ແລ້ວລອງໃໝ່' }, 429);
+    await env.SESSIONS.put(rlKey, String(tries + 1), { expirationTtl: 120 });
+  } catch (err) {
+    console.error('handleCouponValidate rate-limit failed:', err); // KV ມີບັນຫາ ບໍ່ຄວນຂັດຂວາງລູກຄ້າ
+  }
+
+  try {
+    const rows = await supabaseSelect(env, 'coupons', {
+      select: 'code,type,value,active,max_accounts,uses_per_account,expires_at',
+      code: `eq.${code}`,
+      limit: '1',
+    });
+    const c = rows && rows[0];
+    const expired = c && c.expires_at && new Date(c.expires_at).getTime() <= Date.now();
+    if (!c || !c.active || expired) return json({ error: INVALID }, 404);
+
+    const mine = await supabaseSelect(env, 'coupon_redemptions', {
+      select: 'id',
+      code: `eq.${code}`,
+      user_id: `eq.${user.id}`,
+    });
+    const userUses = Array.isArray(mine) ? mine.length : 0;
+    const remaining = Number(c.uses_per_account) - userUses;
+    if (remaining <= 0) return json({ error: 'ທ່ານໃຊ້ໂຄ້ດນີ້ຄົບສິດແລ້ວ' }, 400);
+
+    // ບັນຊີໃໝ່ (ຍັງບໍ່ເຄີຍໃຊ້ໂຄ້ດນີ້) ຕ້ອງຍັງມີໂຄວຕ້າ "ຈຳນວນບັນຊີ" ເຫຼືອ — ກົດດຽວກັນກັບ COUPON_LIMIT ໃນ SQL
+    if (userUses === 0 && c.max_accounts != null) {
+      const st = await supabaseSelect(env, 'coupon_stats', { select: 'accounts_used', code: `eq.${code}` });
+      const used = st && st[0] ? Number(st[0].accounts_used) : 0;
+      if (used >= Number(c.max_accounts)) return json({ error: 'ໂຄ້ດນີ້ຖືກໃຊ້ຄົບຈຳນວນບັນຊີແລ້ວ' }, 400);
+    }
+
+    return json({ ok: true, code: c.code, type: c.type, value: Number(c.value), remaining });
+  } catch (err) {
+    console.error('handleCouponValidate failed:', err);
+    return json({ error: 'ກວດໂຄ້ດບໍ່ສຳເລັດ ລອງໃໝ່ພາຍຫຼັງ' }, 502);
   }
 }
 
