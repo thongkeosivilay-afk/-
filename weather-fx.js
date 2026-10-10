@@ -16,6 +16,8 @@
 (function () {
   'use strict';
   if (window.WeatherFX) return;
+  function boot() {
+  if (window.WeatherFX) return;
 
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var root = document.documentElement;
@@ -34,7 +36,7 @@
   var ctx = cvB.getContext('2d');   // ชั้นหลัง
   var ctxF = cvF.getContext('2d');  // ชั้นหน้า (บางเม็ด)
 
-  var W = 0, H = 0, dpr = 1, quality = 1;
+  var W = 0, H = 0, dprB = 1, dprF = 1, quality = 1, halfRate = false;
   var rand = Math.random;
   var clamp = function (v, a, b) { return v < a ? a : v > b ? b : v; };
 
@@ -53,9 +55,20 @@
   var sprSharpR = makeSprite(48, [[0, 'rgba(255,238,234,1)'], [0.4, 'rgba(255,130,115,.95)'], [0.7, 'rgba(255,45,30,.4)'], [1, 'rgba(255,0,0,0)']]);
   var sprSoft = makeSprite(64, [[0, 'rgba(255,255,255,.75)'], [0.45, 'rgba(225,238,255,.35)'], [1, 'rgba(210,230,255,0)']]);
 
+  // แถบลมแบบเรืองจาง (วาดไว้ล่วงหน้า แทนการสร้าง gradient ใหม่ทุกเฟรม)
+  function makeStreak(dir) {
+    var c = document.createElement('canvas'); c.width = 128; c.height = 3;
+    var g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 128, 0);
+    gr.addColorStop(dir > 0 ? 0 : 1, 'rgba(255,205,200,0)');
+    gr.addColorStop(dir > 0 ? 1 : 0, 'rgba(255,225,220,1)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 3);
+    return c;
+  }
+  var streakR = makeStreak(1), streakL = makeStreak(-1);
+
   /* ---------- สไปรต์ "ดาวหิมะ" (ผลึก 6 แฉก / ดาวประกาย 4 แฉก) วาดไว้ล่วงหน้า ---------- */
   function makeStar(variant, soft, red) {
-    var size = 96, c = document.createElement('canvas');
+    var size = 64, c = document.createElement('canvas');
     c.width = c.height = size;
     var g = c.getContext('2d');
     g.translate(size / 2, size / 2);
@@ -199,6 +212,7 @@
 
   /* ---------- อนุภาค ---------- */
   var MAX_SNOW = 0, MAX_RAIN = 0, snow = [], rain = [], streaks = [], splashes = [];
+  var SNOW_SCALE = 0.55; // ขนาดเกล็ดหิมะ (เล็กลง) — ปรับเลขนี้ถ้าอยากใหญ่/เล็กกว่านี้
   var FRONT_SNOW_Z = 0.78, FRONT_RAIN_Z = 0.88; // เฉพาะเม็ดที่ "ใกล้กล้อง" เท่านั้นที่ลอยอยู่หน้าเนื้อหา
 
   function initSnow(f, i, n) {
@@ -215,15 +229,18 @@
     d.len = 0.8 + rand() * 0.9; d.v = false; d.tx = 0; d.ty = 0;
     d.front = d.z > FRONT_RAIN_Z;
   }
-  function sizeCanvas(cv, c) {
-    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  function sizeCanvas(cv, c, d) {
+    cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+    c.setTransform(d, 0, 0, d, 0, 0);
   }
   var fogGrad = null;
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var dv = window.devicePixelRatio || 1;
+    // ชั้นหลังเป็นฉากนุ่มๆ ใช้ความละเอียดต่ำกว่าได้ (เบากว่ามาก) / ชั้นหน้าคมกว่าเล็กน้อย
+    dprB = quality < 0.6 ? 1 : Math.min(dv, 1.25);
+    dprF = quality < 0.6 ? 1 : Math.min(dv, 1.5);
     W = window.innerWidth; H = window.innerHeight;
-    sizeCanvas(cvB, ctx); sizeCanvas(cvF, ctxF);
+    sizeCanvas(cvB, ctx, dprB); sizeCanvas(cvF, ctxF, dprF);
     var area = W * H;
     MAX_SNOW = Math.round(clamp(area / 6000, 30, 120));
     MAX_RAIN = Math.round(clamp(area / 1500, 100, 330));
@@ -280,7 +297,7 @@
   function thirdI(a) { var ms = a * 1000 - 330; return ms > 0 && ms < 70 ? 0.7 : 0; }
 
   /* ---------- ลูปหลัก ---------- */
-  var glowV = -1, last = 0, raf = 0, slowFrames = 0, emaDt = 0.016;
+  var glowV = -1, tintV = -1, dirtyF = false, lastRender = 0, last = 0, raf = 0, slowFrames = 0, emaDt = 0.016;
 
   function drawSnow(c, front, w, sAmt, nS, q) {
     for (var i = 0; i < nS; i++) {
@@ -294,19 +311,25 @@
       var rd = clamp((f.y / H - 0.45) * 2.0, 0, 1);
       var a0 = fade * twk * (1 - rd), a1 = fade * twk * rd;
       if (f.z < 0.22) { // เกล็ดไกลสุด: จุดประกายเล็กๆ
-        var sd = f.r * 4.2, al = 0.55 + 0.4 * f.z;
+        var sd = f.r * 3.2, al = 0.55 + 0.4 * f.z;
         if (a0 > 0.01) { c.globalAlpha = al * a0; c.drawImage(sprSharp, f.x - sd / 2, f.y - sd / 2, sd, sd); }
         if (a1 > 0.01) { c.globalAlpha = al * a1; c.drawImage(sprSharpR, f.x - sd / 2, f.y - sd / 2, sd, sd); }
         continue;
       }
-      var sz = f.r * (near ? 9.5 : 6.4) + 6;
-      var co = Math.cos(f.rot) * dpr, si = Math.sin(f.rot) * dpr;
-      c.setTransform(co, si, -si, co, f.x * dpr, f.y * dpr);
-      var al2 = near ? 0.75 : 0.7 + 0.3 * f.z;
-      if (!front) al2 *= 0.9; // ชั้นหลังเบากว่าเล็กน้อยให้ดูเป็นฉากหลัง
+      var sz = (f.r * (near ? 9.5 : 6.4) + 6) * SNOW_SCALE;
+      var D = front ? dprF : dprB;
+      var spr = (near ? (a1 > a0 ? starSoftR : starSoft) : (a1 > a0 ? starSharpR : starSharp))[f.ty];
+      var al2 = (near ? 0.75 : 0.7 + 0.3 * f.z) * (front ? 1 : 0.9);
+      if (sz < 13) { // เกล็ดเล็ก: ไม่ต้องหมุน (วาดตรงๆ เร็วกว่ามาก)
+        c.globalAlpha = al2 * (a0 + a1) * 0.95;
+        c.drawImage(spr, f.x - sz / 2, f.y - sz / 2, sz, sz);
+        continue;
+      }
+      var co = Math.cos(f.rot) * D, si = Math.sin(f.rot) * D;
+      c.setTransform(co, si, -si, co, f.x * D, f.y * D);
       if (a0 > 0.01) { c.globalAlpha = al2 * a0; c.drawImage((near ? starSoft : starSharp)[f.ty], -sz / 2, -sz / 2, sz, sz); }
       if (a1 > 0.01) { c.globalAlpha = al2 * a1; c.drawImage((near ? starSoftR : starSharpR)[f.ty], -sz / 2, -sz / 2, sz, sz); }
-      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.setTransform(D, 0, 0, D, 0, 0);
     }
     c.globalAlpha = 1;
   }
@@ -343,14 +366,24 @@
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
+    // โหมดประหยัด: เครื่องช้ามาก -> วาด 30 เฟรม/วิ สม่ำเสมอ (ลื่นกว่าสะดุดที่ 40-50)
+    if (halfRate && now - lastRender < 30) return;
+    lastRender = now;
     var dt = (now - last) / 1000; last = now;
     if (!(dt > 0)) return;
-    dt = Math.min(dt, 0.05);
+    dt = Math.min(dt, 0.066);
     time += dt;
 
-    // ลดคุณภาพอัตโนมัติถ้าเครื่องช้า
-    emaDt = emaDt * 0.96 + dt * 0.04;
-    if (emaDt > 0.026) { if (++slowFrames > 90 && quality > 0.45) { quality -= 0.15; slowFrames = 0; } } else slowFrames = 0;
+    // ปรับคุณภาพอัตโนมัติ: ลดจำนวนอนุภาค -> ลดความละเอียด -> เหลือ 30 เฟรม/วิ
+    emaDt = emaDt * 0.95 + dt * 0.05;
+    var limit = halfRate ? 0.045 : 0.024;
+    if (emaDt > limit) {
+      if (++slowFrames > 45) {
+        slowFrames = 0;
+        if (quality > 0.45) { quality -= 0.2; if (quality < 0.6) resize(); } // ต่ำกว่า 0.6 -> ใช้ความละเอียด 1x
+        else if (!halfRate) halfRate = true;
+      }
+    } else slowFrames = Math.max(0, slowFrames - 1);
 
     // เปลี่ยนสภาพอากาศอัตโนมัติ: สุ่มตามเครือข่ายความน่าจะเป็น
     if (auto && !reduce) {
@@ -373,7 +406,8 @@
     var pulse = (Math.sin(time * 0.23) + Math.sin(time * 0.61 + 1.7) + 2) / 4;
 
     // ความมืดของพายุ (ชั้นหลังสุด)
-    tint.style.opacity = clamp(S.storm * 0.4 + S.rain * 0.1, 0, 0.5).toFixed(3);
+    var tv = clamp(S.storm * 0.4 + S.rain * 0.1, 0, 0.5);
+    if (Math.abs(tv - tintV) > 0.01) { tintV = tv; tint.style.opacity = tv.toFixed(3); }
 
     // สายฟ้า
     if (!reduce && S.storm > 0.2 && time >= nextStrike) strike(S.storm < 0.6); // ก่อตัว: แลบฟ้าไกลๆ ก่อน ค่อยฟาดจริงตอนพายุแรง
@@ -396,7 +430,7 @@
     if (Math.abs(gv - glowV) > 0.012) { glowV = gv; glow.style.opacity = gv.toFixed(3); }
 
     ctx.clearRect(0, 0, W, H);
-    ctxF.clearRect(0, 0, W, H);
+    if (dirtyF) { ctxF.clearRect(0, 0, W, H); dirtyF = false; }
     var q = quality;
 
     // หมอกพื้นแดง (ฝน/พายุ) — ชั้นหลัง
@@ -419,7 +453,7 @@
         if (f.x > W + 24) f.x = -24; else if (f.x < -24) f.x = W + 24;
       }
       drawSnow(ctx, false, w, sAmt, nS, q);
-      drawSnow(ctxF, true, w, sAmt, nS, q);
+      drawSnow(ctxF, true, w, sAmt, nS, q); dirtyF = true;
     }
 
     // ----- ฝน -----
@@ -445,7 +479,7 @@
         d.tx = d.x - vx * L; d.ty = d.y - v * L; d.v = true;
       }
       drawRain(ctx, false, nR, base);
-      drawRain(ctxF, true, nR, base);
+      drawRain(ctxF, true, nR, base); dirtyF = true;
       // ระลอกกระเซ็นที่ขอบล่าง (ชั้นหลัง)
       ctx.lineWidth = 0.8;
       for (var sp = splashes.length - 1; sp >= 0; sp--) {
@@ -461,23 +495,18 @@
     // ----- ริ้วลม (ชั้นหลัง) -----
     var wv = clamp((Math.abs(w) - 0.32) * 1.5, 0, 1) * (reduce ? 0 : 1);
     if (wv > 0.02) {
-      ctx.lineWidth = 1; ctx.lineCap = 'round';
       var dirS = w >= 0 ? 1 : -1;
+      var ss = dirS > 0 ? streakR : streakL;
       for (var m = 0; m < streaks.length; m++) {
         var st = streaks[m];
         st.x += dirS * (500 + Math.abs(w) * 900) * st.sp * dt;
         st.y += 12 * dt;
         if (st.x > W + st.len) { st.x = -st.len; st.y = rand() * H; } else if (st.x < -st.len) { st.x = W + st.len; st.y = rand() * H; }
         if (st.y > H) st.y = 0;
-        var gx = ctx.createLinearGradient(st.x - st.len * dirS, 0, st.x, 0);
-        gx.addColorStop(0, 'rgba(255,200,195,0)');
-        gx.addColorStop(1, 'rgba(255,215,210,' + (st.a * wv).toFixed(3) + ')');
-        ctx.strokeStyle = gx;
-        ctx.beginPath();
-        ctx.moveTo(st.x - st.len * dirS, st.y);
-        ctx.lineTo(st.x, st.y + 2);
-        ctx.stroke();
+        ctx.globalAlpha = st.a * wv * 1.2;
+        ctx.drawImage(ss, dirS > 0 ? st.x - st.len : st.x, st.y, st.len, 3);
       }
+      ctx.globalAlpha = 1;
     }
 
     // ----- สายฟ้า: ตัวสายฟ้าเต็มๆ อยู่ชั้นหลัง + แสงเรืองสาดทับหน้าเว็บบางๆ -----
@@ -498,7 +527,7 @@
         rf.addColorStop(0, 'rgba(255,225,220,' + (I2 * 0.13).toFixed(3) + ')');
         rf.addColorStop(0.5, 'rgba(255,60,45,' + (I2 * 0.05).toFixed(3) + ')');
         rf.addColorStop(1, 'rgba(150,0,0,0)');
-        ctxF.fillStyle = rf; ctxF.fillRect(0, 0, W, H);
+        ctxF.fillStyle = rf; ctxF.fillRect(0, 0, W, H); dirtyF = true;
         if (!bo.sheet) {
           ctx.lineCap = 'round'; ctx.lineJoin = 'round';
           ctxF.lineCap = 'round'; ctxF.lineJoin = 'round';
@@ -531,7 +560,7 @@
     }
   });
   window.addEventListener('pagehide', saveState);
-  setInterval(saveState, 1500);
+  setInterval(saveState, 5000);
 
   /* ---------- API สำหรับทดสอบ ---------- */
   window.WeatherFX = {
@@ -549,4 +578,12 @@
   if (!forcedMode && !loadState()) startState('snow'); // เปิดครั้งแรกเริ่มจากหิมะ
 
   start();
+  } // end boot
+
+  // เริ่มหลังหน้าเว็บโหลดเสร็จและเบราว์เซอร์ว่าง — ไม่แย่งงานตอนเปิด/เปลี่ยนหน้า (กันกระตุกช่วงแรก)
+  function go() {
+    var f = function () { boot(); };
+    if (window.requestIdleCallback) window.requestIdleCallback(f, { timeout: 1200 }); else setTimeout(f, 250);
+  }
+  if (document.readyState === 'complete') go(); else window.addEventListener('load', go);
 })();

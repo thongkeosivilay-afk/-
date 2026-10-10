@@ -11,6 +11,12 @@ html.wfx-on body,
 html.wfx-on .shell,
 html.wfx-on .p-body{ background:transparent !important; }
 
+/* กันกระตุก: backdrop-filter (เบลอกระจก) ต้องคำนวณใหม่ทุกเฟรมเมื่อพื้นหลังขยับ -> ปิดไว้ แล้วเพิ่มความทึบแถบแทน */
+html.wfx-on *{ -webkit-backdrop-filter:none !important; backdrop-filter:none !important; }
+html.wfx-on header{ background:rgba(12,12,12,.84); }
+html.wfx-on .tabbar{ background:rgba(18,18,18,.92); }
+html.wfx-on .oh-ov.open{ background:rgba(0,0,0,.86); }
+
 /* การ์ดกึ่งโปร่งใส: ให้เห็นสภาพอากาศผ่านการ์ดจางๆ (ตัวอักษรยังอ่านชัด) */
 html.wfx-on{ --card:rgba(8,8,8,.74); --bg-raise:rgba(10,10,10,.74); }
 html.wfx-on .oh-item{ background:rgba(5,5,5,.74); }
