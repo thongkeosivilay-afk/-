@@ -56,71 +56,167 @@
   box-shadow:none;
 }
 
-/* ---------- Order list ---------- */
-.oh-list{ display:flex; flex-direction:column; gap:12px; }
+/* ---------- Order list (ดีไซน์ใหม่ตามภาพอ้างอิง: การ์ดรูปสินค้า + ปุ่ม "ເບິ່ງຄີ" + ป๊อปอัปรายละเอียด) ---------- */
+.oh-list{ display:flex; flex-direction:column; gap:12px; --oh-red:#ff3b2d; --oh-red-line:#c1160b; }
+.oh-list, .oh-ov{ font-family:'Outfit','Noto Sans Lao Looped','Noto Sans Lao',sans-serif; }
+.oh-lo{ font-family:'Noto Sans Lao Looped','Noto Sans Lao',sans-serif; }
+
 .oh-item{
-  background:var(--card); border:1px solid var(--card-border); border-radius:16px;
-  padding:14px 16px; display:flex; flex-direction:column; gap:10px;
+  position:relative; background:#050505; border:1px solid #262626; border-radius:20px;
+  padding:20px 20px 18px; display:block;
+  animation:ohRise .7s cubic-bezier(.2,.9,.25,1) backwards; animation-delay:calc(var(--i,0)*.12s + .05s);
+  transition:transform .25s ease, border-color .3s ease, box-shadow .3s ease;
 }
+.oh-item:hover{ border-color:#3a1512; box-shadow:0 10px 30px -12px rgba(255,30,20,.35); }
+.oh-item:active{ transform:scale(.985); }
+.oh-item-main{ display:flex; align-items:center; gap:17px; }
+.oh-thumb{
+  width:57px; height:57px; border-radius:14px; flex:none; overflow:hidden; background:#0d0505;
+  border:1px solid #2a1313; box-shadow:0 0 14px rgba(255,30,20,.25);
+  animation:ohThumb 3s ease-in-out infinite; animation-delay:calc(var(--i,0)*.4s);
+}
+.oh-thumb img, .oh-thumb svg{ width:100%; height:100%; display:block; object-fit:cover; transition:transform .5s ease; }
+.oh-item:hover .oh-thumb img, .oh-item:hover .oh-thumb svg{ transform:scale(1.08); }
+.oh-item-body{ min-width:0; flex:1; }
+.oh-item-top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.oh-item-name{ font-size:19px; font-weight:800; letter-spacing:.2px; line-height:1.1; color:#fff; margin:0; }
+.oh-pill{
+  font-size:12px; font-weight:800; color:var(--oh-red); letter-spacing:.3px; white-space:nowrap;
+  border:1.5px solid var(--oh-red-line); border-radius:999px; padding:3px 11px; background:rgba(150,10,5,.18);
+  animation:ohPulse 2.8s ease-in-out infinite; animation-delay:calc(var(--i,0)*.3s);
+}
+.oh-pill.is-failed{ color:#9a9a9a; border-color:#444; background:rgba(120,120,120,.12); animation:none; }
+.oh-item-meta{ margin-top:7px; font-size:14px; color:#d6d6d6; font-weight:500; display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.oh-item-meta svg{ width:12px; height:12px; color:var(--oh-red); flex:none; }
+.oh-item-lbl{ margin-top:13px; font-size:11.5px; color:#9a9a9a; }
+.oh-item-price{
+  margin-top:3px; font-family:'Lilita One','Outfit',sans-serif; font-size:20px; color:var(--oh-red); letter-spacing:.3px;
+  text-shadow:0 0 12px rgba(255,40,30,.35); display:inline-block;
+}
+.oh-view{
+  position:relative; overflow:hidden; margin-top:19px; width:100%; height:38px; border-radius:12px;
+  background:#111; border:1px solid #333; color:#fff; font-size:14px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  transition:transform .15s ease, border-color .25s, background .25s, box-shadow .25s;
+}
+.oh-view svg{ width:14px; height:14px; animation:ohNudge 1.8s ease-in-out infinite; }
+.oh-view::after{
+  content:""; position:absolute; top:0; left:0; width:36%; height:100%; pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+  transform:translateX(-120%) skewX(-20deg); animation:ohSweep 4.5s ease-in-out infinite; animation-delay:calc(var(--i,0)*.7s + 1s);
+}
+.oh-view:hover, .oh-view:active{ border-color:#e0261a; background:#140303; box-shadow:0 0 14px rgba(255,30,20,.35), inset 0 0 12px rgba(255,30,20,.12); }
+.oh-view:active{ transform:scale(.97); }
 
-/* ---- ແຖວເທິງ: ເລກອໍເດີ/ວັນທີ + ປ້າຍສະຖານະ ---- */
-.oh-item-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-.oh-item-id{
-  font-size:11px; color:var(--text-faint); font-family:monospace; line-height:1.5;
-  word-break:break-all;
+/* ---------- Modal ---------- */
+.oh-ov{
+  position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; padding:17px;
+  background:rgba(0,0,0,0); -webkit-backdrop-filter:blur(0); backdrop-filter:blur(0);
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .3s ease, background .3s ease, backdrop-filter .35s ease, -webkit-backdrop-filter .35s ease, visibility 0s .35s;
 }
-.oh-item-status{
-  flex-shrink:0; font-size:11px; font-weight:800; padding:5px 11px; border-radius:999px;
-  white-space:nowrap;
+.oh-ov.open{
+  opacity:1; visibility:visible; pointer-events:auto; background:rgba(0,0,0,.72);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); transition-delay:0s;
 }
-.oh-item-status.completed{ background:rgba(55,214,122,.12); color:#37d67a; border:1px solid rgba(55,214,122,.35); }
-.oh-item-status.failed{ background:rgba(255,0,1,.12); color:var(--red-glow); border:1px solid rgba(255,0,1,.35); }
-
-/* ---- ແຖວກາງ: ໄອຄອນ + ຊື່ສິນຄ້າ/ຈຳນວນ/ລາຄາ ---- */
-.oh-item-main{ display:flex; align-items:center; gap:12px; }
-.oh-item-icon{
-  width:40px; height:40px; border-radius:12px; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-  background:var(--bg-raise); color:var(--red-glow); overflow:hidden;
+.oh-modal{
+  width:100%; max-width:380px; max-height:calc(100% - 20px); overflow-y:auto; -webkit-overflow-scrolling:touch;
+  background:#030303; border:1px solid #3a1010; border-radius:22px; padding:20px 17px 18px; color:#fff;
+  box-shadow:0 0 30px rgba(255,30,20,.14), inset 0 0 22px rgba(255,30,20,.05);
+  transform:translateY(36px) scale(.94); opacity:0;
+  transition:transform .45s cubic-bezier(.2,1.1,.3,1), opacity .3s ease;
 }
-.oh-item-icon svg{ width:19px; height:19px; }
-.oh-item-icon img{ width:100%; height:100%; object-fit:cover; }
-.oh-item-body{ flex:1; min-width:140px; }
-.oh-item-name{ font-size:14.5px; font-weight:800; color:var(--text); }
-.oh-item-qty{ font-size:12px; color:var(--text-dim); margin-top:3px; }
-.oh-item-amount{ font-size:14.5px; font-weight:800; color:var(--gold); margin-top:3px; }
-
-/* ---- ກ່ອງລະຫັດ: ຮອງຮັບໄດ້ທັງ 1 ອັນ ແລະຫຼາຍອັນ (ຮຽງລົງມາ) ---- */
-.oh-code-group{
-  display:flex; align-items:stretch; gap:10px;
-  background:var(--bg-raise); border:1px dashed rgba(55,214,122,.4); border-radius:12px;
-  padding:10px;
+.oh-ov.open .oh-modal{ transform:none; opacity:1; animation:ohMglow 3.4s ease-in-out .5s infinite; }
+.oh-mh{ display:flex; align-items:center; gap:10px; padding:0 3px 15px; border-bottom:1px solid #2b0d0d; }
+.oh-mh-logo{ width:22px; height:22px; flex:none; filter:drop-shadow(0 0 6px rgba(255,40,25,.7)); }
+.oh-ov.open .oh-mh-logo{ animation:ohFloat 3s ease-in-out infinite; }
+.oh-mh h2{ flex:1; min-width:0; font-size:16px; font-weight:800; display:flex; align-items:center; gap:9px; letter-spacing:.2px; margin:0; }
+.oh-mh h2 i{ width:2px; height:15px; background:#e0261a; border-radius:2px; flex:none; }
+.oh-x{
+  width:27px; height:27px; border-radius:50%; background:#101010; border:1px solid #3a3a3a; flex:none;
+  display:flex; align-items:center; justify-content:center; transition:transform .3s ease, border-color .2s;
 }
-.oh-code-lines{ flex:1; display:flex; flex-direction:column; gap:6px; min-width:0; }
-.oh-code-line{
-  display:flex; align-items:center; gap:8px;
-  font-family:monospace; font-size:12.5px; color:#37d67a;
-  padding:6px 10px; border-radius:8px; background:rgba(55,214,122,.06);
-  cursor:pointer; white-space:nowrap; overflow:hidden;
+.oh-x svg{ width:12px; height:12px; }
+.oh-x:hover, .oh-x:active{ transform:rotate(90deg); border-color:#e0261a; }
+.oh-prod{ margin-top:14px; background:#0e0e0e; border:1px solid #252525; border-radius:15px; padding:13px 14px; display:flex; align-items:center; gap:14px; }
+.oh-prod .oh-thumb{ width:53px; height:55px; }
+.oh-prod h3{ font-size:17px; font-weight:800; margin:0; }
+.oh-sub{ margin-top:4px; font-size:12.5px; color:#cfcfcf; }
+.oh-sub em{ font-style:normal; color:var(--oh-red); font-weight:700; margin-left:3px; }
+.oh-sub em.is-failed{ color:#9a9a9a; }
+.oh-lbl{ margin:18px 3px 8px; font-size:13px; font-weight:700; }
+.oh-key{
+  min-height:47px; background:#0d0d0d; border:1px solid #262626; border-radius:13px; padding:8px 15px; margin-bottom:8px;
+  display:flex; align-items:center; justify-content:space-between; font-weight:700; font-size:15px; gap:10px;
 }
-.oh-code-line:active{ opacity:.7; }
-.oh-code-line .num{ color:var(--text-faint); font-family:'Rajdhani',sans-serif; font-size:11px; flex-shrink:0; }
-.oh-code-line .val{ flex:1; overflow:hidden; text-overflow:ellipsis; }
-.oh-code-line .tick{ opacity:0; flex-shrink:0; color:#37d67a; font-size:11px; transition:opacity .15s; }
-.oh-code-line.is-copied .tick{ opacity:1; }
-
-.oh-copy-all{
-  flex-shrink:0; align-self:center; display:flex; flex-direction:column; align-items:center; gap:5px;
-  background:#2ecc71; color:#04160c; border:none; border-radius:12px;
-  padding:11px 13px; font-family:inherit; font-weight:800; font-size:11.5px; cursor:pointer;
+.oh-key span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:'Outfit','Rajdhani',monospace,sans-serif; }
+.oh-key button{ background:none; border:0; display:flex; color:#ddd; padding:4px; transition:transform .2s; }
+.oh-key button:active{ transform:scale(.8); }
+.oh-key.flash{ animation:ohRing .6s ease-out; border-color:#e0261a; }
+.oh-key svg, .oh-cp svg{ width:18px; height:18px; }
+.oh-nokey{ background:#0d0d0d; border:1px dashed #333; border-radius:13px; padding:14px; text-align:center; font-size:12.5px; color:#9a9a9a; }
+.oh-cp{
+  position:relative; overflow:hidden; margin-top:1px; width:100%; height:42px; border:0; border-radius:13px;
+  background:#e8301f; color:#fff; font-size:14px; font-weight:600;
+  display:flex; align-items:center; justify-content:center; gap:9px; box-shadow:0 0 18px rgba(255,40,25,.4);
+  transition:transform .15s ease, background .3s, box-shadow .3s;
 }
-.oh-copy-all svg{ width:17px; height:17px; }
-.oh-copy-all:active{ opacity:.85; }
-.oh-copy-all.is-done{ background:#1fae5c; }
+.oh-cp::after{
+  content:""; position:absolute; top:0; left:0; width:30%; height:100%; pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.28),transparent);
+  transform:translateX(-120%) skewX(-20deg); animation:ohSweep 3.6s ease-in-out 1.2s infinite;
+}
+.oh-cp:active{ transform:scale(.97); }
+.oh-cp.ok{ background:#1fae5c; box-shadow:0 0 20px rgba(46,204,113,.5); animation:ohRing .6s ease-out; }
+.oh-cp.ok svg{ animation:ohPop .4s ease; }
+.oh-line{
+  height:40px; margin-top:9px; background:#0d0d0d; border:1px solid #262626; border-radius:12px; padding:0 14px;
+  display:flex; align-items:center; justify-content:space-between; font-size:13.5px;
+}
+.oh-line span{ color:#bdbdbd; }
+.oh-line b{ font-weight:800; }
+.oh-tot{
+  height:53px; margin-top:9px; border:1.5px solid var(--oh-red-line); border-radius:13px;
+  background:linear-gradient(#120202,#0a0101); padding:0 17px;
+  display:flex; align-items:center; justify-content:space-between; animation:ohPulse 2.8s ease-in-out infinite;
+}
+.oh-tot span{ color:var(--oh-red); font-weight:800; font-size:13.5px; }
+.oh-tot b{ font-family:'Lilita One','Outfit',sans-serif; font-weight:400; font-size:21px; color:var(--oh-red); text-shadow:0 0 12px rgba(255,40,30,.4); }
+.oh-ov.open .oh-modal > *{ animation:ohFadeUp .5s cubic-bezier(.2,.9,.25,1) both; }
+.oh-ov.open .oh-modal > *:nth-child(1){ animation-delay:.12s; }
+.oh-ov.open .oh-modal > *:nth-child(2){ animation-delay:.18s; }
+.oh-ov.open .oh-modal > *:nth-child(3){ animation-delay:.24s; }
+.oh-ov.open .oh-modal > *:nth-child(4){ animation-delay:.30s; }
+.oh-ov.open .oh-modal > *:nth-child(5){ animation-delay:.36s; }
+.oh-ov.open .oh-modal > *:nth-child(6){ animation-delay:.42s; }
+.oh-ov.open .oh-modal > *:nth-child(7){ animation-delay:.48s; }
+.oh-ov.open .oh-modal > *:nth-child(8){ animation-delay:.54s; }
+.oh-ov.open .oh-modal > .oh-tot{ animation:ohFadeUp .5s cubic-bezier(.2,.9,.25,1) .54s both, ohPulse 2.8s ease-in-out 1.1s infinite; }
+body.oh-lock{ overflow:hidden; }
 
 .oh-error{ text-align:center; color:var(--text-faint); font-size:12.5px; padding:20px; }
+
+/* ---------- Animations ---------- */
+@keyframes ohRise{ from{ opacity:0; transform:translateY(28px) scale(.97); } to{ opacity:1; transform:none; } }
+@keyframes ohFadeUp{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
+@keyframes ohPop{ 0%{ transform:scale(.6); opacity:0; } 60%{ transform:scale(1.08); opacity:1; } 100%{ transform:scale(1); } }
+@keyframes ohPulse{ 0%,100%{ box-shadow:0 0 10px rgba(255,30,20,.2); } 50%{ box-shadow:0 0 20px rgba(255,40,25,.55); } }
+@keyframes ohThumb{ 0%,100%{ box-shadow:0 0 12px rgba(255,30,20,.22); border-color:#2a1313; } 50%{ box-shadow:0 0 22px rgba(255,40,25,.55); border-color:#5a1612; } }
+@keyframes ohMglow{ 0%,100%{ box-shadow:0 0 28px rgba(255,30,20,.12), inset 0 0 22px rgba(255,30,20,.04); } 50%{ box-shadow:0 0 44px rgba(255,30,20,.28), inset 0 0 26px rgba(255,30,20,.09); } }
+@keyframes ohSweep{ 0%{ transform:translateX(-120%) skewX(-20deg); } 55%,100%{ transform:translateX(320%) skewX(-20deg); } }
+@keyframes ohNudge{ 0%,100%{ transform:translateX(0); } 50%{ transform:translateX(4px); } }
+@keyframes ohFloat{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-3px); } }
+@keyframes ohRing{ 0%{ box-shadow:0 0 0 0 rgba(255,60,40,.55); } 100%{ box-shadow:0 0 0 14px rgba(255,60,40,0); } }
+
+@media (prefers-reduced-motion:reduce){
+  .oh-item, .oh-thumb, .oh-pill, .oh-view svg, .oh-view::after, .oh-cp::after, .oh-tot, .oh-modal, .oh-modal > *, .oh-mh-logo{
+    animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;
+  }
+}
 
 @media (max-width:360px){
   .oh-stats{ gap:10px; }
   .oh-stat{ padding:14px; }
+  .oh-item{ padding:16px 14px 14px; }
+  .oh-item-name{ font-size:17px; }
 }

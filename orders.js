@@ -34,18 +34,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }[c]));
   }
 
-  function formatKip(n) {
-    return Number(n || 0).toLocaleString('de-DE') + ' ₭';
+  // สกุลเงินตามภาพอ้างอิง (฿0.50) — เปลี่ยนที่ค่าคงที่เดียวนี้ถ้าต้องการสกุลอื่น
+  const CURRENCY = '฿';
+  function formatMoney(n) {
+    return CURRENCY + Number(n || 0).toFixed(2);
   }
 
+  // วันที่รูปแบบ 10/10/2026 21:47 ตามภาพอ้างอิง
   function formatDate(iso) {
-    try {
-      return new Date(iso).toLocaleString('lo-LA', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
-      });
-    } catch {
-      return iso || '-';
-    }
+    const d = new Date(iso);
+    if (isNaN(d)) return iso || '-';
+    const p = (x) => String(x).padStart(2, '0');
+    return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
   }
 
   const STATUS_LABEL = {
@@ -75,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
           product_name: r.product_name || '',
           duration_label: r.duration_label || '',
           status: r.status,
+          image_url: r.image_url || '',
           rows: [r],
           earliestAt: r.created_at,
         });
@@ -83,84 +84,170 @@ document.addEventListener('DOMContentLoaded', () => {
     return groups;
   }
 
-  function groupHTML(g) {
-    const head = g.rows[0]; // ແຖວທຳອິດ (ໃໝ່ສຸດໃນກຸ່ມ) — ໃຊ້ສະແດງເລກອໍເດີ/ວັນທີ
+  const ICON = {
+    clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M12 7v5l3.2 2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+    copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    mark: '<svg class="oh-mh-logo" viewBox="0 0 40 40"><path d="M20 3 36 12 31 18 20 12 9 18 4 12Z M8 22l12 6 12-6 2 5-14 9L6 27Z" fill="#e0261a"/><path d="M20 15l6 4-6 4-6-4Z" fill="#ff5a4a"/></svg>',
+    // รูปสำรองเมื่อสินค้าไม่มีรูป (กล่องสีแดง-ดำ)
+    art: '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#0b0303"/><rect x="9" y="5" width="42" height="50" rx="3" fill="#1b0606" stroke="#e0261a" stroke-width="1.4"/><path d="M30 14l12 7-4 5-8-4-8 4-4-5Z M20 31l10 5 10-5 2 4-12 8-12-8Z" fill="#ff3b2d" opacity=".9"/><rect x="17" y="44" width="26" height="4" rx="1" fill="#ff3b2d" opacity=".7"/></svg>',
+  };
+
+  function thumbHTML(g) {
+    // หมายเหตุ: CSP ของเว็บบล็อก inline handler (onerror) จึงใช้ class + listener ด้านล่างแทน
+    const inner = g.image_url
+      ? `<img class="oh-img" src="${escapeHtml(g.image_url)}" alt="${escapeHtml(g.product_name)}" loading="lazy"/>`
+      : ICON.art;
+    return `<div class="oh-thumb">${inner}</div>`;
+  }
+
+  // รูปสินค้าโหลดไม่ได้ -> สลับเป็นรูปสำรอง
+  function bindImgFallback(root) {
+    root.querySelectorAll('img.oh-img').forEach((img) => {
+      const swap = () => { img.outerHTML = ICON.art; };
+      img.addEventListener('error', swap, { once: true });
+      if (img.complete && img.naturalWidth === 0) swap();
+    });
+  }
+
+  // เก็บกลุ่มทั้งหมดไว้ให้ป๊อปอัปอ้างอิงตาม index
+  let currentGroups = [];
+
+  function groupHTML(g, i) {
+    const head = g.rows[0]; // แถวแรก (ใหม่สุดในกลุ่ม) — ใช้แสดงเลขออเดอร์/วันที่
     const qty = g.rows.length;
     const totalPrice = g.rows.reduce((sum, r) => sum + (Number(r.price) || 0), 0);
-    const nameLine = escapeHtml(g.product_name || 'ສິນຄ້າ');
-    const durationLine = g.duration_label ? ` — ${escapeHtml(g.duration_label)}` : '';
-    const qtyLine = qty > 1 ? `<div class="oh-item-qty">ຈຳນວນ: ${qty} ອັນ</div>` : '';
-
-    const codes = g.rows.filter((r) => r.code);
-    let codeBlock = '';
-    if (codes.length) {
-      const lines = codes.map((r, i) => `
-          <div class="oh-code-line" data-code="${escapeHtml(r.code)}" title="ແຕະເພື່ອສຳເນົາລະຫັດ">
-            ${qty > 1 ? `<span class="num">${i + 1}</span>` : ''}
-            <span class="val">${escapeHtml(r.code)}</span>
-            <span class="tick">✓</span>
-          </div>`).join('');
-      const copyAllBtn = codes.length > 1 ? `
-          <button type="button" class="oh-copy-all">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            ຄັດລອກທັງໝົດ
-          </button>` : '';
-      codeBlock = `
-        <div class="oh-code-group">
-          <div class="oh-code-lines">${lines}</div>
-          ${copyAllBtn}
-        </div>`;
-    }
+    const pill = g.duration_label
+      ? `<span class="oh-pill${g.status === 'failed' ? ' is-failed' : ''}">${escapeHtml(g.duration_label)}</span>` : '';
 
     return `
-      <div class="oh-item">
-        <div class="oh-item-head">
-          <div class="oh-item-id">#${escapeHtml(head.id || '')}<br/>${formatDate(head.created_at)}</div>
-          <span class="oh-item-status ${g.status}">${STATUS_LABEL[g.status] || g.status}</span>
-        </div>
+      <div class="oh-item" style="--i:${i}">
         <div class="oh-item-main">
-          <div class="oh-item-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5-9 9"/></svg>
-          </div>
+          ${thumbHTML(g)}
           <div class="oh-item-body">
-            <div class="oh-item-name">${nameLine}${durationLine}</div>
-            ${qtyLine}
-            <div class="oh-item-amount">${formatKip(totalPrice)}</div>
+            <div class="oh-item-top"><h3 class="oh-item-name">${escapeHtml(g.product_name || 'ສິນຄ້າ')}</h3>${pill}</div>
+            <div class="oh-item-meta">#${escapeHtml(head.id || '')} <span>•</span> ${ICON.clock}${formatDate(head.created_at)}</div>
+            <div class="oh-item-lbl oh-lo">ລາຄາຈ່າຍ</div>
+            <div class="oh-item-price" data-amount="${totalPrice}">${formatMoney(totalPrice)}</div>
           </div>
         </div>
-        ${codeBlock}
-      </div>
-    `;
+        <button type="button" class="oh-view oh-lo" data-i="${i}">ເບິ່ງຄີ ${ICON.arrow}</button>
+      </div>`;
+  }
+
+  /* ---------- ตัวเลขนับขึ้น ---------- */
+  const reduceMotion = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function countUp(el, to, ms) {
+    if (reduceMotion()) { el.textContent = formatMoney(to); return; }
+    const t0 = performance.now();
+    (function tick(t) {
+      const k = Math.min((t - t0) / ms, 1);
+      el.textContent = formatMoney(to * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+
+  /* ---------- คัดลอก (มี fallback สำหรับ iOS/เบราว์เซอร์เก่า) ---------- */
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+        document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+        const ok = document.execCommand('copy');
+        ta.remove();
+        return ok;
+      } catch { return false; }
+    }
+  }
+
+  /* ---------- ป๊อปอัปรายละเอียด ---------- */
+  const modalEl = document.querySelector('#ohModal');
+  const modalBody = document.querySelector('#ohModalBody');
+
+  function openModal(g) {
+    if (!modalEl || !modalBody) return;
+    const head = g.rows[0];
+    const qty = g.rows.length;
+    const total = g.rows.reduce((sum, r) => sum + (Number(r.price) || 0), 0);
+    const unit = qty ? total / qty : 0;
+    const keys = g.rows.map((r) => r.code).filter(Boolean);
+    const failed = g.status === 'failed';
+    const optLine = g.duration_label ? `<div class="oh-sub oh-lo">ຕົວເລືອກ: ${escapeHtml(g.duration_label)}</div>` : '';
+
+    const keyBlock = keys.length
+      ? keys.map((k) => `<div class="oh-key"><span>${escapeHtml(k)}</span><button type="button" class="oh-key-copy" data-code="${escapeHtml(k)}" aria-label="ຄັດລອກ">${ICON.copy}</button></div>`).join('')
+        + `<button type="button" class="oh-cp oh-lo" id="ohCopyAll">${ICON.copy}<span>ຄັດລອກລະຫັດຄີ</span></button>`
+      : `<div class="oh-nokey oh-lo">ບໍ່ມີຄີສຳລັບລາຍການນີ້</div>`;
+
+    modalBody.innerHTML = `
+      <div class="oh-mh">${ICON.mark}<h2>DEKMASH <i></i> #${escapeHtml(head.id || '')}</h2><button type="button" class="oh-x" id="ohClose" aria-label="ປິດ">${ICON.close}</button></div>
+      <div class="oh-prod">${thumbHTML(g)}<div><h3>${escapeHtml(g.product_name || 'ສິນຄ້າ')}</h3>${optLine}
+        <div class="oh-sub oh-lo">${qty} ຊິ້ນ - ${formatMoney(unit)}/ຊິ້ນ <em class="${failed ? 'is-failed' : ''}">${STATUS_LABEL[g.status] ? (failed ? STATUS_LABEL.failed : 'ສຳເລັດ') : escapeHtml(g.status)}</em></div></div></div>
+      <div class="oh-lbl oh-lo">ຄີທີ່ໄດ້ຮັບ (${keys.length} ຄີ)</div>
+      <div>${keyBlock}</div>
+      <div class="oh-lbl oh-lo">ສະຫຼຸບຄຳສັ່ງຊື້</div>
+      <div class="oh-line"><span class="oh-lo">ວັນທີສັ່ງຊື້</span><b>${formatDate(head.created_at)}</b></div>
+      <div class="oh-tot"><span class="oh-lo">ຍອດລວມທັງໝົດ</span><b id="ohTotal">${formatMoney(0)}</b></div>`;
+
+    bindImgFallback(modalBody);
+    modalEl.classList.add('open');
+    modalEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('oh-lock');
+    setTimeout(() => countUp(modalBody.querySelector('#ohTotal'), total, 800), 550);
+
+    modalBody.querySelector('#ohClose').addEventListener('click', closeModal);
+
+    const flash = (el) => { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 700); };
+    modalBody.querySelectorAll('.oh-key-copy').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        if (await copyText(btn.dataset.code || '')) flash(btn.closest('.oh-key'));
+      });
+    });
+    const all = modalBody.querySelector('#ohCopyAll');
+    if (all) {
+      all.addEventListener('click', async () => {
+        if (!(await copyText(keys.join('\n')))) return;
+        const label = all.querySelector('span');
+        all.classList.add('ok'); label.textContent = 'ຄັດລອກແລ້ວ ✓';
+        modalBody.querySelectorAll('.oh-key').forEach(flash);
+        setTimeout(() => { all.classList.remove('ok'); label.textContent = 'ຄັດລອກລະຫັດຄີ'; }, 1400);
+      });
+    }
+  }
+
+  function closeModal() {
+    if (!modalEl) return;
+    modalEl.classList.remove('open');
+    modalEl.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('oh-lock');
+  }
+  if (modalEl) {
+    modalEl.addEventListener('click', (e) => { if (e.target === modalEl) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   }
 
   function renderList(items) {
-    const groups = groupOrders(items);
-    listEl.innerHTML = groups.map(groupHTML).join('');
+    currentGroups = groupOrders(items);
+    listEl.innerHTML = currentGroups.map(groupHTML).join('');
+    bindImgFallback(listEl);
 
-    // ສຳເນົາທີລະລະຫັດ (ແຕະໃສ່ແຖວນັ້ນ)
-    listEl.querySelectorAll('.oh-code-line').forEach((el) => {
-      el.addEventListener('click', async () => {
-        const code = el.dataset.code || '';
-        try {
-          await navigator.clipboard.writeText(code);
-          el.classList.add('is-copied');
-          setTimeout(() => el.classList.remove('is-copied'), 1000);
-        } catch { /* clipboard ไม่รองรับ — ปล่อยผ่าน ผู้ใช้ copy เองจากที่แสดงได้ */ }
-      });
+    // ราคานับขึ้นตอนการ์ดเข้า
+    listEl.querySelectorAll('.oh-item-price').forEach((el, i) => {
+      const to = Number(el.dataset.amount) || 0;
+      el.textContent = formatMoney(0);
+      setTimeout(() => countUp(el, to, 900), 450 + i * 120);
     });
 
-    // ສຳເນົາລະຫັດທັງໝົດໃນກາດດຽວ (ສຳລັບກາດທີ່ຊື້ຫຼາຍກວ່າ 1 ອັນ)
-    listEl.querySelectorAll('.oh-copy-all').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const group = btn.closest('.oh-code-group');
-        const codes = Array.from(group.querySelectorAll('.oh-code-line')).map((el) => el.dataset.code);
-        try {
-          await navigator.clipboard.writeText(codes.join('\n'));
-          const original = btn.innerHTML;
-          btn.classList.add('is-done');
-          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>ຄັດລອກແລ້ວ`;
-          setTimeout(() => { btn.innerHTML = original; btn.classList.remove('is-done'); }, 1400);
-        } catch { /* clipboard ไม่รองรับ — ปล่อยผ่าน ผู้ใช้ copy เองจากที่แสดงได้ */ }
+    listEl.querySelectorAll('.oh-view').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const g = currentGroups[Number(btn.dataset.i)];
+        if (g) openModal(g);
       });
     });
   }
