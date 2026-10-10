@@ -127,6 +127,15 @@ async function route(request, env) {
     if (url.pathname === '/api/account/change-password' && request.method === 'POST') {
       return handleChangePassword(request, env);
     }
+    if (url.pathname === '/api/account/update-profile' && request.method === 'POST') {
+      return handleUpdateProfile(request, env);
+    }
+    if (url.pathname === '/api/account/avatar' && request.method === 'POST') {
+      return handleUpdateAvatar(request, env);
+    }
+    if (url.pathname.startsWith('/api/public/avatar/') && request.method === 'GET') {
+      return handlePublicAvatar(env, url);
+    }
     if (url.pathname.startsWith(SUPABASE_PROXY_PREFIX + '/')) {
       return handleSupabaseProxy(request, env, url);
     }
@@ -289,6 +298,7 @@ async function handleCallback(request, env) {
   await env.SESSIONS.put(sessionId, JSON.stringify(sessionData), {
     expirationTtl: 60 * 60 * 24 * 7, // 7 วัน
   });
+  try { await rememberProfile(env, sessionData); } catch (err) { console.error('rememberProfile failed:', err); }
 
   // ---- แจ้งเตือนเข้า Discord: มีคนล็อกอินผ่าน Discord ----
   await sendDiscordAlert(env, {
@@ -475,7 +485,12 @@ async function handleMe(request, env) {
   // ລ້ວນໆ) ຫຼື "ປ່ຽນລະຫັດຜ່ານ" (ຕ້ອງໃສ່ລະຫັດເກົ່າກ່ອນ, ບັນຊີອີເມວ/ລະຫັດຜ່ານ) — ເບິ່ງ
   // handleChangePassword ດ້ານລຸ່ມ
   const hasPassword = !!sessionUser.passwordAuth;
-  return json({ loggedIn: true, user: { ...sessionUser, balance, hasPassword } });
+  // โปรไฟล์ที่ผู้ใช้แก้เอง (ชื่อ/รูปอัปโหลด) ทับค่าจาก session
+  const prof = await readProfile(env, sessionUser.id);
+  const merged = { ...sessionUser };
+  if (typeof prof.username === 'string' && prof.username) merged.username = prof.username;
+  if (prof.custom && isAvatarUrl(prof.avatar)) merged.avatar = prof.avatar;
+  return json({ loggedIn: true, user: { ...merged, balance, hasPassword } });
 }
 
 /* ---------- helper: จำรูปโปรไฟล์ผู้ใช้ (KV: profile:<user.id>) ----------
@@ -486,12 +501,142 @@ async function rememberProfile(env, user) {
   if (!user || !user.id) return;
   const avatar = typeof user.avatar === 'string' && /^https:\/\//.test(user.avatar) ? user.avatar : null;
   if (!avatar) return;
-  const key = `profile:${user.id}`;
-  const cur = await env.SESSIONS.get(key);
-  if (cur) {
-    try { if (JSON.parse(cur).avatar === avatar) return; } catch { /* เขียนทับ */ }
+  const cur = await readProfile(env, user.id);
+  if (cur.custom) return;                 // ผู้ใช้อัปโหลดรูปเอง -> ห้ามเอารูป Discord/Google มาทับ
+  if (cur.avatar === avatar) return;
+  await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...cur, avatar }));
+}
+
+/* ---------- โปรไฟล์ที่ผู้ใช้แก้เอง (KV: profile:<id>) = { avatar, custom, username } ---------- */
+async function readProfile(env, userId) {
+  try {
+    const raw = await env.SESSIONS.get(`profile:${userId}`);
+    const p = raw ? JSON.parse(raw) : null;
+    return p && typeof p === 'object' ? p : {};
+  } catch { return {}; }
+}
+function isAvatarUrl(a) {
+  return typeof a === 'string' && (/^https:\/\//.test(a) || /^\/api\/public\/avatar\/[0-9a-f]{24}(\?v=\d+)?$/.test(a));
+}
+async function avatarHash(userId) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('avatar:' + userId));
+  return [...new Uint8Array(buf)].slice(0, 12).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/* ---------- POST /api/account/update-profile  { username } ----------
+   เปลี่ยนชื่อที่แสดง — เก็บใน KV profile:<id>.username แล้ว /api/me เอาไปทับชื่อจาก session/Discord/Google
+   (ใช้ได้ทุกบัญชีและมีผลทุกเครื่อง) ; จำกัด 5 ครั้ง/ชั่วโมง */
+async function handleUpdateProfile(request, env) {
+  const user = await getSessionUser(request, env);
+  if (!user) return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400); }
+
+  const username = String(body.username || '').normalize('NFC').replace(/\s+/g, ' ').trim();
+  if (!/^[\p{L}\p{M}\p{N} ._-]{2,24}$/u.test(username)) {
+    return json({ error: 'ຊື່ຕ້ອງມີ 2-24 ໂຕ (ຕົວອັກສອນ ຕົວເລກ ຍະຫວ່າງ . _ - ເທົ່ານັ້ນ)' }, 400);
   }
-  await env.SESSIONS.put(key, JSON.stringify({ avatar }));
+  if (await isRateLimited(env, `pfnamelimit:${user.id}`, 5, 60 * 60)) {
+    return json({ error: 'ປ່ຽນຊື່ຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 1 ຊົ່ວໂມງ' }, 429);
+  }
+  const prof = await readProfile(env, user.id);
+  await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...prof, username }));
+  await bumpRateLimit(env, `pfnamelimit:${user.id}`, 60 * 60);
+  return json({ ok: true, username });
+}
+
+/* ---------- POST /api/account/avatar  { image: "data:image/jpeg;base64,..." } หรือ { remove: true } ----------
+   หน้าเว็บย่อรูปเป็น JPEG สี่เหลี่ยมจัตุรัส ~256px ก่อนส่ง ; ฝั่งนี้ตรวจซ้ำ (ชนิด/magic bytes/ขนาด ≤ ~120KB)
+   เก็บ base64 ใน KV avatarimg:<hash> (hash มาจาก user id — ไม่เปิดเผย id) แล้วเสิร์ฟผ่าน /api/public/avatar/<hash>
+   remove: ลบรูปที่อัปโหลด กลับไปใช้รูปจาก Discord/Google (ถ้ามี) ; จำกัด 10 ครั้ง/ชั่วโมง */
+async function handleUpdateAvatar(request, env) {
+  const user = await getSessionUser(request, env);
+  if (!user) return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400); }
+  if (await isRateLimited(env, `pfavatarlimit:${user.id}`, 10, 60 * 60)) {
+    return json({ error: 'ປ່ຽນຮູບຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 1 ຊົ່ວໂມງ' }, 429);
+  }
+  const hash = await avatarHash(user.id);
+  const prof = await readProfile(env, user.id);
+
+  if (body.remove) {
+    await env.SESSIONS.delete(`avatarimg:${hash}`);
+    const provider = typeof user.avatar === 'string' && /^https:\/\//.test(user.avatar) ? user.avatar : null;
+    await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...prof, avatar: provider, custom: false }));
+    await bumpRateLimit(env, `pfavatarlimit:${user.id}`, 60 * 60);
+    return json({ ok: true, avatar: provider });
+  }
+
+  const m = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/.exec(String(body.image || ''));
+  if (!m) return json({ error: 'ຮອງຮັບສະເພາະຮູບ JPEG ທີ່ຍ່ອມາຈາກໜ້າເວັບ' }, 400);
+  const b64 = m[1];
+  if (b64.length > 160000) return json({ error: 'ຮູບໃຫຍ່ເກີນໄປ' }, 413);
+  let head;
+  try { head = atob(b64.slice(0, 8)); } catch { return json({ error: 'ຮູບບໍ່ຖືກຕ້ອງ' }, 400); }
+  if (b64.length < 200 || head.charCodeAt(0) !== 0xff || head.charCodeAt(1) !== 0xd8 || head.charCodeAt(2) !== 0xff) {
+    return json({ error: 'ຮູບບໍ່ຖືກຕ້ອງ' }, 400);
+  }
+
+  await env.SESSIONS.put(`avatarimg:${hash}`, b64);
+  const url = `/api/public/avatar/${hash}?v=${Date.now()}`;
+  await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...prof, avatar: url, custom: true }));
+  await bumpRateLimit(env, `pfavatarlimit:${user.id}`, 60 * 60);
+  return json({ ok: true, avatar: url });
+}
+
+/* ---------- GET /api/public/avatar/<hash> : เสิร์ฟรูปที่ผู้ใช้อัปโหลด (ใช้ในหน้าจัดอันดับ/เมนู) ---------- */
+async function handlePublicAvatar(env, url) {
+  const hash = url.pathname.split('/').pop();
+  if (!/^[0-9a-f]{24}$/.test(hash)) return new Response('Not found', { status: 404 });
+  const raw = await env.SESSIONS.get(`avatarimg:${hash}`);
+  if (!raw) return new Response('Not found', { status: 404 });
+  const bin = atob(raw);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Response(bytes, {
+    status: 200,
+    headers: {
+      'content-type': 'image/jpeg',
+      'cache-control': 'public, max-age=86400',
+      'x-content-type-options': 'nosniff',
+    },
+  });
+}
+
+/* ---------- helper: ดึงรูปโปรไฟล์ย้อนหลังจาก session ที่ยัง active (ใช้ตอนคนใน top 10 ยังไม่มี profile:<id>) ----------
+   session เก็บใน KV (อายุ 7 วัน) พร้อม avatar อยู่แล้ว แต่ไม่มี index ตาม user id จึงไล่ list แล้วหาตัวที่ id ตรง
+   - อ่านไม่เกิน MAX_READS session ต่อครั้ง (กัน subrequest limit ของ Worker) ; พลาดตรงไหนข้ามไป ไม่ให้หน้าอันดับพัง
+   - คนที่หาไม่เจอ จะจดผลว่า "ยังไม่มีรูป" ไว้ 1 ชั่วโมง (TTL) กันสแกนซ้ำทุกครั้ง ;
+     พอคนนั้น login/เข้าเว็บ rememberProfile จะเขียนทับด้วยรูปจริงทันที */
+async function backfillProfiles(env, wanted) {
+  const found = new Map();
+  if (!wanted.size) return found;
+  const MAX_READS = 400;
+  let reads = 0, cursor;
+  try {
+    do {
+      const page = await env.SESSIONS.list({ cursor, limit: 1000 });
+      const names = page.keys.map((k) => k.name).filter((n) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(n));
+      for (let i = 0; i < names.length && reads < MAX_READS && found.size < wanted.size; i += 50) {
+        const chunk = names.slice(i, Math.min(i + 50, i + (MAX_READS - reads)));
+        reads += chunk.length;
+        await Promise.all(chunk.map(async (n) => {
+          try {
+            const raw = await env.SESSIONS.get(n);
+            if (!raw) return;
+            const u = JSON.parse(raw);
+            const id = u && u.id != null ? String(u.id) : '';
+            if (wanted.has(id) && typeof u.avatar === 'string' && /^https:\/\//.test(u.avatar)) found.set(id, u.avatar);
+          } catch { /* ข้าม */ }
+        }));
+      }
+      cursor = page.list_complete ? null : page.cursor;
+    } while (cursor && reads < MAX_READS && found.size < wanted.size);
+  } catch (err) {
+    console.error('backfillProfiles failed:', err);
+  }
+  return found;
 }
 
 /* ---------- helper: อ่าน session cookie -> ผู้ใช้ปัจจุบัน (หรือ null) ---------- */
@@ -761,6 +906,7 @@ async function createSession(env, sessionData) {
   await env.SESSIONS.put(sessionId, JSON.stringify(sessionData), {
     expirationTtl: 60 * 60 * 24 * 7, // 7 ວັນ
   });
+  try { await rememberProfile(env, sessionData); } catch (err) { console.error('rememberProfile failed:', err); }
   return sessionId;
 }
 
@@ -1265,13 +1411,27 @@ async function handleTopSpenders(request, env) {
       .slice(0, 10);
 
     // รูปโปรไฟล์จาก KV (profile:<user_id>) — ถ้ายังไม่เคยมี (คนนั้นยังไม่เข้าเว็บหลังอัปเดต) = null
-    const avatars = await Promise.all(top.map(async ([uid]) => {
+    const stored = await Promise.all(top.map(async ([uid]) => {
       try {
         const raw = await env.SESSIONS.get(`profile:${uid}`);
-        const a = raw ? JSON.parse(raw).avatar : null;
-        return typeof a === 'string' && /^https:\/\//.test(a) ? a : null;
-      } catch { return null; }
+        if (!raw) return { known: false, avatar: null };
+        const a = JSON.parse(raw).avatar;
+        return { known: true, avatar: isAvatarUrl(a) ? a : null };
+      } catch { return { known: false, avatar: null }; }
     }));
+    // คนที่ยังไม่เคยจดโปรไฟล์เลย -> ลองหาจาก session ที่ยัง active แล้วจดไว้
+    const missing = new Set(top.filter((_, i) => !stored[i].known).map(([uid]) => String(uid)));
+    const filled = await backfillProfiles(env, missing);
+    await Promise.all([...missing].map(async (uid) => {
+      try {
+        const av = filled.get(uid) || null;
+        await env.SESSIONS.put(`profile:${uid}`, JSON.stringify({ avatar: av }),
+          av ? undefined : { expirationTtl: 60 * 60 });
+        const idx = top.findIndex(([k]) => String(k) === uid);
+        if (idx >= 0) stored[idx] = { known: true, avatar: av };
+      } catch { /* ข้าม */ }
+    }));
+    const avatars = stored.map((x) => x.avatar);
 
     const items = top.map(([, u], i) => ({
       rank: i + 1,
