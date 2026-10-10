@@ -20,7 +20,7 @@ var LEADERBOARD = [
 
   function avatar(u){
     var inner = u.avatar
-      ? '<img src="' + esc(u.avatar) + '" alt="" loading="lazy"/>'
+      ? '<img src="' + esc(u.avatar) + '" alt="" loading="lazy" referrerpolicy="no-referrer"/>'
       : '<b>' + esc(u.name.charAt(0).toUpperCase()) + '</b>';
     return '<div class="avatar">' + inner + '</div>';
   }
@@ -49,6 +49,14 @@ var LEADERBOARD = [
   function render(list){
     document.getElementById('top3').innerHTML = list.filter(function(u){ return u.rank <= 3; }).map(card).join('');
     document.getElementById('rest').innerHTML = list.filter(function(u){ return u.rank > 3; }).map(card).join('');
+    // รูปโหลดไม่ได้ -> กลับไปใช้ตัวอักษรแรกของชื่อ
+    document.querySelectorAll('.avatar img').forEach(function(img){
+      img.addEventListener('error', function(){
+        var b = document.createElement('b'), nm = img.closest('.lb-card').querySelector('.nm');
+        b.textContent = (nm ? nm.textContent : '?').charAt(0).toUpperCase();
+        img.replaceWith(b);
+      });
+    });
   }
 
   // ลำดับเข้าฉาก + ตัวเลขเงินวิ่งขึ้นจาก 0
