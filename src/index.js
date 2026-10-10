@@ -454,6 +454,9 @@ async function handleMe(request, env) {
     return json({ loggedIn: false });
   }
 
+  // จำรูปโปรไฟล์ไว้ใน KV (profile:<id>) ให้หน้าจัดอันดับ — ไม่ block response ถ้าพลาด
+  try { await rememberProfile(env, sessionUser); } catch (err) { console.error('rememberProfile failed:', err); }
+
   let balance = 0;
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
@@ -473,6 +476,22 @@ async function handleMe(request, env) {
   // handleChangePassword ດ້ານລຸ່ມ
   const hasPassword = !!sessionUser.passwordAuth;
   return json({ loggedIn: true, user: { ...sessionUser, balance, hasPassword } });
+}
+
+/* ---------- helper: จำรูปโปรไฟล์ผู้ใช้ (KV: profile:<user.id>) ----------
+   รูปโปรไฟล์มาจาก Discord/Google ตอน login และอยู่ใน session เท่านั้น (ไม่มีตาราง profiles ใน Supabase)
+   หน้าจัดอันดับต้องเห็นรูปของ "คนอื่น" จึงบันทึกลง KV แยกต่างหากทุกครั้งที่ /api/me ถูกเรียก
+   (เขียนเฉพาะตอนค่าเปลี่ยน/ยังไม่มี — ไม่มี TTL) ; เก็บเฉพาะ URL รูปสาธารณะ ไม่เก็บอีเมล */
+async function rememberProfile(env, user) {
+  if (!user || !user.id) return;
+  const avatar = typeof user.avatar === 'string' && /^https:\/\//.test(user.avatar) ? user.avatar : null;
+  if (!avatar) return;
+  const key = `profile:${user.id}`;
+  const cur = await env.SESSIONS.get(key);
+  if (cur) {
+    try { if (JSON.parse(cur).avatar === avatar) return; } catch { /* เขียนทับ */ }
+  }
+  await env.SESSIONS.put(key, JSON.stringify({ avatar }));
 }
 
 /* ---------- helper: อ่าน session cookie -> ผู้ใช้ปัจจุบัน (หรือ null) ---------- */
@@ -1174,6 +1193,28 @@ async function handleRecentPurchases(request, env) {
    - ไม่ส่ง user_id / อีเมลเต็มออกไปเด็ดขาด (public endpoint): ส่งแค่ชื่อที่ปิดบัง (3 ตัวแรกของอีเมล + ***)
    - ไม่มีตาราง users ที่เก็บวันสมัคร จึงใช้ "วันที่เติมเงินครั้งแรก" ของคนนั้นแทนวันสมัคร (joined)
    - วันที่แสดงตามเวลา UTC+7 รูปแบบ dd/mm/yyyy ; cache ที่ edge/browser 60 วินาที */
+/* ซ่อนบัญชีออกจากหน้าจัดอันดับ (เช่น บัญชีเงินทดสอบ/เงินเสก) — คนที่ถูกซ่อนจะไม่ขึ้นเลย และอันดับถัดไปเลื่อนขึ้นมาแทน
+   ซ่อนได้ 3 แบบ: user_ids / emails (ตรงตัวเป๊ะ — แม่นที่สุด) หรือ prefixes (ชื่ออีเมลก่อน @ ขึ้นต้นด้วย…)
+   ตอนนี้ใช้ prefixes ตามชื่อที่ปิดบังบนหน้าเว็บ (bhc***, nua***) เพราะยังไม่มี user_id/อีเมลเต็ม
+   → แนะนำให้ใส่ user_id หรืออีเมลเต็มแทน จะได้ไม่เผลอซ่อนคนอื่นที่ชื่อขึ้นต้นเหมือนกัน
+   เพิ่มเองได้โดยไม่ต้องแก้โค้ดผ่าน env LEADERBOARD_HIDE (คั่นด้วย comma: user_id หรืออีเมลเต็ม) */
+const LEADERBOARD_HIDE = {
+  user_ids: [],
+  emails: [],
+  prefixes: ['bhc', 'nua'],
+};
+
+function isHiddenFromLeaderboard(env, userId, email) {
+  const e = String(email || '').toLowerCase();
+  const local = e.split('@')[0] || '';
+  const extra = String((env && env.LEADERBOARD_HIDE) || '')
+    .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+  if (userId && (LEADERBOARD_HIDE.user_ids.includes(String(userId)) || extra.includes(String(userId).toLowerCase()))) return true;
+  if (e && (LEADERBOARD_HIDE.emails.map((x) => x.toLowerCase()).includes(e) || extra.includes(e))) return true;
+  if (local && LEADERBOARD_HIDE.prefixes.some((p) => local.startsWith(p.toLowerCase()))) return true;
+  return false;
+}
+
 async function handleTopSpenders(request, env) {
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -1200,11 +1241,18 @@ async function handleTopSpenders(request, env) {
       limit: '50000',
     });
 
+    // รอบแรก: หา "คน" ที่ถูกซ่อน (ทุกแถวของคนนั้นต้องหายหมด แม้บางแถวไม่มีอีเมล)
+    const hidden = new Set();
+    for (const r of rows || []) {
+      if (isHiddenFromLeaderboard(env, r.user_id, r.user_email)) hidden.add(r.user_id || r.user_email);
+    }
+
     const byUser = new Map();
     for (const r of rows || []) {
       const key = r.user_id || r.user_email;
       const amt = Number(r.amount) || 0;
       if (!key || amt <= 0) continue;
+      if (hidden.has(key)) continue;
       const cur = byUser.get(key) || { email: r.user_email, total: 0, first: r.created_at };
       cur.total += amt;
       if (!cur.email && r.user_email) cur.email = r.user_email;
@@ -1212,16 +1260,26 @@ async function handleTopSpenders(request, env) {
       byUser.set(key, cur);
     }
 
-    const items = [...byUser.values()]
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10)
-      .map((u, i) => ({
-        rank: i + 1,
-        name: maskName(u.email),
-        amount: u.total,
-        joined: fmtDate(u.first),
-        avatar: null,
-      }));
+    const top = [...byUser.entries()]
+      .sort((a, b) => b[1].total - a[1].total)
+      .slice(0, 10);
+
+    // รูปโปรไฟล์จาก KV (profile:<user_id>) — ถ้ายังไม่เคยมี (คนนั้นยังไม่เข้าเว็บหลังอัปเดต) = null
+    const avatars = await Promise.all(top.map(async ([uid]) => {
+      try {
+        const raw = await env.SESSIONS.get(`profile:${uid}`);
+        const a = raw ? JSON.parse(raw).avatar : null;
+        return typeof a === 'string' && /^https:\/\//.test(a) ? a : null;
+      } catch { return null; }
+    }));
+
+    const items = top.map(([, u], i) => ({
+      rank: i + 1,
+      name: maskName(u.email),
+      amount: u.total,
+      joined: fmtDate(u.first),
+      avatar: avatars[i],
+    }));
 
     return new Response(JSON.stringify({ ok: true, items }), {
       status: 200,
