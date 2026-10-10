@@ -2669,6 +2669,16 @@ async function initAdminPanel() {
   initSiteSettingsPanel();
   initD2Dashboard();
 
+  // ---- แผง "ໂຄ້ດສ່ວນຫຼຸດ" (coupons-admin.js) ----
+  // บัคเดิม: coupons-admin.js ประกาศ window.initCouponsPanel ไว้ แต่ไม่มีใครเรียก
+  // ทำให้ปุ่ม/ช่องกรอกในแผงนี้ไม่ได้ผูก event เลย (กดแล้วเงียบ) และรายการโค้ดค้าง "ກຳລັງໂຫຼດ..."
+  // เรียกก่อน await loadXxx ด้านล่าง เพื่อให้แผงนี้ใช้งานได้แม้ข้อมูลส่วนอื่นโหลดช้า/พัง
+  try {
+    if (typeof window.initCouponsPanel === 'function') window.initCouponsPanel();
+  } catch (err) {
+    console.error('initCouponsPanel failed:', err);
+  }
+
   await loadSiteSettingsAdmin();
   await loadProducts();
   await loadTopupRequests();

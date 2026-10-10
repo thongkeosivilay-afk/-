@@ -38,6 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const buyBtnText = document.getElementById('buyBtnText');
   const prodDescBox = document.getElementById('prodDescBox');
 
+  const couponInput = document.getElementById('couponInput');
+  const couponBtn = document.getElementById('couponBtn');
+  const couponField = document.getElementById('couponField');
+  const couponMsg = document.getElementById('couponMsg');
+  const totalOld = document.getElementById('totalOld');
+
   if (!window.StorefrontData || !pid) {
     showError('ບໍ່ພົບສິນຄ້ານີ້ (ລິ້ງບໍ່ຖືກຕ້ອງ)');
     return;
@@ -197,10 +203,135 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedIndex = 0;
   let qty = 1;
   let resellerActive = false; // true ຫຼັງຈາກ applyResellerPricing() ພົບວ່າຄົນນີ້ເປັນຕົວແທນ
+  let coupon = null;          // { code, type: 'percent'|'fixed', value, remaining } ຫຼັງ validate ຜ່ານ
+  let couponChecking = false;
 
   function formatKip(n) { return window.StorefrontData.formatKip(n); }
 
   function currentDuration() { return durations[selectedIndex] || null; }
+
+  /* ---------- ໂຄ້ດສ່ວນຫຼຸດ ----------
+     ສ່ວນຫຼຸດຄິດ "ຕໍ່ອັນ" (ຕາມທີ່ແອດມິນຕັ້ງ: ລົດ X ຕໍ່ອັນ) ແລະ 1 ອໍເດີ = 1 ການໃຊ້ສິດ
+     ຖ້າຊື້ຫຼາຍກວ່າສິດທີ່ເຫຼືອ ຈະລົດສະເພາະ N ອັນທຳອິດ (ສ່ວນທີ່ເຫຼືອຄິດລາຄາເຕັມ)
+     ຕົວເລກຝັ່ງນີ້ເປັນການຄາດຄະເນເພື່ອສະແດງ — ຍອດຈິງທີ່ຫັກເງິນຄິດໂດຍ purchase_product ຝັ່ງເຊີບເວີ */
+  function discountPerUnit(unitPrice) {
+    if (!coupon) return 0;
+    const v = Number(coupon.value) || 0;
+    const off = coupon.type === 'percent'
+      ? Math.round(unitPrice * Math.min(v, 100) / 100)
+      : v;
+    return Math.max(0, Math.min(off, unitPrice));
+  }
+
+  function couponUnits() {
+    return coupon ? Math.max(0, Math.min(qty, Number(coupon.remaining) || 0)) : 0;
+  }
+
+  function couponLabel() {
+    if (!coupon) return '';
+    return coupon.type === 'percent' ? `${coupon.value}%` : formatKip(coupon.value);
+  }
+
+  function setCouponMsg(kind, html) {
+    couponMsg.className = 'coupon-msg' + (html ? ' show ' + kind : '');
+    couponMsg.innerHTML = html || '';
+  }
+
+  function renderCouponState() {
+    const applied = !!coupon;
+    couponInput.readOnly = applied;
+    couponInput.value = applied ? coupon.code : couponInput.value;
+    couponField.classList.toggle('is-ok', applied);
+    couponBtn.textContent = applied ? 'ຍົກເລີກ' : 'ໃຊ້ໂຄ້ດ';
+    couponBtn.classList.toggle('is-remove', applied);
+    couponBtn.disabled = couponChecking;
+
+    if (!applied) return;
+    const units = couponUnits();
+    const unitPrice = currentDuration() ? currentDuration().price : 0;
+    const off = discountPerUnit(unitPrice) * units;
+    let html = `ໃຊ້ໂຄ້ດ <b class="en">${escapeHtml(coupon.code)}</b> ແລ້ວ — ລົດ ${escapeHtml(couponLabel())} ຕໍ່ອັນ`;
+    if (off > 0) html += ` (ປະຢັດ ${escapeHtml(formatKip(off))})`;
+    if (qty > coupon.remaining) {
+      html += `<br>ໂຄ້ດນີ້ໃຊ້ໄດ້ອີກ ${coupon.remaining} ຄັ້ງ — ຈະລົດສະເພາະ ${coupon.remaining} ອັນທຳອິດ`;
+    }
+    setCouponMsg('ok', html);
+  }
+
+  function clearCoupon(silent) {
+    coupon = null;
+    couponInput.value = '';
+    couponInput.readOnly = false;
+    if (!silent) setCouponMsg('', '');
+    renderSummary();
+  }
+
+  function couponFail(message, loginLink) {
+    couponField.classList.remove('is-error'); void couponField.offsetWidth;
+    couponField.classList.add('is-error');
+    setTimeout(() => couponField.classList.remove('is-error'), 500);
+    let html = escapeHtml(message);
+    if (loginLink) {
+      const next = encodeURIComponent(window.location.pathname + window.location.search);
+      html += ` <a href="/login.html?next=${next}">ເຂົ້າສູ່ລະບົບ</a>`;
+    }
+    setCouponMsg('err', html);
+  }
+
+  async function applyCoupon() {
+    if (couponChecking) return;
+    const code = couponInput.value.trim().toUpperCase();
+    if (!code) { couponFail('ກະລຸນາໃສ່ໂຄ້ດສ່ວນຫຼຸດ'); couponInput.focus(); return; }
+    if (!/^[A-Z0-9_-]{2,32}$/.test(code)) { couponFail('ໂຄ້ດບໍ່ຖືກຕ້ອງ ຫຼືໝົດອາຍຸແລ້ວ'); return; }
+
+    couponChecking = true;
+    couponBtn.disabled = true;
+    couponBtn.textContent = 'ກຳລັງກວດ...';
+    setCouponMsg('', '');
+    try {
+      const res = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401 || data.requireLogin) {
+        couponFail('ກະລຸນາລ໋ອກອິນກ່ອນໃຊ້ໂຄ້ດສ່ວນຫຼຸດ', true);
+        return;
+      }
+      if (!res.ok || !data.ok) {
+        couponFail(data.error || 'ກວດໂຄ້ດບໍ່ສຳເລັດ ລອງໃໝ່ພາຍຫຼັງ');
+        return;
+      }
+      coupon = {
+        code: data.code || code,
+        type: data.type === 'percent' ? 'percent' : 'fixed',
+        value: Number(data.value) || 0,
+        remaining: Math.max(0, Number(data.remaining) || 0),
+      };
+    } catch (err) {
+      console.error('product.js: validate coupon failed', err);
+      couponFail('ເຊື່ອມຕໍ່ບໍ່ໄດ້ ກະລຸນາລອງໃໝ່');
+      return;
+    } finally {
+      couponChecking = false;
+      couponBtn.disabled = false;
+      couponBtn.textContent = coupon ? 'ຍົກເລີກ' : 'ໃຊ້ໂຄ້ດ';
+    }
+    renderSummary();
+  }
+
+  couponBtn.addEventListener('click', () => {
+    if (coupon) clearCoupon(); else applyCoupon();
+  });
+  couponInput.addEventListener('input', () => {
+    couponInput.value = couponInput.value.replace(/[^A-Za-z0-9_-]/g, '').toUpperCase();
+    if (couponMsg.classList.contains('err')) setCouponMsg('', '');
+  });
+  couponInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); if (!coupon) applyCoupon(); }
+  });
 
   function renderBadges() {
     const stock = currentDuration() ? currentDuration().stock : 0;
@@ -273,8 +404,15 @@ document.addEventListener('DOMContentLoaded', () => {
       tag.style.cssText = 'display:inline-block;margin-left:8px;font-size:11px;font-weight:700;color:var(--red-glow,#ff0001);border:1px solid var(--red-glow,#ff0001);border-radius:6px;padding:2px 7px;vertical-align:middle;text-shadow:0 0 6px rgba(255,0,1,.5);';
       priceValue.insertAdjacentElement('afterend', tag);
     }
-    totalValue.textContent = formatKip(price * qty);
+    const fullTotal = price * qty;
+    const couponOff = discountPerUnit(price) * couponUnits();
+    totalValue.textContent = formatKip(Math.max(0, fullTotal - couponOff));
+    if (totalOld) {
+      totalOld.textContent = formatKip(fullTotal);
+      totalOld.classList.toggle('u-hidden', couponOff <= 0);
+    }
     qtyValue.textContent = qty;
+    renderCouponState();
 
     const buyable = !product.paused && stock > 0;
     if (!buyable) {
@@ -294,15 +432,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (d && qty < d.stock) { qty++; renderSummary(); }
   });
 
-  async function purchaseOne() {
+  async function purchaseOne(couponCode) {
     const d = currentDuration();
+    const payload = {
+      productId: product.id,
+      durationId: product.duration_enabled ? d.id : null,
+    };
+    if (couponCode) payload.couponCode = couponCode;
     const res = await fetch('/api/orders/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        productId: product.id,
-        durationId: product.duration_enabled ? d.id : null,
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
 
@@ -325,10 +465,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const codes = [];
     const unitPrice = currentDuration() ? currentDuration().price : 0;
+    // ໂຄ້ດສ່ວນຫຼຸດ: ສົ່ງສະເພາະ N ອັນທຳອິດ (N = ສິດທີ່ເຫຼືອ) ອັນທີ່ເກີນຄິດລາຄາເຕັມ ບໍ່ໃຫ້ຕິດ COUPON_USER_LIMIT
+    const couponCode = coupon ? coupon.code : null;
+    const couponN = couponUnits();
+    qtyMinus.disabled = true;
+    couponBtn.disabled = true;
+    couponInput.readOnly = true;
     try {
       for (let i = 0; i < wantQty; i++) {
         buyBtnText.textContent = wantQty > 1 ? `ກຳລັງສັ່ງຊື້... (${i + 1}/${wantQty})` : 'ກຳລັງສັ່ງຊື້...';
-        const code = await purchaseOne();
+        const code = await purchaseOne(i < couponN ? couponCode : null);
         codes.push(code);
       }
       showSuccessSheet(codes, unitPrice * codes.length);

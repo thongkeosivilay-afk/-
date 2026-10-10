@@ -9,7 +9,7 @@
 <title>ລາຍລະອຽດສິນຄ້າ</title>
 <link href="style.css?v=20261009a" rel="stylesheet"/>
 <link href="tabbar-close-fx.css?v=20261004b" rel="stylesheet"/>
-<link href="product.css" rel="stylesheet"/>
+<link href="product.css?v=20261011a" rel="stylesheet"/>
 <link href="page-transition.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -93,12 +93,22 @@
 <button class="qty-btn" id="qtyMinus" type="button">−</button>
 <span class="qty-value" id="qtyValue">1</span>
 <button class="qty-btn" id="qtyPlus" type="button">+</button>
+<!-- ຊ່ອງໃສ່ໂຄ້ດສ່ວນຫຼຸດ (ຕຳແໜ່ງຂ້າງປຸ່ມຈຳນວນ) — ຄວບຄຸມໂດຍ product.js, ຮຽກ POST /api/coupons/validate -->
+<div class="coupon-inline" id="couponBox">
+<div class="coupon-field" id="couponField">
+<svg class="coupon-ico" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1Z"></path><path d="M9 5v14" stroke-dasharray="2 3"></path></svg>
+<input autocapitalize="characters" autocomplete="off" autocorrect="off" class="coupon-input en" id="couponInput" maxlength="32" placeholder="ໂຄ້ດສ່ວນຫຼຸດ" spellcheck="false" type="text"/>
 </div>
+<button class="coupon-btn" id="couponBtn" type="button">ໃຊ້ໂຄ້ດ</button>
+</div>
+</div>
+<div class="coupon-msg" id="couponMsg" role="status"></div>
 <div class="stock-note" id="stockNote"></div>
 </div>
 <div class="buy-bar">
 <div class="buy-bar-total">
 <span class="lbl">ລວມທັງໝົດ</span>
+<span class="old u-hidden" id="totalOld">₭ 0</span>
 <span class="val" id="totalValue">₭ 0</span>
 </div>
 <button class="buy-btn" id="buyBtn" type="button">
@@ -133,7 +143,7 @@
 </div>
 <script src="page-transition.js"></script>
 <script src="storefront-data.js"></script>
-<script src="product.js"></script>
+<script src="product.js?v=20261011a"></script>
 <script src="tabbar-close-fx.js?v=20261004b"></script>
 <script src="script.js?v=20261009a"></script>
 </body>

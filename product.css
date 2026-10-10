@@ -135,6 +135,47 @@ hr.div{ border:none; border-top:1px solid var(--card-border); margin:20px 16px 0
 .qty-value{ min-width:44px; text-align:center; font-size:17px; font-weight:800; }
 .stock-note{ font-size:12px; color:var(--text-faint); margin-top:9px; }
 
+/* -------- ໂຄ້ດສ່ວນຫຼຸດ (ຢູ່ຂ້າງປຸ່ມຈຳນວນ; ຈໍແຄບຈະຕົກລົງແຖວໃໝ່ເອງ) -------- */
+.qty-row{ flex-wrap:wrap; }
+.coupon-inline{
+  flex:1 1 190px; min-width:0; display:flex; align-items:stretch; gap:8px;
+}
+.coupon-field{
+  flex:1; min-width:0; position:relative; display:flex; align-items:center;
+  background:var(--bg-raise); border:1px solid var(--card-border); border-radius:10px;
+  transition:border-color .2s, box-shadow .2s;
+}
+.coupon-field:focus-within{ border-color:var(--red); box-shadow:0 0 0 3px rgba(255,0,1,.12); }
+.coupon-field.is-error{ border-color:var(--red); animation:couponShake .35s; }
+.coupon-field.is-ok{ border-color:#2ecc71; box-shadow:0 0 0 3px rgba(46,204,113,.12); }
+.coupon-ico{ width:16px; height:16px; margin-left:11px; flex-shrink:0; color:var(--red); }
+.coupon-field.is-ok .coupon-ico{ color:#2ecc71; }
+.coupon-input{
+  flex:1; min-width:0; width:100%; height:40px; padding:0 10px;
+  background:transparent; border:none; outline:none; color:var(--text);
+  font-size:16px; /* >=16px ກັນ iOS ຊູມໜ້າຈໍເວລາແຕະຊ່ອງ */
+  font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+}
+.coupon-input::placeholder{ color:var(--text-faint); font-weight:600; letter-spacing:0; text-transform:none; font-size:13px; }
+.coupon-input[readonly]{ color:#2ecc71; }
+.coupon-btn{
+  flex-shrink:0; height:40px; padding:0 14px; border-radius:10px;
+  background:var(--red); color:#fff; border:none; font-size:13px; font-weight:800;
+  white-space:nowrap; transition:opacity .2s, background .2s;
+}
+.coupon-btn:disabled{ opacity:.45; }
+.coupon-btn.is-remove{ background:transparent; color:var(--text-dim); border:1px solid var(--card-border); }
+.coupon-msg{ font-size:12px; line-height:1.6; margin-top:9px; display:none; }
+.coupon-msg.show{ display:block; }
+.coupon-msg.err{ color:var(--red); }
+.coupon-msg.ok{ color:#2ecc71; }
+.coupon-msg a{ color:var(--red); font-weight:800; text-decoration:underline; }
+.buy-bar-total .old{ font-size:11px; color:var(--text-faint); text-decoration:line-through; }
+@keyframes couponShake{
+  0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-5px); } 75%{ transform:translateX(5px); }
+}
+@media (prefers-reduced-motion: reduce){ .coupon-field.is-error{ animation:none; } }
+
 /* -------- buy bar: inline in the page flow, right after the stock note
    (previously position:fixed pinned it to the bottom of the screen —
    moved to sit naturally in place instead) -------- */
