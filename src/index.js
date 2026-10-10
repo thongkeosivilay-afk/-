@@ -486,10 +486,10 @@ async function handleMe(request, env) {
   // handleChangePassword ດ້ານລຸ່ມ
   const hasPassword = !!sessionUser.passwordAuth;
   // โปรไฟล์ที่ผู้ใช้แก้เอง (ชื่อ/รูปอัปโหลด) ทับค่าจาก session
-  const prof = await readProfile(env, sessionUser.id);
+  const custom = await readCustom(env, sessionUser.id);
   const merged = { ...sessionUser };
-  if (typeof prof.username === 'string' && prof.username) merged.username = prof.username;
-  if (prof.custom && isAvatarUrl(prof.avatar)) merged.avatar = prof.avatar;
+  if (typeof custom.username === 'string' && custom.username) merged.username = custom.username;
+  if (isAvatarUrl(custom.avatar)) merged.avatar = custom.avatar;
   return json({ loggedIn: true, user: { ...merged, balance, hasPassword } });
 }
 
@@ -501,20 +501,36 @@ async function rememberProfile(env, user) {
   if (!user || !user.id) return;
   const avatar = typeof user.avatar === 'string' && /^https:\/\//.test(user.avatar) ? user.avatar : null;
   if (!avatar) return;
-  const cur = await readProfile(env, user.id);
-  if (cur.custom) return;                 // ผู้ใช้อัปโหลดรูปเอง -> ห้ามเอารูป Discord/Google มาทับ
-  if (cur.avatar === avatar) return;
-  await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...cur, avatar }));
+  // profile:<id> = รูปจาก Discord/Google เท่านั้น ({ avatar }) — ข้อมูลที่ผู้ใช้แก้เอง (ชื่อ/รูปอัปโหลด) อยู่คนละ key
+  // (pcustom:<id>) เพื่อไม่ให้ "อ่านค่าเก่าจาก KV (eventual consistency) แล้วเขียนทับ" ทำให้รูปที่เพิ่งอัปโหลดหาย
+  let cur = null;
+  try { const raw = await env.SESSIONS.get(`profile:${user.id}`); cur = raw ? JSON.parse(raw) : null; } catch { cur = null; }
+  if (cur && cur.avatar === avatar) return;
+  await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ avatar }));
 }
 
-/* ---------- โปรไฟล์ที่ผู้ใช้แก้เอง (KV: profile:<id>) = { avatar, custom, username } ---------- */
-async function readProfile(env, userId) {
+/* ---------- ข้อมูลที่ผู้ใช้แก้เอง (KV: pcustom:<id>) = { username?, avatar? } เขียนโดย handleUpdateProfile/Avatar เท่านั้น ---------- */
+async function readCustom(env, userId) {
+  let c = {};
   try {
-    const raw = await env.SESSIONS.get(`profile:${userId}`);
+    const raw = await env.SESSIONS.get(`pcustom:${userId}`, { cacheTtl: 30 });
     const p = raw ? JSON.parse(raw) : null;
-    return p && typeof p === 'object' ? p : {};
-  } catch { return {}; }
+    if (p && typeof p === 'object') c = p;
+  } catch { /* ใช้ค่าว่าง */ }
+  // รองรับข้อมูลเดิมที่เคยเก็บใน profile:<id> (รุ่นก่อน: custom:true / username)
+  if (!c.avatar || !c.username) {
+    try {
+      const raw = await env.SESSIONS.get(`profile:${userId}`);
+      const old = raw ? JSON.parse(raw) : null;
+      if (old) {
+        if (!c.username && typeof old.username === 'string' && old.username) c.username = old.username;
+        if (!c.avatar && old.custom && isAvatarUrl(old.avatar)) c.avatar = old.avatar;
+      }
+    } catch { /* ข้าม */ }
+  }
+  return c;
 }
+
 function isAvatarUrl(a) {
   return typeof a === 'string' && (/^https:\/\//.test(a) || /^\/api\/public\/avatar\/[0-9a-f]{24}(\?v=\d+)?$/.test(a));
 }
@@ -539,8 +555,8 @@ async function handleUpdateProfile(request, env) {
   if (await isRateLimited(env, `pfnamelimit:${user.id}`, 5, 60 * 60)) {
     return json({ error: 'ປ່ຽນຊື່ຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 1 ຊົ່ວໂມງ' }, 429);
   }
-  const prof = await readProfile(env, user.id);
-  await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...prof, username }));
+  const custom = await readCustom(env, user.id);
+  await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify({ ...custom, username }));
   await bumpRateLimit(env, `pfnamelimit:${user.id}`, 60 * 60);
   return json({ ok: true, username });
 }
@@ -558,12 +574,15 @@ async function handleUpdateAvatar(request, env) {
     return json({ error: 'ປ່ຽນຮູບຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 1 ຊົ່ວໂມງ' }, 429);
   }
   const hash = await avatarHash(user.id);
-  const prof = await readProfile(env, user.id);
+  const custom = await readCustom(env, user.id);
 
   if (body.remove) {
     await env.SESSIONS.delete(`avatarimg:${hash}`);
     const provider = typeof user.avatar === 'string' && /^https:\/\//.test(user.avatar) ? user.avatar : null;
-    await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...prof, avatar: provider, custom: false }));
+    const { avatar: _drop, ...rest } = custom;
+    await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify(rest));
+    // ข้อมูลเดิมรุ่นก่อนที่เคยเก็บ custom ใน profile:<id> ต้องล้างด้วย ไม่งั้น readCustom จะอ่านกลับมา
+    await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ avatar: provider }));
     await bumpRateLimit(env, `pfavatarlimit:${user.id}`, 60 * 60);
     return json({ ok: true, avatar: provider });
   }
@@ -580,7 +599,7 @@ async function handleUpdateAvatar(request, env) {
 
   await env.SESSIONS.put(`avatarimg:${hash}`, b64);
   const url = `/api/public/avatar/${hash}?v=${Date.now()}`;
-  await env.SESSIONS.put(`profile:${user.id}`, JSON.stringify({ ...prof, avatar: url, custom: true }));
+  await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify({ ...custom, avatar: url }));
   await bumpRateLimit(env, `pfavatarlimit:${user.id}`, 60 * 60);
   return json({ ok: true, avatar: url });
 }
@@ -1338,7 +1357,7 @@ async function handleRecentPurchases(request, env) {
    ต่อ user_id แล้วเรียงมาก→น้อย เอา 10 อันดับแรก
    - ไม่ส่ง user_id / อีเมลเต็มออกไปเด็ดขาด (public endpoint): ส่งแค่ชื่อที่ปิดบัง (3 ตัวแรกของอีเมล + ***)
    - ไม่มีตาราง users ที่เก็บวันสมัคร จึงใช้ "วันที่เติมเงินครั้งแรก" ของคนนั้นแทนวันสมัคร (joined)
-   - วันที่แสดงตามเวลา UTC+7 รูปแบบ dd/mm/yyyy ; cache ที่ edge/browser 60 วินาที */
+   - วันที่แสดงตามเวลา UTC+7 รูปแบบ dd/mm/yyyy ; สด: no-store + แคช isolate 2 วินาที (ไคลเอนต์โพลทุก ~4 วินาที) */
 /* ซ่อนบัญชีออกจากหน้าจัดอันดับ (เช่น บัญชีเงินทดสอบ/เงินเสก) — คนที่ถูกซ่อนจะไม่ขึ้นเลย และอันดับถัดไปเลื่อนขึ้นมาแทน
    ซ่อนได้ 3 แบบ: user_ids / emails (ตรงตัวเป๊ะ — แม่นที่สุด) หรือ prefixes (ชื่ออีเมลก่อน @ ขึ้นต้นด้วย…)
    ตอนนี้ใช้ prefixes ตามชื่อที่ปิดบังบนหน้าเว็บ (bhc***, nua***) เพราะยังไม่มี user_id/อีเมลเต็ม
@@ -1361,12 +1380,54 @@ function isHiddenFromLeaderboard(env, userId, email) {
   return false;
 }
 
-async function handleTopSpenders(request, env) {
-  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
-  }
+/* ---- แคชสั้น ๆ ต่อ isolate (2 วินาที) + รวม request ที่ยิงพร้อมกันให้ใช้การคำนวณเดียว ----
+   หน้าอันดับ "สด": ไคลเอนต์โพลทุก ~4 วินาที หลายคนพร้อมกัน → ไม่ต้องไล่ query ฐานข้อมูลซ้ำทุกคน
+   (ผลต่างจากข้อมูลจริงไม่เกิน ~2 วินาที) */
+let TOP_SPENDERS_CACHE = { at: 0, items: null, pending: null };
+async function getTopSpenders(env) {
+  const now = Date.now();
+  if (TOP_SPENDERS_CACHE.items && now - TOP_SPENDERS_CACHE.at < 2000) return TOP_SPENDERS_CACHE.items;
+  if (TOP_SPENDERS_CACHE.pending) return TOP_SPENDERS_CACHE.pending;
+  const p = computeTopSpenders(env).then((items) => {
+    TOP_SPENDERS_CACHE = { at: Date.now(), items, pending: null };
+    return items;
+  }, (err) => {
+    TOP_SPENDERS_CACHE.pending = null;
+    throw err;
+  });
+  TOP_SPENDERS_CACHE.pending = p;
+  return p;
+}
 
+// hash สั้น ๆ ไว้เทียบว่าอันดับเปลี่ยนไหม (ไม่ใช่เรื่องความปลอดภัย)
+function topSpendersVersion(items) {
+  const str = items.map((i) => `${i.key}|${i.name}|${i.amount}|${i.avatar || ''}`).join(';');
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+  return h.toString(16) + '-' + items.length;
+}
+
+/* ดึง topup_requests ที่ approved "ทั้งหมด" แบบแบ่งหน้า — PostgREST/Supabase ตัดผลลัพธ์ที่ max-rows (ปกติ 1000 แถว)
+   แม้ส่ง limit มากกว่านั้น ถ้าไม่แบ่งหน้า ยอดรวมจะผิดเมื่อมีรายการเกิน 1000 ; เรียงตาม id เพื่อให้แบ่งหน้าไม่ซ้ำ/ไม่ตกหล่น */
+async function fetchAllApprovedTopups(env) {
+  const PAGE = 1000, MAX_PAGES = 200;
+  const all = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const rows = await supabaseSelect(env, 'topup_requests', {
+      select: 'id,user_id,user_email,amount,created_at',
+      status: 'eq.approved',
+      order: 'id.asc',
+      limit: String(PAGE),
+      offset: String(page * PAGE),
+    });
+    if (!rows || !rows.length) break;
+    for (const r of rows) all.push(r);
+    if (rows.length < PAGE) break;
+  }
+  return all;
+}
+
+async function computeTopSpenders(env) {
   function maskName(email) {
     const local = String(email || '').split('@')[0] || '';
     if (!local) return '???***';
@@ -1380,74 +1441,87 @@ async function handleTopSpenders(request, env) {
     return `${p(d.getUTCDate())}/${p(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
   }
 
+  const rows = await fetchAllApprovedTopups(env);
+
+  // รอบแรก: หา "คน" ที่ถูกซ่อน (ทุกแถวของคนนั้นต้องหายหมด แม้บางแถวไม่มีอีเมล)
+  const hidden = new Set();
+  for (const r of rows) {
+    if (isHiddenFromLeaderboard(env, r.user_id, r.user_email)) hidden.add(r.user_id || r.user_email);
+  }
+
+  const byUser = new Map();
+  for (const r of rows) {
+    const key = r.user_id || r.user_email;
+    const amt = Number(r.amount) || 0;
+    if (!key || amt <= 0) continue;
+    if (hidden.has(key)) continue;
+    const cur = byUser.get(key) || { email: r.user_email, total: 0, first: r.created_at };
+    cur.total += amt;
+    if (!cur.email && r.user_email) cur.email = r.user_email;
+    if (r.created_at && (!cur.first || r.created_at < cur.first)) cur.first = r.created_at;
+    byUser.set(key, cur);
+  }
+
+  // ยอดเท่ากัน: คนที่เติมครั้งแรกก่อนอยู่เหนือกว่า ; ยังเท่าอีก → เรียงตาม key เพื่อให้ลำดับนิ่ง ไม่สลับไปมาระหว่างการโพล
+  const top = [...byUser.entries()]
+    .sort((a, b) => (b[1].total - a[1].total)
+      || String(a[1].first || '').localeCompare(String(b[1].first || ''))
+      || String(a[0]).localeCompare(String(b[0])))
+    .slice(0, 10);
+
+  // รูปโปรไฟล์: อัปโหลดเอง (pcustom) > Discord/Google (profile) — ถ้ายังไม่มี = null
+  const stored = await Promise.all(top.map(async ([uid]) => {
+    let custom = null;
+    try { const c = await readCustom(env, uid); custom = isAvatarUrl(c.avatar) ? c.avatar : null; } catch { custom = null; }
+    try {
+      const raw = await env.SESSIONS.get(`profile:${uid}`);
+      if (!raw) return { known: false, avatar: custom };
+      const a = JSON.parse(raw).avatar;
+      return { known: true, avatar: custom || (isAvatarUrl(a) ? a : null) };
+    } catch { return { known: false, avatar: custom }; }
+  }));
+  // คนที่ยังไม่เคยจดโปรไฟล์เลย -> ลองหาจาก session ที่ยัง active แล้วจดไว้ (เขียนเฉพาะ profile:<id> = รูป provider)
+  const missing = new Set(top.filter((_, i) => !stored[i].known).map(([uid]) => String(uid)));
+  const filled = await backfillProfiles(env, missing);
+  await Promise.all([...missing].map(async (uid) => {
+    try {
+      const av = filled.get(uid) || null;
+      await env.SESSIONS.put(`profile:${uid}`, JSON.stringify({ avatar: av }),
+        av ? undefined : { expirationTtl: 60 * 60 });
+      const idx = top.findIndex(([k]) => String(k) === uid);
+      if (idx >= 0) stored[idx] = { known: true, avatar: stored[idx].avatar || av };
+    } catch { /* ข้าม */ }
+  }));
+
+  // key = รหัสทึบของคนนั้น (hash ของ user id) ให้หน้าเว็บจับคู่ "คนเดิม" ข้ามการโพลเพื่อทำอนิเมชันสลับอันดับ — ย้อนกลับเป็น id จริงไม่ได้
+  const keys = await Promise.all(top.map(([uid]) => avatarHash(String(uid))));
+  return top.map(([, u], i) => ({
+    rank: i + 1,
+    key: keys[i],
+    name: maskName(u.email),
+    amount: u.total,
+    joined: fmtDate(u.first),
+    avatar: stored[i].avatar,
+  }));
+}
+
+async function handleTopSpenders(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+  }
+  const headers = {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'no-store',
+  };
   try {
-    const rows = await supabaseSelect(env, 'topup_requests', {
-      select: 'user_id,user_email,amount,created_at',
-      status: 'eq.approved',
-      limit: '50000',
-    });
-
-    // รอบแรก: หา "คน" ที่ถูกซ่อน (ทุกแถวของคนนั้นต้องหายหมด แม้บางแถวไม่มีอีเมล)
-    const hidden = new Set();
-    for (const r of rows || []) {
-      if (isHiddenFromLeaderboard(env, r.user_id, r.user_email)) hidden.add(r.user_id || r.user_email);
+    const items = await getTopSpenders(env);
+    const version = topSpendersVersion(items);
+    const known = new URL(request.url).searchParams.get('v');
+    if (known && known === version) {
+      return new Response(JSON.stringify({ ok: true, version, unchanged: true }), { status: 200, headers });
     }
-
-    const byUser = new Map();
-    for (const r of rows || []) {
-      const key = r.user_id || r.user_email;
-      const amt = Number(r.amount) || 0;
-      if (!key || amt <= 0) continue;
-      if (hidden.has(key)) continue;
-      const cur = byUser.get(key) || { email: r.user_email, total: 0, first: r.created_at };
-      cur.total += amt;
-      if (!cur.email && r.user_email) cur.email = r.user_email;
-      if (r.created_at && (!cur.first || r.created_at < cur.first)) cur.first = r.created_at;
-      byUser.set(key, cur);
-    }
-
-    const top = [...byUser.entries()]
-      .sort((a, b) => b[1].total - a[1].total)
-      .slice(0, 10);
-
-    // รูปโปรไฟล์จาก KV (profile:<user_id>) — ถ้ายังไม่เคยมี (คนนั้นยังไม่เข้าเว็บหลังอัปเดต) = null
-    const stored = await Promise.all(top.map(async ([uid]) => {
-      try {
-        const raw = await env.SESSIONS.get(`profile:${uid}`);
-        if (!raw) return { known: false, avatar: null };
-        const a = JSON.parse(raw).avatar;
-        return { known: true, avatar: isAvatarUrl(a) ? a : null };
-      } catch { return { known: false, avatar: null }; }
-    }));
-    // คนที่ยังไม่เคยจดโปรไฟล์เลย -> ลองหาจาก session ที่ยัง active แล้วจดไว้
-    const missing = new Set(top.filter((_, i) => !stored[i].known).map(([uid]) => String(uid)));
-    const filled = await backfillProfiles(env, missing);
-    await Promise.all([...missing].map(async (uid) => {
-      try {
-        const av = filled.get(uid) || null;
-        await env.SESSIONS.put(`profile:${uid}`, JSON.stringify({ avatar: av }),
-          av ? undefined : { expirationTtl: 60 * 60 });
-        const idx = top.findIndex(([k]) => String(k) === uid);
-        if (idx >= 0) stored[idx] = { known: true, avatar: av };
-      } catch { /* ข้าม */ }
-    }));
-    const avatars = stored.map((x) => x.avatar);
-
-    const items = top.map(([, u], i) => ({
-      rank: i + 1,
-      name: maskName(u.email),
-      amount: u.total,
-      joined: fmtDate(u.first),
-      avatar: avatars[i],
-    }));
-
-    return new Response(JSON.stringify({ ok: true, items }), {
-      status: 200,
-      headers: {
-        'content-type': 'application/json; charset=utf-8',
-        'cache-control': 'public, max-age=60',
-      },
-    });
+    return new Response(JSON.stringify({ ok: true, version, items }), { status: 200, headers });
   } catch (err) {
     console.error('handleTopSpenders failed:', err);
     return json({ error: 'ດຶງອັນດັບຍອດເຕີມບໍ່ສຳເລັດ' }, 502);
