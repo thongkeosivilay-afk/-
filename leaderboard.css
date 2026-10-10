@@ -60,25 +60,25 @@
 
 /* อันดับ 2-3: ช่องรูปใหญ่ 76px + รูปในวงแหวน 46px */
 .r2 .frame,.r3 .frame{width:76px;height:76px;margin-right:2px;margin-left:1px}
-.r2 .frame::before,.r3 .frame::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,#1a0508 55%,#0d0305);box-shadow:0 0 18px rgba(255,0,1,.35)}
-.r2 .avatar,.r3 .avatar{position:relative;width:46px;height:46px;border-color:var(--red)}
+.r2 .frame::before,.r3 .frame::before{display:none}
+.r2 .avatar,.r3 .avatar{position:relative;width:46px;height:46px;border:none;box-shadow:none}
 .r2 .avatar b,.r3 .avatar b{font-size:22px}
 
 /* อันดับ 1: กรอบใหญ่เกยขอบซ้ายการ์ด */
 .r1 .frame{width:118px;height:118px;margin-left:0;margin-right:8px;margin-top:0}
 .r1 .frame>img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .frame-ring{
-  position:absolute;inset:0;border-radius:50%;
+  display:none;position:absolute;inset:0;border-radius:50%;
   background:radial-gradient(circle,#150406 95%,transparent 96%),
              conic-gradient(from 0deg,#990001,#ff3a3b,#3a0204,#ff0001,#990001);
   box-shadow:0 0 20px rgba(255,0,1,.4),inset 0 0 12px rgba(255,0,1,.25);
 }
-.r1 .avatar{position:relative;width:50px;height:50px;border-color:#ff0001}
+.r1 .avatar{position:relative;width:50px;height:50px;border:none;box-shadow:none}
 .r1 .avatar b{font-size:26px}
 
 .info{min-width:0;display:flex;flex-direction:column;justify-content:center}
 .nm{font-size:15px;font-weight:700;line-height:1.25;color:#fff}
-.amt{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em;color:#fff}
+.amt{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em;color:#ff2a2b}
 .dt{font-size:11.5px;font-weight:400;line-height:1.3;color:var(--gray-dim)}
 .rest .nm{font-size:14px}
 .rest .amt{font-size:18px}
@@ -173,7 +173,7 @@
 .r1 .frame-ring{animation:lbRing 1s cubic-bezier(.2,.9,.25,1) 1.15s both}
 .r1 .avatar{animation:lbFade .6s ease-out 1.5s both}
 .r1::before{ /* คลื่นกระแทกจากกรอบอันดับ 1 */
-  content:"";position:absolute;left:0;top:4px;width:118px;height:118px;border-radius:50%;pointer-events:none;
+  display:none;content:"";position:absolute;left:0;top:4px;width:118px;height:118px;border-radius:50%;pointer-events:none;
   border:2px solid rgba(255,40,40,.9);box-shadow:0 0 24px rgba(255,0,1,.7);
   animation:lbShock .9s ease-out 1.75s both;
 }
