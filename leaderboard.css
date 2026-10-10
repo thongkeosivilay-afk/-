@@ -13,20 +13,10 @@
   --gray-dim:#6c6969;
   --safe-top:env(safe-area-inset-top,0px);
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html{background:#000}
-body{
-  background:var(--bg);color:var(--text);
-  font-family:'Kanit','Noto Sans Thai','Noto Sans Lao',sans-serif;
-  -webkit-font-smoothing:antialiased;overflow-x:hidden;
-}
-a{color:inherit;text-decoration:none}
-button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
-
-.lb-shell{max-width:480px;margin:0 auto;min-height:100vh;position:relative;z-index:1}
+/* โครงหน้า/ฟอนต์/ปุ่มแชทใช้ของ style.css (header, tabbar, footer เหมือนหน้าอื่น) */
 
 /* ---------- Title ---------- */
-.lb-main{padding:calc(var(--safe-top) + 64px) 0 0}
+.lb-main{padding:18px 0 40px;position:relative;z-index:1}
 .lb-title{text-align:center}
 .eyebrow-pill{
   display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 15px 0 13px;border-radius:14px;
@@ -88,7 +78,7 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 
 .info{min-width:0;display:flex;flex-direction:column;justify-content:center}
 .nm{font-size:15px;font-weight:700;line-height:1.25;color:#fff}
-.amt{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em;color:var(--red-lite)}
+.amt{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em;color:#fff}
 .dt{font-size:11.5px;font-weight:400;line-height:1.3;color:var(--gray-dim)}
 .rest .nm{font-size:14px}
 .rest .amt{font-size:18px}
@@ -130,19 +120,6 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 .rest{margin-top:41px}
 
 /* ---------- Footer / Chat ---------- */
-.lb-footer{margin:95px 13px 0;height:100px;border-top:1px solid #1e1a1a}
-.chat-fab{
-  position:fixed;right:max(13px,calc(50% - 240px + 13px));bottom:calc(24px + env(safe-area-inset-bottom,0px));
-  width:50px;height:50px;border-radius:50%;z-index:50;
-  background:radial-gradient(circle at 30% 30%,var(--red),var(--red-deep));
-  box-shadow:0 8px 18px rgba(255,0,1,.28);display:grid;place-items:center;
-}
-.chat-fab svg{width:24px;height:24px}
-.chat-badge{
-  position:absolute;right:-2px;top:-3px;min-width:16px;height:16px;border-radius:8px;padding:0 4px;
-  background:#fff;color:#000;font-size:11px;font-weight:700;display:grid;place-items:center;line-height:1;
-}
-
 /* ---------- Responsive ---------- */
 @media (max-width:370px){
   .top3,.rest{padding:0 8%}
@@ -216,3 +193,31 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 
 .info{flex:1 1 auto;min-width:0}
 .amt{display:block;width:max-content;max-width:none}
+
+/* ---------- ฟอนต์ (ลาว) ---------- */
+.eyebrow-pill,.amt,.rk,.legend{font-family:'Rajdhani','Noto Sans Lao',sans-serif}
+.amt{font-weight:700}
+.rk{font-weight:700}
+.lb-title h1{font-family:'Noto Sans Lao Looped','Noto Sans Lao',sans-serif}
+
+/* ---------- LIVE (อัปเดตสด) ---------- */
+.live-tag{display:inline-flex;align-items:center;gap:5px;margin-left:4px;padding-left:9px;border-left:1px solid rgba(255,255,255,.18);font-size:10.5px;font-weight:700;letter-spacing:.12em;color:#3ddc84}
+.live-tag i{width:7px;height:7px;border-radius:50%;background:#3ddc84;animation:lbLiveDot 1.6s ease-in-out infinite}
+.live-tag.off{color:var(--gray)}
+.live-tag.off i{background:var(--gray);animation:none}
+@keyframes lbLiveDot{0%{box-shadow:0 0 0 0 rgba(61,220,132,.7)}70%{box-shadow:0 0 0 7px rgba(61,220,132,0)}100%{box-shadow:0 0 0 0 rgba(61,220,132,0)}}
+
+/* หลังฉากเปิดหน้าจบ: ไม่เล่นอนิเมชันเข้าฉากซ้ำตอนอัปเดตสด */
+.lb-live .lb-card,.lb-live .lb-card::after,.lb-live .lb-card .rk,.lb-live .r1 .frame-ring,.lb-live .r1 .avatar,.lb-live .r1::before{animation:none!important}
+.lb-live .lb-card{opacity:1}
+
+.lb-up{
+  position:absolute;right:12px;top:7px;z-index:6;padding:2px 8px;border-radius:9px;
+  background:#0f2a1a;border:1px solid #3ddc84;color:#3ddc84;font:700 11px 'Rajdhani','Noto Sans Lao',sans-serif;font-style:normal;
+  animation:lbUp 4.2s ease both;pointer-events:none;
+}
+@keyframes lbUp{0%{opacity:0;transform:translateY(8px) scale(.6)}10%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
+.lb-live .lb-card.lb-bump,.lb-card.lb-bump{animation:lbBump 1.8s ease-out!important}
+@keyframes lbBump{0%{box-shadow:0 0 0 0 rgba(255,0,1,.85),0 0 30px 4px rgba(255,0,1,.6);border-color:#ff3a3b}100%{box-shadow:0 0 0 14px rgba(255,0,1,0),0 0 0 0 rgba(255,0,1,0)}}
+.lb-new{border-color:#ff3a3b;box-shadow:0 0 28px rgba(255,0,1,.55);transition:box-shadow 2.4s ease,border-color 2.4s ease}
+@media (prefers-reduced-motion:reduce){.live-tag i,.lb-up,.lb-bump{animation:none!important}}
