@@ -1,0 +1,295 @@
+/* =========================================================
+   profile.css — หน้าโปรไฟล์ (profile.html)
+   ใช้ตัวแปร/ฟอร์ม/toast จาก auth.css ; ธีมแดง #FF0001 แบบ flat เหมือนหน้าอื่นของเว็บ
+   ========================================================= */
+.p-body{ background:#000; }
+.p-shell{ padding:0 16px 130px; }  /* เว้นที่ให้แถบเมนูด้านล่าง */
+
+/* ---------- Top bar ---------- */
+.p-top{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; justify-content:space-between;
+  height:56px; margin:0 -16px; padding:0 16px; background:rgba(0,0,0,.85);
+  -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); border-bottom:1px solid #141414;
+}
+.p-back{ width:36px; height:36px; border-radius:50%; background:#111; border:1px solid var(--card-border); display:grid; place-items:center; color:#fff; }
+.p-back svg{ width:18px; height:18px; }
+.p-top-title{ font-size:16px; font-weight:800; }
+.p-top-spacer{ width:36px; }
+.p-loading{ text-align:center; color:var(--text-faint); font-size:14px; padding:80px 0; }
+.p-content{ display:none; padding-top:18px; }
+.p-content.ready{ display:block; animation:pIn .45s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes pIn{ from{ opacity:0; transform:translateY(12px); } to{ opacity:1; transform:none; } }
+
+/* ---------- Cards ---------- */
+.p-card{ background:var(--card); border:1px solid var(--card-border); border-radius:var(--radius); padding:18px 16px; margin-bottom:14px; }
+.p-card-title{ font-size:14px; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.p-card-title::before{ content:""; width:3px; height:14px; border-radius:2px; background:var(--red); }
+.p-help{ font-size:11.5px; color:var(--text-faint); line-height:1.6; margin:2px 0 12px; }
+
+/* ---------- Hero ---------- */
+.p-hero{ text-align:center; padding:26px 16px 20px; background:linear-gradient(180deg,#160405 0%,#0a0a0a 70%); border-color:rgba(255,0,1,.28); }
+.p-avatar-wrap{ position:relative; width:104px; height:104px; margin:0 auto 14px; }
+.p-avatar{
+  width:104px; height:104px; border-radius:50%; overflow:hidden; background:#1a0608;
+  border:3px solid var(--red); box-shadow:0 0 0 4px rgba(255,0,1,.12), 0 0 26px rgba(255,0,1,.28);
+}
+.p-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+.p-avatar-fallback{ width:100%; height:100%; display:grid; place-items:center; font:800 40px 'Orbitron',sans-serif; color:#ff5a5b; }
+.p-avatar-cam{
+  position:absolute; right:-2px; bottom:-2px; width:34px; height:34px; border-radius:50%;
+  background:var(--red); border:3px solid #0a0a0a; color:#fff; display:grid; place-items:center; cursor:pointer;
+  transition:transform .15s ease;
+}
+.p-avatar-cam:active{ transform:scale(.92); }
+.p-avatar-cam svg{ width:16px; height:16px; }
+.p-hero-name{ font-size:20px; font-weight:800; word-break:break-word; }
+.p-badge{
+  display:inline-flex; align-items:center; gap:6px; margin-top:8px; height:22px; padding:0 12px; border-radius:11px;
+  background:#161616; border:1px solid #2a2a2a; font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--text-dim);
+}
+.p-badge i{ width:6px; height:6px; border-radius:50%; background:#3ddc84; }
+.p-badge.is-admin{ background:var(--red); border-color:var(--red); color:#fff; }
+.p-badge.is-admin i{ background:#fff; }
+.p-avatar-actions{ margin-top:16px; }
+.p-avatar-actions[hidden], .p-link-btn[hidden]{ display:none; }
+.p-avatar-hint{ font-size:12px; color:var(--text-dim); margin-bottom:10px; }
+.p-row-btns{ display:flex; gap:10px; }
+.p-btn{ flex:1; height:42px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; border:1.5px solid transparent; }
+.p-btn.ghost{ background:#111; border-color:var(--card-border); color:#ddd; }
+.p-btn.solid{ background:var(--red); color:#fff; }
+.p-btn:disabled{ opacity:.55; cursor:default; }
+.p-link-btn{ margin-top:14px; background:none; border:0; color:var(--text-faint); font-size:12px; text-decoration:underline; cursor:pointer; }
+
+/* ---------- Stats ---------- */
+.p-stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.p-stat{ background:var(--card); border:1px solid var(--card-border); border-radius:14px; padding:14px; }
+.p-stat.wide{ grid-column:1/-1; background:linear-gradient(135deg,#1a0506,#0a0a0a); border-color:rgba(255,0,1,.3); }
+.p-stat span{ display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; }
+.p-stat b{ font:700 22px 'Rajdhani','Noto Sans Lao',sans-serif; }
+.p-stat.wide b{ font-size:28px; color:#ff5a5b; }
+.p-stat b .unit{ font-size:.7em; color:var(--text-dim); }
+
+/* ---------- Quick links ---------- */
+.p-quick{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+.p-quick a{
+  display:flex; flex-direction:column; align-items:center; gap:7px; padding:12px 4px; border-radius:14px;
+  background:var(--card); border:1px solid var(--card-border); font-size:11px; font-weight:600; color:#ddd; text-align:center;
+}
+.p-quick a svg{ width:20px; height:20px; color:var(--red); }
+.p-quick a:active{ background:#140506; }
+
+/* ---------- Info rows ---------- */
+.p-info-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-bottom:1px solid #151515; font-size:13px; }
+.p-info-row:last-child{ border-bottom:0; }
+.p-info-row span{ color:var(--text-dim); flex-shrink:0; }
+.p-info-row b{ font-weight:600; text-align:right; word-break:break-all; }
+.p-discord-chip{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:#8c96ff; }
+.p-discord-chip svg{ width:15px; height:15px; }
+.p-connect-btn{ background:var(--discord); color:#fff; border:0; border-radius:10px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; }
+
+/* ---------- Forms ---------- */
+.p-count{ font-size:11px; color:var(--text-faint); flex-shrink:0; }
+.p-save{ width:100%; margin-bottom:0 !important; }
+.p-save:disabled{ opacity:.45; cursor:default; }
+
+/* ---------- Logout ---------- */
+.p-logout{
+  display:flex; align-items:center; justify-content:center; gap:8px; height:48px; border-radius:14px;
+  background:#0d0d0d; border:1px solid rgba(255,0,1,.4); color:#ff5a5b; font-size:14px; font-weight:700;
+}
+.p-logout svg{ width:18px; height:18px; }
+
+/* fix: หน่วย ₭ ต้องอยู่บรรทัดเดียวกับตัวเลข */
+.p-stat b .unit{ display:inline; margin:0; font-size:.7em; color:var(--text-dim); }
+.p-save{
+  display:flex; align-items:center; justify-content:center; height:48px; border:0; border-radius:12px;
+  background:var(--red); color:#fff; font-size:15px; font-weight:800; cursor:pointer; font-family:inherit;
+}
+.p-save:active:not(:disabled){ transform:scale(.99); }
+.p-link-btn{ display:block; margin:14px auto 0; }
+
+/* =========================================================
+   ANIMATIONS (ใช้ transform/opacity เป็นหลัก — ลื่น ไม่กิน performance)
+   ========================================================= */
+@property --pang{ syntax:'<angle>'; initial-value:0deg; inherits:false; }
+
+/* ---------- Loading spinner ---------- */
+.p-loading::before{
+  content:""; display:block; width:38px; height:38px; margin:0 auto 14px; border-radius:50%;
+  border:3px solid rgba(255,0,1,.18); border-top-color:var(--red); animation:pSpin .8s linear infinite;
+}
+@keyframes pSpin{ to{ transform:rotate(360deg); } }
+
+/* ---------- Entrance: ทุกบล็อกไล่ขึ้นมาทีละอัน ---------- */
+.p-content.ready{ animation:none; }
+.p-content.ready > *{
+  animation:pRise .7s cubic-bezier(.2,.9,.25,1) calc(var(--i,0) * 80ms) both;
+}
+@keyframes pRise{
+  0%{ opacity:0; transform:translateY(34px) scale(.96); filter:blur(6px); }
+  100%{ opacity:1; transform:none; filter:blur(0); }
+}
+.p-top{ animation:pDrop .6s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes pDrop{ from{ opacity:0; transform:translateY(-100%); } to{ opacity:1; transform:none; } }
+
+/* แสงกวาดผ่านการ์ดครั้งเดียวตอนเข้า */
+.p-card, .p-stat{ position:relative; overflow:hidden; }
+.p-card::after, .p-stat::after{
+  content:""; position:absolute; top:0; bottom:0; left:0; width:35%; pointer-events:none;
+  background:linear-gradient(100deg, transparent, rgba(255,60,60,.16), transparent);
+  transform:translateX(-130%) skewX(-18deg);
+  animation:pSweep 1.1s ease-out calc(var(--i,0) * 80ms + 450ms) 1 both;
+}
+@keyframes pSweep{ to{ transform:translateX(420%) skewX(-18deg); } }
+
+/* ---------- Hero ---------- */
+.p-hero{ overflow:visible; }
+.p-hero::before{ /* แสงเรืองด้านบนหายใจเบา ๆ */
+  content:""; position:absolute; left:50%; top:-30px; width:220px; height:130px; transform:translateX(-50%);
+  background:radial-gradient(ellipse at center, rgba(255,0,1,.30), transparent 70%); pointer-events:none;
+  animation:pBreath 4s ease-in-out infinite;
+}
+@keyframes pBreath{ 0%,100%{ opacity:.55; transform:translateX(-50%) scale(.95); } 50%{ opacity:1; transform:translateX(-50%) scale(1.08); } }
+
+.p-avatar-wrap{ animation:pAvatarIn .9s cubic-bezier(.2,1.2,.3,1) .25s both; }
+@keyframes pAvatarIn{ 0%{ opacity:0; transform:scale(.4) rotate(-25deg); } 100%{ opacity:1; transform:none; } }
+.p-avatar-wrap::before{ /* วงแหวนไล่สีหมุนรอบรูป */
+  content:""; position:absolute; inset:-9px; border-radius:50%; z-index:0;
+  background:conic-gradient(from var(--pang), transparent 0 55%, rgba(255,0,1,.15) 65%, #ff3a3b 85%, #fff 92%, transparent 100%);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+          mask:radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  animation:pRing 3.2s linear infinite;
+}
+@keyframes pRing{ to{ --pang:360deg; } }
+.p-avatar-wrap::after{ /* คลื่นกระเพื่อมออกจากรูป */
+  content:""; position:absolute; inset:0; border-radius:50%; border:2px solid rgba(255,0,1,.55); z-index:0;
+  animation:pPulse 2.8s ease-out infinite;
+}
+@keyframes pPulse{ 0%{ transform:scale(1); opacity:.7; } 100%{ transform:scale(1.7); opacity:0; } }
+.p-avatar{ position:relative; z-index:1; }
+.p-avatar-cam{ z-index:3; animation:pCamIdle 3s ease-in-out 1.6s infinite; }
+@keyframes pCamIdle{ 0%,88%,100%{ transform:scale(1) rotate(0); } 92%{ transform:scale(1.18) rotate(-12deg); } 96%{ transform:scale(1.1) rotate(8deg); } }
+.p-avatar-cam:hover{ animation:none; transform:scale(1.15) rotate(-8deg); }
+.p-avatar{ cursor:pointer; transition:transform .25s ease; }
+.p-avatar:hover{ transform:scale(1.04); }
+
+.p-pop{ animation:pPop .6s cubic-bezier(.2,1.4,.3,1) both; }
+@keyframes pPop{ 0%{ transform:scale(.7); filter:brightness(2); } 60%{ transform:scale(1.08); filter:brightness(1.2); } 100%{ transform:none; filter:none; } }
+
+.p-hero-name{ animation:pNameIn .8s cubic-bezier(.2,.9,.25,1) .45s both; }
+@keyframes pNameIn{ from{ opacity:0; letter-spacing:.3em; filter:blur(8px); } to{ opacity:1; letter-spacing:0; filter:blur(0); } }
+.p-swap{ animation:pSwap .55s cubic-bezier(.2,1,.3,1) both; }
+@keyframes pSwap{ 0%{ opacity:0; transform:translateY(16px) scale(.9); filter:blur(5px); } 100%{ opacity:1; transform:none; filter:none; } }
+.p-badge{ animation:pBadgeIn .6s cubic-bezier(.2,1.5,.3,1) .65s both; }
+@keyframes pBadgeIn{ from{ opacity:0; transform:scale(.3); } to{ opacity:1; transform:none; } }
+.p-badge.is-admin{ animation:pBadgeIn .6s cubic-bezier(.2,1.5,.3,1) .65s both, pAdminGlow 2.6s ease-in-out 1.4s infinite; }
+@keyframes pAdminGlow{ 0%,100%{ box-shadow:0 0 0 rgba(255,0,1,0); } 50%{ box-shadow:0 0 16px rgba(255,0,1,.7); } }
+.p-badge i{ animation:pDot 1.8s ease-in-out infinite; }
+@keyframes pDot{ 0%,100%{ transform:scale(1); opacity:1; } 50%{ transform:scale(1.5); opacity:.5; } }
+
+.p-avatar-actions:not([hidden]){ animation:pSlideDown .45s cubic-bezier(.2,.9,.25,1) both; }
+@keyframes pSlideDown{ from{ opacity:0; transform:translateY(-12px); } to{ opacity:1; transform:none; } }
+
+/* อนุภาคแตกกระจายตอนบันทึกรูปสำเร็จ */
+.p-burst{
+  position:absolute; left:50%; top:50%; width:8px; height:8px; margin:-4px 0 0 -4px; border-radius:50%; pointer-events:none; z-index:4;
+  background:radial-gradient(circle,#fff,#ff3a3b 60%,transparent 72%); transform:scale(0);
+  animation:pBurst .8s cubic-bezier(.1,.8,.3,1) forwards;
+}
+@keyframes pBurst{
+  0%{ transform:translate(0,0) scale(0); opacity:1; }
+  25%{ transform:translate(calc(var(--dx) * .5), calc(var(--dy) * .5)) scale(var(--s)); opacity:1; }
+  100%{ transform:translate(var(--dx), var(--dy)) scale(0); opacity:0; }
+}
+.p-burst-ring{
+  position:absolute; inset:0; border-radius:50%; border:3px solid #fff; pointer-events:none; z-index:4;
+  box-shadow:0 0 22px rgba(255,0,1,.9); animation:pBurstRing .8s ease-out forwards;
+}
+@keyframes pBurstRing{ 0%{ transform:scale(.9); opacity:1; } 100%{ transform:scale(2.2); opacity:0; } }
+
+/* ---------- Stats ---------- */
+.p-stat.wide::before{ /* เส้นแสงวิ่งใต้ยอดเงิน */
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background:linear-gradient(90deg, transparent, var(--red), #fff, var(--red), transparent);
+  background-size:200% 100%; animation:pFlow 3s linear infinite;
+}
+@keyframes pFlow{ from{ background-position:200% 0; } to{ background-position:-200% 0; } }
+.p-stat{ transition:transform .2s ease, border-color .2s ease; }
+.p-stat:active{ transform:scale(.97); }
+.p-stat.wide b{ text-shadow:0 0 18px rgba(255,0,1,.45); }
+
+/* ---------- Quick links ---------- */
+.p-quick a{ position:relative; overflow:hidden; transition:transform .2s cubic-bezier(.2,1.3,.3,1), border-color .2s, background .2s; animation:pPopIn .55s cubic-bezier(.2,1.4,.3,1) both; }
+.p-quick a:nth-child(1){ animation-delay:.55s; } .p-quick a:nth-child(2){ animation-delay:.63s; }
+.p-quick a:nth-child(3){ animation-delay:.71s; } .p-quick a:nth-child(4){ animation-delay:.79s; }
+@keyframes pPopIn{ from{ opacity:0; transform:scale(.5) translateY(16px); } to{ opacity:1; transform:none; } }
+.p-quick a:hover{ transform:translateY(-4px); border-color:rgba(255,0,1,.55); background:#150506; }
+.p-quick a:active{ transform:scale(.92); }
+.p-quick a:hover svg{ animation:pWiggle .5s ease; }
+@keyframes pWiggle{ 0%,100%{ transform:rotate(0); } 25%{ transform:rotate(-14deg) scale(1.15); } 60%{ transform:rotate(10deg) scale(1.15); } }
+
+/* ---------- Card title / info rows ---------- */
+.p-card-title::before{ animation:pBar .6s cubic-bezier(.2,.9,.25,1) calc(var(--i,0) * 80ms + 350ms) both; transform-origin:center; }
+@keyframes pBar{ from{ transform:scaleY(0); } to{ transform:scaleY(1); } }
+.p-info-row{ animation:pRow .5s cubic-bezier(.2,.9,.25,1) both; }
+.p-info-row:nth-child(1){ animation-delay:.7s; } .p-info-row:nth-child(2){ animation-delay:.78s; }
+.p-info-row:nth-child(3){ animation-delay:.86s; } .p-info-row:nth-child(4){ animation-delay:.94s; }
+.p-info-row:nth-child(5){ animation-delay:1.02s; }
+@keyframes pRow{ from{ opacity:0; transform:translateX(-18px); } to{ opacity:1; transform:none; } }
+.p-info-row{ transition:background .2s ease, padding .2s ease; }
+.p-info-row:hover{ background:rgba(255,0,1,.05); padding-left:6px; padding-right:6px; border-radius:8px; }
+
+/* ---------- Forms ---------- */
+.field-input{ transition:border-color .2s ease, box-shadow .25s ease, transform .2s ease; }
+.field-input:focus-within{ border-color:var(--red); box-shadow:0 0 0 3px rgba(255,0,1,.16), 0 0 18px rgba(255,0,1,.22); transform:translateY(-1px); }
+.field.has-error .field-input{ animation:pShake .45s cubic-bezier(.36,.07,.19,.97); }
+@keyframes pShake{ 10%,90%{ transform:translateX(-2px); } 20%,80%{ transform:translateX(4px); } 30%,50%,70%{ transform:translateX(-7px); } 40%,60%{ transform:translateX(7px); } }
+.field.has-error .field-error{ animation:pSlideDown .3s ease both; }
+.p-ok .field-input{ animation:pOk .9s ease; }
+@keyframes pOk{ 0%{ box-shadow:0 0 0 0 rgba(61,220,132,.7); border-color:#3ddc84; } 100%{ box-shadow:0 0 0 14px rgba(61,220,132,0); border-color:var(--card-border); } }
+.p-count{ transition:color .2s ease; }
+.field-input:focus-within .p-count{ color:#ff5a5b; }
+
+/* ---------- Buttons ---------- */
+.p-save, .p-btn.solid{ position:relative; overflow:hidden; transition:transform .15s ease, filter .2s ease, opacity .2s ease; }
+.p-save:not(:disabled)::after, .p-btn.solid:not(:disabled)::after{
+  content:""; position:absolute; top:0; bottom:0; left:0; width:40%; pointer-events:none;
+  background:linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+  transform:translateX(-150%) skewX(-20deg); animation:pShine 3.4s ease-in-out 1.2s infinite;
+}
+@keyframes pShine{ 0%,55%{ transform:translateX(-150%) skewX(-20deg); } 100%{ transform:translateX(420%) skewX(-20deg); } }
+.p-save:not(:disabled):hover, .p-btn.solid:not(:disabled):hover{ filter:brightness(1.12); transform:translateY(-1px); }
+.p-save:disabled{ transition:opacity .3s ease; }
+.p-btn.ghost{ transition:background .2s ease, transform .15s ease; }
+.p-btn.ghost:active, .p-btn.solid:active:not(:disabled){ transform:scale(.96); }
+.p-link-btn:not([hidden]){ animation:pSlideDown .4s ease both; }
+.field-toggle{ transition:transform .2s ease, color .2s ease; }
+.field-toggle:active{ transform:scale(.8); }
+
+/* ---------- Logout ---------- */
+.p-logout{ transition:background .2s ease, transform .15s ease, box-shadow .25s ease; }
+.p-logout svg{ transition:transform .25s cubic-bezier(.2,1.3,.3,1); }
+.p-logout:hover{ background:#1a0506; box-shadow:0 0 22px rgba(255,0,1,.25); }
+.p-logout:hover svg{ transform:translateX(-5px); }
+.p-logout:active{ transform:scale(.97); }
+
+/* ---------- Toast (เด้งสวย ๆ) ---------- */
+.toast{ transition:opacity .25s ease, transform .45s cubic-bezier(.2,1.5,.3,1) !important; }
+.toast.show svg{ animation:pWiggle .6s ease .15s; }
+
+/* ---------- Back button ---------- */
+.p-back{ transition:transform .2s cubic-bezier(.2,1.3,.3,1), border-color .2s; }
+.p-back:hover{ transform:translateX(-3px); border-color:rgba(255,0,1,.5); }
+.p-back:active{ transform:scale(.88); }
+
+@media (prefers-reduced-motion:reduce){
+  .p-content.ready > *, .p-top, .p-card::after, .p-stat::after, .p-hero::before, .p-avatar-wrap, .p-avatar-wrap::before, .p-avatar-wrap::after,
+  .p-avatar-cam, .p-hero-name, .p-badge, .p-badge i, .p-stat.wide::before, .p-quick a, .p-card-title::before, .p-info-row,
+  .p-save::after, .p-btn.solid::after{ animation:none !important; }
+}
+.p-hero::after{ display:none; }
+
+/* ---------- Title row (แทนแถบบนเดิม — ใช้ header ของเว็บ) ---------- */
+.p-title-row{ display:flex; align-items:center; gap:12px; margin:6px 0 16px; animation:pDrop .6s cubic-bezier(.2,.9,.25,1) both; }
+.p-title-row h1{ font-size:21px; font-weight:800; }
+.p-title-row .p-back{ border-radius:11px; flex-shrink:0; }

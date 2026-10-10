@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<script src="page-loader.js"></script>
+<link rel="stylesheet" href="page-loader.css">
+<title>ໂປຣໄຟລ໌</title>
+<link href="style.css?v=20261010a" rel="stylesheet"/>
+<link href="tabbar-close-fx.css?v=20261004b" rel="stylesheet"/>
+<link rel="stylesheet" href="auth.css">
+<link rel="stylesheet" href="profile.css">
+<link rel="stylesheet" href="page-transition.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Noto+Sans+Lao+Looped:wght@600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet"></noscript>
+</head>
+<body class="p-body">
+<div class="shell">
+
+<!-- Header (เหมือนหน้าอื่น — ปุ่มโปรไฟล์เปิดแถบเมนูด้านล่าง) -->
+<header>
+<div class="brand">
+<div class="logo has-custom-logo"><img alt="logo" src="assets/logo.png"/></div>
+<span class="brand-name en"></span>
+</div>
+<button class="login-btn" type="button">
+<svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.76-3.58-5-8-5Z"></path></svg>
+<span>ລົງຊື່ເຂົ້າໃຊ້</span>
+</button>
+</header>
+
+<div class="p-shell">
+
+  <div class="p-title-row">
+    <button type="button" class="p-back" data-nav-href="index.html" aria-label="ກັບໜ້າຫຼັກ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <h1 class="display-lo">ໂປຣໄຟລ໌</h1>
+  </div>
+
+  <div class="p-loading" id="pLoading">ກຳລັງໂຫຼດ...</div>
+
+  <main class="p-content" id="pContent">
+
+    <!-- ===== Hero: รูป + ชื่อ ===== -->
+    <section class="p-card p-hero">
+      <div class="p-avatar-wrap">
+        <div class="p-avatar" id="pAvatarBox"></div>
+        <button type="button" class="p-avatar-cam" id="pAvatarEditBtn" aria-label="ປ່ຽນຮູບໂປຣໄຟລ໌">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.4h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.4"/></svg>
+        </button>
+        <input type="file" id="pAvatarInput" accept="image/*" hidden>
+      </div>
+      <div class="p-hero-name" id="pUsername">—</div>
+      <div class="p-badge" id="pBadge"><i></i><span id="pBadgeText">ຜູ້ໃຊ້</span></div>
+
+      <!-- แถบยืนยันรูปใหม่ (โชว์หลังเลือกรูป) -->
+      <div class="p-avatar-actions" id="pAvatarActions" hidden>
+        <div class="p-avatar-hint">ຕົວຢ່າງຮູບໃໝ່ — ກົດບັນທຶກເພື່ອໃຊ້</div>
+        <div class="p-row-btns">
+          <button type="button" class="p-btn ghost" id="pAvatarCancelBtn">ຍົກເລີກ</button>
+          <button type="button" class="p-btn solid" id="pAvatarSaveBtn">ບັນທຶກຮູບ</button>
+        </div>
+      </div>
+      <button type="button" class="p-link-btn" id="pAvatarRemoveBtn" hidden>ລຶບຮູບທີ່ອັບໂຫຼດ</button>
+    </section>
+
+    <!-- ===== สถิติ ===== -->
+    <section class="p-stats">
+      <div class="p-stat wide">
+        <span>ຍອດເງິນ</span>
+        <b id="pStatBalance">0<span class="unit"> ₭</span></b>
+      </div>
+      <div class="p-stat">
+        <span>ຄຳສັ່ງຊື້</span>
+        <b id="pStatOrders">0</b>
+      </div>
+      <div class="p-stat">
+        <span>ໃຊ້ຈ່າຍແລ້ວ</span>
+        <b id="pStatSpent">0<span class="unit"> ₭</span></b>
+      </div>
+    </section>
+
+    <!-- ===== ทางลัด ===== -->
+    <nav class="p-quick">
+      <a href="topup.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>ເຕີມເງິນ</a>
+      <a href="orders.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 7v10l8 4 8-4V7l-8-4Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg>ປະຫວັດຊື້</a>
+      <a href="topup-history.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>ປະຫວັດເຕີມ</a>
+      <a href="leaderboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0V4Z"/><path d="M12 13v4M8.5 20h7M10 17h4"/></svg>ອັນດັບ</a>
+    </nav>
+
+    <!-- ===== แก้ไขชื่อ ===== -->
+    <section class="p-card">
+      <div class="p-card-title">ແກ້ໄຂຊື່ຜູ້ໃຊ້</div>
+      <form id="pNameForm" novalidate>
+        <div class="field" id="pNameField">
+          <label for="pName">ຊື່ທີ່ສະແດງ</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+            <input id="pName" type="text" maxlength="24" placeholder="ຊື່ຂອງທ່ານ" autocomplete="nickname">
+            <span class="p-count" id="pNameCount">0/24</span>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <div class="p-help">2–24 ໂຕ: ຕົວອັກສອນ, ຕົວເລກ, ຍະຫວ່າງ, . _ - · ປ່ຽນໄດ້ 5 ເທື່ອຕໍ່ຊົ່ວໂມງ</div>
+        <button type="submit" class="btn-submit p-save" id="pNameSaveBtn" disabled>ບັນທຶກຊື່</button>
+      </form>
+    </section>
+
+    <!-- ===== ข้อมูลบัญชี ===== -->
+    <section class="p-card">
+      <div class="p-card-title">ຂໍ້ມູນບັນຊີ</div>
+      <div class="p-info">
+        <div class="p-info-row"><span>ຊື່ຜູ້ໃຊ້</span><b id="pInfoUsername">—</b></div>
+        <div class="p-info-row"><span>ອີເມວ</span><b id="pInfoEmail">—</b></div>
+        <div class="p-info-row"><span>ສ້າງບັນຊີເມື່ອ</span><b id="pInfoCreated">—</b></div>
+        <div class="p-info-row"><span>ເຂົ້າສູ່ລະບົບຄັ້ງຫຼ້າສຸດ</span><b id="pInfoLastLogin">—</b></div>
+        <div class="p-info-row"><span>Discord</span><div id="pInfoDiscord"></div></div>
+      </div>
+      <div class="p-help">ຊື່ໃນໜ້າຈັດອັນດັບຈະຖືກປິດບັງບາງສ່ວນ ແລະ ໃຊ້ຮູບໂປຣໄຟລ໌ຂອງທ່ານ</div>
+    </section>
+
+    <!-- ===== รหัสผ่าน ===== -->
+    <section class="p-card">
+      <div class="p-card-title" id="pPwCardTitle">ປ່ຽນລະຫັດຜ່ານ</div>
+      <div class="p-help" id="pPwNote" style="display:none">ບັນຊີນີ້ຍັງບໍ່ມີລະຫັດຜ່ານ — ຕັ້ງລະຫັດຜ່ານເພື່ອລ໋ອກອິນດ້ວຍອີເມວໄດ້</div>
+      <form id="pPwForm" novalidate>
+        <div class="field" id="pCurrentPwField">
+          <label for="pCurrentPw">ລະຫັດຜ່ານປັດຈຸບັນ</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="pCurrentPw" type="password" placeholder="••••••••" autocomplete="current-password">
+            <button type="button" class="field-toggle" aria-label="ສະແດງລະຫັດຜ່ານ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <div class="field" id="pNewPwField">
+          <label for="pNewPw">ລະຫັດຜ່ານໃໝ່</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="pNewPw" type="password" placeholder="ຢ່າງໜ້ອຍ 6 ໂຕ" autocomplete="new-password">
+            <button type="button" class="field-toggle" aria-label="ສະແດງລະຫັດຜ່ານ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <div class="field" id="pNewPw2Field">
+          <label for="pNewPw2">ຢືນຢັນລະຫັດຜ່ານໃໝ່</label>
+          <div class="field-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+            <input id="pNewPw2" type="password" placeholder="••••••••" autocomplete="new-password">
+            <button type="button" class="field-toggle" aria-label="ສະແດງລະຫັດຜ່ານ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button>
+          </div>
+          <div class="field-error"></div>
+        </div>
+        <button type="submit" class="btn-submit p-save">ບັນທຶກລະຫັດຜ່ານ</button>
+      </form>
+    </section>
+
+  </main>
+</div>
+</div>
+
+<script src="page-transition.js"></script>
+<script src="nav-links.js"></script>
+<script src="storefront-data.js"></script>
+<script src="tabbar-close-fx.js?v=20261004b"></script>
+<script src="script.js?v=20261010a"></script>
+<script src="profile.js"></script>
+</body>
+</html>

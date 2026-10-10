@@ -1757,3 +1757,8 @@ input, select, textarea{ font-size:16px !important; }
   .rk-flash{ position:absolute; inset:0; background:#fff; opacity:0; animation:rkFlash .22s ease-out .6s forwards; }
   @keyframes rkFlash{ 0%{ opacity:0; } 60%{ opacity:.55; } 100%{ opacity:0; } }
   @media (prefers-reduced-motion: reduce){ .acct-btn.rank::after{ animation:none; } }
+
+  /* ลิงก์ไปหน้าโปรไฟล์จากหัวการ์ดบัญชี */
+  a.acct-card-top{ color:inherit; text-decoration:none; position:relative; }
+  .acct-edit{ margin-left:auto; width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.07); display:grid; place-items:center; flex-shrink:0; }
+  .acct-edit svg{ width:14px; height:14px; color:#fff; }

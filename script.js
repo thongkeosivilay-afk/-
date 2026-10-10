@@ -223,6 +223,8 @@ document.addEventListener('DOMContentLoaded', () => {
       icon: TB_ICON('<path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/>') },
     { key: 'history', label: 'ປະຫວັດເຕີມເງິນ', short: 'ປະຫວັດເຕີມ',   href: 'topup-history.html',
       icon: TB_ICON('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>') },
+    { key: 'profile', label: 'ໂປຣໄຟລ໌', short: 'ໂປຣໄຟລ໌',         href: 'profile.html',
+      icon: TB_ICON('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>') },
   ];
   const TB_LOGOUT_ICON = TB_ICON('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>');
 
@@ -236,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'topup': return 'topup';
       case 'orders': return 'orders';
       case 'topup-history': return 'history';
+      case 'profile': return 'profile';
       default: return null;
     }
   }
@@ -290,10 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
     card.id = 'acctCard';
     card.setAttribute('aria-hidden', 'true');
     card.innerHTML =
-      '<div class="acct-card-top">' +
+      '<a class="acct-card-top" href="profile.html" aria-label="ໂປຣໄຟລ໌">' +
         '<div class="acct-ava">' + (user.avatar ? `<img src="${escHtml(user.avatar)}" alt="">` : `<div class="acct-card-ph">${escHtml((user.username || '?').trim().slice(0, 1).toUpperCase())}</div>`) + '</div>' +
         `<div class="acct-card-id"><b>${escHtml(user.username)}</b><span class="acct-role${user.isAdmin ? ' is-admin' : ''}">${roleText}</span></div>` +
-      '</div>' +
+      '<i class="acct-edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></i>' +
+      '</a>' +
       '<div class="acct-balance"><span><i class="acct-dot"></i>ຍອດເງິນ</span><b id="acctBal">0 ₭</b></div>' +
       '<div class="acct-stats">' +
         '<div><b id="acctOrders">–</b><span>ຄຳສັ່ງຊື້</span></div>' +

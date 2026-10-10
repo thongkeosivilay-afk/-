@@ -56,6 +56,206 @@ document.addEventListener('DOMContentLoaded', () => {
     if (errEl) errEl.textContent = message || '';
   }
 
+  /* ---------- Animation helpers ---------- */
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // ຕົວເລກວິ່ງຂຶ້ນຈາກ 0 -> target (ease-out)
+  function countTo(el, target, withUnit, delay) {
+    const end = Number(target) || 0;
+    const render = (v) => { el.innerHTML = formatKip(Math.round(v)) + (withUnit ? '<span class="unit"> ₭</span>' : ''); };
+    if (reduceMotion || end === 0) { render(end); return; }
+    render(0);
+    const dur = 1100;
+    setTimeout(() => {
+      const t0 = performance.now();
+      (function tick(now) {
+        const p = Math.min(1, (now - t0) / dur);
+        render(end * (1 - Math.pow(1 - p, 4)));
+        if (p < 1) requestAnimationFrame(tick);
+      })(t0);
+    }, delay || 0);
+  }
+  // ແຕກແສງເປັນອະນຸພາກສີແດງອອກຈາກຮູບ ຕອນບັນທຶກສຳເລັດ
+  function burst(host) {
+    if (reduceMotion || !host) return;
+    const n = 18;
+    for (let i = 0; i < n; i++) {
+      const dot = document.createElement('i');
+      dot.className = 'p-burst';
+      const ang = (Math.PI * 2 * i) / n + Math.random() * 0.3;
+      const dist = 52 + Math.random() * 40;
+      dot.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      dot.style.setProperty('--dy', Math.sin(ang) * dist + 'px');
+      dot.style.setProperty('--s', (0.5 + Math.random() * 0.9).toFixed(2));
+      dot.style.animationDelay = (Math.random() * 60) + 'ms';
+      host.appendChild(dot);
+      setTimeout(() => dot.remove(), 900);
+    }
+    const ring = document.createElement('i');
+    ring.className = 'p-burst-ring';
+    host.appendChild(ring);
+    setTimeout(() => ring.remove(), 900);
+  }
+  function replay(el, cls) {
+    if (!el) return;
+    el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  }
+
+  /* ---------- Avatar / Name (ແກ້ໄຂໂປຣໄຟລ໌) ---------- */
+  const AVATAR_PREFIX = '/api/public/avatar/';
+  const state = { username: '', avatar: null, pending: null };
+  const avatarBox = document.getElementById('pAvatarBox');
+  const avatarInput = document.getElementById('pAvatarInput');
+  const avatarActions = document.getElementById('pAvatarActions');
+  const avatarRemoveBtn = document.getElementById('pAvatarRemoveBtn');
+  const nameInput = document.getElementById('pName');
+  const nameSaveBtn = document.getElementById('pNameSaveBtn');
+  const nameCount = document.getElementById('pNameCount');
+
+  function esc(str) {
+    return String(str || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function renderAvatar(url) {
+    if (url) {
+      avatarBox.innerHTML = `<img src="${esc(url)}" alt="" referrerpolicy="no-referrer">`;
+      avatarBox.querySelector('img').addEventListener('error', () => {
+        avatarBox.innerHTML = `<div class="p-avatar-fallback">${esc(initials(state.username))}</div>`;
+      });
+    } else {
+      avatarBox.innerHTML = `<div class="p-avatar-fallback">${esc(initials(state.username))}</div>`;
+    }
+    avatarRemoveBtn.hidden = !(state.avatar && state.avatar.startsWith(AVATAR_PREFIX)) || !!state.pending;
+  }
+  function updateNameUi() {
+    const v = nameInput.value.trim();
+    nameCount.textContent = `${nameInput.value.length}/24`;
+    nameSaveBtn.disabled = !v || v === state.username;
+  }
+  nameInput.addEventListener('input', () => { setFieldError(document.getElementById('pNameField'), ''); updateNameUi(); });
+
+  document.getElementById('pAvatarEditBtn').addEventListener('click', () => avatarInput.click());
+  avatarBox.addEventListener('click', () => avatarInput.click());
+
+  // ຍ່ອຮູບ: ຕັດເປັນສີ່ຫຼ່ຽມຈັດຕຸລັດກາງ 256x256 ແລ້ວ export JPEG (ຄຸມຂະໜາດ ≤ ~120KB ກ່ອນສົ່ງ)
+  function fileToJpeg(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        try {
+          const size = 256;
+          const side = Math.min(img.naturalWidth, img.naturalHeight);
+          const sx = (img.naturalWidth - side) / 2;
+          const sy = (img.naturalHeight - side) / 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = size; canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#000'; ctx.fillRect(0, 0, size, size);
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+          let q = 0.88, out = canvas.toDataURL('image/jpeg', q);
+          while (out.length > 150000 && q > 0.4) { q -= 0.1; out = canvas.toDataURL('image/jpeg', q); }
+          resolve(out);
+        } catch (err) { reject(err); } finally { URL.revokeObjectURL(objUrl); }
+      };
+      img.onerror = () => { URL.revokeObjectURL(objUrl); reject(new Error('bad image')); };
+      img.src = objUrl;
+    });
+  }
+
+  avatarInput.addEventListener('change', async () => {
+    const file = avatarInput.files && avatarInput.files[0];
+    avatarInput.value = '';
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { showToast('ກະລຸນາເລືອກໄຟລ໌ຮູບພາບ', true); return; }
+    if (file.size > 12 * 1024 * 1024) { showToast('ຮູບໃຫຍ່ເກີນໄປ (ສູງສຸດ 12MB)', true); return; }
+    try {
+      state.pending = await fileToJpeg(file);
+    } catch {
+      showToast('ອ່ານຮູບບໍ່ໄດ້, ລອງຮູບອື່ນ', true);
+      return;
+    }
+    renderAvatar(state.pending);
+    replay(avatarBox, 'p-pop');
+    avatarActions.hidden = false;
+  });
+
+  document.getElementById('pAvatarCancelBtn').addEventListener('click', () => {
+    state.pending = null;
+    avatarActions.hidden = true;
+    renderAvatar(state.avatar);
+  });
+
+  async function postJson(url, payload) {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    let data = {};
+    try { data = await res.json(); } catch { /* ignore */ }
+    return { ok: res.ok, data };
+  }
+
+  document.getElementById('pAvatarSaveBtn').addEventListener('click', async () => {
+    if (!state.pending) return;
+    const btn = document.getElementById('pAvatarSaveBtn');
+    btn.disabled = true; btn.textContent = 'ກຳລັງບັນທຶກ...';
+    try {
+      const { ok, data } = await postJson('/api/account/avatar', { image: state.pending });
+      if (!ok) { showToast(data.error || 'ບັນທຶກຮູບບໍ່ສຳເລັດ', true); return; }
+      state.avatar = data.avatar; state.pending = null;
+      avatarActions.hidden = true;
+      renderAvatar(state.avatar);
+      replay(avatarBox, 'p-pop');
+      burst(avatarBox.parentElement);
+      showToast('ປ່ຽນຮູບໂປຣໄຟລ໌ແລ້ວ');
+    } catch (err) {
+      console.error('ບັນທຶກຮູບບໍ່ສຳເລັດ', err);
+      showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'ບັນທຶກຮູບ';
+    }
+  });
+
+  avatarRemoveBtn.addEventListener('click', async () => {
+    if (!confirm('ລຶບຮູບທີ່ອັບໂຫຼດ ແລະ ໃຊ້ຮູບເດີມ?')) return;
+    try {
+      const { ok, data } = await postJson('/api/account/avatar', { remove: true });
+      if (!ok) { showToast(data.error || 'ລຶບຮູບບໍ່ສຳເລັດ', true); return; }
+      state.avatar = data.avatar || null;
+      renderAvatar(state.avatar);
+      replay(avatarBox, 'p-pop');
+      showToast('ລຶບຮູບແລ້ວ');
+    } catch (err) {
+      console.error('ລຶບຮູບບໍ່ສຳເລັດ', err);
+      showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+    }
+  });
+
+  document.getElementById('pNameForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const field = document.getElementById('pNameField');
+    const name = nameInput.value.replace(/\s+/g, ' ').trim();
+    if (name.length < 2 || name.length > 24) { setFieldError(field, 'ຊື່ຕ້ອງມີ 2-24 ໂຕ'); return; }
+    setFieldError(field, '');
+    nameSaveBtn.disabled = true;
+    const original = nameSaveBtn.textContent;
+    nameSaveBtn.textContent = 'ກຳລັງບັນທຶກ...';
+    try {
+      const { ok, data } = await postJson('/api/account/update-profile', { username: name });
+      if (!ok) { setFieldError(field, data.error || 'ບັນທຶກຊື່ບໍ່ສຳເລັດ'); return; }
+      state.username = data.username;
+      nameInput.value = data.username;
+      document.getElementById('pUsername').textContent = data.username;
+      document.getElementById('pInfoUsername').textContent = data.username;
+      if (!state.avatar) renderAvatar(null);
+      replay(document.getElementById('pUsername'), 'p-swap');
+      replay(document.getElementById('pNameField'), 'p-ok');
+      showToast('ບັນທຶກຊື່ແລ້ວ');
+    } catch (err) {
+      console.error('ບັນທຶກຊື່ບໍ່ສຳເລັດ', err);
+      showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+    } finally {
+      nameSaveBtn.textContent = original;
+      updateNameUi();
+    }
+  });
+
   const loadingEl = document.getElementById('pLoading');
   const contentEl = document.getElementById('pContent');
 
@@ -79,31 +279,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = me.user || {};
 
     // ---- Avatar ----
-    const avatarBox = document.getElementById('pAvatarBox');
-    // ຄວາມປອດໄພ: user.username ມາຈາກ signup ຟອມ (backend ບໍ່ໄດ້ຈຳກັດຕົວອັກສອນ, ອະນຸຍາດ
-    // < > " ' ໄດ້) — ຫ້າມເອົາໄປໃສ່ໃນ innerHTML ຕົງໆ ບໍ່ດັ່ງນັ້ນຄົນຕັ້ງຊື່ຜູ້ໃຊ້ເປັນ HTML/script
-    // ຈະເຮັດໃຫ້ໂຕເອງໂດນ XSS ຕອນເປີດໜ້າໂປຣໄຟລ໌ຂອງໂຕເອງ (stored XSS) — ໃຊ້ escapeHtml() ກັນໄວ້
-    function escapeHtml(str) {
-      return String(str || '').replace(/[&<>"']/g, (c) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-      }[c]));
-    }
-    if (user.avatar) {
-      avatarBox.innerHTML = `<img src="${escapeHtml(user.avatar)}" alt="${escapeHtml(user.username || '')}">`;
-    } else {
-      avatarBox.innerHTML = `<div class="p-avatar-fallback">${escapeHtml(initials(user.username))}</div>`;
-    }
+    // ຄວາມປອດໄພ: user.username / avatar ມາຈາກຜູ້ໃຊ້ — ຫ້າມໃສ່ innerHTML ຕົງໆ (stored XSS) ໃຊ້ esc() ທຸກຄັ້ງ
+    state.username = user.username || '';
+    state.avatar = user.avatar || null;
+    renderAvatar(state.avatar);
 
     // ---- Name / badge ----
     document.getElementById('pUsername').textContent = user.username || 'ຜູ້ໃຊ້';
     document.getElementById('pInfoUsername').textContent = user.username || '—';
+    nameInput.value = user.username || '';
+    updateNameUi();
     const badge = document.getElementById('pBadge');
     const badgeText = document.getElementById('pBadgeText');
     badge.classList.toggle('is-admin', !!user.isAdmin);
     badgeText.textContent = user.isAdmin ? 'ADMIN' : 'ຜູ້ໃຊ້';
 
     // ---- Balance ----
-    document.getElementById('pStatBalance').innerHTML = `${formatKip(user.balance)}<span class="unit"> ₭</span>`;
+    countTo(document.getElementById('pStatBalance'), user.balance, true, 450);
 
     // ---- Account info rows ----
     document.getElementById('pInfoEmail').textContent = user.email || 'ບໍ່ມີ';
@@ -139,6 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     loadingEl.style.display = 'none';
+    [...contentEl.children].forEach((el, i) => el.style.setProperty('--i', i));
     contentEl.classList.add('ready');
 
     // ---- Order stats (best-effort — คืน 0 จนกว่าจะมีตาราง orders จริง) ----
@@ -146,96 +339,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const statsRes = await fetch('/api/account/stats', { cache: 'no-store' });
       if (statsRes.ok) {
         const stats = await statsRes.json();
-        document.getElementById('pStatOrders').textContent = stats.ordersCompleted ?? 0;
-        document.getElementById('pStatSpent').innerHTML = `${formatKip(stats.totalSpent)}<span class="unit"> ₭</span>`;
+        countTo(document.getElementById('pStatOrders'), stats.ordersCompleted ?? 0, false, 600);
+        countTo(document.getElementById('pStatSpent'), stats.totalSpent, true, 700);
       }
     } catch (err) {
       console.error('ດຶງ /api/account/stats ບໍ່ສຳເລັດ', err);
     }
-
-    // ---- Reseller status (ตัวแทน) ----
-    await refreshResellerStatus();
-
-    // ---- ถ้าเข้ามาจากลิงก์ #reseller (เมนู "สมัครตัวแทน") ให้เลื่อนไปการ์ดนั้นให้เลย ----
-    if (window.location.hash === '#reseller') {
-      const target = document.getElementById('reseller');
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
   })();
-
-  /* ---------- Reseller status (ตัวแทน) ---------- */
-  const RESELLER_TIER_LABELS = { '7d': '7 ມື້', '14d': '14 ມື້', '30d': '30 ມື້', 'lifetime': 'ຖາວອນ' };
-
-  async function refreshResellerStatus() {
-    const redeemBox = document.getElementById('pResellerRedeemBox');
-    const activeBox = document.getElementById('pResellerActiveBox');
-    if (!redeemBox || !activeBox) return;
-
-    try {
-      const res = await fetch('/api/account/reseller-status', { cache: 'no-store' });
-      const data = await res.json();
-      const status = data && data.status;
-
-      if (status && status.is_reseller) {
-        redeemBox.style.display = 'none';
-        activeBox.style.display = '';
-        document.getElementById('pResellerTier').textContent = RESELLER_TIER_LABELS[status.duration_type] || status.duration_type || '—';
-        document.getElementById('pResellerDiscount').textContent = status.discount_percent != null ? `${status.discount_percent}%` : '—';
-        document.getElementById('pResellerExpiry').textContent = status.period_end ? formatDate(status.period_end) : 'ຖາວອນ ບໍ່ໝົດອາຍຸ';
-      } else {
-        redeemBox.style.display = '';
-        activeBox.style.display = 'none';
-      }
-    } catch (err) {
-      console.error('ດຶງ /api/account/reseller-status ບໍ່ສຳເລັດ', err);
-    }
-  }
-
-  const resellerForm = document.getElementById('pResellerForm');
-  if (resellerForm) {
-    resellerForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const codeField = document.getElementById('pResellerCodeField');
-      const codeInput = document.getElementById('pResellerCode');
-      const code = codeInput.value.trim();
-
-      if (!code) {
-        setFieldError(codeField, 'ກະລຸນາໃສ່ຄີຍ໌ຕົວແທນ');
-        return;
-      }
-      setFieldError(codeField, '');
-
-      const submitBtn = document.getElementById('pResellerSubmitBtn');
-      const originalHtml = submitBtn.innerHTML;
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'ກຳລັງກວດສອບ...';
-
-      try {
-        const res = await fetch('/api/account/redeem-reseller-key', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code }),
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          showToast(data.error || 'ໃຊ້ຄີຍ໌ບໍ່ສຳເລັດ', true);
-          return;
-        }
-
-        showToast('ໃຊ້ຄີຍ໌ຕົວແທນສຳເລັດແລ້ວ');
-        resellerForm.reset();
-        await refreshResellerStatus();
-      } catch (err) {
-        console.error('ໃຊ້ຄີຍ໌ຕົວແທນບໍ່ສຳເລັດ', err);
-        showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalHtml;
-      }
-    });
-  }
 
   /* ---------- Change password form ---------- */
   const pwForm = document.getElementById('pPwForm');
