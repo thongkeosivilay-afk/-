@@ -1,0 +1,151 @@
+/* =========================================================
+   coupons-admin.css — แผง "โค้ดส่วนลด" ในห้องแอดมิน (admin.html > #panelCoupons)
+   ทุกคลาสขึ้นต้นด้วย cpa- และอยู่ใต้ #panelCoupons เพื่อไม่ให้ชนกับ admin.css เดิม
+   ========================================================= */
+#panelCoupons{
+  --cpa-raise:#0a0a0a; --cpa-card:#0d0d0d; --cpa-line:#1e1e1e; --cpa-red:#ff0001; --cpa-green:#2ecc71; --cpa-gold:#ffd54a;
+  --cpa-dim:#999; --cpa-faint:#777; --cpa-spring:cubic-bezier(.3,1.5,.5,1);
+}
+#panelCoupons .cpa-i{ width:1em; height:1em; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+#panelCoupons .cpa-en{ font-family:var(--gx-font,'Chakra Petch','Noto Sans Lao',sans-serif); }
+#panelCoupons button,#panelCoupons input{ font:inherit; }
+#panelCoupons button{ cursor:pointer; }
+
+/* ---------- form ---------- */
+#panelCoupons .cpa-f{ margin-bottom:16px; }
+#panelCoupons .cpa-f > label,#panelCoupons .cpa-f > .cpa-l{ display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:13px; font-weight:700; margin-bottom:7px; color:#fff; }
+#panelCoupons .cpa-f > label > span,#panelCoupons .cpa-f > .cpa-l > span{ display:flex; align-items:center; gap:7px; }
+#panelCoupons .cpa-f .cpa-i{ color:var(--cpa-red); font-size:15px; }
+#panelCoupons .cpa-f small{ font-size:11px; font-weight:500; color:var(--cpa-faint); }
+#panelCoupons .cpa-row{ display:flex; gap:8px; }
+#panelCoupons .cpa-in{
+  flex:1; min-width:0; height:44px; padding:0 12px; border-radius:11px; background:var(--cpa-raise); color:#fff;
+  border:1.5px solid var(--cpa-line); font-size:16px; font-weight:700; outline:0;
+  transition:border-color .25s,box-shadow .25s,transform .25s;
+}
+#panelCoupons .cpa-in:focus{ border-color:var(--cpa-red); box-shadow:0 0 0 3px rgba(255,0,1,.12),0 0 20px -4px rgba(255,0,1,.7); transform:translateY(-1px); }
+#panelCoupons .cpa-in.code{ letter-spacing:1.5px; text-transform:uppercase; }
+#panelCoupons .cpa-in.bad{ border-color:var(--cpa-red); animation:cpaShake .45s; }
+@keyframes cpaShake{ 15%,55%{transform:translateX(-6px)} 35%,75%{transform:translateX(6px)} }
+#panelCoupons .cpa-bump{ animation:cpaBump .3s var(--cpa-spring); }
+@keyframes cpaBump{ from{ transform:translateY(-9px) scale(1.12); color:var(--cpa-red); } }
+#panelCoupons .cpa-btn2{
+  flex:none; height:44px; padding:0 14px; border-radius:11px; background:var(--cpa-raise); color:#fff;
+  border:1.5px solid var(--cpa-line); font-weight:700; font-size:13px; display:flex; align-items:center; gap:7px;
+  transition:transform .15s,border-color .2s;
+}
+#panelCoupons .cpa-btn2:active{ transform:scale(.94); }
+#panelCoupons .cpa-btn2 .cpa-i{ font-size:18px; color:var(--cpa-red); }
+#panelCoupons .cpa-btn2.roll .cpa-i{ animation:cpaRoll .6s cubic-bezier(.3,1.3,.5,1); }
+@keyframes cpaRoll{ from{ transform:rotate(-360deg) scale(.6); } }
+
+#panelCoupons .cpa-seg{ display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; background:var(--cpa-raise); border:1.5px solid var(--cpa-line); border-radius:12px; position:relative; }
+#panelCoupons .cpa-seg button{ position:relative; z-index:1; height:38px; border:0; background:none; border-radius:9px; font-weight:700; color:var(--cpa-dim); display:flex; align-items:center; justify-content:center; gap:7px; transition:color .25s; }
+#panelCoupons .cpa-seg button.on{ color:#fff; }
+#panelCoupons .cpa-seg button.on .cpa-i{ animation:cpaPop .45s var(--cpa-spring); color:#fff; }
+@keyframes cpaPop{ from{ transform:scale(.3) rotate(-90deg); } }
+#panelCoupons .cpa-seg i.cpa-pill{ position:absolute; top:4px; bottom:4px; left:4px; width:calc(50% - 6px); border-radius:9px; background:var(--cpa-red); box-shadow:0 0 16px rgba(255,0,1,.55); transition:transform .45s cubic-bezier(.3,1.5,.5,1); }
+#panelCoupons .cpa-seg.is-fixed i.cpa-pill{ transform:translateX(calc(100% + 4px)); }
+#panelCoupons .cpa-suffix{ position:relative; flex:1; }
+#panelCoupons .cpa-suffix .cpa-in{ width:100%; padding-right:46px; }
+#panelCoupons .cpa-suffix b{ position:absolute; right:13px; top:50%; transform:translateY(-50%); color:var(--cpa-red); font-weight:800; pointer-events:none; }
+#panelCoupons .cpa-suffix b.sw{ animation:cpaSw .4s var(--cpa-spring); }
+@keyframes cpaSw{ from{ transform:translateY(-50%) scale(0) rotate(180deg); } }
+#panelCoupons .cpa-prev{ margin-top:10px; font-size:12.5px; color:var(--cpa-dim); display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-height:22px; }
+#panelCoupons .cpa-prev s{ color:var(--cpa-faint); text-decoration-color:var(--cpa-red); }
+#panelCoupons .cpa-prev b{ color:var(--cpa-green); font-size:15px; text-shadow:0 0 12px rgba(46,204,113,.5); }
+#panelCoupons .cpa-prev .cpa-i{ color:var(--cpa-red); animation:cpaNudge 1.2s ease-in-out infinite; }
+@keyframes cpaNudge{ 50%{ transform:translateX(4px); } }
+
+#panelCoupons .cpa-step{ display:flex; align-items:center; gap:8px; }
+#panelCoupons .cpa-step button{ position:relative; overflow:hidden; width:44px; height:44px; border-radius:11px; background:var(--cpa-raise); color:#fff; border:1.5px solid var(--cpa-line); display:grid; place-items:center; font-size:18px; transition:transform .15s; }
+#panelCoupons .cpa-step button:active{ transform:scale(.88); }
+#panelCoupons .cpa-step .cpa-in{ text-align:center; flex:1; }
+#panelCoupons .cpa-rp{ position:absolute; border-radius:50%; background:rgba(255,0,1,.45); transform:scale(0); animation:cpaRp .55s ease-out forwards; pointer-events:none; }
+@keyframes cpaRp{ to{ transform:scale(1); opacity:0; } }
+#panelCoupons .cpa-chips{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+#panelCoupons .cpa-chips button{ padding:5px 12px; border-radius:999px; background:var(--cpa-raise); border:1px solid var(--cpa-line); font-size:12px; font-weight:700; color:var(--cpa-dim); transition:all .25s var(--cpa-spring); }
+#panelCoupons .cpa-chips button:active{ transform:scale(.9); }
+#panelCoupons .cpa-chips button.on{ border-color:var(--cpa-red); color:#fff; background:rgba(255,0,1,.14); box-shadow:0 0 14px -2px rgba(255,0,1,.6); transform:translateY(-2px); }
+
+#panelCoupons .cpa-sum{ margin:4px 0 16px; padding:12px 14px; border-radius:12px; border:1px dashed #333; font-size:12.5px; line-height:1.9; color:var(--cpa-dim); position:relative; overflow:hidden; }
+#panelCoupons .cpa-sum::after{ content:""; position:absolute; inset:0; background:linear-gradient(100deg,transparent 40%,rgba(255,0,1,.1),transparent 60%); transform:translateX(-100%); animation:cpaScan 4s ease-in-out infinite; }
+@keyframes cpaScan{ 60%,100%{ transform:translateX(100%); } }
+#panelCoupons .cpa-sum b{ color:#fff; }
+#panelCoupons .cpa-sum em{ font-style:normal; color:var(--cpa-red); font-weight:800; }
+#panelCoupons .cpa-sum .pop{ display:inline-block; animation:cpaSp .5s var(--cpa-spring); }
+@keyframes cpaSp{ from{ transform:scale(1.5); color:var(--cpa-gold); } }
+
+#panelCoupons .cpa-create{
+  width:100%; height:52px; border:0; border-radius:13px; background:var(--cpa-red); color:#fff; font-weight:800; font-size:15px;
+  position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; gap:9px;
+  transition:transform .15s,background .3s; box-shadow:0 8px 24px -8px rgba(255,0,1,.8);
+}
+#panelCoupons .cpa-create:active{ transform:scale(.97); }
+#panelCoupons .cpa-create:disabled{ opacity:.6; cursor:default; }
+#panelCoupons .cpa-create::after{ content:""; position:absolute; top:0; bottom:0; width:40%; left:-60%; transform:skewX(-20deg); background:linear-gradient(90deg,transparent,rgba(255,255,255,.32),transparent); animation:cpaShine 3s ease-in-out infinite; }
+@keyframes cpaShine{ 0%{left:-60%} 35%,100%{left:130%} }
+#panelCoupons .cpa-create .cpa-i{ font-size:20px; }
+#panelCoupons .cpa-create .ok{ display:none; }
+#panelCoupons .cpa-create.done{ background:var(--cpa-green); color:#04140a; animation:cpaOkPop .6s var(--cpa-spring); }
+#panelCoupons .cpa-create.done .ok{ display:block; }
+#panelCoupons .cpa-create.done .nm{ display:none; }
+@keyframes cpaOkPop{ 40%{ transform:scale(1.06); } }
+#panelCoupons .cpa-err{ display:flex; align-items:center; gap:6px; color:var(--cpa-red); font-size:12px; height:0; overflow:hidden; opacity:0; transition:all .3s; }
+#panelCoupons .cpa-err.show{ height:22px; opacity:1; margin-top:9px; }
+
+/* ---------- list ---------- */
+#panelCoupons .cpa-empty{ padding:26px; text-align:center; color:var(--cpa-faint); font-size:13px; border:1px dashed var(--cpa-line); border-radius:14px; }
+#panelCoupons .cpa-cp{ background:var(--cpa-card); border:1px solid var(--cpa-line); border-radius:14px; margin-bottom:10px; overflow:hidden; position:relative; transition:opacity .4s,filter .4s,box-shadow .4s,border-color .4s; }
+#panelCoupons .cpa-cp.new{ animation:cpaTear 1s cubic-bezier(.2,1.1,.3,1) both; }
+@keyframes cpaTear{ 0%{opacity:0;transform:translateY(-34px) scale(.9) rotate(-2deg);clip-path:inset(0 100% 0 0)} 50%{opacity:1;clip-path:inset(0 0 0 0)} 70%{transform:translateY(4px) rotate(.6deg);box-shadow:0 0 36px rgba(255,0,1,.65)} 100%{transform:none} }
+#panelCoupons .cpa-cp.off{ opacity:.45; filter:grayscale(.8); }
+#panelCoupons .cpa-cp.rm{ animation:cpaOut .5s cubic-bezier(.6,0,.9,.4) forwards; }
+@keyframes cpaOut{ 30%{ transform:rotate(-3deg) translateX(-10px); } 100%{ opacity:0; transform:translateX(120%) rotate(8deg); } }
+#panelCoupons .cpa-cp.gone{ animation:cpaCollapse .3s ease forwards; }
+@keyframes cpaCollapse{ to{ height:0; margin:0; opacity:0; border-width:0; } }
+#panelCoupons .cpa-cp.full{ border-color:var(--cpa-gold); animation:cpaGold 2.4s ease-in-out infinite; }
+@keyframes cpaGold{ 50%{ box-shadow:0 0 26px -6px rgba(255,213,74,.6); } }
+#panelCoupons .cpa-top{ display:flex; align-items:center; gap:11px; padding:13px 14px; }
+#panelCoupons .cpa-ico{ width:38px; height:38px; border-radius:10px; background:#150303; border:1px solid #3a0a0a; display:grid; place-items:center; color:var(--cpa-red); font-size:19px; transition:transform .4s var(--cpa-spring); }
+#panelCoupons .cpa-cp:hover .cpa-ico{ transform:rotate(-12deg) scale(1.08); }
+#panelCoupons .cpa-cp.full .cpa-ico{ color:var(--cpa-gold); border-color:#4a3a00; background:#1a1500; }
+#panelCoupons .cpa-code{ flex:1; min-width:0; }
+#panelCoupons .cpa-code b{ display:block; font-size:15px; letter-spacing:1.4px; overflow:hidden; text-overflow:ellipsis; color:#fff; }
+#panelCoupons .cpa-code small{ display:flex; align-items:center; gap:5px; font-size:12px; font-weight:800; color:var(--cpa-green); }
+#panelCoupons .cpa-tg{ position:relative; flex:none; width:46px; height:28px; border-radius:999px; border:0; background:#2a2a2a; transition:background .3s,box-shadow .3s; }
+#panelCoupons .cpa-tg::after{ content:""; position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:50%; background:#fff; transition:transform .4s var(--cpa-spring); }
+#panelCoupons .cpa-tg.on{ background:var(--cpa-green); box-shadow:0 0 16px -2px rgba(46,204,113,.7); }
+#panelCoupons .cpa-tg.on::after{ transform:translateX(18px); }
+#panelCoupons .cpa-tg:disabled{ opacity:.6; }
+#panelCoupons .cpa-body{ border-top:2px dashed #222; padding:12px 14px; position:relative; }
+#panelCoupons .cpa-body::before,#panelCoupons .cpa-body::after{ content:""; position:absolute; top:-8px; width:14px; height:14px; border-radius:50%; background:#0d0d0d; border:1px solid var(--cpa-line); }
+#panelCoupons .cpa-body::before{ left:-8px; }
+#panelCoupons .cpa-body::after{ right:-8px; }
+#panelCoupons .cpa-m{ display:flex; justify-content:space-between; font-size:12px; color:var(--cpa-dim); margin-bottom:8px; }
+#panelCoupons .cpa-m b{ color:#fff; }
+#panelCoupons .cpa-bar{ height:9px; border-radius:99px; background:#1a1a1a; position:relative; }
+#panelCoupons .cpa-bar i{ display:block; height:100%; width:0; border-radius:99px; background:repeating-linear-gradient(115deg,var(--cpa-red) 0 8px,#d40000 8px 16px); background-size:200% 100%; animation:cpaStripe 1s linear infinite; transition:width 1s cubic-bezier(.2,.9,.3,1); box-shadow:0 0 12px rgba(255,0,1,.6); }
+#panelCoupons .cpa-bar i.full{ background:repeating-linear-gradient(115deg,var(--cpa-gold) 0 8px,#e0b72f 8px 16px); box-shadow:0 0 12px rgba(255,213,74,.6); }
+@keyframes cpaStripe{ to{ background-position:32px 0; } }
+#panelCoupons .cpa-meta{ display:flex; flex-wrap:wrap; gap:6px; margin-top:11px; }
+#panelCoupons .cpa-meta span{ display:flex; align-items:center; gap:5px; font-size:11.5px; color:var(--cpa-dim); background:var(--cpa-raise); border:1px solid var(--cpa-line); border-radius:7px; padding:3px 8px; }
+#panelCoupons .cpa-meta .cpa-i{ font-size:12px; color:var(--cpa-red); }
+#panelCoupons .cpa-meta .gd{ color:var(--cpa-gold); border-color:#4a3a00; }
+#panelCoupons .cpa-meta .gd .cpa-i{ color:var(--cpa-gold); }
+#panelCoupons .cpa-meta .ex{ color:#ff8a8a; border-color:#4a1212; }
+#panelCoupons .cpa-act{ display:flex; gap:6px; margin-top:11px; }
+#panelCoupons .cpa-act button{ position:relative; overflow:hidden; flex:1; height:38px; border-radius:9px; background:var(--cpa-raise); color:#fff; border:1px solid var(--cpa-line); font-size:12.5px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; transition:transform .15s,border-color .2s,color .2s; }
+#panelCoupons .cpa-act button:active{ transform:scale(.93); }
+#panelCoupons .cpa-act .cpa-i{ font-size:15px; }
+#panelCoupons .cpa-act .del{ color:var(--cpa-red); flex:none; min-width:46px; padding:0 12px; }
+#panelCoupons .cpa-act .del.sure{ background:var(--cpa-red); color:#fff; border-color:var(--cpa-red); }
+#panelCoupons .cpa-act .cpb.ok{ border-color:var(--cpa-green); color:var(--cpa-green); }
+.cpa-fx{ position:fixed; width:0; height:0; pointer-events:none; z-index:300; }
+.cpa-fx i{ position:absolute; width:7px; height:10px; border-radius:2px; background:var(--c); opacity:0; animation:cpaCf 1.1s cubic-bezier(.15,.8,.3,1) forwards; }
+.cpa-fx i.o{ border-radius:50%; width:7px; height:7px; }
+@keyframes cpaCf{ 0%{transform:translate(0,0) rotate(0);opacity:1} 70%{opacity:1} 100%{transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0} }
+@media (prefers-reduced-motion:reduce){
+  #panelCoupons *,#panelCoupons *::before,#panelCoupons *::after{ animation:none !important; transition:none !important; }
+  .cpa-fx{ display:none; }
+}
