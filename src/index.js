@@ -1906,7 +1906,18 @@ async function handleOrdersHistory(request, env) {
       order: 'created_at.desc',
       limit: '200',
     });
-    return json({ ok: true, items: rows || [] });
+
+    // orders ไม่มีคอลัมน์รูปสินค้า -> join กับ products ด้วย product_name (เหมือน handleRecentPurchases)
+    // ถ้าดึงรูปไม่สำเร็จ/สินค้าถูกลบไปแล้ว ก็แค่ไม่มี image_url (หน้าบ้านจะโชว์รูปสำรอง) ไม่ทำให้ประวัติพัง
+    let imageByName = new Map();
+    try {
+      const products = await supabaseSelect(env, 'products', { select: 'name,image_url' });
+      imageByName = new Map((products || []).map((p) => [p.name, p.image_url || null]));
+    } catch (e) {
+      console.error('handleOrdersHistory: product images unavailable:', e);
+    }
+    const items = (rows || []).map((r) => ({ ...r, image_url: imageByName.get(r.product_name) || null }));
+    return json({ ok: true, items });
   } catch (err) {
     console.error('handleOrdersHistory failed:', err);
     return json({ error: 'ດຶງປະຫວັດການສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
