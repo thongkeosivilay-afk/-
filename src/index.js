@@ -1730,7 +1730,7 @@ async function handleTopupHistory(request, env) {
     const rows = await supabaseSelect(env, 'topup_requests', {
       // viewed_at: ຄໍລໍາໃໝ່ (ເບິ່ງ migration_add_topup_viewed_at.sql) — ໃຊ້ບອກຝັ່ງ
       // ລູກຄ້າແບບ realtime ວ່າແອດມິນເປີດເບິ່ງສະລິບຢູ່ ກ່ອນຈະຢືນຢັນ/ປະຕິເສດ
-      select: 'id,amount,status,slip_url,created_at,viewed_at',
+      select: 'id,ref_no,amount,status,slip_url,created_at,viewed_at',
       user_id: `eq.${user.id}`,
       order: 'created_at.desc',
       limit: '200',
@@ -1901,7 +1901,7 @@ async function handleOrdersHistory(request, env) {
 
   try {
     const rows = await supabaseSelect(env, 'orders', {
-      select: 'id,product_name,duration_label,price,code,status,created_at',
+      select: 'id,ref_no,product_name,duration_label,price,code,status,created_at',
       user_id: `eq.${user.id}`,
       order: 'created_at.desc',
       limit: '200',
