@@ -9,7 +9,7 @@
    ========================================================= */
 (function () {
   var root = document.documentElement;
-  var MIN_SHOW_MS = 300;   // โชว์อย่างน้อยเท่านี้ ไม่ให้วาบแล้วหาย
+  var MIN_SHOW_MS = 1500;  // โชว์อย่างน้อยเท่านี้ (มิลลิวินาที) จะได้เห็นปิกาจูวิ่ง — อยากให้ช้า/เร็วกว่านี้แก้เลขตรงนี้
   var MAX_WAIT_MS = 8000;  // รอนานสุด แล้วเปิดหน้าให้เลย
   var EXIT_MS = 320;       // ความยาวเฟดออก (ต้องมากกว่า .25s ในสไตล์ด้านล่าง)
   var RUN_MS = 280;        // ปิกาจูวิ่งครบ 4 เฟรมใช้เวลาเท่านี้ (ต้องตรง pl-run ด้านล่าง)
@@ -26,15 +26,22 @@
       'background:#0c0c0c;opacity:1;visibility:visible;animation:pl-failsafe 0s linear 10s forwards}' +
     '@keyframes pl-failsafe{to{opacity:0;visibility:hidden;pointer-events:none}}' +
     '#page-loader .pl-stage{display:flex;flex-direction:column;align-items:center;gap:14px}' +
-    '#page-loader .pl-pika{width:160px;height:116px;background:url(' + SPRITE + ') 0 0/640px 116px no-repeat;' +
+    '#page-loader .pl-pika{width:112px;height:81px;background:url(' + SPRITE + ') 0 0/448px 81px no-repeat;' +
       'image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(255,0,1,.35));' +
       'animation:pl-run ' + RUN_MS + 'ms steps(4) infinite;will-change:background-position}' +
-    '@keyframes pl-run{to{background-position:-640px 0}}' +
+    '@keyframes pl-run{to{background-position:-448px 0}}' +
     "#page-loader .pl-text{font:600 15px/1.4 'Noto Sans Lao','Lao Sangam MN','Leelawadee UI','Phetsarath OT','Saysettha OT',system-ui,sans-serif;" +
       'color:#6e6e6e;letter-spacing:.2px;text-align:center}' +
+    '#page-loader .pl-word{position:relative;display:inline-block}' +
+    '#page-loader .pl-dots{position:absolute;left:100%;top:0;white-space:nowrap}' +
+    '#page-loader .pl-dots i{font-style:normal}' +
+    '#page-loader .pl-dots i:nth-child(2){animation:pl-d2 1.2s linear infinite}' +
+    '#page-loader .pl-dots i:nth-child(3){animation:pl-d3 1.2s linear infinite}' +
+    '@keyframes pl-d2{0%,32.9%{opacity:0}33%,100%{opacity:1}}' +
+    '@keyframes pl-d3{0%,65.9%{opacity:0}66%,100%{opacity:1}}' +
     '#page-loader.pl-hide,#page-loader.pl-exit{opacity:0;visibility:hidden;pointer-events:none;animation:none;' +
       'transition:opacity .25s ease,visibility 0s linear .25s}' +
-    '@media (prefers-reduced-motion:reduce){#page-loader .pl-pika{animation:none}}';
+    '@media (prefers-reduced-motion:reduce){#page-loader .pl-pika,#page-loader .pl-dots i{animation:none}}';
   var st = document.createElement('style');
   st.id = 'page-loader-style';
   st.appendChild(document.createTextNode(CSS));
@@ -49,7 +56,7 @@
     el.innerHTML =
       '<div class="pl-stage">' +
         '<div class="pl-pika"></div>' +
-        '<div class="pl-text">ກຳລັງໂຫລດ</div>' +
+        '<div class="pl-text"><span class="pl-word">ກຳລັງໂຫລດ<span class="pl-dots"><i>.</i><i>.</i><i>.</i></span></span></div>' +
       '</div>';
     // ให้ปิกาจูวิ่งต่อจังหวะเดิมข้ามหน้า: ใช้เวลาเครื่องเป็นตัวกำหนดเฟส
     el.querySelector('.pl-pika').style.animationDelay = '-' + (Date.now() % RUN_MS) + 'ms';
