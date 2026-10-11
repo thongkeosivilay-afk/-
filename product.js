@@ -41,6 +41,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const couponInput = document.getElementById('couponInput');
   const couponBtn = document.getElementById('couponBtn');
   const couponField = document.getElementById('couponField');
+  // ຕົວແທນບໍ່ມີຊ່ອງໃສ່ໂຄ້ດສ່ວນຫຼຸດ — ເຊື່ອງໄວ້ກ່ອນ (ຍັງຈອງບ່ອນໄວ້ ບໍ່ໃຫ້ໜ້າກະຕຸກ) ຈົນກວ່າຈະຮູ້ວ່າຜູ້ໃຊ້ເປັນຕົວແທນບໍ່
+  const couponBox = document.getElementById('couponBox');
+  if (couponBox) couponBox.style.visibility = 'hidden';
   const couponMsg = document.getElementById('couponMsg');
   const totalOld = document.getElementById('totalOld');
 
@@ -280,6 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function applyCoupon() {
     if (couponChecking) return;
+    if (resellerActive) { couponFail('ຕົວແທນບໍ່ສາມາດໃຊ້ໂຄ້ດສ່ວນຫຼຸດໄດ້'); return; }
     const code = couponInput.value.trim().toUpperCase();
     if (!code) { couponFail('ກະລຸນາໃສ່ໂຄ້ດສ່ວນຫຼຸດ'); couponInput.focus(); return; }
     if (!/^[A-Z0-9_-]{2,32}$/.test(code)) { couponFail('ໂຄ້ດບໍ່ຖືກຕ້ອງ ຫຼືໝົດອາຍຸແລ້ວ'); return; }
@@ -466,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const codes = [];
     const unitPrice = currentDuration() ? currentDuration().price : 0;
     // ໂຄ້ດສ່ວນຫຼຸດ: ສົ່ງສະເພາະ N ອັນທຳອິດ (N = ສິດທີ່ເຫຼືອ) ອັນທີ່ເກີນຄິດລາຄາເຕັມ ບໍ່ໃຫ້ຕິດ COUPON_USER_LIMIT
-    const couponCode = coupon ? coupon.code : null;
+    const couponCode = (coupon && !resellerActive) ? coupon.code : null;
     const couponN = couponUnits();
     qtyMinus.disabled = true;
     couponBtn.disabled = true;
@@ -563,18 +567,22 @@ document.addEventListener('DOMContentLoaded', () => {
   async function applyResellerPricing() {
     try {
       const info = await window.StorefrontData.fetchResellerInfo();
-      if (!info.isReseller) return;
+      if (!info.isReseller) { if (couponBox) couponBox.style.visibility = ''; return; }
 
       durations.forEach((d) => {
         d.price = window.StorefrontData.effectivePrice(d.price, d.resellerPrice, info);
       });
 
       resellerActive = true;
+      // ຕົວແທນ: ບໍ່ມີຊ່ອງໂຄ້ດສ່ວນຫຼຸດເລີຍ
+      clearCoupon(true);
+      if (couponBox) couponBox.style.display = 'none';
       document.querySelector('.prod-hero')?.classList.add('is-reseller');
       renderOptions();
       renderSummary();
     } catch (err) {
       console.error('product.js: ດຶງລາຄາຕົວແທນບໍ່ສຳເລັດ', err);
+      if (couponBox && !resellerActive) couponBox.style.visibility = '';
     }
   }
 });
