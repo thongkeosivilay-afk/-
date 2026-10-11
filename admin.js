@@ -888,7 +888,7 @@ function renderTopupList(requests) {
           <div class="topup-amount">${formatKipAdmin(r.amount)}</div>
           <div class="topup-meta">
             ${r.user_email ? escapeHtmlAdmin(r.user_email) : escapeHtmlAdmin(r.email || 'ບໍ່ມີອີເມວ')}<br>
-            <span class="ref">${new Date(r.created_at).toLocaleString('lo-LA')}</span>
+            <span class="ref">${new Date(r.created_at).toLocaleString('lo-LA')}${r.ref_no ? ' • ' + escapeHtmlAdmin(r.ref_no) : ''}</span>
           </div>
         </div>
         <span class="topup-status-tag pending">ລໍຖ້າກວດສອບ</span>

@@ -322,12 +322,13 @@
     $('cpaRand').addEventListener('click', () => { // สุ่มแบบสล็อต: ตัวอักษรหมุนก่อนจะนิ่ง
       const b = $('cpaRand');
       b.classList.remove('roll'); void b.offsetWidth; b.classList.add('roll');
-      const words = ['KING', 'MASH', 'FIRE', 'VIP', 'HOT', 'GOLD', 'NEO', 'LUCKY'];
-      const fin = words[Math.floor(Math.random() * words.length)] + Math.floor(Math.random() * 90 + 10);
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ0123456789';
+      // โค้ดสุ่มรูปแบบเดียวกับรหัสออเดอร์: DEKMASH- ตามด้วยเลขสุ่ม 8 หลัก (คำนำหน้าคงที่ มีแต่เลขที่หมุน)
+      const prefix = 'DEKMASH-';
+      const fin = prefix + String(Math.floor(Math.random() * 100000000)).padStart(8, '0');
+      const chars = '0123456789';
       let t = 0;
       const f = () => {
-        const lock = Math.floor(t / 3);
+        const lock = prefix.length + Math.floor(t / 3);
         $('cpaCode').value = fin.slice(0, lock) + Array.from({ length: fin.length - lock }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
         upd();
         if (lock < fin.length) { t++; setTimeout(f, 45); } else { $('cpaCode').value = fin; upd(); bumpEl($('cpaCode')); }

@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="th-item-body">
           <div class="th-item-amount">${formatKip(r.amount)}</div>
           <div class="th-item-date">${formatDate(r.created_at)}</div>
+          ${r.ref_no ? `<div class="th-item-ref">${String(r.ref_no).replace(/[<>&"']/g, '')}</div>` : ''}
         </div>
         <span class="th-item-status ${r.status}">${STATUS_LABEL[r.status] || r.status}</span>
       </div>

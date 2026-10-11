@@ -28,6 +28,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const statTotalEl = document.querySelector('#ohStatTotal');
 
+  // รหัสอ้างอิงที่โชว์ลูกค้า เช่น DEKMASH-48213907 (ออกโดยฐานข้อมูลตอนสร้างออเดอร์ — ดู migration_add_ref_no.sql)
+  // กันเหนียว: ถ้าแถวเก่ายังไม่มี ref_no ให้สร้างเลข 8 หลักคงที่จาก id (ไม่ให้เห็น UUID ยาวๆ)
+  function refOf(r) {
+    if (r && r.ref_no) return r.ref_no;
+    let h = 0;
+    const id = String((r && r.id) || '');
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 100000000;
+    return 'DEKMASH-' + String(h).padStart(8, '0');
+  }
+
   function escapeHtml(str) {
     return String(str || '').replace(/[&<>"']/g, (c) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -126,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ${thumbHTML(g)}
           <div class="oh-item-body">
             <div class="oh-item-top"><h3 class="oh-item-name">${escapeHtml(g.product_name || 'ສິນຄ້າ')}</h3>${pill}</div>
-            <div class="oh-item-meta">#${escapeHtml(head.id || '')} <span>•</span> ${ICON.clock}${formatDate(head.created_at)}</div>
+            <div class="oh-item-meta">${escapeHtml(refOf(head))} <span>•</span> ${ICON.clock}${formatDate(head.created_at)}</div>
             <div class="oh-item-lbl oh-lo">ລາຄາຈ່າຍ</div>
             <div class="oh-item-price" data-amount="${totalPrice}">${formatMoney(totalPrice)}</div>
           </div>
@@ -185,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
       : `<div class="oh-nokey oh-lo">ບໍ່ມີຄີສຳລັບລາຍການນີ້</div>`;
 
     modalBody.innerHTML = `
-      <div class="oh-mh">${ICON.mark}<h2>DEKMASH <i></i> #${escapeHtml(head.id || '')}</h2><button type="button" class="oh-x" id="ohClose" aria-label="ປິດ">${ICON.close}</button></div>
+      <div class="oh-mh">${ICON.mark}<h2>${escapeHtml(refOf(head))}</h2><button type="button" class="oh-x" id="ohClose" aria-label="ປິດ">${ICON.close}</button></div>
       <div class="oh-prod">${thumbHTML(g)}<div><h3>${escapeHtml(g.product_name || 'ສິນຄ້າ')}</h3>${optLine}
         <div class="oh-sub oh-lo">${qty} ຊິ້ນ - ${formatMoney(unit)}/ຊິ້ນ <em class="${failed ? 'is-failed' : ''}">${STATUS_LABEL[g.status] ? (failed ? STATUS_LABEL.failed : 'ສຳເລັດ') : escapeHtml(g.status)}</em></div></div></div>
       <div class="oh-lbl oh-lo">ຄີທີ່ໄດ້ຮັບ (${keys.length} ຄີ)</div>
