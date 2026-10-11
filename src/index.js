@@ -1792,6 +1792,7 @@ async function handleOrderCreate(request, env) {
     COUPON_INVALID: 'ໂຄ້ດສ່ວນຫຼຸດບໍ່ຖືກຕ້ອງ ຫຼືໝົດອາຍຸແລ້ວ',
     COUPON_USER_LIMIT: 'ທ່ານໃຊ້ໂຄ້ດນີ້ຄົບສິດແລ້ວ',
     COUPON_LIMIT: 'ໂຄ້ດນີ້ຖືກໃຊ້ຄົບຈຳນວນບັນຊີແລ້ວ',
+    COUPON_RESELLER: 'ຕົວແທນບໍ່ສາມາດໃຊ້ໂຄ້ດສ່ວນຫຼຸດໄດ້',
   };
 
   try {
@@ -1842,6 +1843,14 @@ async function handleCouponValidate(request, env) {
   const INVALID = 'ໂຄ້ດບໍ່ຖືກຕ້ອງ ຫຼືໝົດອາຍຸແລ້ວ';
   const code = String(body.code || '').trim().toUpperCase();
   if (!/^[A-Z0-9_-]{2,32}$/.test(code)) return json({ error: INVALID }, 404);
+
+  // ຕົວແທນ (reseller) ໃຊ້ໂຄ້ດສ່ວນຫຼຸດບໍ່ໄດ້ — ກວດຈາກ is_active_reseller ໃນ Supabase (ຕົວຕັດສິນຈິງຢູ່ purchase_product ອີກຊັ້ນ)
+  try {
+    const isReseller = await supabaseRpcStrict(env, 'is_active_reseller', { p_user_id: user.id });
+    if (isReseller === true) return json({ error: 'ຕົວແທນບໍ່ສາມາດໃຊ້ໂຄ້ດສ່ວນຫຼຸດໄດ້', resellerBlocked: true }, 403);
+  } catch (err) {
+    console.error('handleCouponValidate reseller check failed:', err); // ກວດບໍ່ໄດ້ ບໍ່ຂັດຂວາງ — purchase_product ຈະກວດຊ້ຳຕອນຊື້
+  }
 
   try {
     const rlKey = `cpnrl:${user.id}:${Math.floor(Date.now() / 60000)}`;
