@@ -34,10 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }[c]));
   }
 
-  // สกุลเงินตามภาพอ้างอิง (฿0.50) — เปลี่ยนที่ค่าคงที่เดียวนี้ถ้าต้องการสกุลอื่น
-  const CURRENCY = '฿';
+  // สกุลเงินกีบ (₭) — รูปแบบเดียวกับหน้าอื่นของร้าน เช่น 20.000 ₭
   function formatMoney(n) {
-    return CURRENCY + Number(n || 0).toFixed(2);
+    return Math.round(Number(n || 0)).toLocaleString('de-DE') + ' ₭';
   }
 
   // วันที่รูปแบบ 10/10/2026 21:47 ตามภาพอ้างอิง
