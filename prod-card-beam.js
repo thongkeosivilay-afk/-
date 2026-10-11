@@ -14,6 +14,20 @@
   var bound = new WeakSet();
   var io = null;
 
+  // style.css ปิดแสงวิ่ง (animation:none) เมื่อ <html> มี class perf-lite — page-transition.js ใส่ให้อัตโนมัติ
+  // กับเครื่องที่ CPU <= 4 คอร์ / RAM <= 4GB (มือถือส่วนใหญ่เข้าข่าย) แสงเลยค้างนิ่งอยู่ที่เดิม
+  // แสงนี้เป็น CSS ล้วน และวิ่งเฉพาะการ์ดที่อยู่ในจอ (class in-view) จึงเบาพอ -> เปิดให้วิ่งได้ทุกเครื่อง
+  // (คนที่ตั้ง "ลดการเคลื่อนไหว" ในระบบยังคงนิ่งตามเดิม)
+  if (!reduceMotion) {
+    var fix = document.createElement('style');
+    fix.setAttribute('data-beam-fix', '');
+    fix.textContent =
+      'html.perf-lite .prod-card::before{animation:beam-spin 3.6s linear infinite !important;' +
+      'animation-delay:calc(var(--beam-i, 0) * -.6s) !important;animation-play-state:paused !important}' +
+      'html.perf-lite .prod-card.in-view::before{animation-play-state:running !important}';
+    (document.head || document.documentElement).appendChild(fix);
+  }
+
   function setHot(el, hot) { el.classList.toggle('is-hot', hot); }
 
   function bindCard(el, index) {
