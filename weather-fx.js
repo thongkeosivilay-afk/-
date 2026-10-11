@@ -229,28 +229,51 @@
     d.len = 0.8 + rand() * 0.9; d.v = false; d.tx = 0; d.ty = 0;
     d.front = d.z > FRONT_RAIN_Z;
   }
+  // ล็อกขนาดแคนวาสเป็น px ตายตัว: แถบ URL มือถือหด/ขยายตอนเลื่อน จะไม่ทำให้ภาพถูกยืด/หด/รีเซ็ต
   function sizeCanvas(cv, c, d) {
     cv.width = Math.round(W * d); cv.height = Math.round(H * d);
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
     c.setTransform(d, 0, 0, d, 0, 0);
   }
   var fogGrad = null;
-  function resize() {
+  var coarse = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  var EXTRA = coarse ? 180 : 0; // เผื่อความสูงสำหรับตอนแถบ URL บนมือถือหดลง (หน้าจอสูงขึ้นแต่แคนวาสไม่ต้องสร้างใหม่)
+  function viewW() { return document.documentElement.clientWidth || window.innerWidth; }
+  function viewH() { return Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0); }
+  function allocCanvases() { // ปรับความละเอียด/ขนาดแคนวาสอย่างเดียว ไม่ยุ่งกับตำแหน่งเกล็ด
     var dv = window.devicePixelRatio || 1;
     // ชั้นหลังเป็นฉากนุ่มๆ ใช้ความละเอียดต่ำกว่าได้ (เบากว่ามาก) / ชั้นหน้าคมกว่าเล็กน้อย
     dprB = quality < 0.6 ? 1 : Math.min(dv, 1.25);
     dprF = quality < 0.6 ? 1 : Math.min(dv, 1.5);
-    W = window.innerWidth; H = window.innerHeight;
     sizeCanvas(cvB, ctx, dprB); sizeCanvas(cvF, ctxF, dprF);
-    var area = W * H;
-    MAX_SNOW = Math.round(clamp(area / 6000, 30, 120));
-    MAX_RAIN = Math.round(clamp(area / 1500, 100, 330));
-    snow = []; rain = []; streaks = [];
-    for (var i = 0; i < MAX_SNOW; i++) { var f = {}; initSnow(f, i, MAX_SNOW); snow.push(f); }
-    for (var j = 0; j < MAX_RAIN; j++) { var d = {}; initRain(d, j, MAX_RAIN); rain.push(d); }
-    for (var k = 0; k < 8; k++) streaks.push({ x: rand() * W, y: rand() * H, len: 90 + rand() * 170, sp: 0.7 + rand() * 0.9, a: 0.05 + rand() * 0.08 });
     fogGrad = ctx.createLinearGradient(0, H * 0.62, 0, H);
     fogGrad.addColorStop(0, 'rgba(255,40,30,0)');
     fogGrad.addColorStop(1, 'rgba(255,40,30,.20)');
+    dirtyF = false;
+  }
+  function resize() {
+    var nw = viewW(), nh = viewH() + EXTRA;
+    var first = !W, sameW = !first && Math.abs(nw - W) < 2;
+    // ความสูงเปลี่ยนเพราะแถบ URL / คีย์บอร์ด (ความกว้างเท่าเดิม): ไม่ต้องทำอะไร ยกเว้นจอสูงกว่าแคนวาสเดิมจริงๆ ค่อยขยาย
+    if (sameW && nh <= H) return;
+    var ow = W, oh = H;
+    W = nw; H = nh;
+    allocCanvases();
+    var sx = first ? 1 : W / ow, sy = (first || sameW) ? 1 : H / oh;
+    var area = W * H;
+    MAX_SNOW = Math.round(clamp(area / 6000, 30, 120));
+    MAX_RAIN = Math.round(clamp(area / 1500, 100, 330));
+    var i, j, f, d;
+    // เก็บเกล็ด/เม็ดฝนเดิมไว้ แค่ย้ายตำแหน่งตามสัดส่วน -> ไม่หายวับแล้วโผล่ใหม่ตอนปรับขนาด
+    for (i = 0; i < snow.length; i++) { snow[i].x *= sx; snow[i].y *= sy; }
+    for (j = 0; j < rain.length; j++) { rain[j].x *= sx; rain[j].y *= sy; }
+    if (snow.length > MAX_SNOW) snow.length = MAX_SNOW;
+    while (snow.length < MAX_SNOW) { f = {}; initSnow(f, snow.length, MAX_SNOW); snow.push(f); }
+    for (i = 0; i < snow.length; i++) snow[i].th = i / MAX_SNOW;
+    if (rain.length > MAX_RAIN) rain.length = MAX_RAIN;
+    while (rain.length < MAX_RAIN) { d = {}; initRain(d, rain.length, MAX_RAIN); rain.push(d); }
+    for (j = 0; j < rain.length; j++) rain[j].th = j / MAX_RAIN;
+    if (!streaks.length) for (var k = 0; k < 8; k++) streaks.push({ x: rand() * W, y: rand() * H, len: 90 + rand() * 170, sp: 0.7 + rand() * 0.9, a: 0.05 + rand() * 0.08 });
   }
 
   /* ---------- สายฟ้า ---------- */
@@ -367,7 +390,7 @@
   function frame(now) {
     raf = requestAnimationFrame(frame);
     // โหมดประหยัด: เครื่องช้ามาก -> วาด 30 เฟรม/วิ สม่ำเสมอ (ลื่นกว่าสะดุดที่ 40-50)
-    if (halfRate && now - lastRender < 30) return;
+    if (halfRate && now - lastRender < 26) return;
     lastRender = now;
     var dt = (now - last) / 1000; last = now;
     if (!(dt > 0)) return;
@@ -375,12 +398,13 @@
     time += dt;
 
     // ปรับคุณภาพอัตโนมัติ: ลดจำนวนอนุภาค -> ลดความละเอียด -> เหลือ 30 เฟรม/วิ
+    // (ต้องช้าต่อเนื่องนานจริงๆ ถึงจะลด และลดแล้วไม่รีเซ็ตเกล็ด กันหิมะหายวับตอนเลื่อนหน้าจอ)
     emaDt = emaDt * 0.95 + dt * 0.05;
-    var limit = halfRate ? 0.045 : 0.024;
+    var limit = halfRate ? 0.045 : 0.026;
     if (emaDt > limit) {
-      if (++slowFrames > 45) {
+      if (++slowFrames > 120) {
         slowFrames = 0;
-        if (quality > 0.45) { quality -= 0.2; if (quality < 0.6) resize(); } // ต่ำกว่า 0.6 -> ใช้ความละเอียด 1x
+        if (quality > 0.55) { quality -= 0.15; if (quality < 0.6) allocCanvases(); } // ต่ำกว่า 0.6 -> ใช้ความละเอียด 1x
         else if (!halfRate) halfRate = true;
       }
     } else slowFrames = Math.max(0, slowFrames - 1);
@@ -545,12 +569,12 @@
     }
   }
 
-  function start() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
+  function start() { if (!raf) { last = performance.now(); emaDt = Math.min(emaDt, 0.02); slowFrames = 0; raf = requestAnimationFrame(frame); } }
   function stop() { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
 
   resize();
   var rt = 0;
-  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(resize, 150); });
+  window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(resize, 200); });
   var hiddenAt = 0;
   document.addEventListener('visibilitychange', function () {
     if (document.hidden) { hiddenAt = Date.now(); saveState(); stop(); }
@@ -560,7 +584,7 @@
     }
   });
   window.addEventListener('pagehide', saveState);
-  setInterval(saveState, 5000);
+  setInterval(saveState, 15000); // เขียน localStorage ไม่ถี่ (การเขียนแบบ sync ทำให้เฟรมสะดุดได้)
 
   /* ---------- API สำหรับทดสอบ ---------- */
   window.WeatherFX = {

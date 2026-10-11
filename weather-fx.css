@@ -60,6 +60,9 @@ html.wfx-on .oh-item{ background:rgba(5,5,5,.74); }
 @keyframes wfxSweep{ 0%{ transform:translateX(-110%); } 55%,100%{ transform:translateX(110%); } }
 .wfx-back{ z-index:-1; }
 .wfx-front{ z-index:35; }
+/* ให้แคนวาสหิมะเป็นเลเยอร์ GPU ของตัวเอง: ตอนเลื่อนหน้าเว็บ เบราว์เซอร์แค่เลื่อนเลเยอร์ ไม่ต้องวาดหิมะใหม่ทั้งหน้า (กันหิมะวูบหาย/กระตุก) */
+.wfx-back,
+.wfx-front{ will-change:transform; transform:translateZ(0); backface-visibility:hidden; -webkit-backface-visibility:hidden; }
 @media (prefers-reduced-motion:reduce){
   .wfx-glow::before, .wfx-glow::after, .wfx-glow b{ animation:none; }
   .wfx-glow b{ display:none; }
