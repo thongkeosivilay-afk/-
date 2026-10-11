@@ -28,11 +28,9 @@
     e.className = cls; e.setAttribute('aria-hidden', 'true');
     return e;
   }
-  var tint = mk('div', 'wfx-tint');
-  var glow = mk('div', 'wfx-glow'); glow.innerHTML = '<b></b>';
   var cvB = mk('canvas', 'wfx-back');
   var cvF = mk('canvas', 'wfx-front');
-  root.appendChild(tint); root.appendChild(glow); root.appendChild(cvB); root.appendChild(cvF);
+  root.appendChild(cvB); root.appendChild(cvF);
   var ctx = cvB.getContext('2d');   // ชั้นหลัง
   var ctxF = cvF.getContext('2d');  // ชั้นหน้า (บางเม็ด)
 
@@ -129,35 +127,16 @@
      พายุจะ "ก่อตัวก่อน" (ฝนหนักมีแลบฟ้าไกลๆ) ไม่โผล่มาทันที, ฟ้าผ่าถี่สุดช่วงกลางพายุแล้วห่างลง
      ความแรงขึ้นลงเป็นระลอก, ทิศลมค่อยๆ เบนไม่กระตุก, และจำสภาพอากาศข้ามหน้าเว็บได้ */
   var PRESETS = {
-    clear:   { snow: 0.12, rain: 0,    storm: 0,    wind: 0.08, gust: 0.25 },
-    flurry:  { snow: 0.5,  rain: 0,    storm: 0,    wind: 0.14, gust: 0.3 },
-    snow:    { snow: 1,    rain: 0,    storm: 0,    wind: 0.12, gust: 0.35 },
-    wind:    { snow: 1,    rain: 0,    storm: 0,    wind: 0.85, gust: 1 },
-    sleet:   { snow: 0.55, rain: 0.35, storm: 0,    wind: 0.32, gust: 0.5 },
-    drizzle: { snow: 0,    rain: 0.25, storm: 0,    wind: 0.15, gust: 0.3 },
-    rain:    { snow: 0,    rain: 0.65, storm: 0.1,  wind: 0.28, gust: 0.5 },
-    heavy:   { snow: 0,    rain: 0.9,  storm: 0.28, wind: 0.42, gust: 0.8 },
-    storm:   { snow: 0,    rain: 1,    storm: 1,    wind: 0.62, gust: 1 },
-    easing:  { snow: 0,    rain: 0.4,  storm: 0.05, wind: 0.3,  gust: 0.5 }
+    flurry: { snow: 0.55, rain: 0, storm: 0, wind: 0.10, gust: 0.25 },
+    snow:   { snow: 1,    rain: 0, storm: 0, wind: 0.12, gust: 0.30 },
+    heavy:  { snow: 1,    rain: 0, storm: 0, wind: 0.18, gust: 0.35 }
   };
-  // ความน่าจะเป็นของสภาพอากาศถัดไป (รวมแต่ละแถว = 1)
   var GRAPH = {
-    clear:   [['flurry', 0.45], ['snow', 0.30], ['drizzle', 0.15], ['wind', 0.10]],
-    flurry:  [['snow', 0.42], ['clear', 0.28], ['wind', 0.15], ['sleet', 0.15]],
-    snow:    [['wind', 0.25], ['flurry', 0.25], ['sleet', 0.25], ['clear', 0.15], ['drizzle', 0.10]],
-    wind:    [['snow', 0.55], ['flurry', 0.25], ['clear', 0.12], ['sleet', 0.08]],
-    sleet:   [['drizzle', 0.35], ['rain', 0.25], ['snow', 0.25], ['flurry', 0.15]],
-    drizzle: [['rain', 0.45], ['clear', 0.25], ['sleet', 0.15], ['flurry', 0.15]],
-    rain:    [['heavy', 0.35], ['drizzle', 0.30], ['easing', 0.20], ['sleet', 0.15]],
-    heavy:   [['storm', 0.55], ['rain', 0.45]],
-    storm:   [['easing', 1]],
-    easing:  [['rain', 0.35], ['drizzle', 0.35], ['clear', 0.30]]
+    flurry: [['snow', 0.60], ['heavy', 0.15], ['flurry', 0.25]],
+    snow:   [['flurry', 0.50], ['heavy', 0.30], ['snow', 0.20]],
+    heavy:  [['snow', 0.70], ['flurry', 0.30]]
   };
-  // ช่วงเวลาอยู่ในแต่ละสภาพอากาศ (วินาที)
-  var DUR = {
-    clear: [14, 28], flurry: [20, 38], snow: [30, 58], wind: [20, 38], sleet: [16, 30],
-    drizzle: [20, 38], rain: [26, 48], heavy: [20, 34], storm: [38, 62], easing: [16, 26]
-  };
+  var DUR = { flurry: [20, 38], snow: [30, 58], heavy: [20, 36] };
   var S = { snow: 1, rain: 0, storm: 0, wind: 0.12, gust: 0.35 }; // ค่าปัจจุบัน
   var T = { snow: 1, rain: 0, storm: 0, wind: 0.12, gust: 0.35 }; // ค่าเป้าหมาย
   var seqLeft = 40, stateDur = 40, auto = true, forced = false, currentName = 'snow', speed = 1;
@@ -165,7 +144,7 @@
   var gustEv = 0, gustTimer = 6, gustAge = 99, gustPow = 0;
 
   function pickNext(cur) {
-    var row = GRAPH[cur] || GRAPH.clear, r = rand(), acc = 0;
+    var row = GRAPH[cur] || GRAPH.snow, r = rand(), acc = 0;
     for (var i = 0; i < row.length; i++) { acc += row[i][1]; if (r <= acc) return row[i][0]; }
     return row[0][0];
   }
@@ -177,8 +156,6 @@
     // ทิศลม: ส่วนใหญ่คงทิศเดิม พลิกกลับนานๆ ครั้ง และเบนไปทีละน้อย (ไม่สลับทิศฉับพลัน)
     if (rand() < 0.22) dirTarget = -dirTarget;
     dirTarget = (dirTarget < 0 ? -1 : 1) * (0.75 + rand() * 0.4);
-    if (name === 'storm') nextStrike = time + 2.5 + rand() * 2;
-    else if (name === 'heavy') nextStrike = time + 6 + rand() * 8;
   }
   function startState(name) {
     applyPreset(name);
@@ -187,7 +164,7 @@
   }
 
   /* ---------- จำสภาพอากาศข้ามหน้า (เว็บเปลี่ยนหน้าแล้วอากาศต้องไม่รีเซ็ต) ---------- */
-  var KEY = 'wfx_state_v2';
+  var KEY = 'wfx_state_v3';
   function saveState() {
     if (!auto || forced) return;
     try {
@@ -262,7 +239,7 @@
     var sx = first ? 1 : W / ow, sy = (first || sameW) ? 1 : H / oh;
     var area = W * H;
     MAX_SNOW = Math.round(clamp(area / 6000, 30, 120));
-    MAX_RAIN = Math.round(clamp(area / 1500, 100, 330));
+    MAX_RAIN = 0; // ไม่มีฝนแล้ว
     var i, j, f, d;
     // เก็บเกล็ด/เม็ดฝนเดิมไว้ แค่ย้ายตำแหน่งตามสัดส่วน -> ไม่หายวับแล้วโผล่ใหม่ตอนปรับขนาด
     for (i = 0; i < snow.length; i++) { snow[i].x *= sx; snow[i].y *= sy; }
@@ -429,37 +406,10 @@
     // ความแรงฝน/หิมะขึ้นลงเป็นระลอก (ซา-ซัด) ไม่คงที่ตลอด
     var pulse = (Math.sin(time * 0.23) + Math.sin(time * 0.61 + 1.7) + 2) / 4;
 
-    // ความมืดของพายุ (ชั้นหลังสุด)
-    var tv = clamp(S.storm * 0.4 + S.rain * 0.1, 0, 0.5);
-    if (Math.abs(tv - tintV) > 0.01) { tintV = tv; tint.style.opacity = tv.toFixed(3); }
-
-    // สายฟ้า
-    if (!reduce && S.storm > 0.2 && time >= nextStrike) strike(S.storm < 0.6); // ก่อตัว: แลบฟ้าไกลๆ ก่อน ค่อยฟาดจริงตอนพายุแรง
     flashI = 0;
-    var bi;
-    for (bi = bolts.length - 1; bi >= 0; bi--) {
-      var b = bolts[bi], a = time - b.t0;
-      b.I = Math.max(boltI(a), b.third ? thirdI(a) : 0) * b.pow;
-      if (a > 1.2) bolts.splice(bi, 1); else flashI = Math.max(flashI, b.I);
-    }
-    for (var r = pendingRumble.length - 1; r >= 0; r--) {
-      if (time >= pendingRumble[r]) {
-        pendingRumble.splice(r, 1);
-        try { if (navigator.vibrate && navigator.userActivation && navigator.userActivation.hasBeenActive) navigator.vibrate([45, 30, 90, 40, 60]); } catch (e) { /* ignore */ }
-      }
-    }
-
-    // แสงแดงสะท้อนหลังเว็บ: หายใจตามสภาพอากาศ และวาบตอนฟ้าผ่า
-    var gv = clamp(0.62 + S.storm * 0.12 + S.wind * 0.08 + flashI * 0.45, 0, 1);
-    if (Math.abs(gv - glowV) > 0.012) { glowV = gv; glow.style.opacity = gv.toFixed(3); }
-
     ctx.clearRect(0, 0, W, H);
     if (dirtyF) { ctxF.clearRect(0, 0, W, H); dirtyF = false; }
     var q = quality;
-
-    // หมอกพื้นแดง (ฝน/พายุ) — ชั้นหลัง
-    var mist = clamp(S.rain * (0.8 + 0.4 * pulse) * 0.9 + S.storm * 0.3, 0, 1);
-    if (mist > 0.02 && fogGrad) { ctx.globalAlpha = mist * 0.6; ctx.fillStyle = fogGrad; ctx.fillRect(0, H * 0.62, W, H * 0.38); ctx.globalAlpha = 1; }
 
     // ----- หิมะ: อัปเดตตำแหน่งครั้งเดียว แล้ววาดแยกชั้นหลัง/หน้า -----
     var sAmt = clamp(S.snow * (0.9 + 0.2 * pulse), 0, 1) * (reduce ? 0.4 : 1);
@@ -478,94 +428,6 @@
       }
       drawSnow(ctx, false, w, sAmt, nS, q);
       drawSnow(ctxF, true, w, sAmt, nS, q); dirtyF = true;
-    }
-
-    // ----- ฝน -----
-    var rAmt = clamp(S.rain * (0.8 + 0.4 * pulse), 0, 1);
-    if (rAmt > 0.01 && !reduce) {
-      var nR = Math.floor(MAX_RAIN * q);
-      var base = clamp(rAmt * 1.5, 0, 1) * (0.9 + flashI * 0.5);
-      for (var j = 0; j < nR; j++) {
-        var d = rain[j];
-        if (d.th * q > rAmt) { // เม็ดที่ "เกินจำนวน" ตกเร็วๆ แล้วเงียบหายไป
-          d.v = false; d.y += 2000 * dt;
-          if (d.y > H) { d.y = -20; d.x = rand() * (W + 200) - 100; }
-          continue;
-        }
-        var v = 760 + d.z * 980, vx = w * 520 * (0.5 + d.z * 0.5);
-        d.x += vx * dt; d.y += v * dt;
-        if (d.y > H) {
-          if (!d.front && rand() < 0.16 && splashes.length < 40) splashes.push({ x: d.x, y: H - rand() * 8, t: 0, m: 5 + rand() * 7 });
-          d.y = -30 * rand(); d.x = rand() * (W + 200) - 100;
-        }
-        if (d.x > W + 100) d.x = -100; else if (d.x < -100) d.x = W + 100;
-        var L = 0.022 * d.len;
-        d.tx = d.x - vx * L; d.ty = d.y - v * L; d.v = true;
-      }
-      drawRain(ctx, false, nR, base);
-      drawRain(ctxF, true, nR, base); dirtyF = true;
-      // ระลอกกระเซ็นที่ขอบล่าง (ชั้นหลัง)
-      ctx.lineWidth = 0.8;
-      for (var sp = splashes.length - 1; sp >= 0; sp--) {
-        var s2 = splashes[sp]; s2.t += dt * 2.6;
-        if (s2.t >= 1) { splashes.splice(sp, 1); continue; }
-        ctx.strokeStyle = 'rgba(255,120,105,' + (0.4 * (1 - s2.t)).toFixed(3) + ')';
-        ctx.beginPath();
-        ctx.ellipse(s2.x, s2.y, s2.m * s2.t, s2.m * s2.t * 0.35, 0, 0, 6.283);
-        ctx.stroke();
-      }
-    }
-
-    // ----- ริ้วลม (ชั้นหลัง) -----
-    var wv = clamp((Math.abs(w) - 0.32) * 1.5, 0, 1) * (reduce ? 0 : 1);
-    if (wv > 0.02) {
-      var dirS = w >= 0 ? 1 : -1;
-      var ss = dirS > 0 ? streakR : streakL;
-      for (var m = 0; m < streaks.length; m++) {
-        var st = streaks[m];
-        st.x += dirS * (500 + Math.abs(w) * 900) * st.sp * dt;
-        st.y += 12 * dt;
-        if (st.x > W + st.len) { st.x = -st.len; st.y = rand() * H; } else if (st.x < -st.len) { st.x = W + st.len; st.y = rand() * H; }
-        if (st.y > H) st.y = 0;
-        ctx.globalAlpha = st.a * wv * 1.2;
-        ctx.drawImage(ss, dirS > 0 ? st.x - st.len : st.x, st.y, st.len, 3);
-      }
-      ctx.globalAlpha = 1;
-    }
-
-    // ----- สายฟ้า: ตัวสายฟ้าเต็มๆ อยู่ชั้นหลัง + แสงเรืองสาดทับหน้าเว็บบางๆ -----
-    if (bolts.length) {
-      ctx.globalCompositeOperation = 'lighter';
-      ctxF.globalCompositeOperation = 'lighter';
-      for (var q2 = 0; q2 < bolts.length; q2++) {
-        var bo = bolts[q2], I2 = bo.I;
-        if (I2 <= 0.01) continue;
-        // แสงวาบสาดจากด้านบน (หลัง)
-        var rg = ctx.createRadialGradient(bo.x, H * 0.1, 0, bo.x, H * 0.1, H * 1.15);
-        rg.addColorStop(0, 'rgba(255,225,220,' + (I2 * (bo.sheet ? 0.34 : 0.40)).toFixed(3) + ')');
-        rg.addColorStop(0.5, 'rgba(255,60,45,' + (I2 * 0.20).toFixed(3) + ')');
-        rg.addColorStop(1, 'rgba(150,0,0,0)');
-        ctx.fillStyle = rg; ctx.fillRect(0, 0, W, H);
-        // แสงเรืองบางๆ ทับหน้าเว็บ ให้การ์ด/ตัวหนังสือสว่างวาบตาม (หน้า)
-        var rf = ctxF.createRadialGradient(bo.x, H * 0.1, 0, bo.x, H * 0.1, H * 1.1);
-        rf.addColorStop(0, 'rgba(255,225,220,' + (I2 * 0.13).toFixed(3) + ')');
-        rf.addColorStop(0.5, 'rgba(255,60,45,' + (I2 * 0.05).toFixed(3) + ')');
-        rf.addColorStop(1, 'rgba(150,0,0,0)');
-        ctxF.fillStyle = rf; ctxF.fillRect(0, 0, W, H); dirtyF = true;
-        if (!bo.sheet) {
-          ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          ctxF.lineCap = 'round'; ctxF.lineJoin = 'round';
-          drawBoltPasses(ctx, bo, I2, [[10, 0.09, '255,50,35'], [4.5, 0.24, '255,130,115'], [1.6, 1, '255,255,255']]);
-          // เส้นหลักหนาเป็นพิเศษ (หลัง)
-          ctx.beginPath();
-          for (var s3 = 0; s3 < bo.segs.length; s3++) { var g3 = bo.segs[s3]; if (g3[4] >= 2.6) { ctx.moveTo(g3[0], g3[1]); ctx.lineTo(g3[2], g3[3]); } }
-          ctx.lineWidth = 2.4; ctx.strokeStyle = 'rgba(255,255,255,' + I2.toFixed(3) + ')'; ctx.stroke();
-          // เงาแสงของสายฟ้าที่ลอยอยู่หน้าเว็บ (บางๆ)
-          drawBoltPasses(ctxF, bo, I2, [[5, 0.10, '255,90,70'], [1.2, 0.38, '255,240,236']]);
-        }
-      }
-      ctx.globalCompositeOperation = 'source-over';
-      ctxF.globalCompositeOperation = 'source-over';
     }
   }
 
@@ -592,7 +454,7 @@
     auto: function () { auto = true; forced = false; startState(pickNext(currentName)); },
     speed: function (x) { speed = clamp(+x || 1, 1, 20); return speed; }, // เร่งเวลาไว้ดูการเปลี่ยนอากาศ
     state: function () { return { name: currentName, auto: auto, left: Math.max(0, seqLeft / speed), speed: speed, quality: quality, snow: S.snow, rain: S.rain, storm: S.storm, wind: S.wind }; },
-    strike: function () { strike(); }
+    strike: function () {}
   };
   var forcedMode = false;
   try {
