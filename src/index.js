@@ -101,6 +101,17 @@ async function route(request, env) {
   {
     const url = new URL(request.url);
 
+    // ปุ่มปิด/เปิดเว็บ (โหมดปิดปรับปรุง) — เฉพาะแอดมิน
+    if (url.pathname === '/api/admin/maintenance') {
+      return handleMaintenance(request, env);
+    }
+
+    // ถ้าเว็บปิดปรับปรุงอยู่ และไม่ใช่แอดมิน -> โชว์หน้าปิดปรับปรุงแทน
+    {
+      const blocked = await maintenanceGate(request, env, url);
+      if (blocked) return blocked;
+    }
+
     if (url.pathname === '/auth/discord/login') {
       return handleLogin(request, env);
     }
@@ -191,6 +202,104 @@ export default {
     return withSecurityHeaders(response);
   },
 };
+
+/* ---------- โหมดปิดปรับปรุง (maintenance) ----------
+   เก็บสถานะใน KV (SESSIONS) key = 'maintenance:on' ค่า '1' = ปิดเว็บอยู่
+   - GET  /api/admin/maintenance  -> { on: true/false }  (เฉพาะแอดมิน)
+   - POST /api/admin/maintenance  -> body { on: true/false } บันทึกสถานะ (เฉพาะแอดมิน)
+   ระหว่างปิดเว็บ: ลูกค้าเห็นหน้า "ปิดปรับปรุง" (HTTP 503) ส่วนแอดมินที่ล็อกอินอยู่ใช้งานได้ปกติ
+   หมายเหตุ: KV เป็น eventual consistency — อาจใช้เวลาไม่เกิน ~1 นาทีกว่าจะมีผลทุกโซน */
+const MAINTENANCE_KEY = 'maintenance:on';
+
+async function isMaintenanceOn(env) {
+  try {
+    return (await env.SESSIONS.get(MAINTENANCE_KEY)) === '1';
+  } catch (err) {
+    console.error('read maintenance flag failed:', err);
+    return false; // อ่านพลาด -> ไม่ล็อกเว็บทิ้ง
+  }
+}
+
+async function handleMaintenance(request, env) {
+  const user = await getSessionUser(request, env);
+  if (!user || !user.isAdmin) {
+    return json({ error: 'ບໍ່ມີສິດເຂົ້າເຖິງ — ຕ້ອງລ໋ອກອິນເປັນແອດມິນກ່ອນ' }, 403);
+  }
+
+  if (request.method === 'GET') {
+    const res = json({ on: await isMaintenanceOn(env) });
+    res.headers.set('Cache-Control', 'no-store');
+    return res;
+  }
+
+  if (request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch { body = null; }
+    if (!body || typeof body.on !== 'boolean') {
+      return json({ error: 'ຂໍ້ມູນບໍ່ຖືກຕ້ອງ (ຕ້ອງສົ່ງ on: true/false)' }, 400);
+    }
+    try {
+      if (body.on) await env.SESSIONS.put(MAINTENANCE_KEY, '1');
+      else await env.SESSIONS.delete(MAINTENANCE_KEY);
+    } catch (err) {
+      console.error('write maintenance flag failed:', err);
+      return json({ error: 'ບັນທຶກສະຖານະບໍ່ໄດ້ (KV ຜິດພາດ)' }, 500);
+    }
+    return json({ on: body.on });
+  }
+
+  return json({ error: 'Method not allowed' }, 405);
+}
+
+const MAINTENANCE_HTML = `<!doctype html>
+<html lang="lo"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ເວັບປິດປັບປຸງຊົ່ວຄາວ</title>
+<style>
+  html,body{height:100%;margin:0}
+  body{display:flex;align-items:center;justify-content:center;background:#0f1115;color:#e8eaf0;
+       font-family:system-ui,-apple-system,"Noto Sans Lao","Noto Sans Thai",sans-serif;text-align:center;padding:24px}
+  .box{max-width:420px}
+  .ic{font-size:56px;margin-bottom:8px}
+  h1{font-size:22px;margin:0 0 10px}
+  p{margin:0;color:#aab0bd;line-height:1.6}
+</style></head>
+<body><div class="box"><div class="ic">🛠️</div>
+<h1>ເວັບປິດປັບປຸງຊົ່ວຄາວ</h1>
+<p>ພວກເຮົາກຳລັງປັບປຸງລະບົບ ກະລຸນາກັບມາໃໝ່ໃນພາຍຫຼັງ<br>ຂໍອະໄພໃນຄວາມບໍ່ສະດວກ</p>
+</div></body></html>`;
+
+/* คืน Response (หน้าปิดปรับปรุง/JSON 503) ถ้าต้องบล็อก, คืน null ถ้าปล่อยผ่าน */
+async function maintenanceGate(request, env, url) {
+  const path = url.pathname;
+
+  // ไฟล์ static (css/js/รูป/ฟอนต์) ปล่อยผ่านเสมอ — หน้าปิดปรับปรุงและหน้า login ต้องใช้
+  const lastSeg = path.split('/').pop() || '';
+  if (lastSeg.includes('.') && !lastSeg.endsWith('.html')) return null;
+
+  // ต้องปล่อยให้แอดมินล็อกอินได้ แม้เว็บปิดอยู่
+  if (path.startsWith('/auth/')) return null;
+  if (path === '/api/me') return null;
+  if (path === '/login.html' || path === '/admin.html') return null;
+
+  if (!(await isMaintenanceOn(env))) return null;
+
+  const user = await getSessionUser(request, env);
+  if (user && user.isAdmin) return null;
+
+  const headers = { 'Cache-Control': 'no-store', 'Retry-After': '300' };
+  if (path.startsWith('/api/')) {
+    return new Response(
+      JSON.stringify({ error: 'ເວັບປິດປັບປຸງຢູ່ຊົ່ວຄາວ', maintenance: true }),
+      { status: 503, headers: { ...headers, 'Content-Type': 'application/json; charset=utf-8' } }
+    );
+  }
+  return new Response(MAINTENANCE_HTML, {
+    status: 503,
+    headers: { ...headers, 'Content-Type': 'text/html; charset=utf-8' },
+  });
+}
 
 /* ---------- helper: อ่านค่า cookie จาก request ---------- */
 function getCookie(request, name) {
