@@ -282,6 +282,8 @@ async function maintenanceGate(request, env, url) {
   if (path.startsWith('/auth/')) return null;
   if (path === '/api/me') return null;
   if (path === '/login.html' || path === '/admin.html') return null;
+  // กรณี Cloudflare redirect /login.html -> /login (clean URL) แอดมินต้องยังเข้าได้
+  if (path === '/login' || path === '/admin') return null;
 
   if (!(await isMaintenanceOn(env))) return null;
 
