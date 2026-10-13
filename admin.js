@@ -1380,6 +1380,21 @@ function renderAgentAccounts(accounts, ordersFailed) {
   const list = document.getElementById('agentAccountsList');
   if (!list) return;
 
+  // เก็บสภาพแผง "ຕັ້ງລາຄາສະເພາະ" ที่เปิดอยู่ + ค่าที่พิมพ์ค้างไว้ ก่อน render ใหม่ (รีเฟรชอัตโนมัติ/ค้นหา/ปิด-เปิดตัวแทน)
+  // ไม่งั้น innerHTML ใหม่จะทับแผงจนปิดและค่าที่ยังไม่บันทึกหายหมด
+  const openPanels = {};
+  list.querySelectorAll('.agent-acc-row').forEach(row => {
+    const panel = row.querySelector('.agent-custom-panel');
+    if (!panel || panel.hidden || !panel.querySelector('.agent-custom-input')) return;
+    openPanels[row.dataset.userId] = {
+      saved: Object.fromEntries([...panel.querySelectorAll('.agent-custom-input')]
+        .filter(i => i.dataset.original !== '').map(i => [i.dataset.scope, Number(i.dataset.original)])),
+      typed: Object.fromEntries([...panel.querySelectorAll('.agent-custom-input')].map(i => [i.dataset.scope, i.value])),
+      search: (panel.querySelector('.agent-custom-search') || {}).value || '',
+      scroll: (panel.querySelector('.agent-custom-body') || {}).scrollTop || 0,
+    };
+  });
+
   const term = agentAccountsSearchTerm.trim().toLowerCase();
   const filtered = term ? accounts.filter(a => (a.user_email || '').toLowerCase().includes(term)) : accounts;
 
@@ -1453,6 +1468,24 @@ function renderAgentAccounts(accounts, ordersFailed) {
   });
   list.querySelectorAll('.agent-acc-custom-btn').forEach(btn => {
     btn.addEventListener('click', () => toggleAgentCustomPanel(btn));
+  });
+
+  // คืนแผงที่เปิดอยู่พร้อมค่าที่พิมพ์ค้างไว้
+  list.querySelectorAll('.agent-acc-row').forEach(row => {
+    const st = openPanels[row.dataset.userId];
+    const panel = row.querySelector('.agent-custom-panel');
+    if (!st || !panel) return;
+    panel.hidden = false;
+    const btn = row.querySelector('.agent-acc-custom-btn');
+    if (btn) btn.classList.add('is-open');
+    renderAgentCustomPanel(panel, row.dataset.userId, st.saved);
+    panel.querySelectorAll('.agent-custom-input').forEach(i => {
+      if (st.typed[i.dataset.scope] !== undefined) i.value = st.typed[i.dataset.scope];
+    });
+    const search = panel.querySelector('.agent-custom-search');
+    if (search && st.search) { search.value = st.search; search.dispatchEvent(new Event('input')); }
+    const body = panel.querySelector('.agent-custom-body');
+    if (body) body.scrollTop = st.scroll;
   });
 }
 
