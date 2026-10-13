@@ -255,20 +255,125 @@ const MAINTENANCE_HTML = `<!doctype html>
 <html lang="lo"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="60">
 <title>ເວັບປິດປັບປຸງຊົ່ວຄາວ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
+  *{box-sizing:border-box}
   html,body{height:100%;margin:0}
-  body{display:flex;align-items:center;justify-content:center;background:#0f1115;color:#e8eaf0;
-       font-family:system-ui,-apple-system,"Noto Sans Lao","Noto Sans Thai",sans-serif;text-align:center;padding:24px}
-  .box{max-width:420px}
-  .ic{font-size:56px;margin-bottom:8px}
-  h1{font-size:22px;margin:0 0 10px}
-  p{margin:0;color:#aab0bd;line-height:1.6}
+  body{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;
+       background:radial-gradient(ellipse at 50% 38%,#17203a 0%,#0b0e17 55%,#07090f 100%);
+       color:#e8eaf0;font-family:"Noto Sans Lao",system-ui,-apple-system,"Noto Sans Thai",sans-serif;
+       text-align:center;padding:24px}
+
+  /* พื้นหลังตาราง + แสงสีเคลื่อนไหว */
+  .grid{position:absolute;inset:0;pointer-events:none;
+        background-image:linear-gradient(rgba(120,140,255,.07) 1px,transparent 1px),
+                         linear-gradient(90deg,rgba(120,140,255,.07) 1px,transparent 1px);
+        background-size:44px 44px;
+        -webkit-mask-image:radial-gradient(ellipse at center,#000 15%,transparent 70%);
+        mask-image:radial-gradient(ellipse at center,#000 15%,transparent 70%);
+        animation:gridmove 14s linear infinite}
+  @keyframes gridmove{to{background-position:44px 44px}}
+  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;pointer-events:none}
+  .b1{width:300px;height:300px;background:#4f46e5;top:-80px;left:-90px;animation:drift 12s ease-in-out infinite alternate}
+  .b2{width:260px;height:260px;background:#06b6d4;bottom:-90px;right:-70px;animation:drift 15s ease-in-out infinite alternate-reverse}
+  @keyframes drift{to{transform:translate(40px,30px) scale(1.15)}}
+
+  /* อนุภาคลอยขึ้น */
+  .sp{position:absolute;bottom:-10px;width:4px;height:4px;border-radius:50%;background:#7dd3fc;
+      box-shadow:0 0 8px #38bdf8;opacity:0;animation:rise 9s linear infinite}
+  .sp:nth-child(1){left:8%;animation-delay:0s}
+  .sp:nth-child(2){left:22%;animation-delay:2.2s;background:#c4b5fd;box-shadow:0 0 8px #a78bfa}
+  .sp:nth-child(3){left:37%;animation-delay:5s}
+  .sp:nth-child(4){left:58%;animation-delay:1.1s;background:#fda4af;box-shadow:0 0 8px #fb7185}
+  .sp:nth-child(5){left:73%;animation-delay:3.6s}
+  .sp:nth-child(6){left:88%;animation-delay:6.4s;background:#c4b5fd;box-shadow:0 0 8px #a78bfa}
+  @keyframes rise{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:.9}100%{transform:translateY(-105vh) scale(1.2);opacity:0}}
+
+  .box{position:relative;z-index:1;max-width:440px;width:100%}
+
+  /* ไอคอนเฟือง */
+  .icon{position:relative;width:240px;height:200px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
+        animation:float 4.5s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-8px)}}
+  .halo{position:absolute;width:190px;height:190px;border-radius:50%;
+        background:radial-gradient(circle,rgba(99,102,241,.45),rgba(56,189,248,.12) 55%,transparent 72%);
+        animation:pulse 3s ease-in-out infinite}
+  @keyframes pulse{50%{transform:scale(1.18);opacity:.65}}
+  .orbit{position:absolute;width:210px;height:210px;border-radius:50%;border:1px dashed rgba(148,163,255,.35);
+         animation:spin 22s linear infinite}
+  .orbit::after{content:"";position:absolute;top:-4px;left:50%;margin-left:-4px;width:8px;height:8px;border-radius:50%;
+         background:#fff;box-shadow:0 0 10px 3px #38bdf8}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .icon svg{position:relative;width:230px;height:auto;overflow:visible;
+            filter:drop-shadow(0 0 10px rgba(99,102,241,.7)) drop-shadow(0 0 22px rgba(56,189,248,.35))}
+
+  /* ป้ายสถานะ */
+  .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
+        background:rgba(99,102,241,.14);border:1px solid rgba(129,140,248,.4);
+        font-size:12px;font-weight:600;letter-spacing:.22em;color:#c7d2fe;margin-bottom:16px}
+  .chip i{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 0 rgba(52,211,153,.7);animation:ping 1.8s ease-out infinite}
+  @keyframes ping{to{box-shadow:0 0 0 10px rgba(52,211,153,0)}}
+
+  h1{margin:0 0 12px;font-size:28px;font-weight:800;line-height:1.35;
+     background:linear-gradient(100deg,#e0e7ff 20%,#7dd3fc 40%,#c4b5fd 60%,#e0e7ff 80%);background-size:250% 100%;
+     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
+     animation:shine 5s linear infinite}
+  @keyframes shine{to{background-position:-250% 0}}
+  p{margin:0;color:#aab0bd;line-height:1.8;font-size:15px}
+
+  /* แถบโหลด */
+  .bar{position:relative;height:5px;width:220px;margin:26px auto 0;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
+  .bar::after{content:"";position:absolute;top:0;left:0;height:100%;width:40%;border-radius:99px;
+              background:linear-gradient(90deg,transparent,#38bdf8,#a78bfa,transparent);animation:load 1.8s ease-in-out infinite}
+  @keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important}
+  }
 </style></head>
-<body><div class="box"><div class="ic">🛠️</div>
-<h1>ເວັບປິດປັບປຸງຊົ່ວຄາວ</h1>
-<p>ພວກເຮົາກຳລັງປັບປຸງລະບົບ ກະລຸນາກັບມາໃໝ່ໃນພາຍຫຼັງ<br>ຂໍອະໄພໃນຄວາມບໍ່ສະດວກ</p>
-</div></body></html>`;
+<body>
+<div class="grid"></div><div class="blob b1"></div><div class="blob b2"></div>
+<span class="sp"></span><span class="sp"></span><span class="sp"></span><span class="sp"></span><span class="sp"></span><span class="sp"></span>
+<div class="box">
+  <div class="icon" aria-hidden="true">
+    <div class="halo"></div><div class="orbit"></div>
+    <svg viewBox="-56 -58 150 116" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
+        <linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f472b6"/><stop offset="1" stop-color="#fb923c"/></linearGradient>
+        <linearGradient id="fA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232b4a"/><stop offset="1" stop-color="#121730"/></linearGradient>
+        <linearGradient id="fB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2238"/><stop offset="1" stop-color="#1c1224"/></linearGradient>
+      </defs>
+      <g transform="rotate(-18)">
+        <g transform="translate(0,0)">
+          <g>
+            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="12s" repeatCount="indefinite"/>
+            <path fill-rule="evenodd" fill="url(#fA)" stroke="url(#gA)" stroke-width="1.6" stroke-linejoin="round" d="M32.07 -5.25L38.74 -4.48L38.74 4.48L32.07 5.25A32.50 32.50 0 0 1 30.40 11.49L35.79 15.49L31.31 23.25L25.15 20.58A32.50 32.50 0 0 1 20.58 25.15L23.25 31.31L15.49 35.79L11.49 30.40A32.50 32.50 0 0 1 5.25 32.07L4.48 38.74L-4.48 38.74L-5.25 32.07A32.50 32.50 0 0 1 -11.49 30.40L-15.49 35.79L-23.25 31.31L-20.58 25.15A32.50 32.50 0 0 1 -25.15 20.58L-31.31 23.25L-35.79 15.49L-30.40 11.49A32.50 32.50 0 0 1 -32.07 5.25L-38.74 4.48L-38.74 -4.48L-32.07 -5.25A32.50 32.50 0 0 1 -30.40 -11.49L-35.79 -15.49L-31.31 -23.25L-25.15 -20.58A32.50 32.50 0 0 1 -20.58 -25.15L-23.25 -31.31L-15.49 -35.79L-11.49 -30.40A32.50 32.50 0 0 1 -5.25 -32.07L-4.48 -38.74L4.48 -38.74L5.25 -32.07A32.50 32.50 0 0 1 11.49 -30.40L15.49 -35.79L23.25 -31.31L20.58 -25.15A32.50 32.50 0 0 1 25.15 -20.58L31.31 -23.25L35.79 -15.49L30.40 -11.49A32.50 32.50 0 0 1 32.07 -5.25 ZM12.00 0 A12.00 12.00 0 1 0 -12.00 0 A12.00 12.00 0 1 0 12.00 0 Z"/>
+            <circle r="22" fill="none" stroke="url(#gA)" stroke-width="1" stroke-dasharray="3 5" opacity=".7"/>
+            <circle r="5" fill="url(#gA)"/>
+          </g>
+        </g>
+        <g transform="translate(60,0)">
+          <g>
+            <animateTransform attributeName="transform" type="rotate" from="22.5" to="-337.5" dur="8s" repeatCount="indefinite"/>
+            <path fill-rule="evenodd" fill="url(#fB)" stroke="url(#gB)" stroke-width="1.6" stroke-linejoin="round" d="M19.90 -4.94L26.60 -4.64L26.60 4.64L19.90 4.94A20.50 20.50 0 0 1 17.56 10.57L22.09 15.53L15.53 22.09L10.57 17.56A20.50 20.50 0 0 1 4.94 19.90L4.64 26.60L-4.64 26.60L-4.94 19.90A20.50 20.50 0 0 1 -10.57 17.56L-15.53 22.09L-22.09 15.53L-17.56 10.57A20.50 20.50 0 0 1 -19.90 4.94L-26.60 4.64L-26.60 -4.64L-19.90 -4.94A20.50 20.50 0 0 1 -17.56 -10.57L-22.09 -15.53L-15.53 -22.09L-10.57 -17.56A20.50 20.50 0 0 1 -4.94 -19.90L-4.64 -26.60L4.64 -26.60L4.94 -19.90A20.50 20.50 0 0 1 10.57 -17.56L15.53 -22.09L22.09 -15.53L17.56 -10.57A20.50 20.50 0 0 1 19.90 -4.94 ZM8.00 0 A8.00 8.00 0 1 0 -8.00 0 A8.00 8.00 0 1 0 8.00 0 Z"/>
+            <circle r="14" fill="none" stroke="url(#gB)" stroke-width="1" stroke-dasharray="2 4" opacity=".7"/>
+            <circle r="3.5" fill="url(#gB)"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+  </div>
+  <div class="chip"><i></i>MAINTENANCE</div>
+  <h1>ເວັບປິດປັບປຸງຊົ່ວຄາວ</h1>
+  <p>ພວກເຮົາກຳລັງປັບປຸງລະບົບ ກະລຸນາກັບມາໃໝ່ໃນພາຍຫຼັງ<br>ຂໍອະໄພໃນຄວາມບໍ່ສະດວກ</p>
+  <div class="bar"></div>
+</div>
+</body></html>`;
 
 /* คืน Response (หน้าปิดปรับปรุง/JSON 503) ถ้าต้องบล็อก, คืน null ถ้าปล่อยผ่าน */
 async function maintenanceGate(request, env, url) {
