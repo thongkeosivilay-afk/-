@@ -9,6 +9,9 @@ keep_vars = true
 [assets]
 directory = "./"
 binding = "ASSETS"
+# ให้ Worker ทำงานก่อนทุกคำขอ (รวมหน้า .html) — ถ้าไม่มีบรรทัดนี้ Cloudflare จะเสิร์ฟ
+# ไฟล์ static ตรงๆ โดยไม่ผ่าน Worker ทำให้หน้า "ปิดปรับปรุง" ไม่เคยแสดงให้ลูกค้า
+run_worker_first = true
 
 [[kv_namespaces]]
 binding = "SESSIONS"
