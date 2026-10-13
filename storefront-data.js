@@ -58,20 +58,33 @@
         .then((data) => {
           const status = data && data.status;
           if (status && status.is_reseller) {
-            return { isReseller: true, discountPercent: Number(status.discount_percent) || 0 };
+            // customPrices: ລາຄາທີ່ແອດມິນຕັ້ງສະເພາະຕົວແທນຄົນນີ້ — map ຂອງ scope_key ('p:<productId>' / 'd:<durationId>') -> ລາຄາ
+            const customPrices = {};
+            ((data && data.customPrices) || []).forEach((r) => {
+              if (r && r.scope_key && r.price !== null && r.price !== undefined) {
+                customPrices[r.scope_key] = Number(r.price);
+              }
+            });
+            return { isReseller: true, discountPercent: Number(status.discount_percent) || 0, customPrices };
           }
-          return { isReseller: false, discountPercent: 0 };
+          return { isReseller: false, discountPercent: 0, customPrices: {} };
         })
-        .catch(() => ({ isReseller: false, discountPercent: 0 }));
+        .catch(() => ({ isReseller: false, discountPercent: 0, customPrices: {} }));
     }
     return resellerInfoPromise;
   }
 
   // basePrice + resellerPrice (คอลัมน์เฉพาะสินค้า/ระยะเวลานั้น, อาจเป็น null) + resellerInfo
   // ({isReseller, discountPercent} จาก fetchResellerInfo()) -> ราคาที่จะโชว์จริง
-  function effectivePrice(basePrice, resellerPrice, resellerInfo) {
+  // ids (optional) = { productId, durationId } — ถ้าส่งมา และแอดมินตั้งราคาเฉพาะตัวแทนคนนี้ไว้ จะใช้ราคานั้นก่อนเสมอ
+  function effectivePrice(basePrice, resellerPrice, resellerInfo, ids) {
     const base = Number(basePrice) || 0;
     if (!resellerInfo || !resellerInfo.isReseller) return base;
+    if (ids && resellerInfo.customPrices) {
+      const key = ids.durationId ? `d:${ids.durationId}` : `p:${ids.productId}`;
+      const custom = resellerInfo.customPrices[key];
+      if (custom !== undefined && Number.isFinite(custom)) return custom;
+    }
     if (resellerPrice !== null && resellerPrice !== undefined && resellerPrice !== '') {
       // resellerPrice ຄືລາຄາສຸດທ້າຍທີ່ຕົວແທນຈ່າຍໂດຍກົງ (ບໍ່ແມ່ນຈຳນວນທີ່ລົດ)
       return Number(resellerPrice);
@@ -86,11 +99,11 @@
     if (!product) return null;
     if (product.duration_enabled) {
       const prices = (product.durations || [])
-        .map((d) => effectivePrice(d.price, d.resellerPrice, resellerInfo))
+        .map((d) => effectivePrice(d.price, d.resellerPrice, resellerInfo, { productId: product.id, durationId: d.id }))
         .filter((n) => Number.isFinite(n) && n > 0);
       return prices.length ? Math.min(...prices) : null;
     }
-    return effectivePrice(product.price, product.resellerPrice, resellerInfo);
+    return effectivePrice(product.price, product.resellerPrice, resellerInfo, { productId: product.id, durationId: null });
   }
 
   // ສະຕັອກລວມທີ່ຈະໂຊວ໌: ສິນຄ້າແບບມີໄລຍະເວລາ = ລວມສະຕັອກທຸກໄລຍະ, ທຳມະດາ = stock ຂອງມັນເລີຍ

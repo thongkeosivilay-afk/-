@@ -1437,16 +1437,188 @@ function renderAgentAccounts(accounts, ordersFailed) {
       </div>
       <div class="agent-acc-right">
         <span class="key-status-tag ${isRevoked ? 'revoked' : 'used'}">${isRevoked ? 'ຖືກປິດແລ້ວ' : 'ທຳງານຢູ່'}</span>
+        <button type="button" class="agent-acc-custom-btn" data-user-id="${escapeHtmlAdmin(a.user_id)}">
+          ຕັ້ງລາຄາສະເພາະ
+        </button>
         <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-user-id="${a.user_id}" data-next="${isRevoked ? 'true' : 'false'}">
           ${isRevoked ? 'ເປີດຄືນ' : 'ປິດຕົວແທນ'}
         </button>
       </div>
+      <div class="agent-custom-panel" hidden></div>
     </div>`;
   }).join('');
 
   list.querySelectorAll('.agent-acc-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => toggleAgentStatus(btn));
   });
+  list.querySelectorAll('.agent-acc-custom-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleAgentCustomPanel(btn));
+  });
+}
+
+// ---------- ລາຄາສະເພາະຕົວແທນລາຍຄົນ (reseller_custom_prices) ----------
+// ແອດມິນຕັ້ງໄດ້ວ່າ "ຕົວແທນຄົນນີ້" ໄດ້ລາຄາໃດຕໍ່ສິນຄ້າ/ໄລຍະເວລາໃດ — ລຳດັບສິດທິລາຄາຕອນຊື້:
+//   1) ລາຄາສະເພາະຄົນ (ຕາຕະລາງນີ້)  2) reseller_price ທົ່ວໄປຂອງສິນຄ້າ  3) ລາຄາປົກກະຕິ − ສ່ວນຫຼຸດ % ຂອງລະດັບ
+// scope_key: 'p:<product_id>' ສຳລັບສິນຄ້າທຳມະດາ, 'd:<duration_id>' ສຳລັບສິນຄ້າທີ່ມີໄລຍະເວລາ
+// ຕ້ອງແລ່ນ agent-custom-prices.sql ໃນ Supabase ກ່ອນ (ແລະຕໍ່ get_effective_price ຕາມຄຳແນະນຳໃນໄຟລ໌ນັ້ນ)
+async function toggleAgentCustomPanel(btn) {
+  const row = btn.closest('.agent-acc-row');
+  const panel = row && row.querySelector('.agent-custom-panel');
+  if (!panel) return;
+
+  if (!panel.hidden) {
+    panel.hidden = true;
+    btn.classList.remove('is-open');
+    return;
+  }
+  panel.hidden = false;
+  btn.classList.add('is-open');
+  panel.innerHTML = '<div class="empty-note">ກຳລັງໂຫຼດ...</div>';
+
+  const userId = row.dataset.userId;
+  const { data, error } = await supabaseClient
+    .from('reseller_custom_prices')
+    .select('scope_key,price')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error(error);
+    panel.innerHTML = '<div class="empty-note">ໂຫຼດບໍ່ສຳເລັດ — ກວດວ່າໄດ້ແລ່ນ agent-custom-prices.sql ໃນ Supabase ແລ້ວຫຼືຍັງ</div>';
+    return;
+  }
+
+  const saved = {};
+  (data || []).forEach(r => { saved[r.scope_key] = r.price; });
+  renderAgentCustomPanel(panel, userId, saved);
+}
+
+function renderAgentCustomPanel(panel, userId, saved) {
+  const products = (currentProducts || []).filter(p => !p.archived);
+  if (!products.length) {
+    panel.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າ</div>';
+    return;
+  }
+
+  const priceInput = (scopeKey, val) => `
+    <input type="number" class="agent-custom-input" data-scope="${scopeKey}" data-original="${val ?? ''}"
+           placeholder="ຫວ່າງ = ໃຊ້ລາຄາຕົວແທນທົ່ວໄປ" value="${val ?? ''}" min="0" step="1">`;
+
+  const generalHint = (base, resellerPrice) =>
+    resellerPrice !== null && resellerPrice !== undefined && resellerPrice !== ''
+      ? `ຕົວແທນທົ່ວໄປ ${formatKipAdmin(resellerPrice)}`
+      : 'ຕົວແທນທົ່ວໄປ: ຕາມ % ສ່ວນຫຼຸດ';
+
+  const byCat = {};
+  products.forEach(p => {
+    const c = (p.category || '').trim() || 'ອື່ນໆ';
+    (byCat[c] = byCat[c] || []).push(p);
+  });
+
+  const body = Object.keys(byCat).map(cat => {
+    const items = byCat[cat].map(p => {
+      const name = escapeHtmlAdmin(p.name || '');
+      if (p.duration_enabled) {
+        const rows = (p.durations || []).map(d => `
+          <div class="agent-custom-row">
+            <div class="agent-custom-label">${escapeHtmlAdmin(d.label || '')}
+              <span class="price-dur-base">(ປົກກະຕິ ${formatKipAdmin(d.price)} • ${generalHint(d.price, d.reseller_price)})</span>
+            </div>
+            ${priceInput('d:' + d.id, saved['d:' + d.id])}
+          </div>`).join('');
+        return `<div class="agent-custom-prod" data-name="${name.toLowerCase()}"><div class="agent-custom-prod-name">${name}</div>${rows}</div>`;
+      }
+      return `
+        <div class="agent-custom-prod" data-name="${name.toLowerCase()}">
+          <div class="agent-custom-row">
+            <div class="agent-custom-label">${name}
+              <span class="price-dur-base">(ປົກກະຕິ ${formatKipAdmin(p.price)} • ${generalHint(p.price, p.reseller_price)})</span>
+            </div>
+            ${priceInput('p:' + p.id, saved['p:' + p.id])}
+          </div>
+        </div>`;
+    }).join('');
+    return `<div class="agent-custom-cat"><div class="agent-custom-cat-title">${escapeHtmlAdmin(cat)}</div>${items}</div>`;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="agent-custom-note">ໃສ່ລາຄາສຸດທ້າຍທີ່ຕົວແທນຄົນນີ້ຈະຈ່າຍ (ກີບ) — ເວັ້ນຫວ່າງ = ໃຊ້ລາຄາຕົວແທນທົ່ວໄປຕາມເດີມ, ລຶບຕົວເລກອອກແລ້ວບັນທຶກ = ຍົກເລີກລາຄາສະເພາະ</div>
+    <input type="text" class="agent-custom-search" placeholder="ຄົ້ນຫາສິນຄ້າ...">
+    <div class="agent-custom-body">${body}</div>
+    <button type="button" class="gx-submit agent-custom-save"><span class="gx-spinner"></span><span class="gx-submit-label">ບັນທຶກລາຄາສະເພາະຕົວແທນນີ້</span></button>`;
+
+  panel.querySelector('.agent-custom-search').addEventListener('input', (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    panel.querySelectorAll('.agent-custom-prod').forEach(el => {
+      el.style.display = !q || el.dataset.name.includes(q) ? '' : 'none';
+    });
+  });
+  panel.querySelector('.agent-custom-save').addEventListener('click', (e) => saveAgentCustomPrices(panel, userId, e.currentTarget));
+}
+
+async function saveAgentCustomPrices(panel, userId, btn) {
+  const upserts = [];
+  const removes = [];
+
+  for (const input of panel.querySelectorAll('.agent-custom-input')) {
+    const scope = input.dataset.scope;
+    const val = input.value.trim();
+    const hadOriginal = input.dataset.original !== '';
+    if (val === '') {
+      if (hadOriginal) removes.push(scope);
+      continue;
+    }
+    const price = Number(val);
+    if (!Number.isFinite(price) || price < 0) {
+      showToast('ລາຄາບໍ່ຖືກຕ້ອງ — ຕ້ອງເປັນຕົວເລກ 0 ຂຶ້ນໄປ');
+      input.focus();
+      return;
+    }
+    if (String(price) === input.dataset.original) continue; // ບໍ່ປ່ຽນ
+    const isDur = scope.startsWith('d:');
+    const id = scope.slice(2);
+    upserts.push({
+      user_id: userId,
+      scope_key: scope,
+      product_id: isDur ? null : id,
+      duration_id: isDur ? id : null,
+      price,
+      updated_at: new Date().toISOString(),
+    });
+  }
+
+  if (!upserts.length && !removes.length) {
+    showToast('ບໍ່ມີການປ່ຽນແປງ');
+    return;
+  }
+
+  setLoading(btn, true);
+  try {
+    if (upserts.length) {
+      const { error } = await supabaseClient
+        .from('reseller_custom_prices')
+        .upsert(upserts, { onConflict: 'user_id,scope_key' });
+      if (error) throw error;
+    }
+    if (removes.length) {
+      const { error } = await supabaseClient
+        .from('reseller_custom_prices')
+        .delete()
+        .eq('user_id', userId)
+        .in('scope_key', removes);
+      if (error) throw error;
+    }
+    showToast('ບັນທຶກລາຄາສະເພາະຕົວແທນສຳເລັດແລ້ວ');
+    // ໂຫຼດຄ່າໃໝ່ເຂົ້າຊ່ອງ (ໃຫ້ data-original ອັບເດດ)
+    const { data } = await supabaseClient.from('reseller_custom_prices').select('scope_key,price').eq('user_id', userId);
+    const saved = {};
+    (data || []).forEach(r => { saved[r.scope_key] = r.price; });
+    renderAgentCustomPanel(panel, userId, saved);
+  } catch (err) {
+    console.error(err);
+    showToast('ບັນທຶກບໍ່ສຳເລັດ: ' + (err.message || err));
+  } finally {
+    setLoading(btn, false);
+  }
 }
 
 

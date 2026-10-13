@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!info.isReseller) { if (couponBox) couponBox.style.visibility = ''; return; }
 
       durations.forEach((d) => {
-        d.price = window.StorefrontData.effectivePrice(d.price, d.resellerPrice, info);
+        d.price = window.StorefrontData.effectivePrice(d.price, d.resellerPrice, info, { productId: product && product.id, durationId: product && product.duration_enabled ? d.id : null });
       });
 
       resellerActive = true;
