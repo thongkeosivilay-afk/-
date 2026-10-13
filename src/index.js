@@ -1986,7 +1986,22 @@ async function handleResellerStatusGet(request, env) {
       limit: '1',
     });
     const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
-    return json({ ok: true, status: row });
+
+    // ລາຄາສະເພາະຕົວແທນຄົນນີ້ (ແອດມິນຕັ້ງແຍກຕໍ່ຄົນ) — ຕາຕະລາງ reseller_custom_prices
+    // ຖ້າຍັງບໍ່ໄດ້ແລ່ນ agent-custom-prices.sql ຕາຕະລາງຈະບໍ່ມີ -> ຂ້າມໄປ (ໃຊ້ລາຄາຕົວແທນທົ່ວໄປຕາມເດີມ)
+    let customPrices = [];
+    if (row && row.is_reseller) {
+      try {
+        const cp = await supabaseSelect(env, 'reseller_custom_prices', {
+          select: 'scope_key,price',
+          user_id: `eq.${user.id}`,
+        });
+        customPrices = Array.isArray(cp) ? cp : [];
+      } catch (err) {
+        console.error('reseller custom prices load skipped:', err);
+      }
+    }
+    return json({ ok: true, status: row, customPrices });
   } catch (err) {
     console.error('handleResellerStatusGet failed:', err);
     return json({ ok: true, status: null });
