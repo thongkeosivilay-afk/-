@@ -8,6 +8,7 @@
 <link href="style.css" rel="stylesheet"/>
 <link href="admin.css" rel="stylesheet"/>
 <link href="coupons-admin.css?v=20261010a" rel="stylesheet"/>
+<link href="maintenance-admin.css?v=20261013a" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&amp;family=Rajdhani:wght@500;600;700&amp;family=Chakra+Petch:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
@@ -65,6 +66,14 @@
 <svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
 </button>
 <h1 class="page-title">ຫ້ອງຄວບຄຸມແອດມິນ</h1>
+</div>
+<!-- ============ ປຸ່ມປິດ/ເປີດເວັບ (ໂໝດປິດປັບປຸງ) ============ -->
+<div class="mt-card" id="mtCard">
+<div class="mt-info">
+<div class="mt-title"><span class="mt-dot" id="mtDot"></span><span id="mtStatus">ກຳລັງກວດສະຖານະ...</span></div>
+<div class="mt-sub" id="mtSub">ເມື່ອປິດ ລູກຄ້າທຸກຄົນຈະເຫັນໜ້າ "ປິດປັບປຸງ" ທັນທີ — ມີແຕ່ແອດມິນເທົ່ານັ້ນທີ່ເຂົ້າເວັບໄດ້</div>
+</div>
+<button class="mt-btn" id="mtBtn" type="button" disabled>ປິດເວັບ</button>
 </div>
 <div class="ops-strip" id="opsStrip"></div>
 <!-- ============ D2 DASHBOARD — ໜ້າສະຫຼຸບ (ຕໍ່ຂໍ້ມູນຈິງ) ============ -->
@@ -877,6 +886,7 @@ IJKL-9012"></textarea></div>
 <script src="admin-supabase-config.js"></script>
 <script src="admin.js"></script>
 <script src="coupons-admin.js?v=20261010a"></script>
+<script src="maintenance-admin.js?v=20261013a"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
 </body>
 </html>

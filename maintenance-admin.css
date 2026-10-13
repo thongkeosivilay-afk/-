@@ -1,0 +1,20 @@
+/* ปุ่มปิด/เปิดเว็บ (โหมดปิดปรับปรุง) ในห้องแอดมิน */
+.mt-card{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  margin:4px 0 14px;padding:14px 16px;border-radius:16px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+}
+.mt-card.is-closed{background:rgba(255,0,1,.09);border-color:rgba(255,0,1,.45)}
+.mt-info{min-width:0;flex:1}
+.mt-title{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px}
+.mt-dot{width:10px;height:10px;border-radius:50%;background:#8a8a98;flex:none}
+.mt-card.is-open .mt-dot{background:#2ecc71;box-shadow:0 0 10px rgba(46,204,113,.7)}
+.mt-card.is-closed .mt-dot{background:#ff0001;box-shadow:0 0 10px rgba(255,0,1,.8)}
+.mt-sub{margin-top:4px;font-size:12px;line-height:1.5;opacity:.7}
+.mt-btn{
+  flex:none;border:0;border-radius:12px;padding:11px 18px;font:inherit;font-weight:800;font-size:14px;
+  color:#fff;background:#e83131;cursor:pointer;
+}
+.mt-btn.is-open-action{background:#1fa95b}
+.mt-btn:disabled{opacity:.5;cursor:default}
+@media (max-width:420px){.mt-card{flex-direction:column;align-items:stretch}.mt-btn{width:100%}}
