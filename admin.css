@@ -1015,3 +1015,12 @@
   }
   .agent-custom-input:focus{ outline:none; border-color:var(--gx-signal-soft); }
   .agent-custom-panel .gx-submit{ margin-top:12px; padding:10px 16px; font-size:0.85rem; min-height:0; }
+
+/* ---------- ปุ่มลบคีย์ตัวแทน ---------- */
+.key-del-btn{width:32px;height:32px;border-radius:8px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(232,49,49,0.1);border:1px solid rgba(232,49,49,0.38);color:var(--gx-danger);cursor:pointer;transition:all .15s ease}
+.key-del-btn:hover{background:rgba(232,49,49,0.2)}
+.key-del-btn:disabled{opacity:.5;cursor:default}
+.key-del-btn svg{width:15px;height:15px;stroke:currentColor}
+.key-bulk-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 0 12px;font-size:12px;color:var(--ink-500)}
+.key-bulk-del-btn{font-family:var(--gx-font);font-size:11.5px;font-weight:600;padding:8px 14px;border-radius:99px;cursor:pointer;white-space:nowrap;background:rgba(232,49,49,0.12);border:1px solid rgba(232,49,49,0.4);color:var(--gx-danger)}
+.key-bulk-del-btn:active{transform:scale(.96)}

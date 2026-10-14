@@ -1186,7 +1186,7 @@ function renderResellerKeys(keys) {
   }
 
   list.innerHTML = keys.map(k => `
-    <div class="agent-key-row" data-code="${k.code}">
+    <div class="agent-key-row" data-code="${k.code}" data-id="${k.id}" data-status="${k.status}">
       <div class="agent-key-main">
         <span class="agent-key-code">${k.code}</span>
         <span class="agent-key-meta">
@@ -1200,9 +1200,31 @@ function renderResellerKeys(keys) {
         <button type="button" class="key-copy-btn" title="ຄັດລອກ">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>` : ''}
+        <button type="button" class="key-del-btn" title="ລຶບຄີຍ໌ນີ້" aria-label="ລຶບຄີຍ໌ນີ້">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
       </div>
     </div>
   `).join('');
+
+  // แถบเครื่องมือ: ลบคีย์ที่ใช้แล้วทั้งหมดในครั้งเดียว (ล้างประวัติให้รายการสั้นลง)
+  const usedCount = keys.filter(k => k.status !== 'unused').length;
+  if (usedCount > 0) {
+    list.insertAdjacentHTML('afterbegin', `
+      <div class="key-bulk-bar">
+        <span>ຄີຍ໌ທີ່ໃຊ້ແລ້ວ ${usedCount} ລາຍການ</span>
+        <button type="button" class="key-bulk-del-btn" id="agentKeysDelUsedBtn">ລຶບທີ່ໃຊ້ແລ້ວທັງໝົດ</button>
+      </div>`);
+    const bulkBtn = document.getElementById('agentKeysDelUsedBtn');
+    if (bulkBtn) bulkBtn.addEventListener('click', deleteUsedResellerKeys);
+  }
+
+  list.querySelectorAll('.agent-key-row .key-del-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = btn.closest('.agent-key-row');
+      deleteResellerKey(row.dataset.id, row.dataset.code, row.dataset.status, btn);
+    });
+  });
 
   list.querySelectorAll('.agent-key-row .key-copy-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1210,6 +1232,41 @@ function renderResellerKeys(keys) {
       copyKeyCode(code);
     });
   });
+}
+
+// ---------- ລຶບຄີຍ໌ຕົວແທນ ----------
+// ລຶບສະເພາະແຖວໃນ reseller_keys (ປະຫວັດ/ຄີຍ໌ທີ່ຍັງບໍ່ໄດ້ໃຊ້) — ບໍ່ກະທົບ reseller_status
+// ຄົນທີ່ໃຊ້ຄີຍ໌ນີ້ໄປແລ້ວຍັງເປັນຕົວແທນຢູ່ຕາມເດີມ (ຖ້າຢາກຖອນສິດ ໃຫ້ກົດ "ປິດຕົວແທນ" ໃນລາຍຊື່ຕົວແທນ)
+async function deleteResellerKey(id, code, status, btn) {
+  if (!id) return;
+  const msg = status === 'unused'
+    ? `ລຶບຄີຍ໌ ${code} ?\n\nຄີຍ໌ນີ້ຍັງບໍ່ໄດ້ຖືກໃຊ້ — ລຶບແລ້ວລູກຄ້າຈະກອກໃຊ້ບໍ່ໄດ້ອີກ`
+    : `ລຶບປະຫວັດຄີຍ໌ ${code} ?\n\nຕົວແທນທີ່ເຄີຍໃຊ້ຄີຍ໌ນີ້ຍັງເປັນຕົວແທນຢູ່ຕາມເດີມ (ລຶບສະເພາະປະຫວັດຄີຍ໌)`;
+  if (!confirm(msg)) return;
+  if (btn) btn.disabled = true;
+  const { error } = await supabaseClient.from('reseller_keys').delete().eq('id', id);
+  if (error) {
+    console.error(error);
+    if (btn) btn.disabled = false;
+    showToast('ລຶບຄີຍ໌ບໍ່ສຳເລັດ: ' + (error.message || 'ຜິດພາດ'));
+    return;
+  }
+  showToast('ລຶບຄີຍ໌ແລ້ວ');
+  loadResellerKeys();
+}
+
+async function deleteUsedResellerKeys() {
+  const n = (currentResellerKeys || []).filter(k => k.status !== 'unused').length;
+  if (!n) return;
+  if (!confirm(`ລຶບຄີຍ໌ທີ່ໃຊ້ແລ້ວທັງໝົດ ${n} ລາຍການ ?\n\nຄີຍ໌ທີ່ຍັງບໍ່ໄດ້ໃຊ້ຈະບໍ່ຖືກລຶບ ແລະ ຕົວແທນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວຍັງເປັນຕົວແທນຢູ່ຕາມເດີມ`)) return;
+  const { error } = await supabaseClient.from('reseller_keys').delete().neq('status', 'unused');
+  if (error) {
+    console.error(error);
+    showToast('ລຶບບໍ່ສຳເລັດ: ' + (error.message || 'ຜິດພາດ'));
+    return;
+  }
+  showToast(`ລຶບຄີຍ໌ທີ່ໃຊ້ແລ້ວ ${n} ລາຍການ`);
+  loadResellerKeys();
 }
 
 // ---------- ຈັດການຕົວແທນ (ອ່ານ/ແກ້ໄຂຈາກ reseller_status ໂດຍກົງ) ----------

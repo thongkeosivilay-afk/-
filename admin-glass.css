@@ -123,3 +123,17 @@ button,a,[role=button],.d2-fn-card,.d2-attn-row,.switch-head,.g-chip{touch-actio
 /* ===== เว้นขอบซ้าย-ขวาให้พอดี ไม่ติดขอบจอ (เผื่อรอยเว้าของ iPhone ด้วย) ===== */
 .wrap{box-sizing:border-box;padding-left:calc(16px + env(safe-area-inset-left,0px));padding-right:calc(16px + env(safe-area-inset-right,0px))}
 @media (max-width:360px){.wrap{padding-left:calc(12px + env(safe-area-inset-left,0px));padding-right:calc(12px + env(safe-area-inset-right,0px))}}
+
+/* ===== แก้เลย์เอาต์รายการตัวแทน/คีย์บนจอแคบ + ให้หัวข้อกับแท็บทึบพอ ไม่ให้เนื้อหาทะลุ ===== */
+body .agent-acc-row{flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:12px}
+body .agent-acc-main{min-width:0;width:100%}
+body .agent-acc-right{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;width:100%}
+body .agent-acc-right>*{flex:0 0 auto}
+body .agent-key-row{align-items:flex-start}
+body .agent-key-main{flex:1 1 100%;min-width:0;overflow-wrap:anywhere}
+body .agent-key-right{flex-wrap:wrap;gap:8px}
+body .agent-acc-progress{max-width:100%}
+body .agent-acc-meta{line-height:1.7}
+body .back-row{background:linear-gradient(140deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(14,6,8,.86)}
+.g-dock nav{background:linear-gradient(140deg,rgba(255,255,255,.18),rgba(255,255,255,.04) 50%,rgba(255,0,1,.08)),rgba(14,6,8,.88)}
+body .toast{background:linear-gradient(140deg,rgba(255,255,255,.16),rgba(255,255,255,.05)),rgba(16,7,10,.9)}
