@@ -79,6 +79,9 @@ function withSecurityHeaders(response) {
   headers.set(
     'Content-Security-Policy',
     "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; " +
+      // อนุญาตเฉพาะ onload="this.media='all'" ที่ใช้โหลดฟอนต์ Google (ถ้าไม่มีบรรทัดนี้ CSP จะบล็อก
+      // ทำให้ฟอนต์ไม่ถูกใช้ ทั้งฟอนต์หน้าเว็บและฟอนต์ชื่อร้านเปลี่ยนเป็นฟอนต์สำรอง)
+      "script-src-attr 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; " +
       "connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; " +
@@ -104,6 +107,11 @@ async function route(request, env) {
     // ปุ่มปิด/เปิดเว็บ (โหมดปิดปรับปรุง) — เฉพาะแอดมิน
     if (url.pathname === '/api/admin/maintenance') {
       return handleMaintenance(request, env);
+    }
+
+    // เช็คสถานะปิด/เปิดเว็บ (public) — ต้องอยู่ก่อน maintenanceGate เพื่อให้หน้าปิดปรับปรุงเช็คได้ว่าเว็บเปิดกลับมาหรือยัง
+    if (url.pathname === '/api/maintenance-status') {
+      return handleMaintenanceStatus(request, env);
     }
 
     // ถ้าเว็บปิดปรับปรุงอยู่ และไม่ใช่แอดมิน -> โชว์หน้าปิดปรับปรุงแทน
@@ -204,30 +212,145 @@ export default {
 };
 
 /* ---------- โหมดปิดปรับปรุง (maintenance) ----------
-   เก็บสถานะใน KV (SESSIONS) key = 'maintenance:on' ค่า '1' = ปิดเว็บอยู่
-   - GET  /api/admin/maintenance  -> { on: true/false }  (เฉพาะแอดมิน)
-   - POST /api/admin/maintenance  -> body { on: true/false } บันทึกสถานะ (เฉพาะแอดมิน)
-   ระหว่างปิดเว็บ: ลูกค้าเห็นหน้า "ปิดปรับปรุง" (HTTP 503) ส่วนแอดมินที่ล็อกอินอยู่ใช้งานได้ปกติ
-   หมายเหตุ: KV เป็น eventual consistency — อาจใช้เวลาไม่เกิน ~1 นาทีกว่าจะมีผลทุกโซน */
+   สถานะหลักเก็บใน Supabase ตาราง site_settings (key = 'maintenance') เพราะอ่านแล้วได้ค่าล่าสุดทันที
+   (เดิมเก็บใน KV อย่างเดียว ซึ่ง KV เป็น eventual consistency: edge cache อ่านค่าเก่านาน 30-60 วินาที
+   ทำให้กดปิด/เปิดแล้วสถานะสลับไปมา บางคนเห็นเว็บเปิด บางคนเห็นหน้าปิด และปุ่มในห้องแอดมินโชว์ค่าเก่า)
+   KV (SESSIONS key 'maintenance:on') ยังเขียนคู่ไว้เป็น fallback ถ้ายังไม่ได้สร้างตาราง (ดู supabase-site-settings.sql)
+   - GET  /api/admin/maintenance   -> { on, at, by, consistency }   (เฉพาะแอดมิน)
+   - POST /api/admin/maintenance   -> body { on: true/false }        (เฉพาะแอดมิน)
+   - GET  /api/maintenance-status  -> { on, blocked }  (public — หน้าเว็บใช้เช็คเองเพื่อรีโหลดอัตโนมัติ)
+   ระหว่างปิดเว็บ: ลูกค้าเห็นหน้า "ปิดปรับปรุง" (HTTP 503) ส่วนแอดมินที่ล็อกอินอยู่ใช้งานได้ปกติ */
 const MAINTENANCE_KEY = 'maintenance:on';
+const MAINT_DB_KEY = 'maintenance';
+const MAINT_CACHE_MS = 4000;       // cache ต่อ isolate สั้นๆ กัน Supabase โดนยิงทุก request
+const MAINT_DB_SKIP_MS = 30000;    // ถ้าตารางยังไม่มี/Supabase ล่ม ข้ามไปใช้ KV สักพัก ไม่ต้องรอ timeout ทุกครั้ง
+let maintCache = null;             // { at, state }
+let maintDbSkipUntil = 0;
 
-async function isMaintenanceOn(env) {
+function maintSupabaseReady(env) {
+  return !!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY);
+}
+
+function maintSupabaseHeaders(env, extra) {
+  return Object.assign({
+    apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+    authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+  }, extra || {});
+}
+
+/* อ่านจาก Supabase: คืน state ถ้าตารางมีอยู่, คืน null ถ้าอ่านไม่ได้/ตารางยังไม่ถูกสร้าง (ให้ไปใช้ KV แทน) */
+async function readMaintenanceFromDb(env) {
+  if (!maintSupabaseReady(env)) return null;
+  const base = env.SUPABASE_URL.replace(/\/$/, '');
+  const res = await fetch(
+    `${base}/rest/v1/site_settings?key=eq.${MAINT_DB_KEY}&select=value,updated_at&limit=1`,
+    { headers: maintSupabaseHeaders(env), signal: AbortSignal.timeout(2500) }
+  );
+  if (!res.ok) {
+    console.error('read maintenance from db failed:', res.status);
+    return null;
+  }
+  const rows = await res.json();
+  const row = Array.isArray(rows) ? rows[0] : null;
+  const v = (row && row.value) || {};
+  return { on: v.on === true, at: (row && row.updated_at) || v.at || null, by: v.by || null, source: 'db' };
+}
+
+async function getMaintenanceState(env, fresh) {
+  const now = Date.now();
+  if (!fresh && maintCache && now - maintCache.at < MAINT_CACHE_MS) return maintCache.state;
+
+  let state = null;
+  if (fresh || now >= maintDbSkipUntil) {
+    try {
+      state = await readMaintenanceFromDb(env);
+    } catch (err) {
+      console.error('read maintenance from db failed:', err);
+    }
+    if (!state) maintDbSkipUntil = now + MAINT_DB_SKIP_MS;
+  }
+  if (!state) {
+    try {
+      state = { on: (await env.SESSIONS.get(MAINTENANCE_KEY)) === '1', at: null, by: null, source: 'kv' };
+    } catch (err) {
+      console.error('read maintenance flag from kv failed:', err);
+    }
+  }
+  // อ่านพลาดทั้งคู่ -> ใช้ค่าล่าสุดที่รู้อยู่ (ไม่สลับเป็น "เปิดเว็บ" เพราะเน็ตกระตุกครั้งเดียว)
+  if (!state) state = maintCache ? maintCache.state : { on: false, at: null, by: null, source: 'none' };
+
+  maintCache = { at: now, state };
+  return state;
+}
+
+/* บันทึกสถานะ: คืน { state, consistency } หรือ null ถ้าบันทึกไม่ได้ */
+async function setMaintenanceState(env, on, by) {
+  const at = new Date().toISOString();
+  let dbOk = false;
+  let tableMissing = !maintSupabaseReady(env);
+
+  if (maintSupabaseReady(env)) {
+    try {
+      const base = env.SUPABASE_URL.replace(/\/$/, '');
+      const res = await fetch(`${base}/rest/v1/site_settings?on_conflict=key`, {
+        method: 'POST',
+        headers: maintSupabaseHeaders(env, {
+          'content-type': 'application/json',
+          prefer: 'resolution=merge-duplicates,return=minimal',
+        }),
+        body: JSON.stringify([{ key: MAINT_DB_KEY, value: { on, by, at }, updated_at: at }]),
+        signal: AbortSignal.timeout(4000),
+      });
+      if (res.ok) {
+        dbOk = true;
+      } else {
+        const text = await res.text();
+        console.error('write maintenance to db failed:', res.status, text);
+        // 404 = ยังไม่ได้สร้างตาราง site_settings -> ใช้ KV อย่างเดียวได้ (ยังเป็นแบบเดิม)
+        if (res.status === 404) tableMissing = true;
+      }
+    } catch (err) {
+      console.error('write maintenance to db failed:', err);
+    }
+    // ตารางมีอยู่แต่เขียนไม่สำเร็จ (timeout/5xx): ห้ามเขียน KV อย่างเดียว ไม่งั้น DB กับ KV จะขัดกัน -> ให้แอดมินลองใหม่
+    if (!dbOk && !tableMissing) return null;
+  }
+
+  let kvOk = false;
   try {
-    return (await env.SESSIONS.get(MAINTENANCE_KEY)) === '1';
+    if (on) await env.SESSIONS.put(MAINTENANCE_KEY, '1');
+    else await env.SESSIONS.delete(MAINTENANCE_KEY);
+    kvOk = true;
   } catch (err) {
-    console.error('read maintenance flag failed:', err);
-    return false; // อ่านพลาด -> ไม่ล็อกเว็บทิ้ง
+    console.error('write maintenance flag to kv failed:', err);
+  }
+  if (!dbOk && !kvOk) return null;
+
+  const state = { on, at, by, source: dbOk ? 'db' : 'kv' };
+  maintCache = { at: Date.now(), state };
+  maintDbSkipUntil = 0;
+  return { state, consistency: dbOk ? 'strong' : 'eventual' };
+}
+
+/* อ่าน session แบบไม่ throw (session เสีย/JSON เพี้ยน ต้องไม่ทำให้ทั้งเว็บ 500 ตอนปิดปรับปรุง) */
+async function getSessionUserSafe(request, env) {
+  try {
+    return await getSessionUser(request, env);
+  } catch (err) {
+    console.error('read session failed:', err);
+    return null;
   }
 }
 
 async function handleMaintenance(request, env) {
-  const user = await getSessionUser(request, env);
+  const user = await getSessionUserSafe(request, env);
   if (!user || !user.isAdmin) {
     return json({ error: 'ບໍ່ມີສິດເຂົ້າເຖິງ — ຕ້ອງລ໋ອກອິນເປັນແອດມິນກ່ອນ' }, 403);
   }
 
   if (request.method === 'GET') {
-    const res = json({ on: await isMaintenanceOn(env) });
+    const s = await getMaintenanceState(env, true);
+    const res = json({ on: s.on, at: s.at, by: s.by, consistency: s.source === 'db' ? 'strong' : 'eventual' });
     res.headers.set('Cache-Control', 'no-store');
     return res;
   }
@@ -238,21 +361,33 @@ async function handleMaintenance(request, env) {
     if (!body || typeof body.on !== 'boolean') {
       return json({ error: 'ຂໍ້ມູນບໍ່ຖືກຕ້ອງ (ຕ້ອງສົ່ງ on: true/false)' }, 400);
     }
-    try {
-      if (body.on) await env.SESSIONS.put(MAINTENANCE_KEY, '1');
-      else await env.SESSIONS.delete(MAINTENANCE_KEY);
-    } catch (err) {
-      console.error('write maintenance flag failed:', err);
-      return json({ error: 'ບັນທຶກສະຖານະບໍ່ໄດ້ (KV ຜິດພາດ)' }, 500);
+    const result = await setMaintenanceState(env, body.on, user.username || user.email || null);
+    if (!result) {
+      return json({ error: 'ບັນທຶກສະຖານະບໍ່ໄດ້ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 502);
     }
-    return json({ on: body.on });
+    const s = result.state;
+    return json({ on: s.on, at: s.at, by: s.by, consistency: result.consistency });
   }
 
   return json({ error: 'Method not allowed' }, 405);
 }
 
+/* public: หน้าเว็บ/หน้าปิดปรับปรุงเรียกเช็คเอง (ดู maintenance-watch.js)
+   blocked = เว็บปิดอยู่ "และ" คนนี้ไม่ใช่แอดมิน (แอดมินเข้าเว็บได้ตามปกติ จึงไม่ถูกรีโหลดวน) */
+async function handleMaintenanceStatus(request, env) {
+  const s = await getMaintenanceState(env, false);
+  let blocked = s.on;
+  if (blocked) {
+    const user = await getSessionUserSafe(request, env);
+    if (user && user.isAdmin) blocked = false;
+  }
+  const res = json({ on: s.on, blocked });
+  res.headers.set('Cache-Control', 'no-store');
+  return res;
+}
+
 const MAINTENANCE_HTML = `<!doctype html>
-<html lang="lo"><head><meta charset="utf-8">
+<html lang="lo" data-maintenance><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <meta http-equiv="refresh" content="60">
@@ -373,6 +508,7 @@ const MAINTENANCE_HTML = `<!doctype html>
   <p>ພວກເຮົາກຳລັງປັບປຸງລະບົບ ກະລຸນາກັບມາໃໝ່ໃນພາຍຫຼັງ<br>ຂໍອະໄພໃນຄວາມບໍ່ສະດວກ</p>
   <div class="bar"></div>
 </div>
+<script src="/maintenance-watch.js?v=20261014a"></script>
 </body></html>`;
 
 /* คืน Response (หน้าปิดปรับปรุง/JSON 503) ถ้าต้องบล็อก, คืน null ถ้าปล่อยผ่าน */
@@ -390,9 +526,10 @@ async function maintenanceGate(request, env, url) {
   // กรณี Cloudflare redirect /login.html -> /login (clean URL) แอดมินต้องยังเข้าได้
   if (path === '/login' || path === '/admin') return null;
 
-  if (!(await isMaintenanceOn(env))) return null;
+  const state = await getMaintenanceState(env, false);
+  if (!state.on) return null;
 
-  const user = await getSessionUser(request, env);
+  const user = await getSessionUserSafe(request, env);
   if (user && user.isAdmin) return null;
 
   const headers = { 'Cache-Control': 'no-store', 'Retry-After': '300' };
