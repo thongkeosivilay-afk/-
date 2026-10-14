@@ -1058,10 +1058,12 @@
     position:relative; z-index:1;
   }
   .footer-logo.logo{
-    width:64px; height:64px; border-radius:50%;
-    margin:0 auto 14px;
+    width:80px; height:80px; border-radius:50%;
+    margin:0 auto 14px; overflow:visible;
   }
-  .footer-logo.logo svg{ width:28px; height:28px; }
+  /* รูปโลโก้ที่อัปโหลดมักมีขอบโปร่งใสรอบตัว ทำให้ดูเล็ก — ขยายเนื้อในอีกนิดให้พอดีตา */
+  .footer-logo.logo img{ transform:scale(1.2); transform-origin:center; }
+  .footer-logo.logo svg{ width:34px; height:34px; }
   footer .fname{ font-weight:800; font-size:15px; margin-bottom:6px; }
   .fsocial{
     display:flex; align-items:center; justify-content:center; gap:10px;
