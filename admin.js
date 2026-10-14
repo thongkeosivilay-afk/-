@@ -1349,28 +1349,46 @@ function formatCountdownParts(targetIso) {
   };
 }
 
+// ຂໍ້ຄວາມນັບຖອຍຫຼັງ — ໃຊ້ທັງຕອນ render ຄັ້ງທຳອິດ ແລະ ທຸກ tick ເພື່ອບໍ່ໃຫ້ມີຄ່າ "—" ຊົ່ວຄາວ
+// (ຕົ້ນເຫດທີ່ເຮັດໃຫ້ຕົວໜັງສືວາປ/ຕັດແຖວໃໝ່ເມື່ອຕົວເລກເຂົ້າມາຫຼັງ 1 ວິນາທີ)
+function agentCountdownText(iso, doneText) {
+  if (!iso) return '—';
+  const parts = formatCountdownParts(iso);
+  if (!parts) return '—';
+  if (parts.done) return doneText;
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${parts.d}ວ ${pad(parts.h)}:${pad(parts.m)}:${pad(parts.s)}`;
+}
+
+let agentAccountsLastAutoRefresh = 0;
+
+function updateAgentAccountsCountdowns() {
+  let newlyDone = false;
+  document.querySelectorAll('.agent-acc-countdown').forEach((elx) => {
+    const isExpiry = elx.hasAttribute('data-expiry');
+    const iso = elx.getAttribute(isExpiry ? 'data-expiry' : 'data-reset');
+    if (!iso) return;
+    const doneText = isExpiry ? 'ໝົດອາຍຸແລ້ວ' : 'ກຳລັງຣີເຊັດ...';
+    const text = agentCountdownText(iso, doneText);
+    // ຂຽນ DOM ສະເພາະເມື່ອຄ່າປ່ຽນ ເພື່ອບໍ່ໃຫ້ layout ຖືກຄິດໃໝ່ໂດຍບໍ່ຈຳເປັນ
+    if (elx.textContent !== text) elx.textContent = text;
+    if (text === doneText && elx.dataset.done !== '1') {
+      elx.dataset.done = '1';
+      newlyDone = true;
+    }
+  });
+  return newlyDone;
+}
+
 function startAgentAccountsCountdownTicker() {
   if (agentAccountsCountdownTimer) return; // ຕັ້ງໄວ້ຄັ້ງດຽວກໍ່ພໍ (ໂຕ interval ຈະ query DOM ໃໝ່ທຸກ tick ເອງ)
   agentAccountsCountdownTimer = setInterval(() => {
-    let anyDone = false;
-    document.querySelectorAll('.agent-acc-countdown[data-expiry]').forEach((elx) => {
-      const iso = elx.getAttribute('data-expiry');
-      if (!iso) return;
-      const parts = formatCountdownParts(iso);
-      if (!parts) return;
-      if (parts.done) { elx.textContent = 'ໝົດອາຍຸແລ້ວ'; anyDone = true; return; }
-      elx.textContent = `${parts.d}ວ ${String(parts.h).padStart(2, '0')}:${String(parts.m).padStart(2, '0')}:${String(parts.s).padStart(2, '0')}`;
-    });
-    document.querySelectorAll('.agent-acc-countdown[data-reset]').forEach((elx) => {
-      const iso = elx.getAttribute('data-reset');
-      if (!iso) return;
-      const parts = formatCountdownParts(iso);
-      if (!parts) return;
-      if (parts.done) { elx.textContent = 'ກຳລັງຣີເຊັດ...'; anyDone = true; return; }
-      elx.textContent = `${parts.d}ວ ${String(parts.h).padStart(2, '0')}:${String(parts.m).padStart(2, '0')}:${String(parts.s).padStart(2, '0')}`;
-    });
-    if (anyDone && !agentAccountsAutoRefreshing) {
+    const newlyDone = updateAgentAccountsCountdowns();
+    // ດຶງລາຍຊື່ຄືນສະເພາະເມື່ອມີອັນທີ່ "ເພິ່ງ" ຄົບກຳນົດ ແລະ ຫ່າງຈາກຄັ້ງກ່ອນ ≥ 15 ວິນາທີ
+    // (ກັນ loop ດຶງ+render ໃໝ່ທຸກວິນາທີ ເວລາມີແຖວທີ່ໝົດອາຍຸຄ້າງຢູ່ໃນລາຍຊື່)
+    if (newlyDone && !agentAccountsAutoRefreshing && Date.now() - agentAccountsLastAutoRefresh >= 15000) {
       agentAccountsAutoRefreshing = true;
+      agentAccountsLastAutoRefresh = Date.now();
       loadAgentAccounts().finally(() => { agentAccountsAutoRefreshing = false; });
     }
   }, 1000);
@@ -1428,7 +1446,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
       progressHtml += `
         <div class="agent-acc-hold">
           <span class="agent-acc-live-dot"></span>
-          <span>ຄົບເປົ້າ 100% — ຄ້າງລໍຣີເຊັດ ອີກ <span class="agent-acc-countdown" data-reset="${a.quotaResetAt}">—</span></span>
+          <span>ຄົບເປົ້າ 100% — ຄ້າງລໍຣີເຊັດ ອີກ <span class="agent-acc-countdown" data-reset="${a.quotaResetAt}">${agentCountdownText(a.quotaResetAt, 'ກຳລັງຣີເຊັດ...')}</span></span>
         </div>`;
     }
 
@@ -1439,7 +1457,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
 
     const expiryHtml = isLifetime
       ? 'ຖາວອນ ບໍ່ໝົດອາຍຸ'
-      : `ໝົດອາຍຸ <span class="agent-acc-countdown" data-expiry="${a.period_end}">—</span>`;
+      : `ໝົດອາຍຸ <span class="agent-acc-countdown" data-expiry="${a.period_end}">${agentCountdownText(a.period_end, 'ໝົດອາຍຸແລ້ວ')}</span>`;
 
     return `
     <div class="agent-acc-row" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}">
@@ -1462,6 +1480,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
       <div class="agent-custom-panel" hidden></div>
     </div>`;
   }).join('');
+  updateAgentAccountsCountdowns();
 
   list.querySelectorAll('.agent-acc-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => toggleAgentStatus(btn));

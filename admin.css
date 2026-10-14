@@ -838,14 +838,20 @@
   .agent-acc-row:last-child{ border-bottom:none; }
   .agent-acc-main{ flex:1; min-width:180px; }
   .agent-acc-email{ font-family:var(--gx-font); font-weight:700; font-size:13.5px; color:var(--shine); word-break:break-all; }
-  .agent-acc-meta{ font-size:11px; color:var(--ink-500); margin-top:2px; }
+  .agent-acc-meta{ font-size:11px; color:var(--ink-500); margin-top:2px; line-height:1.7; }
   .agent-acc-progress{ margin-top:8px; max-width:280px; }
   .agent-acc-bar{ height:6px; border-radius:99px; background:var(--navy-700); overflow:hidden; }
   .agent-acc-bar-fill{ height:100%; background:var(--gx-signal); border-radius:99px; transition:width .3s; }
   .agent-acc-bar-fill.full{ background:var(--gx-success); }
   .agent-acc-progress-text{ font-size:10.5px; color:var(--ink-500); margin-top:4px; display:block; }
   .agent-acc-note{ font-size:10.5px; color:var(--gx-warn); margin-top:4px; }
-  .agent-acc-countdown{ font-variant-numeric:tabular-nums; font-weight:700; color:var(--shine); }
+  .agent-acc-countdown{
+    display:inline-block; white-space:nowrap; vertical-align:baseline;
+    font-family:var(--gx-font, 'Space Grotesk', monospace);
+    font-variant-numeric:tabular-nums; font-feature-settings:'tnum' 1;
+    min-width:12ch; /* ກວ້າງຄົງທີ່ ບໍ່ໃຫ້ຂະໜາດແຖວປ່ຽນທຸກວິນາທີ */
+    font-weight:700; color:var(--shine);
+  }
   .agent-acc-hold{ font-size:10.5px; color:var(--gx-warn); margin-top:4px; display:flex; align-items:center; gap:5px; }
   .agent-acc-live-dot{ display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--gx-success); box-shadow:0 0 6px var(--gx-success); animation:agent-acc-pulse 1.2s infinite; }
   @keyframes agent-acc-pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
