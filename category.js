@@ -113,12 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function statusHTML(product, stock, state) {
     if (state === 'paused') {
-      return `<div class="prod-status out"><span class="dot"></span>ປັບປຸງ / ລໍຖ້າອັບເດດ · ຄັງ ${stock.toLocaleString('en-US')}</div>`;
+      return `<div class="prod-status out">ຄັງ ${stock.toLocaleString('en-US')}</div>`;
     }
     if (state === 'soldout') {
-      return `<div class="prod-status out"><span class="dot"></span>ສິນຄ້າໝົດ · ຄັງ 0</div>`;
+      return `<div class="prod-status out">ຄັງ 0</div>`;
     }
-    return `<div class="prod-status"><span class="dot"></span>ພ້ອມຂາຍ · ຄັງ ${stock.toLocaleString('en-US')}</div>`;
+    return `<div class="prod-status">ເຫຼືອ ${stock.toLocaleString('en-US')} ອັນ</div>`;
   }
 
   function buyLabel(state) {
@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
       resellerInfo.isReseller ? 'is-reseller' : '',
       isTopSeller ? 'is-top-seller' : '',
     ].filter(Boolean).join(' ');
-    const stampHTML = isTopSeller ? `<div class="prod-stamp">ຂາຍດີ!</div>` : '';
+    const stampHTML = isTopSeller ? `<div class="prod-stamp">${FLAME_SVG}ຂາຍດີ!</div>` : '';
     return `
       <article class="${cardClass}" data-pid="${escapeHtml(product.id)}">
         <div class="${mediaClass}">
@@ -181,16 +181,15 @@ document.addEventListener('DOMContentLoaded', () => {
           ${mediaBodyHTML(product, state, product.id)}
         </div>
         <div class="prod-body">
-          <div class="prod-name">${escapeHtml(product.name || 'ໃສ່ຊື່ສິນຄ້າ')}</div>
-          ${priceHTML(product)}
-          ${statusHTML(product, stock, state)}
-          ${soldTagHTML(product)}
-          <button type="button" class="buy-btn" ${buyable ? '' : 'disabled'}>
-            ${buyIconHTML(state)}
-            ${buyLabel(state)}
-          </button>
-        </div>
-      </article>`;
+ <div class="prod-name" title="${escapeHtml(product.name || '')}">${escapeHtml(product.name || 'ໃສ່ຊື່ສິນຄ້າ')}</div>
+ <div class="prod-row">${priceHTML(product)}${statusHTML(product, stock, state)}</div>
+ <button type="button" class="buy-btn" ${buyable ? '' : 'disabled'}>
+ ${buyIconHTML(state)}
+ ${buyLabel(state)}
+ </button>
+ ${soldTagHTML(product)}
+ </div>
+ </article>`;
   }
 
   // ກົດ "ຊື້ເລີຍ" -> ໄປໜ້າ product.html ເພື່ອເລືອກໄລຍະເວລາ/ຈຳນວນ ແລະ ຢືນຢັນສັ່ງຊື້ຢູ່ນັ້ນ

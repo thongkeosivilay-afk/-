@@ -1767,3 +1767,31 @@ input, select, textarea{ font-size:16px !important; }
   a.acct-card-top{ color:inherit; text-decoration:none; position:relative; }
   .acct-edit{ margin-left:auto; width:26px; height:26px; border-radius:50%; background:rgba(255,255,255,.07); display:grid; place-items:center; flex-shrink:0; }
   .acct-edit svg{ width:14px; height:14px; color:#fff; }
+
+/* ===== การ์ดสินค้า v3 (กะทัดรัด): รูป > ชื่อ > ราคา+คงเหลือ > ปุ่มซื้อ > ขายไปแล้ว · ป้ายส้ม "ขายดี" มุมขวาบน ===== */
+.prod-grid{gap:10px;padding:16px 12px 26px}
+.prod-card.grid-card{border-radius:16px;overflow:hidden;background:var(--pc-bg,linear-gradient(175deg,#1b1818,#0b0909));border:1px solid var(--pc-bd,rgba(255,255,255,.09));box-shadow:0 8px 20px -12px rgba(0,0,0,.8)}
+.prod-card.grid-card .prod-media{aspect-ratio:1/.86;border-radius:0}
+.prod-card.grid-card .prod-media::before,.prod-card.grid-card .prod-media::after{display:none}
+.prod-card.grid-card .prod-media img.prod-img{border:0}
+.prod-card.grid-card .prod-body{padding:9px 10px 10px;gap:7px;margin-top:0}
+.prod-card.grid-card .prod-body::after{display:none}
+.prod-card.grid-card .prod-name{order:0;font-size:13px;font-weight:800;line-height:1.3;background:none;filter:none;-webkit-text-fill-color:var(--pc-name,#fff);color:var(--pc-name,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prod-row{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:2px 6px}
+.prod-card.grid-card .prod-price{font-size:17px;font-weight:800;line-height:1.15;white-space:nowrap;background:none;filter:none;-webkit-text-fill-color:var(--pc-price,#ff2a2a);color:var(--pc-price,#ff2a2a)}
+.prod-card.grid-card .prod-price-reseller-tag{font-size:9px;padding:1px 5px;vertical-align:middle}
+.prod-card.grid-card .prod-status{order:0;font-size:11px;font-weight:500;white-space:nowrap;color:var(--pc-dim,#9a9a9a)}
+.prod-card.grid-card .prod-status.out{white-space:normal}
+.prod-card.grid-card .buy-btn{margin-top:0;padding:9px 10px;border-radius:12px;color:#fff;font-size:13.5px;background:linear-gradient(180deg,#ff2a1c,#c80000);box-shadow:0 6px 14px -6px rgba(255,0,1,.7),inset 0 1px 0 rgba(255,255,255,.28)}
+.prod-card.grid-card .buy-btn:disabled{background:rgba(255,255,255,.08);color:var(--text-faint,#777);box-shadow:none}
+.prod-card.grid-card .prod-sold-tag{order:0;align-self:center;background:none;border:0;padding:0;margin-top:1px;font-size:11px;color:var(--pc-dim,#9a9a9a);gap:5px}
+.prod-card.grid-card .prod-sold-tag svg{width:13px;height:13px;color:#ff7a1a}
+.prod-card.grid-card .prod-stamp{top:8px;right:8px;display:flex;align-items:center;gap:4px;padding:4px 10px 4px 7px;border-radius:99px;font-size:11px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ffb020,#ff5a00);box-shadow:0 4px 12px -3px rgba(255,90,0,.7)}
+.prod-card.grid-card .prod-stamp svg{width:12px;height:12px}
+.prod-card.grid-card .prod-sold-tag svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.prod-card.grid-card .prod-price{order:0}
+.prod-card.grid-card .prod-status{order:1}
+.prod-card.grid-card .buy-btn{margin-top:auto}
+.prod-card.grid-card .prod-row{margin-bottom:1px}
+.prod-card.grid-card .buy-btn{order:2}
+.prod-card.grid-card .prod-sold-tag{order:3}
