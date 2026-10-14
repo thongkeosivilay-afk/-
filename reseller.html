@@ -46,7 +46,11 @@
 <button class="btn-block btn-submit" id="rsGoLoginBtn" type="button">ລົງຊື່ເຂົ້າໃຊ້</button>
 </div>
 <!-- ຟອມໃສ່ຄີຍ໌ -->
-<div class="rs-card" id="rsFormCard">
+<!-- กำลังโหลดสถานะ (กันฟอร์มโผล่แวบแล้วหายก่อนรู้ว่าเป็นตัวแทนหรือยัง) -->
+<div class="rs-card rs-need-login" id="rsLoading">
+<p id="rsLoadingText">ກຳລັງໂຫຼດ...</p>
+</div>
+<div class="rs-card u-hidden" id="rsFormCard">
 <div class="rs-card-head">
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><line x1="19" x2="5" y1="5" y2="19"></line><circle cx="6.5" cy="6.5" r="2.5"></circle><circle cx="17.5" cy="17.5" r="2.5"></circle></svg>
 <b>ໃສ່ຄີຍ໌ຕົວແທນ</b>
@@ -150,7 +154,8 @@
 <script src="storefront-data.js"></script>
 <script src="tabbar-close-fx.js?v=20261004b"></script>
 <script src="script.js?v=20261009a"></script>
-<script src="reseller.js"></script>
+<script src="reseller.js?v=20261014b"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
+<script src="/maintenance-watch.js?v=20261014a" defer></script>
 </body>
 </html>

@@ -12,7 +12,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const formCard = document.getElementById('rsFormCard');
   const needLoginCard = document.getElementById('rsNeedLogin');
   const dashboard = document.getElementById('rsDashboard');
+  const loadingCard = document.getElementById('rsLoading');
+  const loadingText = document.getElementById('rsLoadingText');
   if (!formCard) return; // ไม่ใช่หน้า reseller
+
+  /* ---------- สลับกล่องที่โชว์ (loading / login / form / dashboard) ----------
+     เดิมสลับด้วย element.style.display แต่ใน HTML ซ่อนด้วยคลาส u-hidden (ย้ายมาจาก inline style ตอนทำ CSP)
+     พอตั้ง display ว่าง คลาส u-hidden ยังซ่อนอยู่ -> แดชบอร์ด/กล่องให้ล็อกอินไม่เคยโผล่ ส่วนฟอร์มโผล่แวบแล้วหาย
+     ตอนนี้สลับด้วยคลาส u-hidden อย่างเดียว และโชว์ได้ทีละกล่องเท่านั้น */
+  let hasState = false; // เคยรู้สถานะจริงจากเซิร์ฟเวอร์แล้วหรือยัง
+  function showOnly(which) {
+    const cards = { loading: loadingCard, login: needLoginCard, form: formCard, dashboard: dashboard };
+    Object.keys(cards).forEach((k) => { if (cards[k]) cards[k].classList.toggle('u-hidden', k !== which); });
+    hasState = which !== 'loading';
+  }
+  // โหลดสถานะครั้งแรกไม่สำเร็จ -> บอกให้รีโหลด (ไม่ปล่อยหน้าว่าง); ถ้าเคยโชว์หน้าแล้วก็คงหน้าเดิมไว้
+  function showLoadFailed() {
+    if (hasState) return;
+    if (loadingText) loadingText.textContent = 'ເຊື່ອມຕໍ່ບໍ່ໄດ້ ກະລຸນາໂຫຼດໜ້ານີ້ໃໝ່';
+    showOnly('loading');
+  }
 
   // ชื่อร้าน/โลโก้/แถบประกาศ (header, footer, ...) — หน้านี้เคยลืมเรียก ทำให้ชื่อร้าน
   // ไม่ขึ้นและโลโก้ท้ายหน้าว่างเปล่า จึงเพิ่มเรียกเหมือนหน้าอื่น (index.html/category.html ฯลฯ)
@@ -56,6 +75,17 @@ document.addEventListener('DOMContentLoaded', () => {
   let stopExpiryCountdown = null;
   let stopHoldCountdown = null;
 
+  /* ตัวนับถอยหลังครบแล้วดึงแดชบอร์ดใหม่ — จำกัดไม่เกิน 1 ครั้ง/15 วินาที
+     เดิมถ้านาฬิกาเครื่องเร็วกว่าเซิร์ฟเวอร์ (หรือเซิร์ฟเวอร์ยังไม่รีเซ็ตรอบ) จะ fetch -> render -> นับครบ -> fetch วนไม่หยุด
+     หน้าเลยกะพริบและยิง API รัวๆ */
+  let lastAutoRefetch = 0;
+  function refetchSoon() {
+    const now = Date.now();
+    if (now - lastAutoRefetch < 15000) return;
+    lastAutoRefetch = now;
+    fetchDashboard();
+  }
+
   /* ---------- Toast (ໃຊ້ .toast ຮ່ວມກັບ auth.css) ---------- */
   let toastTimer = null;
   function showToast(message, isError = false) {
@@ -63,8 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!toast) {
       toast = document.createElement('div');
       toast.className = 'toast';
-      toast.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z"/></svg><span></span>`;
       document.body.appendChild(toast);
+    }
+    // reseller.html มี <div class="toast"> เปล่าๆ อยู่แล้ว (ไม่มี <span>) — เดิม querySelector('span') เป็น null
+    // แล้ว throw ตอนโชว์ error ปุ่ม "ใช้คีย์" เลยค้างเป็น "กำลังตรวจสอบ..." ตลอด
+    if (!toast.querySelector('span')) {
+      toast.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z"/></svg><span></span>`;
     }
     toast.classList.toggle('error', isError);
     toast.querySelector('span').textContent = message;
@@ -123,7 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hEl.textContent = String(h).padStart(2, '0');
         mEl.textContent = String(m).padStart(2, '0');
         sEl.textContent = String(s).padStart(2, '0');
-      }, () => { fetchDashboard(); }); // ໝົດອາຍຸແທ້ໆ -> ດຶງແດຊບອດຄືນເພື່ອອັບເດດສະຖານະລ່າສຸດ
+      }, refetchSoon); // ໝົດອາຍຸແທ້ໆ -> ດຶງແດຊບອດຄືນເພື່ອອັບເດດສະຖານະລ່າສຸດ
     }
 
     const ringFg = document.getElementById('rsRingFg');
@@ -144,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const holdEl = document.getElementById('rsHoldCountdown');
       stopHoldCountdown = startLiveCountdown(data.quotaResetAt, (d, h, m, s) => {
         holdEl.textContent = `${d}ວ ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-      }, () => { fetchDashboard(); }); // ຄົບ 7 ມື້ -> ດຶງແດຊບອດຄືນເພື່ອໂຊວ໌ຮອບໃໝ່ທີ່ຣີເຊັດແລ້ວ
+      }, refetchSoon); // ຄົບ 7 ມື້ -> ດຶງແດຊບອດຄືນເພື່ອໂຊວ໌ຮອບໃໝ່ທີ່ຣີເຊັດແລ້ວ
     } else {
       holdBanner.classList.remove('show');
     }
@@ -161,9 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('rsCumOrders').textContent = (cum.ordersCount || 0) + ' ຄັ້ງ';
     document.getElementById('rsCumDiscount').textContent = (data.discountPercent != null ? data.discountPercent : 0) + '%';
 
-    formCard.style.display = 'none';
-    needLoginCard.style.display = 'none';
-    dashboard.style.display = '';
+    showOnly('dashboard');
     document.querySelector('header')?.classList.add('is-reseller');
     document.querySelector('.logo')?.classList.add('is-reseller');
   }
@@ -174,24 +206,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       if (res.status === 401 || data.requireLogin) {
-        formCard.style.display = 'none';
-        dashboard.style.display = 'none';
-        needLoginCard.style.display = '';
+        showOnly('login');
         return;
       }
       if (!res.ok) {
         showToast(data.error || 'ດຶງຂໍ້ມູນຕົວແທນບໍ່ສຳເລັດ', true);
+        showLoadFailed();
         return;
       }
       if (data.isReseller) {
         renderDashboard(data);
       } else {
-        dashboard.style.display = 'none';
-        formCard.style.display = '';
+        showOnly('form');
       }
     } catch (err) {
       console.error('ດຶງແດຊບອດຕົວແທນບໍ່ສຳເລັດ', err);
       showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+      showLoadFailed();
     }
   }
 
@@ -203,12 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('ດຶງ /api/me ບໍ່ສຳເລັດ', err);
       showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+      showLoadFailed();
       return;
     }
 
     if (!me.loggedIn) {
-      formCard.style.display = 'none';
-      needLoginCard.style.display = '';
+      showOnly('login');
       return;
     }
 
