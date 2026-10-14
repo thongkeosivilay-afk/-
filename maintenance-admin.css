@@ -18,3 +18,7 @@
 .mt-btn.is-open-action{background:#1fa95b}
 .mt-btn:disabled{opacity:.5;cursor:default}
 @media (max-width:420px){.mt-card{flex-direction:column;align-items:stretch}.mt-btn{width:100%}}
+/* สถานะ error: โหลดสถานะไม่ได้ (เน็ตหลุด / เซสชันหมดอายุ) */
+.mt-card.is-error{background:rgba(232,179,74,.1);border-color:rgba(232,179,74,.5)}
+.mt-card.is-error .mt-dot{background:#e8b34a;box-shadow:0 0 10px rgba(232,179,74,.7)}
+.mt-card.is-error .mt-btn{background:#6b6b7a}
