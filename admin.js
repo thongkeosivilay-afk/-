@@ -324,7 +324,7 @@ async function saveSingleCategoryName(i) {
       .eq('id', SITE_SETTINGS_ID);
     if (settingsError) throw settingsError;
 
-    setMsg(msg, 'ບັນທຶກຊື່ຫມວດໝູ່ນີ້ສຳເລັດແລ້ວ ✓ — ໜ້າຮ້ານຈິງຈະອັບເດດອັດຕະໂນມັດ', 'success');
+    setMsg(msg, 'ບັນທຶກຊື່ຫມວດໝູ່ນີ້ສຳເລັດແລ້ວ — ໜ້າຮ້ານຈິງຈະອັບເດດອັດຕະໂນມັດ', 'success');
     await loadSiteSettingsAdmin();
   } catch (err) {
     console.error(err);
@@ -371,7 +371,7 @@ async function saveSingleCategoryField(i, field, inputId, btnId, msgId) {
       .update({ [`category_${i}_${field}`]: newVal, updated_at: new Date().toISOString() })
       .eq('id', SITE_SETTINGS_ID);
     if (error) throw error;
-    setMsg(msg, 'ບັນທຶກສຳເລັດແລ້ວ ✓ — ໜ້າຮ້ານຈິງຈະອັບເດດອັດຕະໂນມັດ', 'success');
+    setMsg(msg, 'ບັນທຶກສຳເລັດແລ້ວ — ໜ້າຮ້ານຈິງຈະອັບເດດອັດຕະໂນມັດ', 'success');
     await loadSiteSettingsAdmin();
   } catch (err) {
     console.error(err);
@@ -761,7 +761,7 @@ async function hardDeleteProduct(id, row) {
   if (!p) return;
 
   const ok = confirm(
-    `ລຶບ "${p.name || 'ສິນຄ້ານີ້'}" ຖາວອນ?\n\nຈະລຶບຂໍ້ມູນສິນຄ້າ, ໄລຍະເວລາ, ລິ້ງໂບນັດ ແລະ ລະຫັດຄົງເຫຼືອທັງໝົດຂອງສິນຄ້ານີ້ອອກຈາກລະບົບ. ບໍ່ສາມາດກູ້ຄືນໄດ້.\n\n⚠️ ຖ້າສິນຄ້ານີ້ເຄີຍມີຄົນສັ່ງຊື້ໄປແລ້ວ, ອໍເດີເກົ່າຂອງສິນຄ້ານີ້ (ໃນ "ລາຍການສັ່ງຊື້"/ປະຫວັດ) ຈະຖືກລຶບໄປພ້ອມກັນນຳ ເນື່ອງຈາກລະບົບຕ້ອງການໃຫ້ທຸກອໍເດີມີສິນຄ້າອ້າງອີງຢູ່ສະເໝີ.\n\n(ຖ້າຢາກລຶບສິນຄ້າອອກຈາກໜ້າຮ້ານ ແຕ່ຍັງເກັບປະຫວັດອໍເດີໄວ້ຄົບ ໃຫ້ໃຊ້ປຸ່ມ "ເອົາອອກຈາກໜ້າຮ້ານ" ແທນ)`
+    `ລຶບ "${p.name || 'ສິນຄ້ານີ້'}" ຖາວອນ?\n\nຈະລຶບຂໍ້ມູນສິນຄ້າ, ໄລຍະເວລາ, ລິ້ງໂບນັດ ແລະ ລະຫັດຄົງເຫຼືອທັງໝົດຂອງສິນຄ້ານີ້ອອກຈາກລະບົບ. ບໍ່ສາມາດກູ້ຄືນໄດ້.\n\n ຖ້າສິນຄ້ານີ້ເຄີຍມີຄົນສັ່ງຊື້ໄປແລ້ວ, ອໍເດີເກົ່າຂອງສິນຄ້ານີ້ (ໃນ "ລາຍການສັ່ງຊື້"/ປະຫວັດ) ຈະຖືກລຶບໄປພ້ອມກັນນຳ ເນື່ອງຈາກລະບົບຕ້ອງການໃຫ້ທຸກອໍເດີມີສິນຄ້າອ້າງອີງຢູ່ສະເໝີ.\n\n(ຖ້າຢາກລຶບສິນຄ້າອອກຈາກໜ້າຮ້ານ ແຕ່ຍັງເກັບປະຫວັດອໍເດີໄວ້ຄົບ ໃຫ້ໃຊ້ປຸ່ມ "ເອົາອອກຈາກໜ້າຮ້ານ" ແທນ)`
   );
   if (!ok) return;
 
@@ -2084,7 +2084,7 @@ function initCategoryImageDropzones() {
           .update({ [`category_${i}_image`]: url, updated_at: new Date().toISOString() })
           .eq('id', SITE_SETTINGS_ID);
         if (error) throw error;
-        if (msg) setMsg(msg, 'ບັນທຶກຮູບໝວດໝູ່ນີ້ສຳເລັດແລ້ວ ✓', 'success');
+        if (msg) setMsg(msg, 'ບັນທຶກຮູບໝວດໝູ່ນີ້ສຳເລັດແລ້ວ ', 'success');
         await loadSiteSettingsAdmin();
       } catch (err) {
         console.error(err);
@@ -2154,7 +2154,7 @@ function initHeroImageDropzone() {
         .update({ hero_image: url, updated_at: new Date().toISOString() })
         .eq('id', SITE_SETTINGS_ID);
       if (error) throw error;
-      if (msg) setMsg(msg, 'ບັນທຶກຮູບ hero ສຳເລັດແລ້ວ ✓', 'success');
+      if (msg) setMsg(msg, 'ບັນທຶກຮູບ hero ສຳເລັດແລ້ວ ', 'success');
       await loadSiteSettingsAdmin();
     } catch (err) {
       console.error(err);
@@ -2223,7 +2223,7 @@ function initPromoPopupDropzone() {
         .update({ promo_popup_image: url, updated_at: new Date().toISOString() })
         .eq('id', SITE_SETTINGS_ID);
       if (error) throw error;
-      if (msg) setMsg(msg, 'ບັນທຶກຮູບ popup ໂປຣໂມຊັ່ນສຳເລັດແລ້ວ ✓', 'success');
+      if (msg) setMsg(msg, 'ບັນທຶກຮູບ popup ໂປຣໂມຊັ່ນສຳເລັດແລ້ວ ', 'success');
       await loadSiteSettingsAdmin();
     } catch (err) {
       console.error(err);
@@ -2264,7 +2264,7 @@ function initPromoPopupDropzone() {
           .update({ promo_popup_enabled: nextEnabled, updated_at: new Date().toISOString() })
           .eq('id', SITE_SETTINGS_ID);
         if (error) throw error;
-        if (msg) setMsg(msg, nextEnabled ? 'ເປີດໃຊ້ງານ popup ແລ້ວ ✓' : 'ປິດ popup ນີ້ແລ້ວ', 'success');
+        if (msg) setMsg(msg, nextEnabled ? 'ເປີດໃຊ້ງານ popup ແລ້ວ ' : 'ປິດ popup ນີ້ແລ້ວ', 'success');
         await loadSiteSettingsAdmin();
       } catch (err) {
         console.error(err);
