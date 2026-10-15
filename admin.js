@@ -2960,6 +2960,13 @@ async function initAdminPanel() {
     console.error('initCouponsPanel failed:', err);
   }
 
+  // ---- แผง "ຈັດການລູກຄ້າ" (customers-admin.js): ดู/ปรับยอดเงิน แบน ลบบัญชี ----
+  try {
+    if (typeof window.initCustomersPanel === 'function') window.initCustomersPanel();
+  } catch (err) {
+    console.error('initCustomersPanel failed:', err);
+  }
+
   await loadSiteSettingsAdmin();
   await loadProducts();
   await loadTopupRequests();

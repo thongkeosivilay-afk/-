@@ -8,6 +8,7 @@
 <link href="style.css?v=20261014a" rel="stylesheet"/>
 <link href="admin.css?v=20261014h" rel="stylesheet"/>
 <link href="coupons-admin.css?v=20261010a" rel="stylesheet"/>
+<link href="customers-admin.css?v=20261015a" rel="stylesheet"/>
 <link href="maintenance-admin.css?v=20261014a" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -171,6 +172,14 @@
 <div class="d2-fn-text">
 <div class="d2-fn-title-row"><span class="d2-fn-title">ຄຳຂໍເຕີມເງິນ</span><span class="d2-fn-badge d2-warn" id="d2BadgeTopup">—</span></div>
 <div class="d2-fn-desc">ກວດສະລິບໂອນເງິນ ແລ້ວກົດອະນຸມັດ ຫຼືປະຕິເສດ</div>
+</div>
+<div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+</div>
+<div class="d2-fn-card" data-goto="panelCustomers">
+<div class="d2-fn-icon swatch-orange"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
+<div class="d2-fn-text">
+<div class="d2-fn-title-row"><span class="d2-fn-title">ຈັດການລູກຄ້າ</span><span class="d2-fn-badge d2-ok" id="d2BadgeCustomers">—</span></div>
+<div class="d2-fn-desc">ເບິ່ງຍອດເງິນ, ເພີ່ມ/ຫັກເງິນ, ແບນ ຫຼື ລຶບບັນຊີ</div>
 </div>
 <div class="d2-fn-arrow"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
 </div>
@@ -475,6 +484,34 @@ IJKL-9012"></textarea></div>
 <p class="panel-sub">ຕັ້ງລາຄາທີ່ຕ້ອງການໃຫ້ຕົວແທນຊື້ຕໍ່ສິນຄ້າ (ຫຼືຕໍ່ໄລຍະເວລາ) ໄດ້ໂດຍກົງ — ຖ້າເວັ້ນຫວ່າງໄວ້ ລະບົບຈະໃຊ້ສ່ວນຫຼຸດ % ຂອງລະດັບຕົວແທນແທນອັດຕະໂນມັດ (ລາຄານີ້ໃຊ້ຄືກັນທຸກລະດັບ ບໍ່ແຍກຕາມ tier)</p>
 <div class="agent-cat-row" id="agentPriceCatTabs"></div>
 <div id="agentPriceList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+</div>
+</div></div>
+</div>
+<div class="switch" data-target="panelCustomers">
+<div class="switch-head">
+<span class="switch-icon"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
+<span class="switch-text">
+<span class="dash-title">ຈັດການລູກຄ້າ</span>
+<span class="dash-desc">ເບິ່ງຍອດເງິນລູກຄ້າທຸກຄົນ, ເພີ່ມ/ຫັກເງິນ, ແບນ ແລະ ລຶບບັນຊີ</span>
+</span>
+<span class="switch-right"><span class="switch-chevron"><svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" viewbox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></span></span>
+</div>
+<div class="switch-body"><div class="switch-body-inner">
+<!-- ===== PANEL: ຈັດການລູກຄ້າ — ຄວບຄຸມໂດຍ customers-admin.js (API /api/admin/customers/*) ===== -->
+<div class="panel-content" id="panelCustomers">
+<div class="stat-panel">
+<h3>
+        ຈັດການລູກຄ້າ
+        <button class="mini-refresh" id="cuRefresh" title="ໂຫຼດຄືນໃໝ່" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+</button>
+</h3>
+<p class="panel-sub">ກົດທີ່ລູກຄ້າເພື່ອເພີ່ມ/ຫັກເງິນ, ເບິ່ງປະຫວັດ, ແບນ ຫຼື ລຶບບັນຊີ</p>
+<div class="gx-field"><div class="gx-input-wrap"><input id="cuSearch" type="search" autocomplete="off" placeholder="ຄົ້ນຫາ ອີເມວ / ຊື່ / ID"></div></div>
+<div class="cu-sum" id="cuSum"></div>
+<div id="cuList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+<button class="topup-btn u-hidden" id="cuMore" type="button">ໂຫຼດເພີ່ມ</button>
 </div>
 </div>
 </div></div>
@@ -887,6 +924,7 @@ IJKL-9012"></textarea></div>
 <script src="admin-supabase-config.js"></script>
 <script src="admin.js?v=20261014g"></script>
 <script src="coupons-admin.js?v=20261010a"></script>
+<script src="customers-admin.js?v=20261015a"></script>
 <script src="maintenance-admin.js?v=20261014a"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
 <script src="admin-glass.js?v=20261014g" defer></script>
