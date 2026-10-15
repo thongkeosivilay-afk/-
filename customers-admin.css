@@ -1,35 +1,173 @@
-/* customers-admin.css — แผง "ຈັດການລູກຄ້າ" */
-#panelCustomers .cu-sum{font-size:12px;color:var(--ink-500);margin:4px 2px 10px}
-.cu-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);border-radius:16px;margin-bottom:10px;padding:12px;transition:border-color .2s}
-.cu-card.open{border-color:rgba(255,65,65,.45)}
+/* customers-admin.css v2 — แผง "ຈັດການລູກຄ້າ"
+   แอนิเมชันใช้เฉพาะ transform / opacity / grid-template-rows (ไม่แตะ width/top) เพื่อให้ลื่น */
+#panelCustomers{--cu-e:cubic-bezier(.22,1,.36,1)}
+
+/* ---------- การ์ดยอดรวม (สด) ---------- */
+.cu-tot{position:relative;margin:6px 0 14px;padding:16px 16px 14px;border-radius:20px;border:1px solid rgba(109,255,176,.28);background:radial-gradient(120% 140% at 0% 0%,rgba(34,197,94,.22),rgba(34,197,94,0) 60%),rgba(255,255,255,.04);overflow:hidden}
+.cu-tot-top{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink-500)}
+.cu-live{display:inline-flex;align-items:center;gap:7px;font-weight:800;letter-spacing:.05em;color:#6dffb0}
+.cu-live i{position:relative;width:8px;height:8px;border-radius:50%;background:#6dffb0}
+.cu-live i::after{content:"";position:absolute;inset:0;border-radius:50%;background:#6dffb0;animation:cuPulse 1.8s ease-out infinite}
+.cu-tot-lbl{margin-top:10px;font-size:12.5px;color:var(--ink-300)}
+.cu-tot-val{font-size:30px;font-weight:900;line-height:1.15;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.01em;text-shadow:0 0 28px rgba(109,255,176,.35);word-break:break-all}
+.cu-tot-sub{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.cu-tot-sub span{font-size:11px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--ink-300);font-variant-numeric:tabular-nums}
+.cu-found{margin-top:8px;font-size:12px;color:var(--ink-500)}
+.cu-found:empty{display:none}
+@keyframes cuPulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.8);opacity:0}}
+
+/* ---------- กลุ่ม (เงินหลาย / กลาง / น้อย / แอดมิน) ---------- */
+.cu-grp{--gc:#6dffb0;margin-bottom:14px}
+.cu-grp[data-g=mid]{--gc:#6ab7ff}
+.cu-grp[data-g=low]{--gc:#9aa3b2}
+.cu-grp[data-g=admin]{--gc:#ffd54a}
+.cu-grp.is-empty{display:none}
+.cu-gh{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:background .25s var(--cu-e),transform .18s var(--cu-e);-webkit-tap-highlight-color:transparent}
+.cu-gh:active{transform:scale(.985);background:rgba(255,255,255,.07)}
+.cu-dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--gc);box-shadow:0 0 12px var(--gc)}
+.cu-gt{display:flex;flex-direction:column;min-width:0;flex:1}
+.cu-gt b{font-size:14px;color:var(--ink-100)}
+.cu-gt small{font-size:10.5px;color:var(--ink-500)}
+.cu-gn{flex:none;font-size:11px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08);color:var(--ink-300)}
+.cu-gs{flex:none;font-size:12px;font-weight:800;color:var(--gc);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cu-chev{flex:none;width:16px;height:16px;fill:none;stroke:var(--ink-300);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s var(--cu-e)}
+.cu-grp.collapsed .cu-chev{transform:rotate(-90deg)}
+.cu-gbody{display:grid;grid-template-rows:1fr;transition:grid-template-rows .4s var(--cu-e)}
+.cu-grp.collapsed .cu-gbody{grid-template-rows:0fr}
+.cu-gin{overflow:hidden;min-height:0}
+.cu-gcards{padding-top:10px}
+.cu-grp.collapsed .cu-gin{visibility:hidden;transition:visibility 0s .4s}
+.cu-gmore{width:100%;margin:2px 0 4px}
+.cu-gmore[hidden]{display:none}
+.cu-empty[hidden]{display:none}
+
+/* ---------- การ์ดลูกค้า ---------- */
+#panelCustomers .cu-sum{font-size:inherit;color:inherit}
+.cu-card{position:relative;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);border-radius:16px;margin-bottom:10px;padding:12px;box-shadow:inset 3px 0 0 var(--gc,transparent);transition:border-color .3s var(--cu-e),background .3s var(--cu-e)}
+.cu-card.open{border-color:rgba(255,65,65,.45);background:rgba(255,255,255,.055)}
 .cu-card.is-banned{opacity:.8;border-color:rgba(255,0,1,.35)}
-.cu-top{all:unset;box-sizing:border-box;display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
+.cu-card::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0}
+.cu-card.flash-up::after{background:rgba(34,197,94,.24);animation:cuFlash 1s var(--cu-e)}
+.cu-card.flash-down::after{background:rgba(255,80,80,.24);animation:cuFlash 1s var(--cu-e)}
+.cu-card.enter{animation:cuIn .5s var(--cu-e) both}
+@keyframes cuFlash{0%{opacity:1}100%{opacity:0}}
+@keyframes cuIn{from{opacity:0;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+.cu-top{all:unset;box-sizing:border-box;display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;transition:transform .15s var(--cu-e);-webkit-tap-highlight-color:transparent}
+.cu-top:active{transform:scale(.985)}
 .cu-who{display:flex;flex-direction:column;min-width:0}
 .cu-who b{font-size:14px;color:var(--ink-100);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cu-who small{font-size:10.5px;color:var(--ink-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cu-bal{font-weight:800;font-size:16px;color:#6dffb0;white-space:nowrap}
+.cu-bal{font-weight:800;font-size:16px;color:#6dffb0;white-space:nowrap;font-variant-numeric:tabular-nums}
+.cu-grp[data-g=admin] .cu-bal{color:#ffd54a}
 .cu-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .cu-chips span{font-size:11px;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.06);color:var(--ink-300)}
+.cu-tags{display:contents;font-style:normal}
 .cu-tag.bad{background:rgba(255,0,1,.2)!important;color:#ff8a8a!important}
 .cu-tag.adm{background:rgba(255,213,74,.18)!important;color:#ffd54a!important}
-.cu-detail{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px}
+
+/* รายละเอียด: ขยาย/หุบแบบลื่น (grid 0fr -> 1fr) */
+.cu-dwrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--cu-e)}
+.cu-card.open .cu-dwrap{grid-template-rows:1fr}
+.cu-detail{overflow:hidden;min-height:0;opacity:0;visibility:hidden;transition:opacity .3s var(--cu-e),visibility 0s .4s}
+.cu-card.open .cu-detail{opacity:1;visibility:visible;transition:opacity .35s var(--cu-e) .08s,visibility 0s}
+.cu-di{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px}
 .cu-sec{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
 .cu-seg{display:flex;gap:6px}
-.cu-seg button{flex:1;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--ink-300);font-weight:700;font-size:13px}
+.cu-seg button{flex:1;padding:9px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--ink-300);font-weight:700;font-size:13px;transition:background .25s var(--cu-e),border-color .25s var(--cu-e),color .25s,transform .15s var(--cu-e)}
 .cu-seg button.on{background:rgba(255,65,65,.18);border-color:rgba(255,65,65,.6);color:#fff}
 .cu-seg[data-mode=add] button.on{background:rgba(34,197,94,.18);border-color:rgba(34,197,94,.6)}
 .cu-quick{display:flex;flex-wrap:wrap;gap:6px}
-.cu-quick button{padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--ink-300);font-size:12px}
+.cu-quick button{padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--ink-300);font-size:12px;transition:background .2s,transform .15s var(--cu-e)}
+.cu-quick .cu-clr{border-style:dashed}
+.cu-seg button:active,.cu-quick button:active,.cu-card .topup-btn:active{transform:scale(.95)}
+.cu-card .topup-btn{transition:transform .15s var(--cu-e),opacity .2s}
+.cu-go:disabled,.cu-card .topup-btn:disabled{opacity:.6}
 .cu-actions{display:flex;gap:8px;flex-direction:row}
 .cu-actions .topup-btn{flex:1}
 .cu-msg{font-size:12px;min-height:16px}.cu-msg.ok{color:#6dffb0}.cu-msg.err{color:#ff8a8a}
-.cu-del{border:1px solid rgba(255,0,1,.4);border-radius:12px;padding:10px;margin-bottom:12px;background:rgba(255,0,1,.06);font-size:13px}
+
+/* กล่องยืนยันลบ: ขยายแบบลื่น */
+.cu-delw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s var(--cu-e),margin-bottom .35s var(--cu-e)}
+.cu-delw>div{overflow:hidden;min-height:0}
+.cu-delw.on{grid-template-rows:1fr;margin-bottom:12px}
+.cu-del{border:1px solid rgba(255,0,1,.4);border-radius:12px;padding:10px;background:rgba(255,0,1,.06);font-size:13px}
 .cu-del p{margin:0 0 8px;color:#ff8a8a;font-weight:700}
 .cu-del label{display:flex;gap:8px;align-items:center;margin:6px 0;color:var(--ink-300)}
+
+.cu-hist>*{animation:cuFade .4s var(--cu-e) both}
+@keyframes cuFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .cu-banbox{background:rgba(255,0,1,.12);border-radius:10px;padding:8px 10px;font-size:12.5px;color:#ff8a8a;margin-bottom:8px}
 .cu-h{border-top:1px solid rgba(255,255,255,.06);padding:6px 0}
 .cu-h summary{cursor:pointer;font-size:13px;color:var(--ink-100);padding:4px 0}
 .cu-row{display:flex;flex-direction:column;padding:6px 2px;font-size:13px;border-bottom:1px dashed rgba(255,255,255,.05)}
 .cu-row small{color:var(--ink-500);font-size:11px}
 .cu-row .pos{color:#6dffb0;font-weight:700}.cu-row .neg{color:#ff8a8a;font-weight:700}
-#cuMore{width:100%;margin-top:6px}
+
+/* ปุ่มรีเฟรชหมุนตอนกำลังโหลด */
+#cuRefresh.spin svg{animation:cuSpin .8s linear infinite}
+@keyframes cuSpin{to{transform:rotate(360deg)}}
+
+
+/* ---------- แถบเครื่องมือ: ตัวกรอง / เรียง / เลือกหลายคน / CSV ---------- */
+.cu-tools{margin:0 0 14px;display:flex;flex-direction:column;gap:8px}
+.cu-fchips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.cu-fchips::-webkit-scrollbar{display:none}
+.cu-fchips button,.cu-tbtn{flex:none;font:inherit;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--ink-300);cursor:pointer;transition:background .25s var(--cu-e),border-color .25s var(--cu-e),color .25s,transform .15s var(--cu-e);-webkit-tap-highlight-color:transparent}
+.cu-fchips button:active,.cu-tbtn:active{transform:scale(.95)}
+.cu-fchips button.on,.cu-tbtn.on{background:rgba(255,65,65,.2);border-color:rgba(255,65,65,.6);color:#fff}
+.cu-fchips em{font-style:normal;margin-left:2px;color:#ffb84a}
+.cu-trow{display:flex;align-items:center;gap:8px}
+.cu-sort{display:flex;align-items:center;gap:6px;flex:1;min-width:0;font-size:12px;color:var(--ink-500)}
+.cu-sort select{flex:1;min-width:0;font:inherit;font-size:12.5px;font-weight:700;padding:7px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--ink-100)}
+.cu-tag.warn{background:rgba(255,160,40,.18)!important;color:#ffb84a!important}
+
+/* ---------- ເລືອກຫຼາຍຄົນ ---------- */
+.cu-ck{display:none;flex:none;position:relative;width:22px;height:22px;margin-right:10px;border-radius:8px;border:2px solid rgba(255,255,255,.3);transition:background .2s var(--cu-e),border-color .2s var(--cu-e),transform .2s var(--cu-e)}
+.sel-mode .cu-ck{display:block}
+.cu-ck::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:10px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) scale(0);transition:transform .2s var(--cu-e)}
+.cu-card.selected .cu-ck{background:#22c55e;border-color:#22c55e}
+.cu-card.selected .cu-ck::after{transform:rotate(45deg) scale(1)}
+.cu-card.selected{border-color:rgba(34,197,94,.6);background:rgba(34,197,94,.07)}
+.cu-who{flex:1}
+#cuList.sel-mode{padding-bottom:230px}
+.cu-bulk{position:fixed;left:0;right:0;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:60;display:flex;justify-content:center;padding:0 12px;pointer-events:none;animation:cuBarIn .4s cubic-bezier(.22,1,.36,1) both}
+.cu-bulk[hidden]{display:none}
+.cu-bulk-in{pointer-events:auto;width:100%;max-width:520px;padding:12px;border-radius:20px;border:1px solid rgba(255,255,255,.16);background:rgba(18,18,22,.92);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 18px 40px -12px #000;display:flex;flex-direction:column;gap:8px}
+.cu-bulk-top{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-300)}
+.cu-bulk-top b{font-size:18px;color:#6dffb0;font-variant-numeric:tabular-nums}
+.cu-bulk-top span{flex:1}
+.cu-bulk-top button{font:inherit;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:transparent;color:var(--ink-300);cursor:pointer}
+.cu-bulk-form{display:flex;gap:8px}
+.cu-bulk-form input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--ink-100);font:inherit;font-size:13.5px;outline:none}
+.cu-bulk-btns{display:flex;gap:8px}
+.cu-bulk-btns .topup-btn{flex:1;transition:transform .15s var(--cu-e),background .25s}
+.cu-bulk-btns .topup-btn:active{transform:scale(.96)}
+.cu-bulk-msg{font-size:12px;min-height:0}.cu-bulk-msg:empty{display:none}
+.cu-bulk-msg.ok{color:#6dffb0}.cu-bulk-msg.err{color:#ff8a8a}
+@keyframes cuBarIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+
+/* ກົດສອງຄັ້ງຢືນຢັນ + ຍ້ອນກັບ */
+.armed{background:rgba(255,193,60,.25)!important;border-color:rgba(255,193,60,.8)!important;color:#fff!important;animation:cuArm .5s var(--cu-e)}
+@keyframes cuArm{0%{transform:scale(.96)}60%{transform:scale(1.025)}100%{transform:scale(1)}}
+.cu-undo{margin-left:6px;font:inherit;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;cursor:pointer}
+.cu-reasons button{border-color:rgba(255,255,255,.18);color:var(--ink-100)}
+
+
+/* ---------- ຄຳອະທິບາຍວິທີໃຊ້ ---------- */
+.cu-help{margin:0 0 14px;border:1px solid rgba(106,183,255,.3);border-radius:16px;background:rgba(106,183,255,.06)}
+.cu-help-h{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;cursor:pointer;font-size:13px;font-weight:700;color:#9fd0ff;-webkit-tap-highlight-color:transparent;transition:transform .15s var(--cu-e)}
+.cu-help-h:active{transform:scale(.985)}
+.cu-help-h span:nth-child(2){flex:1}
+.cu-help-i{flex:none;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(106,183,255,.22);font-size:13px}
+.cu-help .cu-chev{stroke:#9fd0ff}
+.cu-help.open .cu-chev{transform:rotate(180deg)}
+.cu-help-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--cu-e)}
+.cu-help.open .cu-help-b{grid-template-rows:1fr}
+.cu-help-b>div{overflow:hidden;min-height:0}
+.cu-help:not(.open) .cu-help-b>div{visibility:hidden}
+.cu-help-l{margin:0;padding:2px 14px 12px 34px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;line-height:1.55;color:var(--ink-300)}
+.cu-help-l b{display:block;color:var(--ink-100);font-size:13px}
+
+@media (prefers-reduced-motion:reduce){
+  .cu-card,.cu-card *,.cu-grp *,.cu-tot *,.cu-tools *,.cu-help *,.cu-bulk,.cu-bulk *,.armed,.cu-delw,#cuRefresh svg{animation:none!important;transition-duration:.01ms!important;transition-delay:0s!important}
+}
