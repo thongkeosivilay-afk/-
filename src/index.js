@@ -168,6 +168,9 @@ async function route(request, env, ctx) {
     if (url.pathname === '/api/public/top-spenders') {
       return handleTopSpenders(request, env, ctx);
     }
+    if (url.pathname.startsWith('/api/admin/customers')) {
+      return handleAdminCustomers(request, env, url);
+    }
     if (url.pathname === '/api/topup/create') {
       return handleTopupCreate(request, env);
     }
@@ -1086,7 +1089,35 @@ async function getSessionUser(request, env) {
   const raw = await env.SESSIONS.get(sessionId);
   if (!raw) return null;
 
-  return JSON.parse(raw);
+  const user = JSON.parse(raw);
+  // บัญชีที่ถูกแอดมินแบน = ถือว่า "ไม่ได้ล็อกอิน" ทุกที่ (สั่งซื้อ/เติมเงิน/โปรไฟล์ใช้ไม่ได้) ; แอดมินไม่โดนแบน
+  if (user && !user.isAdmin && user.id != null && await isUserBanned(env, String(user.id))) return null;
+  return user;
+}
+
+/* ---------- รายชื่อบัญชีที่ถูกแบน (ตาราง banned_users) — แคชใน isolate 10 วินาที ----------
+   ถ้าอ่านฐานข้อมูลไม่ได้ จะใช้รายการเดิมที่แคชไว้ (ไม่ทำให้ลูกค้าทุกคนล็อกอินไม่ได้) */
+let BANNED_CACHE = { at: 0, set: new Set(), pending: null };
+async function getBannedSet(env) {
+  if (Date.now() - BANNED_CACHE.at < 10000) return BANNED_CACHE.set;
+  if (BANNED_CACHE.pending) return BANNED_CACHE.pending;
+  const p = (async () => {
+    try {
+      const rows = await supabaseSelect(env, 'banned_users', { select: 'user_id', limit: '10000' }, { timeoutMs: 4000 });
+      BANNED_CACHE.set = new Set((rows || []).map((r) => String(r.user_id)));
+    } catch (err) {
+      console.error('getBannedSet failed:', err);
+    }
+    BANNED_CACHE.at = Date.now();
+    BANNED_CACHE.pending = null;
+    return BANNED_CACHE.set;
+  })();
+  BANNED_CACHE.pending = p;
+  return p;
+}
+async function isUserBanned(env, userId) {
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return false;
+  return (await getBannedSet(env)).has(String(userId));
 }
 
 /* ---------- 4.5) /api/auth/signup + /api/auth/login (ອີເມວ/ລະຫັດຜ່ານ) ----------
@@ -2013,6 +2044,163 @@ async function handleTopSpenders(request, env, ctx) {
   } catch (err) {
     console.error('handleTopSpenders failed:', err);
     return json({ error: 'ດຶງອັນດັບຍອດເຕີມບໍ່ສຳເລັດ' }, 502);
+  }
+}
+
+/* ---------- ระบบจัดการลูกค้า (เฉพาะแอดมิน) ----------
+   GET  /api/admin/customers?q=&limit=&offset=   -> รายชื่อลูกค้า + ยอดเงิน (ค้นหาด้วยอีเมล/ชื่อ/ID)
+   GET  /api/admin/customers/detail?user_id=     -> ประวัติ: ปรับยอดโดยแอดมิน / เติมเงิน / ออเดอร์ / สถานะแบน
+   POST /api/admin/customers/adjust  { user_id, amount, mode: 'add'|'sub', reason }  -> บวก/ลบยอด (atomic + บันทึกประวัติ)
+   POST /api/admin/customers/ban     { user_id, banned: true|false, reason }         -> แบน/ปลดแบน
+   POST /api/admin/customers/delete  { user_id, delete_history, also_ban }           -> ลบบัญชี
+   ทุกอย่างทำฝั่ง Worker ด้วย service_role + ตรวจสิทธิ์แอดมินจาก session เสมอ (ไม่เชื่อ browser) */
+const CUSTOMER_ID_RE = /^[A-Za-z0-9_.:@-]{1,120}$/;
+
+async function sbRaw(env, method, path, body, extraHeaders) {
+  const res = await fetch(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${path}`, {
+    method,
+    headers: Object.assign({
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      'content-type': 'application/json',
+    }, extraHeaders || {}),
+    body: body === undefined ? undefined : JSON.stringify(body),
+    signal: AbortSignal.timeout(10000),
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  return { ok: res.ok, status: res.status, data, text };
+}
+
+async function handleAdminCustomers(request, env, url) {
+  const admin = await getSessionUser(request, env);
+  if (!admin || !admin.isAdmin) {
+    return json({ error: 'ບໍ່ມີສິດເຂົ້າເຖິງ — ຕ້ອງລ໋ອກອິນເປັນແອດມິນກ່ອນ' }, 403);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+  }
+  const adminName = String(admin.email || admin.username || admin.id || 'admin');
+  const sub = url.pathname.replace(/\/+$/, '').slice('/api/admin/customers'.length) || '/';
+
+  try {
+    /* ---- รายชื่อลูกค้า ---- */
+    if (sub === '/' && request.method === 'GET') {
+      const q = (url.searchParams.get('q') || '').trim().slice(0, 100);
+      const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '30', 10) || 30, 1), 100);
+      const offset = Math.max(parseInt(url.searchParams.get('offset') || '0', 10) || 0, 0);
+      const r = await sbRaw(env, 'POST', 'rpc/admin_customers', { p_q: q || null, p_limit: limit, p_offset: offset });
+      if (!r.ok) { console.error('admin_customers failed', r.status, r.text); return json({ error: 'ດຶງລາຍຊື່ລູກຄ້າບໍ່ສຳເລັດ' }, 502); }
+      const rows = Array.isArray(r.data) ? r.data : [];
+      return json({
+        ok: true,
+        total: rows.length ? Number(rows[0].total_count) : 0,
+        items: rows.map((x) => ({
+          user_id: x.user_id, email: x.email, username: x.username,
+          balance: Number(x.balance) || 0, total_topup: Number(x.total_topup) || 0,
+          orders_count: Number(x.orders_count) || 0, banned: !!x.banned, last_activity: x.last_activity,
+          is_admin: !!(x.email && ADMIN_EMAILS.includes(String(x.email).toLowerCase())),
+        })),
+      });
+    }
+
+    /* ---- ประวัติของลูกค้าคนหนึ่ง ---- */
+    if (sub === '/detail' && request.method === 'GET') {
+      const uid = url.searchParams.get('user_id') || '';
+      if (!CUSTOMER_ID_RE.test(uid)) return json({ error: 'user_id ບໍ່ຖືກຕ້ອງ' }, 400);
+      const eq = `eq.${uid}`;
+      const [adj, tops, ords, ban, wal] = await Promise.all([
+        supabaseSelect(env, 'wallet_adjustments', { select: 'delta,balance_before,balance_after,reason,admin_email,created_at', user_id: eq, order: 'created_at.desc', limit: '30' }, { timeoutMs: 8000 }),
+        supabaseSelect(env, 'topup_requests', { select: 'amount,status,ref_no,created_at', user_id: eq, order: 'created_at.desc', limit: '30' }, { timeoutMs: 8000 }),
+        supabaseSelect(env, 'orders', { select: 'product_name,duration_label,price,status,created_at', user_id: eq, order: 'created_at.desc', limit: '30' }, { timeoutMs: 8000 }),
+        supabaseSelect(env, 'banned_users', { select: 'reason,banned_by,created_at', user_id: eq, limit: '1' }, { timeoutMs: 8000 }),
+        supabaseSelect(env, 'wallets', { select: 'balance', user_id: eq, limit: '1' }, { timeoutMs: 8000 }),
+      ]);
+      return json({
+        ok: true,
+        balance: wal && wal[0] ? Number(wal[0].balance) || 0 : 0,
+        ban: ban && ban[0] ? ban[0] : null,
+        adjustments: adj || [], topups: tops || [], orders: ords || [],
+      });
+    }
+
+    if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+    let body = {};
+    try { body = await request.json(); } catch { return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400); }
+    const uid = String(body.user_id || '');
+    if (!CUSTOMER_ID_RE.test(uid)) return json({ error: 'user_id ບໍ່ຖືກຕ້ອງ' }, 400);
+    const email = body.email ? String(body.email).slice(0, 200) : null;
+    const targetIsAdmin = String(uid) === String(admin.id) || (email && ADMIN_EMAILS.includes(email.toLowerCase()));
+
+    /* ---- บวก/ลบยอด ---- */
+    if (sub === '/adjust') {
+      const amount = Number(body.amount);
+      if (!Number.isInteger(amount) || amount <= 0 || amount > 1e12) {
+        return json({ error: 'ຈຳນວນເງິນຕ້ອງເປັນຕົວເລກເຕັມ ແລະ ຫຼາຍກວ່າ 0' }, 400);
+      }
+      const delta = body.mode === 'sub' ? -amount : amount;
+      const r = await sbRaw(env, 'POST', 'rpc/admin_adjust_balance', {
+        p_user_id: uid, p_delta: delta, p_reason: String(body.reason || '').slice(0, 300), p_admin: adminName, p_email: email,
+      });
+      if (!r.ok) {
+        const msg = (r.data && r.data.message) || r.text || '';
+        if (/insufficient_balance/.test(msg)) return json({ error: 'ຍອດເງິນບໍ່ພໍໃຫ້ຫັກ (ຍອດຈະຕິດລົບ)' }, 400);
+        console.error('admin_adjust_balance failed', r.status, r.text);
+        return json({ error: 'ປັບຍອດບໍ່ສຳເລັດ' }, 502);
+      }
+      const row = Array.isArray(r.data) ? r.data[0] : r.data;
+      try {
+        await sendDiscordAlert(env, {
+          title: delta > 0 ? '➕ แอดมินเพิ่มยอดเงินลูกค้า' : '➖ แอดมินหักยอดเงินลูกค้า',
+          color: delta > 0 ? 0x2ecc71 : 0xe67e22,
+          fields: [
+            { name: 'ลูกค้า', value: email || uid, inline: true },
+            { name: 'จำนวน', value: String(delta), inline: true },
+            { name: 'ยอดก่อน → หลัง', value: `${row.balance_before} → ${row.balance_after}`, inline: false },
+            { name: 'โดยแอดมิน', value: adminName, inline: true },
+            { name: 'เหตุผล', value: String(body.reason || '-').slice(0, 200), inline: false },
+          ],
+        });
+      } catch { /* แจ้งเตือนเป็นของเสริม */ }
+      return json({ ok: true, balance_before: Number(row.balance_before), balance_after: Number(row.balance_after) });
+    }
+
+    /* ---- แบน / ปลดแบน ---- */
+    if (sub === '/ban') {
+      if (body.banned) {
+        if (targetIsAdmin) return json({ error: 'ບໍ່ສາມາດແບນບັນຊີແອດມິນ/ບັນຊີຂອງທ່ານເອງ' }, 400);
+        const r = await sbRaw(env, 'POST', 'banned_users?on_conflict=user_id', {
+          user_id: uid, email, reason: String(body.reason || '').slice(0, 300) || null, banned_by: adminName,
+        }, { prefer: 'resolution=merge-duplicates,return=minimal' });
+        if (!r.ok) { console.error('ban failed', r.status, r.text); return json({ error: 'ແບນບໍ່ສຳເລັດ' }, 502); }
+      } else {
+        const r = await sbRaw(env, 'DELETE', `banned_users?user_id=eq.${encodeURIComponent(uid)}`, undefined, { prefer: 'return=minimal' });
+        if (!r.ok) { console.error('unban failed', r.status, r.text); return json({ error: 'ປົດແບນບໍ່ສຳເລັດ' }, 502); }
+      }
+      BANNED_CACHE.at = 0; // ให้ isolate นี้อ่านรายชื่อแบนใหม่ทันที (isolate อื่นอัปเดตภายใน ~10 วินาที)
+      return json({ ok: true, banned: !!body.banned });
+    }
+
+    /* ---- ลบบัญชี ---- */
+    if (sub === '/delete') {
+      if (targetIsAdmin) return json({ error: 'ບໍ່ສາມາດລຶບບັນຊີແອດມິນ/ບັນຊີຂອງທ່ານເອງ' }, 400);
+      const r = await sbRaw(env, 'POST', 'rpc/admin_delete_customer', { p_user_id: uid, p_delete_history: !!body.delete_history });
+      if (!r.ok) { console.error('admin_delete_customer failed', r.status, r.text); return json({ error: 'ລຶບບັນຊີບໍ່ສຳເລັດ' }, 502); }
+      if (body.also_ban) {
+        await sbRaw(env, 'POST', 'banned_users?on_conflict=user_id', {
+          user_id: uid, email, reason: 'ລຶບບັນຊີໂດຍແອດມິນ', banned_by: adminName,
+        }, { prefer: 'resolution=merge-duplicates,return=minimal' });
+        BANNED_CACHE.at = 0;
+      }
+      try { await env.SESSIONS.delete(`profile:${uid}`); await env.SESSIONS.delete(`pcustom:${uid}`); } catch { /* ข้าม */ }
+      return json({ ok: true, deleted: r.data, banned: !!body.also_ban });
+    }
+
+    return json({ error: 'Not found' }, 404);
+  } catch (err) {
+    console.error('handleAdminCustomers failed:', err);
+    return json({ error: 'ເກີດຂໍ້ຜິດພາດ, ລອງໃໝ່ອີກຄັ້ງ' }, 502);
   }
 }
 
