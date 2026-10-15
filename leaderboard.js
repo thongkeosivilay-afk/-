@@ -23,9 +23,21 @@ var LEADERBOARD = [
      คนใหม่เข้าติดอันดับมีเอฟเฟกต์เด้งเข้า, คนที่อันดับขึ้นมีลูกศร ▲
      ป้องกันบัค: ไม่โพลซ้อนกัน, ทิ้งผลลัพธ์เก่าที่มาช้ากว่า, เน็ตหลุดแล้วคงข้อมูลเดิมไว้ + ลองใหม่เอง (backoff)
      =================================================================== */
-  var POLL_MS = 4000, MAX_BACKOFF_MS = 30000, INTRO_MS = 3400;
+  var POLL_MS = 8000, MAX_BACKOFF_MS = 30000, INTRO_MS = 3400, FETCH_TIMEOUT_MS = 8000, CACHE_KEY = 'lb:top:v1';
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var demo = /[?&]demo=1/.test(location.search);
+
+  // เก็บอันดับล่าสุดไว้ในเครื่อง → เปิดหน้าครั้งต่อไปเห็นอันดับทันที (ไม่ต้องรอเน็ต) แล้วค่อยอัปเดตเป็นข้อมูลสด
+  function loadCache(){
+    try {
+      var c = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (c && Array.isArray(c.items) && c.items.length && Date.now() - c.t < 24 * 3600 * 1000) return c.items;
+    } catch (e) {}
+    return null;
+  }
+  function saveCache(items){
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), items: items })); } catch (e) {}
+  }
 
   var S = { version: null, items: null, seq: 0, applied: 0, busy: false, timer: null, fails: 0, introDone: false, pending: null, ctrl: null };
 
@@ -214,6 +226,7 @@ var LEADERBOARD = [
     if (seq < S.applied) return;           // ผลลัพธ์เก่าที่มาช้ากว่าคำขอใหม่ → ทิ้ง
     S.applied = seq;
     S.version = version || S.version;
+    if (seq > 0 && list.length) saveCache(list);
     if (!list.length) {
       if (S.items && S.items.length) { S.items = []; showMessage('ຍັງບໍ່ມີຂໍ້ມູນອັນດັບ'); }
       else if (!S.items) { S.items = []; showMessage('ຍັງບໍ່ມີຂໍ້ມູນອັນດັບ'); }
@@ -246,7 +259,7 @@ var LEADERBOARD = [
     var seq = ++S.seq;
     var ctrl = ('AbortController' in window) ? new AbortController() : null;
     S.ctrl = ctrl;
-    var timeout = setTimeout(function(){ if (ctrl) ctrl.abort(); }, 12000);
+    var timeout = setTimeout(function(){ if (ctrl) ctrl.abort(); }, FETCH_TIMEOUT_MS);
     var url = '/api/public/top-spenders' + (S.version ? '?v=' + encodeURIComponent(S.version) : '');
     fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
       .then(function(r){ if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -263,7 +276,13 @@ var LEADERBOARD = [
       .then(function(){
         clearTimeout(timeout);
         S.busy = false;
-        if (!document.hidden) schedule(Math.min(POLL_MS * Math.pow(2, Math.min(S.fails, 4)), MAX_BACKOFF_MS));
+        if (!document.hidden) {
+          // ยังไม่มีข้อมูลขึ้นจอเลย → ลองใหม่เร็วๆ (2.5 วิ, 5 วิ, ...) ; มีข้อมูลแล้ว → โพลปกติ/ถอยหลังเมื่อเน็ตมีปัญหา
+          var wait = (S.items && S.items.length)
+            ? Math.min(POLL_MS * Math.pow(2, Math.min(S.fails, 4)), MAX_BACKOFF_MS)
+            : Math.min(2500 * Math.max(S.fails, 1), 8000);
+          schedule(wait);
+        }
       });
   }
 
@@ -287,6 +306,8 @@ var LEADERBOARD = [
       applyUpdate(l);
     }, 5000);
   } else {
+    var cached = loadCache();
+    if (cached) onData(cached, null, 0);   // แสดงอันดับที่จำไว้ทันที (seq 0 = ไม่ทับข้อมูลสดที่มาทีหลัง)
     poll();
   }
 
