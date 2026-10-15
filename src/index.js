@@ -100,7 +100,7 @@ function withSecurityHeaders(response) {
   });
 }
 
-async function route(request, env) {
+async function route(request, env, ctx) {
   {
     const url = new URL(request.url);
 
@@ -166,7 +166,7 @@ async function route(request, env) {
       return handleRecentPurchases(request, env);
     }
     if (url.pathname === '/api/public/top-spenders') {
-      return handleTopSpenders(request, env);
+      return handleTopSpenders(request, env, ctx);
     }
     if (url.pathname === '/api/topup/create') {
       return handleTopupCreate(request, env);
@@ -205,8 +205,8 @@ async function route(request, env) {
 }
 
 export default {
-  async fetch(request, env) {
-    const response = await route(request, env);
+  async fetch(request, env, ctx) {
+    const response = await route(request, env, ctx);
     return withSecurityHeaders(response);
   },
 };
@@ -867,17 +867,21 @@ async function rememberProfile(env, user) {
 }
 
 /* ---------- ข้อมูลที่ผู้ใช้แก้เอง (KV: pcustom:<id>) = { username?, avatar? } เขียนโดย handleUpdateProfile/Avatar เท่านั้น ---------- */
-async function readCustom(env, userId) {
+async function readCustom(env, userId, pre) {
   let c = {};
   // 1) Supabase (ตาราง user_profiles) = แหล่งจริง — อ่านสดทุกครั้ง ไม่มีแคช จึงไม่เกิดอาการรูป/ชื่อ "เด้งกลับ" หลังรีเฟรช
   if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
     try {
-      const rows = await supabaseSelect(env, 'user_profiles', {
-        select: 'username,avatar_hash,avatar_version',
-        user_id: `eq.${userId}`,
-        limit: '1',
-      });
-      const r = rows && rows[0];
+      let r;
+      if (pre !== undefined) r = pre;   // มีแถวที่ดึงมาล่วงหน้าแล้ว (หรือ null = ไม่มีแถว) → ไม่ต้องยิง query ซ้ำ
+      else {
+        const rows = await supabaseSelect(env, 'user_profiles', {
+          select: 'username,avatar_hash,avatar_version',
+          user_id: `eq.${userId}`,
+          limit: '1',
+        });
+        r = rows && rows[0];
+      }
       if (r) {
         if (r.username) c.username = r.username;
         if (r.avatar_hash && /^[0-9a-f]{24}$/.test(r.avatar_hash)) {
@@ -1796,16 +1800,39 @@ function isHiddenFromLeaderboard(env, userId, email) {
   return false;
 }
 
-/* ---- แคชสั้น ๆ ต่อ isolate (2 วินาที) + รวม request ที่ยิงพร้อมกันให้ใช้การคำนวณเดียว ----
-   หน้าอันดับ "สด": ไคลเอนต์โพลทุก ~4 วินาที หลายคนพร้อมกัน → ไม่ต้องไล่ query ฐานข้อมูลซ้ำทุกคน
-   (ผลต่างจากข้อมูลจริงไม่เกิน ~2 วินาที) */
+/* ---- แคช 3 ชั้น (ทำให้หน้าอันดับตอบเร็วและไม่ค้าง) ----
+   1) แคชใน isolate: ใหม่ภายใน 8 วินาที → ตอบทันที
+   2) เก่าเกิน 8 วิแต่ไม่เกิน 10 นาที → ตอบข้อมูลเก่า "ทันที" แล้วคำนวณใหม่เบื้องหลัง (stale-while-revalidate)
+      ผู้ใช้จึงไม่ต้องรอ Supabase/KV เลย (เดิมทุกคนที่โดนแคชหมดต้องรอคำนวณเต็มๆ ~หลายวินาที)
+   3) Cache API ของ Cloudflare (ใช้ร่วมกันทุก isolate ใน datacenter เดียวกัน, อายุ 10 วิ) → isolate ใหม่ไม่ต้องคำนวณตั้งแต่ศูนย์
+   + รวม request ที่ยิงพร้อมกันให้ใช้การคำนวณเดียว */
+const TOP_FRESH_MS = 8000;
+const TOP_STALE_MS = 10 * 60 * 1000;
+const TOP_EDGE_KEY = 'https://cache.internal/top-spenders-v1';
 let TOP_SPENDERS_CACHE = { at: 0, items: null, pending: null };
-async function getTopSpenders(env) {
-  const now = Date.now();
-  if (TOP_SPENDERS_CACHE.items && now - TOP_SPENDERS_CACHE.at < 2000) return TOP_SPENDERS_CACHE.items;
+let TOP_BACKFILL_BUSY = false;
+
+async function readEdgeTop() {
+  try {
+    const r = await caches.default.match(TOP_EDGE_KEY);
+    if (!r) return null;
+    const items = await r.json();
+    return Array.isArray(items) ? items : null;
+  } catch { return null; }
+}
+async function writeEdgeTop(items) {
+  try {
+    await caches.default.put(TOP_EDGE_KEY, new Response(JSON.stringify(items), {
+      headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=10' },
+    }));
+  } catch { /* ข้าม */ }
+}
+
+function refreshTopSpenders(env, ctx) {
   if (TOP_SPENDERS_CACHE.pending) return TOP_SPENDERS_CACHE.pending;
-  const p = computeTopSpenders(env).then((items) => {
+  const p = computeTopSpenders(env, ctx).then(async (items) => {
     TOP_SPENDERS_CACHE = { at: Date.now(), items, pending: null };
+    await writeEdgeTop(items);
     return items;
   }, (err) => {
     TOP_SPENDERS_CACHE.pending = null;
@@ -1813,6 +1840,26 @@ async function getTopSpenders(env) {
   });
   TOP_SPENDERS_CACHE.pending = p;
   return p;
+}
+
+async function getTopSpenders(env, ctx) {
+  const c = TOP_SPENDERS_CACHE;
+  const age = Date.now() - c.at;
+  if (c.items && age < TOP_FRESH_MS) return c.items;
+  if (c.items && age < TOP_STALE_MS) {
+    // ตอบข้อมูลเก่าทันที แล้วรีเฟรชเบื้องหลัง
+    const bg = refreshTopSpenders(env, ctx).catch((e) => console.error('top-spenders refresh failed:', e));
+    if (ctx && ctx.waitUntil) ctx.waitUntil(bg);
+    return c.items;
+  }
+  if (c.pending) return c.pending;
+  // isolate ใหม่/แคชหมดนานแล้ว: ลองอ่านจากแคชกลางของ datacenter ก่อน
+  const edge = await readEdgeTop();
+  if (edge) {
+    TOP_SPENDERS_CACHE = { at: Date.now(), items: edge, pending: null };
+    return edge;
+  }
+  return refreshTopSpenders(env, ctx);
 }
 
 // hash สั้น ๆ ไว้เทียบว่าอันดับเปลี่ยนไหม (ไม่ใช่เรื่องความปลอดภัย)
@@ -1832,10 +1879,11 @@ async function fetchAllApprovedTopups(env) {
     const rows = await supabaseSelect(env, 'topup_requests', {
       select: 'id,user_id,user_email,amount,created_at',
       status: 'eq.approved',
+      amount: 'gt.0',
       order: 'id.asc',
       limit: String(PAGE),
       offset: String(page * PAGE),
-    });
+    }, { timeoutMs: 8000 });
     if (!rows || !rows.length) break;
     for (const r of rows) all.push(r);
     if (rows.length < PAGE) break;
@@ -1843,7 +1891,7 @@ async function fetchAllApprovedTopups(env) {
   return all;
 }
 
-async function computeTopSpenders(env) {
+async function computeTopSpenders(env, ctx) {
   function maskName(email) {
     const local = String(email || '').split('@')[0] || '';
     if (!local) return '???***';
@@ -1886,9 +1934,26 @@ async function computeTopSpenders(env) {
     .slice(0, 10);
 
   // รูปโปรไฟล์: อัปโหลดเอง (pcustom) > Discord/Google (profile) — ถ้ายังไม่มี = null
+  // ดึง user_profiles ของทั้ง 10 คนใน query เดียว (เดิมยิง 10 query ต่อคน) แล้วอ่าน KV พร้อมกัน
+  const profRows = new Map();
+  let batchOk = false;
+  try {
+    const ids = top.map(([uid]) => String(uid)).filter((id) => /^[A-Za-z0-9_-]+$/.test(id));
+    if (ids.length) {
+      const rows = await supabaseSelect(env, 'user_profiles', {
+        select: 'user_id,username,avatar_hash,avatar_version',
+        user_id: `in.(${ids.join(',')})`,
+      }, { timeoutMs: 6000 });
+      for (const r of rows || []) profRows.set(String(r.user_id), r);
+    }
+    batchOk = true;
+  } catch (err) { console.error('top-spenders: batch user_profiles failed', err); }
   const stored = await Promise.all(top.map(async ([uid]) => {
     let custom = null;
-    try { const c = await readCustom(env, uid); custom = isAvatarUrl(c.avatar) ? c.avatar : null; } catch { custom = null; }
+    try {
+      const c = await readCustom(env, uid, batchOk ? (profRows.get(String(uid)) || null) : undefined);
+      custom = isAvatarUrl(c.avatar) ? c.avatar : null;
+    } catch { custom = null; }
     try {
       const raw = await env.SESSIONS.get(`profile:${uid}`);
       if (!raw) return { known: false, avatar: custom };
@@ -1896,18 +1961,25 @@ async function computeTopSpenders(env) {
       return { known: true, avatar: custom || (isAvatarUrl(a) ? a : null) };
     } catch { return { known: false, avatar: custom }; }
   }));
-  // คนที่ยังไม่เคยจดโปรไฟล์เลย -> ลองหาจาก session ที่ยัง active แล้วจดไว้ (เขียนเฉพาะ profile:<id> = รูป provider)
+  // คนที่ยังไม่เคยจดโปรไฟล์เลย -> หารูปจาก session เบื้องหลัง "ไม่ให้ผู้ใช้ต้องรอ" (สแกน KV ช้า) แล้วจดไว้ให้รอบถัดไป
   const missing = new Set(top.filter((_, i) => !stored[i].known).map(([uid]) => String(uid)));
-  const filled = await backfillProfiles(env, missing);
-  await Promise.all([...missing].map(async (uid) => {
-    try {
-      const av = filled.get(uid) || null;
-      await env.SESSIONS.put(`profile:${uid}`, JSON.stringify({ avatar: av }),
-        av ? undefined : { expirationTtl: 60 * 60 });
-      const idx = top.findIndex(([k]) => String(k) === uid);
-      if (idx >= 0) stored[idx] = { known: true, avatar: stored[idx].avatar || av };
-    } catch { /* ข้าม */ }
-  }));
+  if (missing.size && !TOP_BACKFILL_BUSY) {
+    TOP_BACKFILL_BUSY = true;
+    const job = (async () => {
+      try {
+        const filled = await backfillProfiles(env, missing);
+        await Promise.all([...missing].map(async (uid) => {
+          try {
+            const av = filled.get(uid) || null;
+            await env.SESSIONS.put(`profile:${uid}`, JSON.stringify({ avatar: av }),
+              av ? undefined : { expirationTtl: 60 * 60 });
+          } catch { /* ข้าม */ }
+        }));
+      } catch (err) { console.error('top-spenders backfill failed', err); }
+      finally { TOP_BACKFILL_BUSY = false; }
+    })();
+    if (ctx && ctx.waitUntil) ctx.waitUntil(job);
+  }
 
   // key = รหัสทึบของคนนั้น (hash ของ user id) ให้หน้าเว็บจับคู่ "คนเดิม" ข้ามการโพลเพื่อทำอนิเมชันสลับอันดับ — ย้อนกลับเป็น id จริงไม่ได้
   const keys = await Promise.all(top.map(([uid]) => avatarHash(String(uid))));
@@ -1921,7 +1993,7 @@ async function computeTopSpenders(env) {
   }));
 }
 
-async function handleTopSpenders(request, env) {
+async function handleTopSpenders(request, env, ctx) {
   if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
@@ -1931,7 +2003,7 @@ async function handleTopSpenders(request, env) {
     'cache-control': 'no-store',
   };
   try {
-    const items = await getTopSpenders(env);
+    const items = await getTopSpenders(env, ctx);
     const version = topSpendersVersion(items);
     const known = new URL(request.url).searchParams.get('v');
     if (known && known === version) {
@@ -2562,7 +2634,7 @@ async function handleResellerDashboard(request, env) {
 }
 
 /* ---------- helper: ຍິງ SELECT ໄປ Supabase REST ດ້ວຍ service_role key (ຝັ່ງ Worker ເທົ່ານັ້ນ) ---------- */
-async function supabaseSelect(env, table, params) {
+async function supabaseSelect(env, table, params, opts) {
   const url = new URL(`${env.SUPABASE_URL.replace(/\/$/, '')}/rest/v1/${table}`);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
@@ -2572,6 +2644,8 @@ async function supabaseSelect(env, table, params) {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
       authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
     },
+    // ใส่ timeout เฉพาะที่ขอ (เช่น หน้าอันดับ) — กัน request ค้างจนหน้าเว็บโหลดไม่ขึ้น
+    signal: opts && opts.timeoutMs ? AbortSignal.timeout(opts.timeoutMs) : undefined,
   });
   if (!res.ok) {
     const text = await res.text();
