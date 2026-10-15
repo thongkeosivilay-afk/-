@@ -30,7 +30,7 @@ if(mt){var q=document.createElement('div');q.className='g-quick';
  mt.parentNode.insertBefore(q,mt.nextSibling)}
 
 /* ===== แยกเป็นหลายหน้า: กดแท็บล่างแล้วเห็นเฉพาะของหมวดนั้น ===== */
-var PG={panelAdd:'stock',panelManage:'stock',panelCodes:'stock',panelTopup:'money',panelCoupons:'money',panelAgent:'agent',panelSettings:'settings'};
+var PG={panelAdd:'stock',panelManage:'stock',panelCodes:'stock',panelTopup:'money',panelCustomers:'money',panelCoupons:'money',panelAgent:'agent',panelSettings:'settings'};
 var ORDER=['home','stock','money','agent','settings'];
 var META={home:['home','ພາບລວມ',''],stock:['box','ສິນຄ້າ','ເພີ່ມ ແກ້ໄຂ ຢຸດຂາຍ ແລະ ເຕີມລະຫັດສິນຄ້າ'],money:['wallet','ເຕີມເງິນ','ກວດສະລິບໂອນເງິນ ແລະ ຈັດການໂຄ້ດສ່ວນຫຼຸດ'],agent:['users','ຕົວແທນ','ຄີຍ໌ປົດລັອກ ລາຄາພິເສດ ແລະ ຈັດການຕົວແທນ'],settings:['sliders','ຕັ້ງຄ່າ','ໂລໂກ້ ໝວດໝູ່ QR ແລະ ຊ່ອງທາງໂຊເຊຍລ']};
 var items=[],pageNow='';
