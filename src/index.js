@@ -1556,16 +1556,26 @@ async function getSoldCount(env) {
 async function getSoldCountsByProductName(env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return new Map();
   try {
-    const rows = await supabaseSelect(env, 'orders', {
-      select: 'product_name',
-      status: 'eq.completed',
-    });
+    // Supabase/PostgREST คืนสูงสุด 1000 แถวต่อคำขอ (max-rows) — ถ้าไม่แบ่งหน้า ออเดอร์ที่เกิน 1000
+    // จะไม่ถูกนับ ทำให้ "ขายแล้ว X อัน" ของแต่ละสินค้าต่ำกว่าความจริง (ขณะที่ยอดรวมใช้ count=exact ถูกต้อง)
+    // จึงดึงทีละ 1000 แถว เรียงตาม id ให้ลำดับคงที่ แล้วนับต่อจนหมด
+    const PAGE = 1000;
     const counts = new Map();
-    (rows || []).forEach((row) => {
-      const name = row.product_name;
-      if (!name) return;
-      counts.set(name, (counts.get(name) || 0) + 1);
-    });
+    for (let offset = 0; offset < 200000; offset += PAGE) {
+      const rows = await supabaseSelect(env, 'orders', {
+        select: 'product_name',
+        status: 'eq.completed',
+        order: 'id.asc',
+        limit: String(PAGE),
+        offset: String(offset),
+      });
+      (rows || []).forEach((row) => {
+        const name = row.product_name;
+        if (!name) return;
+        counts.set(name, (counts.get(name) || 0) + 1);
+      });
+      if (!rows || rows.length < PAGE) break;
+    }
     return counts;
   } catch (err) {
     console.error('getSoldCountsByProductName error:', err);
