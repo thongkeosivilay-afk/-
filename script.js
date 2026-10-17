@@ -473,6 +473,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.querySelector('.login-btn');
     const adminLink = document.querySelector('#admin-link');
 
+    // ---- แก้บั๊ก: ปุ่ม "ลงชื่อเข้าใช้" กดแล้วไม่เกิดอะไรขึ้น ----
+    // เดิมผูก click handler หลังจาก await fetch('/api/me') เสร็จเท่านั้น ถ้า /api/me ช้า/ค้าง/ยังไม่ตอบ
+    // (เช่น Worker เพิ่ง deploy, KV/Supabase ช้า) ปุ่มจะไม่มี handler เลย กดแล้วเงียบ
+    // ตอนนี้ผูกทันทีตั้งแต่โหลดหน้า: ถ้ายังไม่ล็อกอิน (ไม่มีคลาส is-authed) -> พาไปหน้า login
+    // ถ้าล็อกอินแล้ว renderAccountMenu จะใส่คลาส is-authed และจัดการเมนูเอง handler นี้จะไม่ทำอะไร
+    if (loginBtn) {
+      loginBtn.title = 'ລົງຊື່ເຂົ້າໃຊ້ / ສະໝັກສະມາຊິກ';
+      loginBtn.addEventListener('click', () => {
+        if (loginBtn.classList.contains('is-authed')) return;
+        window.location.href = '/login.html';
+      });
+    }
+
     try {
       // cache: 'no-store' — สถานะล็อกอิน ต้องเป็นข้อมูลสดจาก server เสมอ ห้ามใช้ค่าเก่าที่ค้าง
       const res = await fetch('/api/me', { cache: 'no-store' });
@@ -517,21 +530,12 @@ document.addEventListener('DOMContentLoaded', () => {
           isReseller,
           balance,
         });
-      } else {
-        loginBtn.title = 'ລົງຊື່ເຂົ້າໃຊ້ / ສະໝັກສະມາຊິກ';
-        loginBtn.addEventListener('click', () => {
-          window.location.href = '/login.html';
-        });
       }
+      // ยังไม่ล็อกอิน: handler ด้านบนทำงานอยู่แล้ว ไม่ต้องผูกซ้ำ
     } catch (err) {
       console.error('Session check failed:', err);
       if (adminLink) adminLink.style.display = 'none';
-      if (loginBtn) {
-        loginBtn.title = 'ລົງຊື່ເຂົ້າໃຊ້ / ສະໝັກສະມາຊິກ';
-        loginBtn.addEventListener('click', () => {
-          window.location.href = '/login.html';
-        });
-      }
+      // handler ผูกไว้ตั้งแต่ต้นแล้ว ปุ่มยังกดไปหน้า login ได้แม้เช็คสถานะไม่สำเร็จ
     }
   })();
 
