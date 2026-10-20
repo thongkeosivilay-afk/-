@@ -27,7 +27,7 @@
 <div class="gx-grid"></div>
 <div class="gx-scanline"></div>
 <!-- ============ ໜ້າລົງຊື່ເຂົ້າຫ້ອງແອດມິນ (ຜ່ານ Discord) ============ -->
-<div class="admin-shell login-screen" id="loginScreen">
+<div class="admin-shell login-screen u-hidden" id="loginScreen">
 <div class="login-logo">
 <svg fill="none" viewbox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z" stroke="#fff" stroke-linejoin="round" stroke-width="1.6"></path></svg>
 </div>
@@ -60,7 +60,7 @@
 </div>
 <!-- ============ Dashboard (ພອດແອດມິນຈິງ — ຕໍ່ Supabase) ============ -->
 <div class="wrap u-hidden" id="adminApp">
-<div class="back-row">
+<div class="back-row" style="display:none!important" aria-hidden="true">
 <button class="icon-btn u-icon-40" id="logoutBtn" title="ກັບໄປໜ້າເວັບ">
 <svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><path d="M16 17l5-5-5-5"></path><path d="M21 12H9"></path></svg>
 </button>
@@ -981,6 +981,6 @@ IJKL-9012"></textarea></div>
 <script src="maintenance-admin.js?v=20261014a"></script>
 <script src="discord-admin.js?v=20261017a"></script>
 <script src="weather-fx.js?v=20261018f" defer></script>
-<script src="admin-glass.js?v=20261020b" defer></script>
+<script src="admin-glass.js?v=20261020d" defer></script>
 </body>
 </html>

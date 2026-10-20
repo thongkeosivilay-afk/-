@@ -2,7 +2,9 @@
 (function(){'use strict';
 /* ล็อกการซูม: ปิดบีบนิ้วซูม + แตะสองครั้งซูม (iOS Safari ไม่เชื่อ meta viewport) */
 ['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault()},{passive:false})});
-var lastTap=0;document.addEventListener('touchend',function(e){var n=Date.now();if(n-lastTap<320&&!(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable]')))e.preventDefault();lastTap=n},{passive:false});
+var lastTap=0,lx=0,ly=0;document.addEventListener('touchend',function(e){var n=Date.now(),p=e.changedTouches&&e.changedTouches[0],x=p?p.clientX:0,y=p?p.clientY:0,near=Math.abs(x-lx)<28&&Math.abs(y-ly)<28;if(n-lastTap<320&&near&&!(e.target.closest&&e.target.closest('input,textarea,select,[contenteditable],button,a,label,[data-goto],.switch-head')))e.preventDefault();lastTap=n;lx=x;ly=y},{passive:false});
+/* ปิดซูมจากการแตะสองครั้งด้วย CSS แทน (ไม่กลืนคลิกของปุ่ม/การ์ด) */
+(function(){var st=document.createElement('style');st.textContent='html,body,button,a,.d2-fn-card,.switch-head{touch-action:manipulation}';document.head.appendChild(st)})();
 document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});
 
 var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches,$=function(s,r){return(r||document).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
@@ -84,18 +86,31 @@ if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2Su
 (function(){'use strict';
  var $=function(s,r){return(r||document).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
  var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches,K=RM?.01:1;
- var cur=null,busy=false,touched=false,SP='cubic-bezier(.22,1,.36,1)',EZ='cubic-bezier(.2,1.08,.3,1)';
+ var cur=null,closing=null,busy=false,touched=false,tk=0,timers=[],SP='cubic-bezier(.22,1,.36,1)',EZ='cubic-bezier(.2,1.08,.3,1)';
  if(!Element.prototype.animate)return;
  var panelOf=function(c){return $('.switch[data-target="'+c.getAttribute('data-goto')+'"]')};
  var bodyOf=function(c){return document.getElementById(c.getAttribute('data-goto'))};
  var cardsOf=function(g){return $$('.d2-fn-card[data-goto]',g)};
  var txt=function(c){return $('.d2-fn-text',c)};
- function setOpen(c,on){var sw=panelOf(c),b=bodyOf(c);if(sw)sw.classList.toggle('open',on);if(b)b.classList.toggle('open',on);c.classList.toggle('d2-open',on)}
+ /* ตัวจับเวลาทั้งหมดผูกกับ "รอบ" (tk) — ถ้ามีรอบใหม่/ข้ามอนิเมชัน ตัวเก่าจะไม่ทำงานซ้อนมาทับสถานะใหม่ (สาเหตุแผงหายวาป) */
+ function later(fn,ms){timers.push(setTimeout(fn,ms))}
+ function stopTimers(){timers.forEach(clearTimeout);timers=[]}
+ /* admin.js ตั้ง max-height ของ .switch-body ไว้ 0 ตอนปิด; ตอนเปิดด้วยเอฟเฟกต์นี้ต้องคำนวณใหม่ ไม่งั้นเนื้อหาแผงว่าง */
+ function sh(sw){try{if(sw&&typeof syncSwitchHeight==='function')syncSwitchHeight(sw)}catch(e){}}
+ function setOpen(c,on){var sw=panelOf(c),b=bodyOf(c);if(sw)sw.classList.toggle('open',on);if(b)b.classList.toggle('open',on);c.classList.toggle('d2-open',on);sh(sw)}
  function origin(sw,icon,box){var i=icon.getBoundingClientRect();sw.style.transformOrigin=(i.left+i.width/2-box.left)+'px '+(i.top+i.height/2-box.top)+'px'}
  function clean(sw){['width','top','left','transformOrigin','willChange'].forEach(function(k){sw.style[k]=''});sw.classList.remove('g-float')}
+ function cancelAnims(){$$('.switch[data-target],.d2-fn-card,.d2-fn-text').forEach(function(x){x.getAnimations().forEach(function(a){a.cancel()})})}
+ /* ข้ามอนิเมชันที่กำลังเล่น ไปสถานะสุดท้ายทันที (กดรัวๆ ก็ตอบสนองทันที ไม่โดนกลืน) */
+ function settle(){
+  tk++;stopTimers();cancelAnims();
+  $$('.d2-fn-card.g-ghost').forEach(function(x){x.classList.remove('g-ghost');x.style.top=''});
+  $$('.switch[data-target]').forEach(clean);
+  if(closing){setOpen(closing,false);closing=null}
+  busy=false;if(cur)sh(panelOf(cur))}
  function clearAll(){
-  $$('.switch[data-target],.d2-fn-card,.d2-fn-text').forEach(function(x){x.getAnimations().forEach(function(a){a.cancel()})});
-  $$('.switch[data-target]').forEach(function(x){x.classList.remove('open');clean(x)});
+  tk++;stopTimers();cancelAnims();closing=null;
+  $$('.switch[data-target]').forEach(function(x){x.classList.remove('open');clean(x);sh(x)});
   $$('.panel-content.open').forEach(function(x){x.classList.remove('open')});
   $$('.d2-fn-card').forEach(function(x){x.classList.remove('g-me','d2-open','g-ghost');x.style.top=''});
   $$('.d2-cat-cards.g-picked').forEach(function(g){g.classList.remove('g-picked')});
@@ -104,10 +119,13 @@ if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2Su
  if(window.MutationObserver){var mo=new MutationObserver(function(){if(!touched&&!cur&&$('.switch.open[data-target]'))clearAll()});
   $$('.switch[data-target]').forEach(function(s){mo.observe(s,{attributes:true,attributeFilter:['class']})})}
  (function(){var f=function(){if(!touched&&!cur)clearAll()};f();addEventListener('load',f);[400,1200,2500].forEach(function(t){setTimeout(f,t)})})();
+ /* กลับมาที่แท็บ/แอป: เบราว์เซอร์อาจหยุดอนิเมชันค้างกลางทาง -> เก็บให้เข้าสถานะสุดท้าย */
+ document.addEventListener('visibilitychange',function(){if(!document.hidden&&(busy||closing))settle()});
+ addEventListener('pageshow',function(){if(busy||closing)settle()});
 
  function openIt(c){
   var g=c.closest('.d2-cat-cards'),sw=panelOf(c),icon=$('.d2-fn-icon',c);if(!g||!sw||!icon)return;
-  touched=true;cur=c;busy=true;
+  touched=true;cur=c;busy=true;var my=++tk;
   var all=cardsOf(g),cr=g.getBoundingClientRect(),R=all.map(function(x){return x.getBoundingClientRect()}),k=all.indexOf(c),others=[];
   all.forEach(function(x,i){if(x===c)return;x.style.top=(R[i].top-cr.top)+'px';x.classList.add('g-ghost');others.push(x)});
   g.classList.add('g-picked');c.classList.add('g-me');setOpen(c,true);
@@ -115,16 +133,17 @@ if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2Su
   var dy=R[k].top-c.getBoundingClientRect().top;
   if(dy)c.animate([{transform:'translateY('+dy+'px)'},{transform:'none'}],{duration:560*K,easing:SP});
   others.forEach(function(x,i){var a=x.animate([{transform:'none',opacity:1},{transform:'translateX(-115%)',opacity:0}],{duration:440*K,delay:i*45*K,easing:'cubic-bezier(.45,0,.2,1)',fill:'both'});
-   a.onfinish=function(){x.classList.remove('g-ghost');x.style.top='';a.cancel()}});
+   a.onfinish=function(){if(my!==tk)return;x.classList.remove('g-ghost');x.style.top='';a.cancel()}});
   txt(c).animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateX(-26px)'}],{duration:240*K,easing:'ease-in'});
   sw.style.willChange='transform,opacity';
   sw.animate([{opacity:0},{opacity:1}],{duration:200*K,delay:110*K,easing:'ease-out',fill:'backwards'});
   var a=sw.animate([{transform:'scale(.04)'},{transform:'scale(1)'}],{duration:640*K,delay:110*K,easing:EZ,fill:'backwards'});
-  a.onfinish=function(){sw.style.willChange='';sw.style.transformOrigin='';busy=false};
-  setTimeout(function(){busy=false},820*K+20)}
+  a.onfinish=function(){if(my!==tk)return;sw.style.willChange='';sw.style.transformOrigin='';busy=false;sh(sw)};
+  requestAnimationFrame(function(){if(my===tk)sh(sw)});
+  later(function(){if(my===tk)settle()},900*K+60)}   /* กันค้าง: ถ้า onfinish ไม่ยิง ก็เก็บเข้าสถานะเปิดสมบูรณ์ */
 
  function closeIt(){
-  var c=cur,g=c.closest('.d2-cat-cards'),sw=panelOf(c),icon=$('.d2-fn-icon',c);busy=true;cur=null;
+  var c=cur,g=c.closest('.d2-cat-cards'),sw=panelOf(c),icon=$('.d2-fn-icon',c);busy=true;cur=null;closing=c;var my=++tk;
   var P=sw.getBoundingClientRect(),y0=c.getBoundingClientRect().top;
   sw.style.width=P.width+'px';sw.style.willChange='transform,opacity';sw.classList.add('g-float');
   g.classList.remove('g-picked');c.classList.remove('g-me');
@@ -138,16 +157,22 @@ if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2Su
    txt(x).animate([{opacity:0,transform:'translateX(-26px)'},{opacity:1,transform:'none'}],{duration:480*K,delay:430*K,easing:SP,fill:'backwards'})});
   var o=sw.animate([{opacity:1},{opacity:1,offset:.55},{opacity:0}],{duration:500*K,easing:'linear',fill:'forwards'});
   var a=sw.animate([{transform:'scale(1)'},{transform:'scale(.04)'}],{duration:500*K,easing:'cubic-bezier(.5,0,.2,1)',fill:'forwards'});
-  a.onfinish=function(){setOpen(c,false);a.cancel();o.cancel();clean(sw)};
-  setTimeout(function(){busy=false},1000*K+20)}
+  a.onfinish=function(){if(my!==tk)return;setOpen(c,false);a.cancel();o.cancel();clean(sw);closing=null;sh(sw)};
+  later(function(){if(my===tk)settle()},1000*K+60)}
 
  document.addEventListener('click',function(e){
   var t=e.target;if(!t.closest)return;
   if(t.closest('.g-dock button[data-k]')){clearAll();return}
+  /* แตะหัวข้อของแผงที่เปิดอยู่: ให้เอฟเฟกต์ปิดแทน (เดิม admin.js สลับ class เอง -> แผงหายวาปแต่สถานะค้าง) */
+  var hd=t.closest('.switch[data-target] .switch-head');
+  if(hd){e.stopImmediatePropagation();e.preventDefault();var s0=hd.closest('.switch');
+   if(busy)settle();if(cur&&panelOf(cur)===s0)closeIt();return}
   var el=t.closest('[data-goto]');if(!el||el.classList.contains('g-quick'))return;
   var c=el.classList.contains('d2-fn-card')?el:$('.d2-fn-card[data-goto="'+el.getAttribute('data-goto')+'"]');
   if(!c||!panelOf(c))return;
-  e.stopImmediatePropagation();e.preventDefault();if(busy)return;touched=true;
+  e.stopImmediatePropagation();e.preventDefault();
+  if(busy||closing)settle();   /* ไม่ทิ้งการกดระหว่างอนิเมชัน: ข้ามไปสถานะสุดท้ายแล้วทำคำสั่งใหม่ทันที */
+  touched=true;
   if(cur===c){if(el===c)closeIt();return}      /* กดแถวแจ้งเตือนของแผงที่เปิดอยู่แล้ว = ไม่ทำอะไร */
   if(cur)clearAll();openIt(c)},true);
 })();
