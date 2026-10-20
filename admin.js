@@ -111,12 +111,8 @@ function initSwitchHeightObserver() {
 }
 
 // ============================================
-// ພາກ 1: ການລ໋ອກອິນ/ກວດສິດແອດມິນ ດ້ວຍ Discord (ຂອງເວັບໃໝ່)
+// ພາກ 1: ການກວດສິດແອດມິນ (ແອດມິນລ໋ອກອິນດ້ວຍອີເມວ+ລະຫັດຜ່ານ, ສິດມາຈາກຕາຕະລາງ admin_accounts)
 // ============================================
-function goToDiscordLogin() {
-  window.location.href = '/auth/discord/login?next=' + encodeURIComponent(location.pathname);
-}
-
 function logout() {
   window.location.href = '/auth/logout';
 }
@@ -278,8 +274,9 @@ async function loadProducts() {
   renderOpsStrip(withStock, totalStock);
   renderManageList(withStock);
   renderCodeProductSelect(withStock);
+  if (typeof window.refreshRemoveCodesProducts === 'function') window.refreshRemoveCodesProducts();
+  if (typeof window.refreshCodeVaultProducts === 'function') window.refreshCodeVaultProducts();
   renderCategoryOptions(withStock);
-  renderAgentPriceList(withStock);
   renderD2Dashboard();
   return withStock;
 }
@@ -352,35 +349,6 @@ function initCategoryNameConfirmButtons() {
   }
 }
 
-// ---------- ຫົວຂໍ້ໃຫຍ່ (bigTitle) ແລະ ຄຳອະທິບາຍ (desc) ເທິງແບນເນີໝວດໝູ່ — ບັນທຶກລົງ site_settings ----------
-// ໃຊ້ pattern ດຽວກັນກັບ saveSingleCategoryName ຂ້າງເທິງ (ຄອລັມ category_{i}_title / category_{i}_desc
-// ຕ້ອງມີຢູ່ໃນຕາຕະລາງ site_settings ຂອງ Supabase ກ່ອນ — ຖ້າຄອລັມຍັງບໍ່ມີ ການບັນທຶກຈະ error)
-async function saveSingleCategoryField(i, field, inputId, btnId, msgId) {
-  const input = document.getElementById(inputId);
-  const btn = document.getElementById(btnId);
-  const msg = document.getElementById(msgId);
-  if (!input || !btn) return;
-
-  const newVal = input.value.trim();
-  setLoading(btn, true);
-  setMsg(msg, 'ກຳລັງບັນທຶກ...', 'pending');
-  try {
-    await ensureSiteSettingsRow();
-    const { error } = await supabaseClient
-      .from(SITE_SETTINGS_TABLE)
-      .update({ [`category_${i}_${field}`]: newVal, updated_at: new Date().toISOString() })
-      .eq('id', SITE_SETTINGS_ID);
-    if (error) throw error;
-    setMsg(msg, 'ບັນທຶກສຳເລັດແລ້ວ — ໜ້າຮ້ານຈິງຈະອັບເດດອັດຕະໂນມັດ', 'success');
-    await loadSiteSettingsAdmin();
-  } catch (err) {
-    console.error(err);
-    setMsg(msg, 'ເກີດຂໍ້ຜິດພາດ: ' + (err.message || 'ລອງໃໝ່ອີກຄັ້ງ'), 'error');
-  } finally {
-    setLoading(btn, false);
-  }
-}
-
 // ອັບເດດ badge ຂໍ້ຄວາມ "ເປີດ"/"ປິດ" ຂ້າງໆ toggle ຂອງແຕ່ລະໝວດໝູ່
 function updateCategoryEnableStateLabel(i, isEnabled) {
   const stateEl = document.getElementById(`catEnableState${i}`);
@@ -422,48 +390,6 @@ function initCategoryEnabledToggles() {
   }
 }
 
-function initCategoryTitleDescConfirmButtons() {
-  for (let i = 1; i <= 4; i++) {
-    const tagBtn = document.getElementById(`catTagConfirm${i}`);
-    if (tagBtn && !tagBtn.dataset.bound) {
-      tagBtn.dataset.bound = '1';
-      tagBtn.addEventListener('click', () => saveSingleCategoryField(i, 'tag', `catTag${i}`, `catTagConfirm${i}`, `catTagMsg${i}`));
-    }
-    const tagInput = document.getElementById(`catTag${i}`);
-    if (tagInput && !tagInput.dataset.bound) {
-      tagInput.dataset.bound = '1';
-      tagInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); saveSingleCategoryField(i, 'tag', `catTag${i}`, `catTagConfirm${i}`, `catTagMsg${i}`); }
-      });
-    }
-
-    const titleBtn = document.getElementById(`catTitleConfirm${i}`);
-    if (titleBtn && !titleBtn.dataset.bound) {
-      titleBtn.dataset.bound = '1';
-      titleBtn.addEventListener('click', () => saveSingleCategoryField(i, 'title', `catTitle${i}`, `catTitleConfirm${i}`, `catTitleMsg${i}`));
-    }
-    const titleInput = document.getElementById(`catTitle${i}`);
-    if (titleInput && !titleInput.dataset.bound) {
-      titleInput.dataset.bound = '1';
-      titleInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); saveSingleCategoryField(i, 'title', `catTitle${i}`, `catTitleConfirm${i}`, `catTitleMsg${i}`); }
-      });
-    }
-
-    const descBtn = document.getElementById(`catDescConfirm${i}`);
-    if (descBtn && !descBtn.dataset.bound) {
-      descBtn.dataset.bound = '1';
-      descBtn.addEventListener('click', () => saveSingleCategoryField(i, 'desc', `catDesc${i}`, `catDescConfirm${i}`, `catDescMsg${i}`));
-    }
-    const descInput = document.getElementById(`catDesc${i}`);
-    if (descInput && !descInput.dataset.bound) {
-      descInput.dataset.bound = '1';
-      descInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); saveSingleCategoryField(i, 'desc', `catDesc${i}`, `catDescConfirm${i}`, `catDescMsg${i}`); }
-      });
-    }
-  }
-}
 
 
 // ໃຊ້ຊື່ຈິງທີ່ແອດມິນຕັ້ງໄວ້ໃນ "ຕັ້ງຄ່າຮ້ານ > ໝວດໝູ່ 1-10" (category_1_name ... category_10_name)
@@ -509,7 +435,7 @@ function renderManageList(products) {
 
   list.innerHTML = products.map(p => `
     <div class="prod-row ${p.archived ? 'is-archived' : ''} ${p.paused ? 'is-paused' : ''}" data-id="${p.id}">
-      <img class="prod-thumb" src="${p.image_url || ''}" onerror="this.style.opacity=0" alt="">
+      <img class="prod-thumb" src="${p.image_url || ''}" alt="">
       <div class="prod-fields">
         ${p.archived ? '<div class="archived-tag">ເຊື່ອງໄວ້ — ບໍ່ສະແດງໃນໜ້າຮ້ານ</div>' : ''}
         ${p.paused ? `<div class="paused-tag">ຢຸດຂາຍຊົ່ວຄາວ${p.paused_note ? ' — ' + p.paused_note.replace(/</g, '&lt;') : ''}</div>` : ''}
@@ -992,905 +918,6 @@ async function decideTopup(id, status, card) {
   }, 200);
 }
 
-// ---------- ແຜງລະບົບຕົວແທນ (reseller) ----------
-const RESELLER_TIER_LABELS = { '7d': '7 ມື້', '14d': '14 ມື້', '30d': '30 ມື້', 'lifetime': 'ຖາວອນ' };
-const RESELLER_TIER_ORDER = ['7d', '14d', '30d', 'lifetime'];
-
-let currentResellerTiers = [];
-let currentResellerKeys = [];
-
-function tierLabel(durationType) {
-  return RESELLER_TIER_LABELS[durationType] || durationType;
-}
-
-async function loadResellerTiers() {
-  const { data, error } = await supabaseClient
-    .from('reseller_tiers')
-    .select('*');
-
-  if (error) {
-    console.error(error);
-    document.getElementById('agentTierList').innerHTML = '<div class="empty-note">ໂຫຼດຂໍ້ມູນຜິດພາດ</div>';
-    return;
-  }
-
-  currentResellerTiers = (data || []).sort(
-    (a, b) => RESELLER_TIER_ORDER.indexOf(a.duration_type) - RESELLER_TIER_ORDER.indexOf(b.duration_type)
-  );
-  renderResellerTiers(currentResellerTiers);
-  populateAgentKeyTierSelect(currentResellerTiers);
-}
-
-function renderResellerTiers(tiers) {
-  const list = document.getElementById('agentTierList');
-  if (!tiers.length) {
-    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີລະດັບຕົວແທນ — ກະລຸນາຮັນ SQL schema (reseller-system-v2) ກ່ອນ</div>';
-    return;
-  }
-
-  list.innerHTML = tiers.map(t => {
-    const isLifetime = t.period_days === null;
-    return `
-    <div class="tier-card" data-duration-type="${t.duration_type}">
-      <div class="tier-card-head">
-        <span class="tier-card-title">${tierLabel(t.duration_type)}</span>
-        <button class="icon-btn save-btn" title="ບັນທຶກ">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        </button>
-      </div>
-      <div class="tier-card-fields single">
-        ${!isLifetime ? `
-        <div>
-          <label>ໂຄວຕ້າຍອດຊື້ (ກີບ) — ຕ້ອງເຮັດໃຫ້ຄົບພາຍໃນໄລຍະ ບໍ່ຄັ້ນຈະຖືກປົດ</label>
-          <input type="number" class="edit-quota" value="${t.quota_amount ?? 0}" min="0" step="1">
-        </div>` : `
-        <div class="tier-card-lifetime-note">ຖາວອນ — ບໍ່ມີເງື່ອນໄຂໂຄວຕ້າ ໃຊ້ໄດ້ຕະຫຼອດໄປ</div>`}
-      </div>
-    </div>`;
-  }).join('');
-
-  list.querySelectorAll('.tier-card').forEach(card => {
-    card.querySelector('.save-btn').addEventListener('click', () => saveResellerTier(card));
-  });
-}
-
-async function saveResellerTier(card) {
-  const durationType = card.dataset.durationType;
-  const btn = card.querySelector('.save-btn');
-  const quotaInput = card.querySelector('.edit-quota');
-
-  const updates = { updated_at: new Date().toISOString() };
-  if (quotaInput) updates.quota_amount = Number(quotaInput.value) || 0;
-
-  btn.disabled = true;
-  const { error } = await supabaseClient
-    .from('reseller_tiers')
-    .update(updates)
-    .eq('duration_type', durationType);
-  btn.disabled = false;
-
-  if (error) {
-    console.error(error);
-    showToast('ບັນທຶກບໍ່ສຳເລັດ: ' + error.message);
-    return;
-  }
-  showToast(`ບັນທຶກລະດັບ ${tierLabel(durationType)} ສຳເລັດແລ້ວ`);
-  loadResellerTiers();
-}
-
-function populateAgentKeyTierSelect(tiers) {
-  const select = document.getElementById('agentKeyTierSelect');
-  if (!select) return;
-  const prevValue = select.value;
-  select.innerHTML = tiers.map(t => `<option value="${t.duration_type}">${tierLabel(t.duration_type)}</option>`).join('');
-  if (prevValue && tiers.some(t => t.duration_type === prevValue)) select.value = prevValue;
-}
-
-async function createResellerKey() {
-  const btn = document.getElementById('agentCreateKeyBtn');
-  const msg = document.getElementById('agentCreateKeyMsg');
-  const select = document.getElementById('agentKeyTierSelect');
-  const durationType = select.value;
-
-  if (!durationType) {
-    setMsg(msg, 'ບໍ່ພົບລະດັບໃຫ້ເລືອກ', 'error');
-    return;
-  }
-
-  setLoading(btn, true);
-  setMsg(msg, 'ກຳລັງສ້າງຄີຍ໌...', 'pending');
-
-  const { data, error } = await supabaseClient.rpc('admin_create_reseller_key', {
-    p_duration_type: durationType,
-    p_created_by: currentAdminUser ? currentAdminUser.username : null,
-  });
-
-  setLoading(btn, false);
-
-  if (error) {
-    console.error(error);
-    setMsg(msg, 'ສ້າງຄີຍ໌ບໍ່ສຳເລັດ: ' + error.message, 'error');
-    return;
-  }
-
-  const row = Array.isArray(data) ? data[0] : data;
-  setMsg(msg, 'ສ້າງຄີຍ໌ສຳເລັດແລ້ວ', 'success');
-
-  const resultBox = document.getElementById('agentNewKeyResult');
-  resultBox.innerHTML = `
-    <div class="new-key-banner">
-      <div>
-        <div class="new-key-banner-label">ຄີຍ໌ໃໝ່ (${tierLabel(row.duration_type)})</div>
-        <div class="new-key-banner-code">${row.code}</div>
-      </div>
-      <button type="button" class="key-copy-btn" id="copyNewKeyBtn" title="ຄັດລອກ">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-      </button>
-    </div>
-  `;
-  document.getElementById('copyNewKeyBtn').addEventListener('click', () => copyKeyCode(row.code));
-
-  loadResellerKeys();
-}
-
-async function copyKeyCode(code) {
-  try {
-    await navigator.clipboard.writeText(code);
-    showToast('ຄັດລອກຄີຍ໌ແລ້ວ');
-  } catch (err) {
-    console.error(err);
-    showToast('ຄັດລອກບໍ່ສຳເລັດ — ຄີຍ໌ຄື: ' + code);
-  }
-}
-
-async function loadResellerKeys() {
-  const refreshBtn = document.getElementById('agentKeysRefreshBtn');
-  if (refreshBtn) refreshBtn.classList.add('spinning');
-
-  const { data, error } = await supabaseClient
-    .from('reseller_keys')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(200);
-
-  if (refreshBtn) setTimeout(() => refreshBtn.classList.remove('spinning'), 400);
-
-  if (error) {
-    console.error(error);
-    document.getElementById('agentKeysList').innerHTML = '<div class="empty-note">ໂຫຼດຂໍ້ມູນຜິດພາດ</div>';
-    return;
-  }
-
-  currentResellerKeys = data || [];
-  renderResellerKeysOpsStrip(currentResellerKeys);
-  renderResellerKeys(currentResellerKeys);
-  loadAgentAccounts();
-}
-
-function renderResellerKeysOpsStrip(keys) {
-  const strip = document.getElementById('agentKeysOpsStrip');
-  const unused = keys.filter(k => k.status === 'unused').length;
-  const used = keys.filter(k => k.status === 'used').length;
-  strip.innerHTML = `
-    <div class="ops-chip"><div class="ops-num">${keys.length}</div><div class="ops-label">ຄີຍ໌ທັງໝົດ</div></div>
-    <div class="ops-chip"><div class="ops-num">${unused}</div><div class="ops-label">ຍັງບໍ່ໄດ້ໃຊ້</div></div>
-    <div class="ops-chip"><div class="ops-num">${used}</div><div class="ops-label">ໃຊ້ແລ້ວ</div></div>
-  `;
-}
-
-function renderResellerKeys(keys) {
-  const list = document.getElementById('agentKeysList');
-  if (!keys.length) {
-    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີຄີຍ໌ — ສ້າງຄີຍ໌ທຳອິດຢູ່ດ້ານເທິງ</div>';
-    return;
-  }
-
-  list.innerHTML = keys.map(k => `
-    <div class="agent-key-row" data-code="${k.code}" data-id="${k.id}" data-status="${k.status}">
-      <div class="agent-key-main">
-        <span class="agent-key-code">${k.code}</span>
-        <span class="agent-key-meta">
-          ${tierLabel(k.duration_type)} • ${new Date(k.created_at).toLocaleString('lo-LA')}
-          ${k.status !== 'unused' ? `<br>ໃຊ້ໂດຍ: ${k.used_by || '—'} (${k.used_at ? new Date(k.used_at).toLocaleString('lo-LA') : '—'})` : ''}
-        </span>
-      </div>
-      <div class="agent-key-right">
-        <span class="key-status-tag ${k.status}">${k.status === 'unused' ? 'ຍັງບໍ່ໄດ້ໃຊ້' : (k.status === 'revoked' ? 'ຖືກປິດແລ້ວ' : 'ໃຊ້ແລ້ວ')}</span>
-        ${k.status === 'unused' ? `
-        <button type="button" class="key-copy-btn" title="ຄັດລອກ">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        </button>` : ''}
-        <button type="button" class="key-del-btn" title="ລຶບຄີຍ໌ນີ້" aria-label="ລຶບຄີຍ໌ນີ້">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        </button>
-      </div>
-    </div>
-  `).join('');
-
-  // แถบเครื่องมือ: ลบคีย์ที่ใช้แล้วทั้งหมดในครั้งเดียว (ล้างประวัติให้รายการสั้นลง)
-  const usedCount = keys.filter(k => k.status !== 'unused').length;
-  if (usedCount > 0) {
-    list.insertAdjacentHTML('afterbegin', `
-      <div class="key-bulk-bar">
-        <span>ຄີຍ໌ທີ່ໃຊ້ແລ້ວ ${usedCount} ລາຍການ</span>
-        <button type="button" class="key-bulk-del-btn" id="agentKeysDelUsedBtn">ລຶບທີ່ໃຊ້ແລ້ວທັງໝົດ</button>
-      </div>`);
-    const bulkBtn = document.getElementById('agentKeysDelUsedBtn');
-    if (bulkBtn) bulkBtn.addEventListener('click', deleteUsedResellerKeys);
-  }
-
-  list.querySelectorAll('.agent-key-row .key-del-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const row = btn.closest('.agent-key-row');
-      deleteResellerKey(row.dataset.id, row.dataset.code, row.dataset.status, btn);
-    });
-  });
-
-  list.querySelectorAll('.agent-key-row .key-copy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const code = btn.closest('.agent-key-row').dataset.code;
-      copyKeyCode(code);
-    });
-  });
-}
-
-// ---------- ລຶບຄີຍ໌ຕົວແທນ ----------
-// ລຶບສະເພາະແຖວໃນ reseller_keys (ປະຫວັດ/ຄີຍ໌ທີ່ຍັງບໍ່ໄດ້ໃຊ້) — ບໍ່ກະທົບ reseller_status
-// ຄົນທີ່ໃຊ້ຄີຍ໌ນີ້ໄປແລ້ວຍັງເປັນຕົວແທນຢູ່ຕາມເດີມ (ຖ້າຢາກຖອນສິດ ໃຫ້ກົດ "ປິດຕົວແທນ" ໃນລາຍຊື່ຕົວແທນ)
-async function deleteResellerKey(id, code, status, btn) {
-  if (!id) return;
-  const msg = status === 'unused'
-    ? `ລຶບຄີຍ໌ ${code} ?\n\nຄີຍ໌ນີ້ຍັງບໍ່ໄດ້ຖືກໃຊ້ — ລຶບແລ້ວລູກຄ້າຈະກອກໃຊ້ບໍ່ໄດ້ອີກ`
-    : `ລຶບປະຫວັດຄີຍ໌ ${code} ?\n\nຕົວແທນທີ່ເຄີຍໃຊ້ຄີຍ໌ນີ້ຍັງເປັນຕົວແທນຢູ່ຕາມເດີມ (ລຶບສະເພາະປະຫວັດຄີຍ໌)`;
-  if (!confirm(msg)) return;
-  if (btn) btn.disabled = true;
-  const { error } = await supabaseClient.from('reseller_keys').delete().eq('id', id);
-  if (error) {
-    console.error(error);
-    if (btn) btn.disabled = false;
-    showToast('ລຶບຄີຍ໌ບໍ່ສຳເລັດ: ' + (error.message || 'ຜິດພາດ'));
-    return;
-  }
-  showToast('ລຶບຄີຍ໌ແລ້ວ');
-  loadResellerKeys();
-}
-
-async function deleteUsedResellerKeys() {
-  const n = (currentResellerKeys || []).filter(k => k.status !== 'unused').length;
-  if (!n) return;
-  if (!confirm(`ລຶບຄີຍ໌ທີ່ໃຊ້ແລ້ວທັງໝົດ ${n} ລາຍການ ?\n\nຄີຍ໌ທີ່ຍັງບໍ່ໄດ້ໃຊ້ຈະບໍ່ຖືກລຶບ ແລະ ຕົວແທນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວຍັງເປັນຕົວແທນຢູ່ຕາມເດີມ`)) return;
-  const { error } = await supabaseClient.from('reseller_keys').delete().neq('status', 'unused');
-  if (error) {
-    console.error(error);
-    showToast('ລຶບບໍ່ສຳເລັດ: ' + (error.message || 'ຜິດພາດ'));
-    return;
-  }
-  showToast(`ລຶບຄີຍ໌ທີ່ໃຊ້ແລ້ວ ${n} ລາຍການ`);
-  loadResellerKeys();
-}
-
-// ---------- ຈັດການຕົວແທນ (ອ່ານ/ແກ້ໄຂຈາກ reseller_status ໂດຍກົງ) ----------
-// ໝາຍເຫດສຳຄັນ: reseller_status (ບໍ່ແມ່ນ reseller_keys) ຄືຕາຕະລາງທີ່ RPC get_effective_price /
-// is_active_reseller ໃຊ້ຕັດສິນວ່າຄົນນີ້ຍັງໄດ້ລາຄາຕົວແທນຢູ່ບໍ່ (ອີງໃສ່ reseller_status.is_reseller)
-// reseller_keys ເປັນແຄ່ປະຫວັດວ່າຄີຍ໌ໃດຖືກ redeem ໄປແລ້ວເທົ່ານັ້ນ ບໍ່ມີຜົນຕໍ່ລາຄາໂດຍກົງ —
-// ດັ່ງນັ້ນ "ປິດຕົວແທນ" ຈຶ່ງຕ້ອງແກ້ reseller_status.is_reseller (ບໍ່ແມ່ນ reseller_keys.status)
-// ຈຶ່ງຈະຕັດລາຄາພິເສດຂອງຄົນນັ້ນໄດ້ຈິງທັນທີ
-//
-// ---- ໂຄວຕ້າ "ຮອບ" (cycle) + ຄ້າງ 100% 7 ມື້ກ່ອນຣີເຊັດ ----
-// ຄິດຍອດຊື້ທຽບກັບເປົ້າຈາກ reseller_status.cycle_start ຫາດຽວນີ້ (ບໍ່ແມ່ນ all-time) — ຄົບ 100%
-// ຄັ້ງທຳອິດຈະບັນທຶກ quota_reached_at ແລ້ວຄ້າງ 100% ໄວ້ອີກ RESET_HOLD_MS ກ່ອນຣີເຊັດຮອບໃໝ່
-// (cycle_start = ດຽວນີ້, quota_reached_at = null) — ໂຕເຄິດ+ຣີເຊັດນີ້ເປັນ "lazy": ກວດທຸກຄັ້ງທີ່
-// admin ໂຫຼດລາຍຊື່ຕົວແທນ ຄືກັນກັບ handleResellerDashboard ຝັ່ງ Worker (src/index.js) —
-// ດັ່ງນັ້ນຄ່າ RESET_HOLD_MS ຕ້ອງກົງກັນທັງສອງບ່ອນ
-const RESET_HOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 ມື້ — ຕ້ອງກົງກັບ RESET_HOLD_MS ໃນ src/index.js
-
-let currentAgentAccounts = [];
-let agentAccountsSearchTerm = '';
-let agentAccountsCountdownTimer = null;
-let agentAccountsAutoRefreshing = false;
-
-async function loadAgentAccounts() {
-  const list = document.getElementById('agentAccountsList');
-  const strip = document.getElementById('agentAccountsOpsStrip');
-  if (!list) return;
-
-  const { data, error } = await supabaseClient
-    .from('reseller_status')
-    .select('*')
-    .order('updated_at', { ascending: false });
-
-  if (error) {
-    console.error(error);
-    if (strip) strip.innerHTML = '';
-    list.innerHTML = '<div class="empty-note">ໂຫຼດຂໍ້ມູນຜິດພາດ: ' + error.message + '</div>';
-    currentAgentAccounts = [];
-    return;
-  }
-
-  let accounts = data || [];
-
-  if (!accounts.length) {
-    if (strip) strip.innerHTML = '';
-    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີໃຜໃຊ້ຄີຍ໌ຕົວແທນເລີຍ</div>';
-    currentAgentAccounts = [];
-    return;
-  }
-
-  // ດຶງຍອດຊື້ "ຮອບປັດຈຸບັນ" (cycle_start -> ດຽວນີ້) ຂອງແຕ່ລະຄົນຈາກຕາຕະລາງ orders (ອີງໃສ່ user_email)
-  // — ຖ້າຄົນນັ້ນຍັງບໍ່ມີອີເມວບັນທຶກໄວ້ (redeem ກ່ອນລະບົບເພີ່ມ user_email ເຂົ້າ reseller_status)
-  // ຈະຂ້າມການຄິດຍອດແບບບໍ່ພັງໜ້າ — ພ້ອມກັນນັ້ນກໍ່ກວດ/ຣີເຊັດຮອບໃໝ່ຖ້າຄ້າງ 100% ຄົບ 7 ມື້ແລ້ວ
-  let ordersOk = true;
-  const nowMs = Date.now();
-  accounts = await Promise.all(accounts.map(async (s) => {
-    let cycleStart = s.cycle_start || s.period_start || new Date(nowMs).toISOString();
-    let quotaReachedAt = s.quota_reached_at || null;
-    let needsPersist = !s.cycle_start;
-
-    if (quotaReachedAt && (nowMs - new Date(quotaReachedAt).getTime()) >= RESET_HOLD_MS) {
-      cycleStart = new Date(nowMs).toISOString();
-      quotaReachedAt = null;
-      needsPersist = true;
-    }
-
-    let totalSpent = null;
-    if (s.user_email) {
-      try {
-        const { data: odata, error: oerr } = await supabaseClient
-          .from('orders')
-          .select('price')
-          .eq('user_email', s.user_email)
-          .eq('status', 'completed')
-          .gte('created_at', cycleStart);
-        if (oerr) throw oerr;
-        totalSpent = (odata || []).reduce((sum, o) => sum + (Number(o.price) || 0), 0);
-      } catch (err) {
-        ordersOk = false;
-        console.error('loadAgentAccounts: ດຶງຍອດຂາຍບໍ່ສຳເລັດ', err);
-      }
-    }
-
-    const quota = Number(s.quota_target) || 0;
-    if (quota > 0 && totalSpent !== null && totalSpent >= quota && !quotaReachedAt) {
-      quotaReachedAt = new Date(nowMs).toISOString();
-      needsPersist = true;
-    }
-
-    if (needsPersist) {
-      try {
-        await supabaseClient
-          .from('reseller_status')
-          .update({ cycle_start: cycleStart, quota_reached_at: quotaReachedAt })
-          .eq('user_id', s.user_id);
-      } catch (err) {
-        console.error('loadAgentAccounts: ບັນທຶກຮອບ/ເວລາຄົບເປົ້າບໍ່ສຳເລັດ', err);
-      }
-    }
-
-    // ຫາລະຫັດຄີຍ໌ທີ່ຄົນນີ້ໃຊ້ (ຖ້າມີ) ມາໂຊວ໌ປະກອບ — ບໍ່ບັງຄັບ, ອີງໃສ່ currentResellerKeys ທີ່ໂຫຼດໄວ້ແລ້ວ
-    const matchedKey = (currentResellerKeys || []).find(k => k.used_by === s.user_id);
-    const quotaResetAt = quotaReachedAt ? new Date(new Date(quotaReachedAt).getTime() + RESET_HOLD_MS).toISOString() : null;
-    return { ...s, totalSpent, cycleStart, quotaReachedAt, quotaResetAt, code: matchedKey ? matchedKey.code : null };
-  }));
-
-  currentAgentAccounts = accounts;
-
-  if (strip) {
-    const active = accounts.filter(a => a.is_reseller).length;
-    const revoked = accounts.filter(a => !a.is_reseller).length;
-    strip.innerHTML = `
-      <div class="ops-chip"><div class="ops-num">${accounts.length}</div><div class="ops-label">ຕົວແທນທັງໝົດ</div></div>
-      <div class="ops-chip"><div class="ops-num">${active}</div><div class="ops-label">ທຳງານຢູ່</div></div>
-      <div class="ops-chip"><div class="ops-num">${revoked}</div><div class="ops-label">ຖືກປິດແລ້ວ</div></div>
-    `;
-  }
-
-  renderAgentAccounts(currentAgentAccounts, !ordersOk);
-  renderD2Dashboard();
-  startAgentAccountsCountdownTicker();
-}
-
-/* ---------- ນັບຖອຍຫຼັງແບບສົດໆ ໃນລາຍຊື່ຕົວແທນ (ໝົດອາຍຸ + ຄ້າງລໍຣີເຊັດ) ----------
-   ອັບເດດ .agent-acc-countdown[data-expiry]/[data-reset] ທຸກ 1 ວິນາທີ ໂດຍບໍ່ຕ້ອງ render ໃໝ່ທັງໝົດ
-   (ກັນປຸ່ມ/scroll ກະພິບ) — ພໍມີອັນໃດຄົບກຳນົດ (ໝົດອາຍຸ ຫຼື ຄົບ 7 ມື້) ຈະດຶງລາຍຊື່ຄືນຄັ້ງດຽວ
-   ເພື່ອອັບເດດສະຖານະ (ຣີເຊັດຮອບ/ຕັດຕົວແທນ) ໃຫ້ຕົງກັບຄວາມຈິງ */
-function formatCountdownParts(targetIso) {
-  const remain = new Date(targetIso).getTime() - Date.now();
-  if (Number.isNaN(remain)) return null;
-  if (remain <= 0) return { done: true };
-  return {
-    done: false,
-    d: Math.floor(remain / 86400000),
-    h: Math.floor((remain % 86400000) / 3600000),
-    m: Math.floor((remain % 3600000) / 60000),
-    s: Math.floor((remain % 60000) / 1000),
-  };
-}
-
-// ຂໍ້ຄວາມນັບຖອຍຫຼັງ — ໃຊ້ທັງຕອນ render ຄັ້ງທຳອິດ ແລະ ທຸກ tick ເພື່ອບໍ່ໃຫ້ມີຄ່າ "—" ຊົ່ວຄາວ
-// (ຕົ້ນເຫດທີ່ເຮັດໃຫ້ຕົວໜັງສືວາປ/ຕັດແຖວໃໝ່ເມື່ອຕົວເລກເຂົ້າມາຫຼັງ 1 ວິນາທີ)
-function agentCountdownText(iso, doneText) {
-  if (!iso) return '—';
-  const parts = formatCountdownParts(iso);
-  if (!parts) return '—';
-  if (parts.done) return doneText;
-  const pad = (n) => String(n).padStart(2, '0');
-  return `${parts.d}ວ ${pad(parts.h)}:${pad(parts.m)}:${pad(parts.s)}`;
-}
-
-let agentAccountsLastAutoRefresh = 0;
-
-function updateAgentAccountsCountdowns() {
-  let newlyDone = false;
-  document.querySelectorAll('.agent-acc-countdown').forEach((elx) => {
-    const isExpiry = elx.hasAttribute('data-expiry');
-    const iso = elx.getAttribute(isExpiry ? 'data-expiry' : 'data-reset');
-    if (!iso) return;
-    const doneText = isExpiry ? 'ໝົດອາຍຸແລ້ວ' : 'ກຳລັງຣີເຊັດ...';
-    const text = agentCountdownText(iso, doneText);
-    // ຂຽນ DOM ສະເພາະເມື່ອຄ່າປ່ຽນ ເພື່ອບໍ່ໃຫ້ layout ຖືກຄິດໃໝ່ໂດຍບໍ່ຈຳເປັນ
-    if (elx.textContent !== text) elx.textContent = text;
-    if (text === doneText && elx.dataset.done !== '1') {
-      elx.dataset.done = '1';
-      newlyDone = true;
-    }
-  });
-  return newlyDone;
-}
-
-function startAgentAccountsCountdownTicker() {
-  if (agentAccountsCountdownTimer) return; // ຕັ້ງໄວ້ຄັ້ງດຽວກໍ່ພໍ (ໂຕ interval ຈະ query DOM ໃໝ່ທຸກ tick ເອງ)
-  agentAccountsCountdownTimer = setInterval(() => {
-    const newlyDone = updateAgentAccountsCountdowns();
-    // ດຶງລາຍຊື່ຄືນສະເພາະເມື່ອມີອັນທີ່ "ເພິ່ງ" ຄົບກຳນົດ ແລະ ຫ່າງຈາກຄັ້ງກ່ອນ ≥ 15 ວິນາທີ
-    // (ກັນ loop ດຶງ+render ໃໝ່ທຸກວິນາທີ ເວລາມີແຖວທີ່ໝົດອາຍຸຄ້າງຢູ່ໃນລາຍຊື່)
-    if (newlyDone && !agentAccountsAutoRefreshing && Date.now() - agentAccountsLastAutoRefresh >= 15000) {
-      agentAccountsAutoRefreshing = true;
-      agentAccountsLastAutoRefresh = Date.now();
-      loadAgentAccounts().finally(() => { agentAccountsAutoRefreshing = false; });
-    }
-  }, 1000);
-}
-
-function renderAgentAccounts(accounts, ordersFailed) {
-  const list = document.getElementById('agentAccountsList');
-  if (!list) return;
-
-  // เก็บสภาพแผง "ຕັ້ງລາຄາສະເພາະ" ที่เปิดอยู่ + ค่าที่พิมพ์ค้างไว้ ก่อน render ใหม่ (รีเฟรชอัตโนมัติ/ค้นหา/ปิด-เปิดตัวแทน)
-  // ไม่งั้น innerHTML ใหม่จะทับแผงจนปิดและค่าที่ยังไม่บันทึกหายหมด
-  const openPanels = {};
-  list.querySelectorAll('.agent-acc-row').forEach(row => {
-    const panel = row.querySelector('.agent-custom-panel');
-    if (!panel || panel.hidden || !panel.querySelector('.agent-custom-input')) return;
-    openPanels[row.dataset.userId] = {
-      saved: Object.fromEntries([...panel.querySelectorAll('.agent-custom-input')]
-        .filter(i => i.dataset.original !== '').map(i => [i.dataset.scope, Number(i.dataset.original)])),
-      typed: Object.fromEntries([...panel.querySelectorAll('.agent-custom-input')].map(i => [i.dataset.scope, i.value])),
-      search: (panel.querySelector('.agent-custom-search') || {}).value || '',
-      scroll: (panel.querySelector('.agent-custom-body') || {}).scrollTop || 0,
-    };
-  });
-
-  const term = agentAccountsSearchTerm.trim().toLowerCase();
-  const filtered = term ? accounts.filter(a => (a.user_email || '').toLowerCase().includes(term)) : accounts;
-
-  if (!filtered.length) {
-    list.innerHTML = '<div class="empty-note">ບໍ່ພົບຕົວແທນທີ່ຄົ້ນຫາ</div>';
-    return;
-  }
-
-  list.innerHTML = filtered.map(a => {
-    const isLifetime = a.period_end === null;
-    const quota = Number(a.quota_target) || 0;
-    const spent = a.totalSpent;
-    const isHeld = !!a.quotaReachedAt;
-
-    let progressHtml = '';
-    if (!a.user_email) {
-      progressHtml = `<div class="agent-acc-note">ບໍ່ມີອີເມວບັນທຶກໄວ້ ຈຶ່ງຄິດຍອດຊື້ສະສົມບໍ່ໄດ້</div>`;
-    } else if (ordersFailed || spent === null) {
-      progressHtml = `<div class="agent-acc-note">ບໍ່ສາມາດດຶງຍອດຊື້ສະສົມໄດ້</div>`;
-    } else if (isLifetime || !quota) {
-      progressHtml = `<div class="agent-acc-progress-text">ຍອດຊື້ຮອບນີ້ ${formatKipAdmin(spent)} • ${isLifetime ? 'ຖາວອນ ບໍ່ມີເປົ້າ' : 'ບໍ່ໄດ້ຕັ້ງເປົ້າ'}</div>`;
-    } else {
-      const pct = Math.min(100, Math.round((spent / quota) * 100));
-      progressHtml = `
-        <div class="agent-acc-progress">
-          <div class="agent-acc-bar"><div class="agent-acc-bar-fill ${pct >= 100 ? 'full' : ''}" style="width:${pct}%"></div></div>
-          <span class="agent-acc-progress-text">${formatKipAdmin(spent)} / ${formatKipAdmin(quota)} (${pct}%) · ຮອບນີ້</span>
-        </div>`;
-    }
-    if (isHeld) {
-      progressHtml += `
-        <div class="agent-acc-hold">
-          <span class="agent-acc-live-dot"></span>
-          <span>ຄົບເປົ້າ 100% — ຄ້າງລໍຣີເຊັດ ອີກ <span class="agent-acc-countdown" data-reset="${a.quotaResetAt}">${agentCountdownText(a.quotaResetAt, 'ກຳລັງຣີເຊັດ...')}</span></span>
-        </div>`;
-    }
-
-    const isRevoked = !a.is_reseller;
-    const emailLabel = a.user_email
-      ? escapeHtmlAdmin(a.user_email)
-      : `ບໍ່ມີອີເມວ (user_id: ${escapeHtmlAdmin((a.user_id || '').slice(0, 8))}…)`;
-
-    const expiryHtml = isLifetime
-      ? 'ຖາວອນ ບໍ່ໝົດອາຍຸ'
-      : `ໝົດອາຍຸ <span class="agent-acc-countdown" data-expiry="${a.period_end}">${agentCountdownText(a.period_end, 'ໝົດອາຍຸແລ້ວ')}</span>`;
-
-    return `
-    <div class="agent-acc-row" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}">
-      <div class="agent-acc-main">
-        <div class="agent-acc-email">${emailLabel}</div>
-        <div class="agent-acc-meta">
-          ລະດັບ ${tierLabel(a.duration_type)}${a.code ? ` • ຄີຍ໌ ${a.code}` : ''} • ປົດລັອກ ${a.period_start ? new Date(a.period_start).toLocaleString('lo-LA') : '—'} • ${expiryHtml}
-        </div>
-        ${progressHtml}
-      </div>
-      <div class="agent-acc-right">
-        <span class="key-status-tag ${isRevoked ? 'revoked' : 'used'}">${isRevoked ? 'ຖືກປິດແລ້ວ' : 'ທຳງານຢູ່'}</span>
-        <button type="button" class="agent-acc-custom-btn" data-user-id="${escapeHtmlAdmin(a.user_id)}">
-          ຕັ້ງລາຄາສະເພາະ
-        </button>
-        <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-user-id="${a.user_id}" data-next="${isRevoked ? 'true' : 'false'}">
-          ${isRevoked ? 'ເປີດຄືນ' : 'ປິດຕົວແທນ'}
-        </button>
-      </div>
-      <div class="agent-custom-panel" hidden></div>
-    </div>`;
-  }).join('');
-  updateAgentAccountsCountdowns();
-
-  list.querySelectorAll('.agent-acc-toggle-btn').forEach(btn => {
-    btn.addEventListener('click', () => toggleAgentStatus(btn));
-  });
-  list.querySelectorAll('.agent-acc-custom-btn').forEach(btn => {
-    btn.addEventListener('click', () => toggleAgentCustomPanel(btn));
-  });
-
-  // คืนแผงที่เปิดอยู่พร้อมค่าที่พิมพ์ค้างไว้
-  list.querySelectorAll('.agent-acc-row').forEach(row => {
-    const st = openPanels[row.dataset.userId];
-    const panel = row.querySelector('.agent-custom-panel');
-    if (!st || !panel) return;
-    panel.hidden = false;
-    const btn = row.querySelector('.agent-acc-custom-btn');
-    if (btn) btn.classList.add('is-open');
-    renderAgentCustomPanel(panel, row.dataset.userId, st.saved);
-    panel.querySelectorAll('.agent-custom-input').forEach(i => {
-      if (st.typed[i.dataset.scope] !== undefined) i.value = st.typed[i.dataset.scope];
-    });
-    const search = panel.querySelector('.agent-custom-search');
-    if (search && st.search) { search.value = st.search; search.dispatchEvent(new Event('input')); }
-    const body = panel.querySelector('.agent-custom-body');
-    if (body) body.scrollTop = st.scroll;
-  });
-}
-
-// ---------- ລາຄາສະເພາະຕົວແທນລາຍຄົນ (reseller_custom_prices) ----------
-// ແອດມິນຕັ້ງໄດ້ວ່າ "ຕົວແທນຄົນນີ້" ໄດ້ລາຄາໃດຕໍ່ສິນຄ້າ/ໄລຍະເວລາໃດ — ລຳດັບສິດທິລາຄາຕອນຊື້:
-//   1) ລາຄາສະເພາະຄົນ (ຕາຕະລາງນີ້)  2) reseller_price ທົ່ວໄປຂອງສິນຄ້າ  3) ລາຄາປົກກະຕິ − ສ່ວນຫຼຸດ % ຂອງລະດັບ
-// scope_key: 'p:<product_id>' ສຳລັບສິນຄ້າທຳມະດາ, 'd:<duration_id>' ສຳລັບສິນຄ້າທີ່ມີໄລຍະເວລາ
-// ຕ້ອງແລ່ນ agent-custom-prices.sql ໃນ Supabase ກ່ອນ (ແລະຕໍ່ get_effective_price ຕາມຄຳແນະນຳໃນໄຟລ໌ນັ້ນ)
-async function toggleAgentCustomPanel(btn) {
-  const row = btn.closest('.agent-acc-row');
-  const panel = row && row.querySelector('.agent-custom-panel');
-  if (!panel) return;
-
-  if (!panel.hidden) {
-    panel.hidden = true;
-    btn.classList.remove('is-open');
-    return;
-  }
-  panel.hidden = false;
-  btn.classList.add('is-open');
-  panel.innerHTML = '<div class="empty-note">ກຳລັງໂຫຼດ...</div>';
-
-  const userId = row.dataset.userId;
-  const { data, error } = await supabaseClient
-    .from('reseller_custom_prices')
-    .select('scope_key,price')
-    .eq('user_id', userId);
-
-  if (error) {
-    console.error(error);
-    panel.innerHTML = '<div class="empty-note">ໂຫຼດບໍ່ສຳເລັດ — ກວດວ່າໄດ້ແລ່ນ agent-custom-prices.sql ໃນ Supabase ແລ້ວຫຼືຍັງ</div>';
-    return;
-  }
-
-  const saved = {};
-  (data || []).forEach(r => { saved[r.scope_key] = r.price; });
-  renderAgentCustomPanel(panel, userId, saved);
-}
-
-function renderAgentCustomPanel(panel, userId, saved) {
-  const products = (currentProducts || []).filter(p => !p.archived);
-  if (!products.length) {
-    panel.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າ</div>';
-    return;
-  }
-
-  const priceInput = (scopeKey, val) => `
-    <input type="number" class="agent-custom-input" data-scope="${scopeKey}" data-original="${val ?? ''}"
-           placeholder="ຫວ່າງ = ໃຊ້ລາຄາຕົວແທນທົ່ວໄປ" value="${val ?? ''}" min="0" step="1">`;
-
-  const generalHint = (base, resellerPrice) =>
-    resellerPrice !== null && resellerPrice !== undefined && resellerPrice !== ''
-      ? `ຕົວແທນທົ່ວໄປ ${formatKipAdmin(resellerPrice)}`
-      : 'ຕົວແທນທົ່ວໄປ: ຕາມ % ສ່ວນຫຼຸດ';
-
-  const byCat = {};
-  products.forEach(p => {
-    const c = (p.category || '').trim() || 'ອື່ນໆ';
-    (byCat[c] = byCat[c] || []).push(p);
-  });
-
-  const body = Object.keys(byCat).map(cat => {
-    const items = byCat[cat].map(p => {
-      const name = escapeHtmlAdmin(p.name || '');
-      if (p.duration_enabled) {
-        const rows = (p.durations || []).map(d => `
-          <div class="agent-custom-row">
-            <div class="agent-custom-label">${escapeHtmlAdmin(d.label || '')}
-              <span class="price-dur-base">(ປົກກະຕິ ${formatKipAdmin(d.price)} • ${generalHint(d.price, d.reseller_price)})</span>
-            </div>
-            ${priceInput('d:' + d.id, saved['d:' + d.id])}
-          </div>`).join('');
-        return `<div class="agent-custom-prod" data-name="${name.toLowerCase()}"><div class="agent-custom-prod-name">${name}</div>${rows}</div>`;
-      }
-      return `
-        <div class="agent-custom-prod" data-name="${name.toLowerCase()}">
-          <div class="agent-custom-row">
-            <div class="agent-custom-label">${name}
-              <span class="price-dur-base">(ປົກກະຕິ ${formatKipAdmin(p.price)} • ${generalHint(p.price, p.reseller_price)})</span>
-            </div>
-            ${priceInput('p:' + p.id, saved['p:' + p.id])}
-          </div>
-        </div>`;
-    }).join('');
-    return `<div class="agent-custom-cat"><div class="agent-custom-cat-title">${escapeHtmlAdmin(cat)}</div>${items}</div>`;
-  }).join('');
-
-  panel.innerHTML = `
-    <div class="agent-custom-note">ໃສ່ລາຄາສຸດທ້າຍທີ່ຕົວແທນຄົນນີ້ຈະຈ່າຍ (ກີບ) — ເວັ້ນຫວ່າງ = ໃຊ້ລາຄາຕົວແທນທົ່ວໄປຕາມເດີມ, ລຶບຕົວເລກອອກແລ້ວບັນທຶກ = ຍົກເລີກລາຄາສະເພາະ</div>
-    <input type="text" class="agent-custom-search" placeholder="ຄົ້ນຫາສິນຄ້າ...">
-    <div class="agent-custom-body">${body}</div>
-    <button type="button" class="gx-submit agent-custom-save"><span class="gx-spinner"></span><span class="gx-submit-label">ບັນທຶກລາຄາສະເພາະຕົວແທນນີ້</span></button>`;
-
-  panel.querySelector('.agent-custom-search').addEventListener('input', (e) => {
-    const q = e.target.value.trim().toLowerCase();
-    panel.querySelectorAll('.agent-custom-prod').forEach(el => {
-      el.style.display = !q || el.dataset.name.includes(q) ? '' : 'none';
-    });
-  });
-  panel.querySelector('.agent-custom-save').addEventListener('click', (e) => saveAgentCustomPrices(panel, userId, e.currentTarget));
-}
-
-async function saveAgentCustomPrices(panel, userId, btn) {
-  const upserts = [];
-  const removes = [];
-
-  for (const input of panel.querySelectorAll('.agent-custom-input')) {
-    const scope = input.dataset.scope;
-    const val = input.value.trim();
-    const hadOriginal = input.dataset.original !== '';
-    if (val === '') {
-      if (hadOriginal) removes.push(scope);
-      continue;
-    }
-    const price = Number(val);
-    if (!Number.isFinite(price) || price < 0) {
-      showToast('ລາຄາບໍ່ຖືກຕ້ອງ — ຕ້ອງເປັນຕົວເລກ 0 ຂຶ້ນໄປ');
-      input.focus();
-      return;
-    }
-    if (String(price) === input.dataset.original) continue; // ບໍ່ປ່ຽນ
-    const isDur = scope.startsWith('d:');
-    const id = scope.slice(2);
-    upserts.push({
-      user_id: userId,
-      scope_key: scope,
-      product_id: isDur ? null : id,
-      duration_id: isDur ? id : null,
-      price,
-      updated_at: new Date().toISOString(),
-    });
-  }
-
-  if (!upserts.length && !removes.length) {
-    showToast('ບໍ່ມີການປ່ຽນແປງ');
-    return;
-  }
-
-  setLoading(btn, true);
-  try {
-    if (upserts.length) {
-      const { error } = await supabaseClient
-        .from('reseller_custom_prices')
-        .upsert(upserts, { onConflict: 'user_id,scope_key' });
-      if (error) throw error;
-    }
-    if (removes.length) {
-      const { error } = await supabaseClient
-        .from('reseller_custom_prices')
-        .delete()
-        .eq('user_id', userId)
-        .in('scope_key', removes);
-      if (error) throw error;
-    }
-    showToast('ບັນທຶກລາຄາສະເພາະຕົວແທນສຳເລັດແລ້ວ');
-    // ໂຫຼດຄ່າໃໝ່ເຂົ້າຊ່ອງ (ໃຫ້ data-original ອັບເດດ)
-    const { data } = await supabaseClient.from('reseller_custom_prices').select('scope_key,price').eq('user_id', userId);
-    const saved = {};
-    (data || []).forEach(r => { saved[r.scope_key] = r.price; });
-    renderAgentCustomPanel(panel, userId, saved);
-  } catch (err) {
-    console.error(err);
-    showToast('ບັນທຶກບໍ່ສຳເລັດ: ' + (err.message || err));
-  } finally {
-    setLoading(btn, false);
-  }
-}
-
-
-async function toggleAgentStatus(btn) {
-  const userId = btn.dataset.userId;
-  const nextIsReseller = btn.dataset.next === 'true';
-  const row = btn.closest('.agent-acc-row');
-  const email = row ? row.dataset.email : '';
-  const label = email || userId;
-  const confirmMsg = !nextIsReseller
-    ? `ຢືນຢັນປິດສິດຕົວແທນຂອງ "${label}"? ລາຄາຕົວແທນຂອງຄົນນີ້ຈະຖືກຕັດທັນທີ`
-    : `ຢືນຢັນເປີດສິດຕົວແທນຂອງ "${label}" ຄືນ?`;
-  if (!window.confirm(confirmMsg)) return;
-
-  btn.disabled = true;
-  const { error } = await supabaseClient
-    .from('reseller_status')
-    .update({ is_reseller: nextIsReseller, updated_at: new Date().toISOString() })
-    .eq('user_id', userId);
-  btn.disabled = false;
-
-  if (error) {
-    console.error(error);
-    showToast('ປ່ຽນສະຖານະບໍ່ສຳເລັດ: ' + error.message);
-    return;
-  }
-  showToast(nextIsReseller ? 'ເປີດສິດຕົວແທນຄືນແລ້ວ' : 'ປິດສິດຕົວແທນແລ້ວ');
-  await loadAgentAccounts();
-}
-
-
-// ---------- ແທັບໝວດໝູ່ຢູ່ເທິງ "ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ" ----------
-// ຈື່ໝວດໝູ່ທີ່ກຳລັງເລືອກໄວ້ ເພື່ອບໍ່ໃຫ້ຄືນກັບໄປແທັບທຳອິດທຸກຄັ້ງທີ່ໂຫຼດຂໍ້ມູນໃໝ່ (ເຊັ່ນ ຫຼັງບັນທຶກລາຄາ)
-let agentPriceActiveCategory = null;
-let currentAgentPriceProducts = [];
-
-function renderAgentPriceList(products) {
-  const list = document.getElementById('agentPriceList');
-  const tabsHost = document.getElementById('agentPriceCatTabs');
-  if (!list) return;
-
-  const activeProducts = (products || []).filter(p => !p.archived);
-  currentAgentPriceProducts = activeProducts;
-
-  if (!activeProducts.length) {
-    if (tabsHost) tabsHost.innerHTML = '';
-    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າ — ເພີ່ມສິນຄ້າກ່ອນທີ່ແຖບ "ເພີ່ມສິນຄ້າ"</div>';
-    return;
-  }
-
-  // ໝວດໝູ່ຈິງທີ່ຮ້ານຕັ້ງໄວ້ (category_1_name..4) + ໝວດໝູ່ອື່ນທີ່ອາດຕິດມາກັບສິນຄ້າເກົ່າ — ສະແດງສະເພາະອັນທີ່ມີສິນຄ້າຢູ່ຈິງ
-  const knownNames = getCurrentCategoryNames();
-  const productCats = [...new Set(activeProducts.map(p => (p.category || '').trim()).filter(Boolean))];
-  const orderedNames = [...knownNames, ...productCats.filter(c => !knownNames.includes(c))];
-
-  const catsWithCount = orderedNames
-    .map(name => ({ name, count: activeProducts.filter(p => (p.category || '').trim() === name).length }))
-    .filter(c => c.count > 0);
-
-  if (!catsWithCount.length) {
-    if (tabsHost) tabsHost.innerHTML = '';
-    list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າໃນໝວດໝູ່ໃດເລີຍ — ເພີ່ມສິນຄ້າແລ້ວກຳນົດໝວດໝູ່ກ່ອນ</div>';
-    return;
-  }
-
-  if (!agentPriceActiveCategory || !catsWithCount.some(c => c.name === agentPriceActiveCategory)) {
-    agentPriceActiveCategory = catsWithCount[0].name;
-  }
-
-  if (tabsHost) {
-    tabsHost.innerHTML = catsWithCount.map(c => `
-      <div class="agent-cat-tab ${c.name === agentPriceActiveCategory ? 'active' : ''}" data-cat="${c.name.replace(/"/g, '&quot;')}">
-        <span class="agent-cat-name">${c.name}</span>
-        <span class="agent-cat-count">${c.count} ລາຍການ</span>
-      </div>
-    `).join('');
-
-    tabsHost.querySelectorAll('.agent-cat-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        agentPriceActiveCategory = tab.dataset.cat;
-        renderAgentPriceList(currentAgentPriceProducts);
-      });
-    });
-  }
-
-  const shownProducts = activeProducts.filter(p => (p.category || '').trim() === agentPriceActiveCategory);
-
-  list.innerHTML = shownProducts.map(p => {
-    if (p.duration_enabled) {
-      return `
-      <div class="price-prod-card" data-product-id="${p.id}">
-        <div class="price-prod-name">${(p.name || '').replace(/</g, '&lt;')}</div>
-        <div class="price-dur-list">
-          ${(p.durations || []).map(d => `
-            <div class="price-dur-row" data-duration-id="${d.id}">
-              <span class="price-dur-label">${d.label} <span class="price-dur-base">(ລາຄາປົກກະຕິ ${formatKipAdmin(d.price)})</span></span>
-              <input type="number" class="edit-reseller-price" placeholder="ຫວ່າງ = ໃຊ້ % ສ່ວນຫຼຸດ" value="${d.reseller_price ?? ''}" min="0" step="1">
-            </div>
-          `).join('')}
-        </div>
-        <button type="button" class="gx-submit price-save-btn" style="margin-top:10px;">
-          <span class="gx-spinner"></span>
-          <span class="gx-submit-label">ບັນທຶກລາຄາຕົວແທນ</span>
-        </button>
-      </div>`;
-    }
-    return `
-      <div class="price-prod-card" data-product-id="${p.id}">
-        <div class="price-prod-name">${(p.name || '').replace(/</g, '&lt;')} <span class="price-dur-base">(ລາຄາປົກກະຕິ ${formatKipAdmin(p.price)})</span></div>
-        <div class="price-dur-row" data-single="true">
-          <input type="number" class="edit-reseller-price" placeholder="ຫວ່າງ = ໃຊ້ % ສ່ວນຫຼຸດ" value="${p.reseller_price ?? ''}" min="0" step="1">
-        </div>
-        <button type="button" class="gx-submit price-save-btn" style="margin-top:10px;">
-          <span class="gx-spinner"></span>
-          <span class="gx-submit-label">ບັນທຶກລາຄາຕົວແທນ</span>
-        </button>
-      </div>`;
-  }).join('');
-
-  list.querySelectorAll('.price-prod-card').forEach(card => {
-    card.querySelector('.price-save-btn').addEventListener('click', () => saveAgentPrices(card));
-  });
-}
-
-async function saveAgentPrices(card) {
-  const btn = card.querySelector('.price-save-btn');
-  const productId = card.dataset.productId;
-  const durRows = card.querySelectorAll('.price-dur-row[data-duration-id]');
-
-  setLoading(btn, true);
-  try {
-    if (durRows.length) {
-      for (const row of durRows) {
-        const durationId = row.dataset.durationId;
-        const input = row.querySelector('.edit-reseller-price');
-        const val = input.value.trim();
-        const resellerPrice = val === '' ? null : Number(val);
-        const { error } = await supabaseClient
-          .from('product_durations')
-          .update({ reseller_price: resellerPrice })
-          .eq('id', durationId);
-        if (error) throw error;
-      }
-    } else {
-      const input = card.querySelector('.price-dur-row[data-single="true"] .edit-reseller-price');
-      const val = input.value.trim();
-      const resellerPrice = val === '' ? null : Number(val);
-      const { error } = await supabaseClient
-        .from('products')
-        .update({ reseller_price: resellerPrice })
-        .eq('id', productId);
-      if (error) throw error;
-    }
-    showToast('ບັນທຶກລາຄາຕົວແທນສຳເລັດແລ້ວ');
-    await loadProducts();
-  } catch (err) {
-    console.error(err);
-    showToast('ບັນທຶກບໍ່ສຳເລັດ: ' + err.message);
-  } finally {
-    setLoading(btn, false);
-  }
-}
-
 function openSlipLightbox(src) {
   const lb = document.getElementById('slipLightbox');
   document.getElementById('slipLightboxImg').src = src;
@@ -1984,18 +1011,6 @@ function loadSiteSettingsIntoForm(settings) {
     const nameInputEl = document.getElementById(`catName${i}`);
     if (nameInputEl && document.activeElement !== nameInputEl) {
       nameInputEl.value = settings[`category_${i}_name`] || '';
-    }
-    const tagInputEl = document.getElementById(`catTag${i}`);
-    if (tagInputEl && document.activeElement !== tagInputEl) {
-      tagInputEl.value = settings[`category_${i}_tag`] || '';
-    }
-    const titleInputEl = document.getElementById(`catTitle${i}`);
-    if (titleInputEl && document.activeElement !== titleInputEl) {
-      titleInputEl.value = settings[`category_${i}_title`] || '';
-    }
-    const descInputEl = document.getElementById(`catDesc${i}`);
-    if (descInputEl && document.activeElement !== descInputEl) {
-      descInputEl.value = settings[`category_${i}_desc`] || '';
     }
     resetDropzoneIfEmpty(
       `catImgDrop${i}`, `catImgDropText${i}`, `catImgInput${i}`,
@@ -2340,7 +1355,6 @@ function initSiteSettingsPanel() {
   initHeroImageDropzone();
   initPromoPopupDropzone();
   initCategoryNameConfirmButtons();
-  initCategoryTitleDescConfirmButtons();
   initCategoryEnabledToggles();
 
   const saveStoreNameBtn = document.getElementById('saveStoreNameBtn');
@@ -2920,24 +1934,6 @@ async function initAdminPanel() {
   const topupRefreshBtn = document.getElementById('topupRefreshBtn');
   if (topupRefreshBtn) topupRefreshBtn.addEventListener('click', loadTopupRequests);
 
-  // ---- reseller / agent ----
-  const agentCreateKeyBtn = document.getElementById('agentCreateKeyBtn');
-  if (agentCreateKeyBtn) agentCreateKeyBtn.addEventListener('click', createResellerKey);
-
-  const agentKeysRefreshBtn = document.getElementById('agentKeysRefreshBtn');
-  if (agentKeysRefreshBtn) agentKeysRefreshBtn.addEventListener('click', loadResellerKeys);
-
-  const agentAccountsRefreshBtn = document.getElementById('agentAccountsRefreshBtn');
-  if (agentAccountsRefreshBtn) agentAccountsRefreshBtn.addEventListener('click', loadAgentAccounts);
-
-  const agentAccountsSearch = document.getElementById('agentAccountsSearch');
-  if (agentAccountsSearch) {
-    agentAccountsSearch.addEventListener('input', (e) => {
-      agentAccountsSearchTerm = e.target.value;
-      renderAgentAccounts(currentAgentAccounts);
-    });
-  }
-
   const slipLightbox = document.getElementById('slipLightbox');
   const slipLightboxClose = document.getElementById('slipLightboxClose');
   if (slipLightboxClose) slipLightboxClose.addEventListener('click', closeSlipLightbox);
@@ -2960,6 +1956,20 @@ async function initAdminPanel() {
     console.error('initCouponsPanel failed:', err);
   }
 
+  // ---- แผง "ເອົາລະຫັດອອກ" (codes-remove-admin.js): เอารหัสที่ยังไม่ขายออก/ย้ายสินค้า ----
+  try {
+    if (typeof window.initRemoveCodesPanel === 'function') window.initRemoveCodesPanel();
+  } catch (err) {
+    console.error('initRemoveCodesPanel failed:', err);
+  }
+
+  // ---- แผง "ຄັງລະຫັດ" (codes-manager.js): ดู/ซ่อน/คัดลอก/ดึงรหัสที่ยังไม่ขายคืน ----
+  try {
+    if (typeof window.initCodeVaultPanel === 'function') window.initCodeVaultPanel();
+  } catch (err) {
+    console.error('initCodeVaultPanel failed:', err);
+  }
+
   // ---- แผง "ຈັດການລູກຄ້າ" (customers-admin.js): ดู/ปรับยอดเงิน แบน ลบบัญชี ----
   try {
     if (typeof window.initCustomersPanel === 'function') window.initCustomersPanel();
@@ -2970,8 +1980,6 @@ async function initAdminPanel() {
   await loadSiteSettingsAdmin();
   await loadProducts();
   await loadTopupRequests();
-  await loadResellerTiers();
-  await loadResellerKeys();
   await loadD2Totals();
   await loadD2PeriodCarousel();
 }
@@ -3300,28 +2308,24 @@ async function recountD2Period() {
   }
 }
 
-// ---- KPI + badge + ແຈ້ງເຕືອນ: ຄິດຈາກ currentProducts / currentTopupRequests / currentAgentAccounts ທີ່ໂຫຼດໄວ້ແລ້ວ ----
+// ---- KPI + badge + ແຈ້ງເຕືອນ: ຄິດຈາກ currentProducts / currentTopupRequests ທີ່ໂຫຼດໄວ້ແລ້ວ ----
 function renderD2Dashboard() {
   if (!document.getElementById('d2KpiProducts')) return;
 
   const products = currentProducts || [];
   const topups = currentTopupRequests || [];
-  const agents = currentAgentAccounts || [];
 
   const totalStock = products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
   const activeProducts = products.filter(p => !p.archived);
   const outOfStock = activeProducts.filter(p => !p.paused && (Number(p.stock) || 0) <= 0);
-  const activeAgents = agents.filter(a => a.is_reseller).length;
 
   const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
 
   setText('d2KpiProducts', products.length);
   setText('d2KpiStock', totalStock);
   setText('d2KpiTopup', topups.length);
-  setText('d2KpiAgents', activeAgents);
 
   setText('d2BadgeManage', `${products.length} ລາຍການ`);
-  setText('d2BadgeAgent', `${activeAgents} ທຳງານຢູ່`);
 
   const codesBadge = document.getElementById('d2BadgeCodes');
   if (codesBadge) {
@@ -3383,8 +2387,6 @@ function renderD2Dashboard() {
 // ພາກ 3: ເລີ່ມຕົ້ນເມື່ອໂຫຼດໜ້າ
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
-  const discordBtn = document.getElementById('discordLoginBtn');
-  if (discordBtn) discordBtn.addEventListener('click', goToDiscordLogin);
 
   const deniedLogoutBtn = document.getElementById('deniedLogoutBtn');
   if (deniedLogoutBtn) deniedLogoutBtn.addEventListener('click', logout);
@@ -3394,3 +2396,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   checkAuthAndInit();
 });
+
+// รูปสินค้าในรายการแอดมินที่โหลดไม่ขึ้นให้จางหาย (เดิมใช้ onerror ในแท็ก ซึ่ง CSP บล็อก)
+document.addEventListener('error', function (e) {
+  var t = e.target;
+  if (t && t.tagName === 'IMG' && t.classList && t.classList.contains('prod-thumb')) t.style.opacity = 0;
+}, true);
