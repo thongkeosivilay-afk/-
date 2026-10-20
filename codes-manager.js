@@ -5,7 +5,19 @@
   const $ = (id) => document.getElementById(id);
   const esc = (s) => (typeof escapeHtmlAdmin === 'function' ? escapeHtmlAdmin(s) : String(s).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';'));
   const toast = (m) => (typeof showToast === 'function' ? showToast(m) : alert(m));
-  const prods = () => (typeof currentProducts !== 'undefined' ? currentProducts : []);
+  let localProds = [];
+  const prods = () => { const c = typeof currentProducts !== 'undefined' ? currentProducts : []; return c && c.length ? c : localProds; };
+  // ถ้า currentProducts ว่าง ดึง products + product_durations จาก Supabase เองตรงๆ
+  async function ensureProds() {
+    if (prods().some((p) => !p.archived)) return;
+    try {
+      const { data: ps, error } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
+      if (error) { toast('ດຶງສິນຄ້າບໍ່ສຳເລັດ: ' + error.message); return; }
+      const { data: ds } = await supabaseClient.from('product_durations').select('*').order('sort_order', { ascending: true });
+      localProds = (ps || []).map((p) => ({ ...p, durations: (ds || []).filter((d) => d.product_id === p.id).map((d) => ({ ...d, stock: d.stock != null ? d.stock : 0 })) }));
+      fillProducts();
+    } catch (e) { toast('ດຶງສິນຄ້າບໍ່ສຳເລັດ'); }
+  }
   const PAGE = 1000, CHUNK = 100;
   async function copyText(text) {
     try { await navigator.clipboard.writeText(text); return true; } catch (e) {
@@ -27,7 +39,7 @@
   function fillProducts() {
     const s = $('cmProduct'); if (!s) return;
     const prev = s.value, list = prods().filter((p) => !p.archived);
-    s.innerHTML = list.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    s.innerHTML = list.length ? list.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('') : '<option value="">ຍັງບໍ່ມີສິນຄ້າ</option>';
     if (prev && list.some((p) => p.id === prev)) s.value = prev;
     fillDurations();
   }
@@ -146,9 +158,9 @@
     const msg = $('codesMsg');
     if (msg) new MutationObserver(() => { if (msg.classList.contains('success') && loadedOnce) load(); }).observe(msg, { attributes: true, attributeFilter: ['class'] });
     document.querySelectorAll('.d2-fn-card[data-goto="panelCodeVault"], .switch[data-target="panelCodeVault"] .switch-head')
-      .forEach((el) => el.addEventListener('click', () => { if (!loadedOnce) { fillProducts(); load(); } }));
+      .forEach((el) => el.addEventListener('click', async () => { fillProducts(); await ensureProds(); if (!loadedOnce) load(); }));
   }
   if (!document.getElementById('cmStyle')) { const s = document.createElement('style'); s.id = 'cmStyle'; s.textContent = CSS; document.head.appendChild(s); }
   window.refreshCodeVaultProducts = function () { if ($('cmProduct')) fillProducts(); };
-  window.initCodeVaultPanel = function () { if (!$('cmProduct')) return; bind(); fillProducts(); };
+  window.initCodeVaultPanel = function () { if (!$('cmProduct')) return; bind(); fillProducts(); ensureProds(); };
 })();
