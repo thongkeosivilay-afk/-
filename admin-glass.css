@@ -80,10 +80,10 @@ body .toast.show{animation:gToast .6s var(--sp)}
 /* แท็บลอย (ใหม่) — เลนส์กระจกเลื่อนตามแบบของเหลว */
 .g-dock{position:fixed;left:0;right:0;bottom:0;z-index:40;padding:0 16px calc(12px + env(safe-area-inset-bottom,0px));pointer-events:none;transition:transform .5s var(--sp);will-change:transform}
 .g-dock.hide{transform:translateY(130%)}
-.g-dock nav{pointer-events:auto;position:relative;max-width:430px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);padding:7px;border-radius:99px;
+.g-dock nav{pointer-events:auto;position:relative;max-width:430px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);padding:7px;border-radius:99px;
  background:linear-gradient(140deg,rgba(255,255,255,.2),rgba(255,255,255,.04) 50%,rgba(255,0,1,.07)),rgba(18,8,10,.5);
  border:1px solid var(--ge);box-shadow:inset 1.5px 1.5px 0 var(--gh),inset -1px -1px 0 rgba(255,255,255,.1),0 28px 56px -12px #000,0 0 0 .5px rgba(255,0,1,.18)}
-.g-lens{position:absolute;top:7px;bottom:7px;left:7px;width:calc((100% - 14px)/5);border-radius:99px;background:linear-gradient(140deg,rgba(255,255,255,.34),rgba(255,255,255,.08) 55%,rgba(255,0,1,.2));border:1px solid rgba(255,255,255,.3);box-shadow:inset 1.5px 1.5px 0 rgba(255,255,255,.55),0 8px 22px -6px rgba(255,0,1,.65);transition:transform .5s var(--sp2);will-change:transform}
+.g-lens{position:absolute;top:7px;bottom:7px;left:7px;width:calc((100% - 14px)/6);border-radius:99px;background:linear-gradient(140deg,rgba(255,255,255,.34),rgba(255,255,255,.08) 55%,rgba(255,0,1,.2));border:1px solid rgba(255,255,255,.3);box-shadow:inset 1.5px 1.5px 0 rgba(255,255,255,.55),0 8px 22px -6px rgba(255,0,1,.65);transition:transform .5s var(--sp2);will-change:transform}
 .g-lens.go{animation:gStretch .7s var(--out)}
 @keyframes gStretch{40%{scale:1.1 .95}100%{scale:1 1}}
 .g-dock button{position:relative;border:0;background:none;color:rgba(255,255,255,.62);font:600 10.5px/1 'Noto Sans Lao',sans-serif;padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;transition:color .3s,transform .5s var(--sp)}
