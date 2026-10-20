@@ -27,14 +27,14 @@ if(!RM){
 /* ทางลัดด่วน (ปุ่มกระจกเลื่อนข้างได้) */
 var mt=$('#mtCard');
 if(mt){var q=document.createElement('div');q.className='g-quick';
- [['plus','ເພີ່ມສິນຄ້າ','panelAdd'],['key','เติมลະຫັດ','panelCodes'],['check','ອະນຸມັດເຕີມເງິນ','panelTopup'],['tag','ໂຄ້ດສ່ວນຫຼຸດ','panelCoupons']].forEach(function(a){
+ [['plus','ເພີ່ມສິນຄ້າ','panelAdd'],['key','เติมลະຫັດ','panelCodes'],['check','ອະນຸມັດເຕີມເງິນ','panelTopup'],['users','ຕົວແທນ','panelAgent'],['tag','ໂຄ້ດສ່ວນຫຼຸດ','panelCoupons']].forEach(function(a){
   var b=document.createElement('button');b.type='button';b.className='g-chip';b.innerHTML='<i>'+ic(a[0])+'</i>'+a[1];b.onclick=function(){go(a[2])};q.appendChild(b)});
  mt.parentNode.insertBefore(q,mt.nextSibling)}
 
 /* ===== แยกเป็นหลายหน้า: กดแท็บล่างแล้วเห็นเฉพาะของหมวดนั้น ===== */
-var PG={panelAdd:'stock',panelManage:'stock',panelRemoveCodes:'stock',panelCodeVault:'stock',panelCodes:'stock',panelTopup:'money',panelCustomers:'money',panelCoupons:'money',panelSettings:'settings',panelDiscord:'settings'};
-var ORDER=['home','stock','money','settings'];
-var META={home:['home','ພາບລວມ',''],stock:['box','ສິນຄ້າ','ເພີ່ມ ແກ້ໄຂ ຢຸດຂາຍ ແລະ ເຕີມລະຫັດສິນຄ້າ'],money:['wallet','ເຕີມເງິນ','ກວດສະລິບໂອນເງິນ ແລະ ຈັດການໂຄ້ດສ່ວນຫຼຸດ'],settings:['sliders','ຕັ້ງຄ່າ','ໂລໂກ້ ໝວດໝູ່ QR ແລະ ຊ່ອງທາງໂຊເຊຍລ']};
+var PG={panelAdd:'stock',panelManage:'stock',panelRemoveCodes:'stock',panelCodeVault:'stock',panelCodes:'stock',panelTopup:'money',panelCustomers:'money',panelCoupons:'money',panelAgent:'agent',panelSettings:'settings',panelDiscord:'settings'};
+var ORDER=['home','stock','money','agent','settings'];
+var META={home:['home','ພາບລວມ',''],stock:['box','ສິນຄ້າ','ເພີ່ມ ແກ້ໄຂ ຢຸດຂາຍ ແລະ ເຕີມລະຫັດສິນຄ້າ'],money:['wallet','ເຕີມເງິນ','ກວດສະລິບໂອນເງິນ ແລະ ຈັດການໂຄ້ດສ່ວນຫຼຸດ'],agent:['users','ຕົວແທນ','ຄີຍ໌ປົດລັອກ ລາຄາພິເສດ ແລະ ຈັດການຕົວແທນ'],settings:['sliders','ຕັ້ງຄ່າ','ໂລໂກ້ ໝວດໝູ່ QR ແລະ ຊ່ອງທາງໂຊເຊຍລ']};
 var items=[],pageNow='';
 function reg(el,pg){if(!el)return;el.dataset.gpg=pg;el.classList.add('g-it');items.push(el)}
 ['#mtCard','#opsStrip','.g-quick','.d2-kpi-row','.d2-sum-row','.d2-challenge-card','.d2-attn'].forEach(function(x){reg($(x),'home')});
@@ -72,7 +72,7 @@ addEventListener('scroll',function(){if(hd)hd.classList.toggle('scrolled',scroll
 /* ตัวเลขนับขึ้น (รูปแบบ 138.293.000) */
 function count(n){var tx=n.textContent.trim();if(!/^[\d.,\s]+$/.test(tx))return;var dot=/\.\d{3}/.test(tx),T=parseInt(tx.replace(/\D/g,''),10);if(isNaN(T)||T<2||n.dataset.gd===tx)return;n.dataset.gd=tx;n.dataset.gb=1;var t0=performance.now();
  (function f(t){var p=Math.min(1,(t-t0)/1200),v=Math.round(T*(1-Math.pow(1-p,4))),s=dot?String(v).replace(/\B(?=(\d{3})+(?!\d))/g,'.'):String(v);n.textContent=p<1?s:tx;if(p<1)requestAnimationFrame(f);else setTimeout(function(){delete n.dataset.gb},50)})(t0)}
-if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2SumTopup','d2SumOrders'].forEach(function(id){var n=document.getElementById(id);if(!n)return;count(n);new MutationObserver(function(){if(!n.dataset.gb&&n.textContent.trim()!==n.dataset.gd)count(n)}).observe(n,{childList:true,characterData:true,subtree:true})});
+if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2KpiAgents','d2SumTopup','d2SumOrders'].forEach(function(id){var n=document.getElementById(id);if(!n)return;count(n);new MutationObserver(function(){if(!n.dataset.gb&&n.textContent.trim()!==n.dataset.gd)count(n)}).observe(n,{childList:true,characterData:true,subtree:true})});
 
 /* ===== สวิตช์ปิด/เปิดเว็บ: บอกสถานะให้ตัวอ่านหน้าจอ (ตรรกะจริงอยู่ที่ maintenance-admin.js) ===== */
 (function(){var mb=document.getElementById('mtBtn');if(!mb)return;mb.setAttribute('role','switch');
