@@ -545,14 +545,23 @@ function renderManageList(products) {
             </button>
           </div>
         </div>
-        ${p.duration_enabled && p.durations && p.durations.length ? `
+        ${p.duration_enabled ? `
         <div class="prod-duration-list">
-          ${p.durations.map(d => `
+          ${(p.durations || []).map(d => `
             <span class="prod-duration-chip" data-duration-id="${d.id}" data-price="${d.price}" title="ກົດເພື່ອແກ້ໄຂລາຄາ">
               <span class="pdc-text">${d.label} • ${formatKipAdmin(d.price)} • ຄົງເຫຼືອ ${d.stock}</span>
               <svg class="pdc-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             </span>
           `).join('')}
+        </div>
+        <div class="dur-add-inline">
+          <input type="number" class="dur-add-qty" min="1" step="1" inputmode="numeric" placeholder="ຈຳນວນ">
+          <select class="dur-add-unit">
+            <option value="ຊມ">ຊົ່ວໂມງ</option>
+            <option value="ວັນ" selected>ວັນ</option>
+          </select>
+          <input type="number" class="dur-add-price" min="0" step="0.01" inputmode="decimal" placeholder="ລາຄາ (ກີບ)">
+          <button type="button" class="dur-add-btn" title="ເພີ່ມໄລຍະເວລາ">+</button>
         </div>` : ''}
         <div class="prod-links-section">
           <div class="prod-links-list">
@@ -596,7 +605,47 @@ function renderManageList(products) {
     row.querySelectorAll('.prod-duration-chip').forEach(chip => {
       chip.addEventListener('click', () => openDurationPriceEditor(chip, id));
     });
+
+    const durAddBtn = row.querySelector('.dur-add-btn');
+    if (durAddBtn) durAddBtn.addEventListener('click', () => addProductDuration(id, row));
   });
+}
+
+// ---------- ໄລຍະເວລາ — ເພີ່ມໃໝ່ (ຊົ່ວໂມງ / ວັນ) ໃນສິນຄ້າທີ່ມີຢູ່ແລ້ວ ----------
+async function addProductDuration(productId, row) {
+  const qtyInput = row.querySelector('.dur-add-qty');
+  const unitSelect = row.querySelector('.dur-add-unit');
+  const priceInput = row.querySelector('.dur-add-price');
+  const btn = row.querySelector('.dur-add-btn');
+
+  const qty = parseInt(qtyInput.value, 10);
+  const price = parseFloat(priceInput.value);
+  if (!qty || qty < 1) { showToast('ກະລຸນາໃສ່ຈຳນວນຊົ່ວໂມງ/ວັນ'); return; }
+  if (isNaN(price) || price < 0) { showToast('ກະລຸນາໃສ່ລາຄາໃຫ້ຖືກຕ້ອງ'); return; }
+
+  const label = `${qty}${unitSelect.value}`;   // ເຊັ່ນ 12ຊມ, 3ວັນ (ຮູບແບບດຽວກັບທີ່ມີຢູ່ແລ້ວ)
+
+  const p = currentProducts.find(x => x.id === productId);
+  if (p && (p.durations || []).some(d => d.label === label)) {
+    showToast(`ມີໄລຍະເວລາ ${label} ຢູ່ແລ້ວ`);
+    return;
+  }
+
+  const sortOrder = p && p.durations ? p.durations.length : 0;
+  btn.disabled = true;
+  const { error } = await supabaseClient
+    .from('product_durations')
+    .insert({ product_id: productId, label, price, sort_order: sortOrder });
+  btn.disabled = false;
+
+  if (error) {
+    console.error(error);
+    showToast('ເພີ່ມໄລຍະເວລາບໍ່ສຳເລັດ: ' + error.message);
+    return;
+  }
+
+  showToast(`ເພີ່ມ ${label} ສຳເລັດ — ຢ່າລືມເຕີມລະຫັດໃຫ້ໄລຍະເວລານີ້`);
+  loadProducts();
 }
 
 // ---------- ໄລຍະເວລາ — ແກ້ໄຂລາຄາ (ກົດທີ່ chip ເພື່ອປ່ຽນລາຄາທີ່ໃສ່ຜິດ) ----------
