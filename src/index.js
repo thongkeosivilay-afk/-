@@ -1169,12 +1169,25 @@ async function handlePasswordSignup(request, env) {
   const createData = await createRes.json().catch(() => ({}));
 
   if (!createRes.ok) {
-    const msg = (createData && createData.msg) || (createData && createData.message) || '';
-    if (createRes.status === 422 || /already been registered|already exists/i.test(msg)) {
+    const msg = (createData && (createData.msg || createData.message || createData.error_description || createData.error)) || '';
+    const code = (createData && (createData.error_code || createData.code)) || '';
+    console.error('handlePasswordSignup: Supabase admin create user failed', createRes.status, JSON.stringify(createData));
+
+    // อีเมลซ้ำจริงๆ เท่านั้น (เดิมเหมาทุก 422 ว่า "อีเมลซ้ำ" ทำให้ error อื่นถูกบอกผิดๆ)
+    if (code === 'email_exists' || /already been registered|already exists/i.test(msg)) {
       return json({ error: 'ອີເມວນີ້ຖືກສະໝັກໄປແລ້ວ' }, 400);
     }
-    console.error('handlePasswordSignup: Supabase admin create user failed', createRes.status, createData);
-    return json({ error: 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
+    if (code === 'weak_password' || /password/i.test(msg)) {
+      return json({ error: 'ລະຫັດຜ່ານບໍ່ປອດໄພພໍ ກະລຸນາໃຊ້ລະຫັດທີ່ຍາກຂຶ້ນ' }, 400);
+    }
+    if (code === 'validation_failed' || /valid email|invalid email/i.test(msg)) {
+      return json({ error: 'ອີເມວບໍ່ຖືກຕ້ອງ' }, 400);
+    }
+    // key ผิด/ไม่มีสิทธิ์ (401/403) = ตั้ง SUPABASE_SERVICE_ROLE_KEY ไม่ถูก
+    if (createRes.status === 401 || createRes.status === 403) {
+      return json({ error: 'ຕັ້ງຄ່າ SUPABASE_SERVICE_ROLE_KEY ບໍ່ຖືກ (ເບິ່ງ wrangler secret)' }, 500);
+    }
+    return json({ error: 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ' + (msg ? ': ' + msg : ''), code }, 502);
   }
 
   const authUser = createData;
