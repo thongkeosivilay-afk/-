@@ -111,8 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ email, password: pw }),
       })
         .then(async (res) => {
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ');
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || ('ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ (HTTP ' + res.status + ')'));
           const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
           window.location.href = next;
         })
@@ -173,8 +173,8 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify({ username, email, password: pw }),
       })
         .then(async (res) => {
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ');
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || ('ສະໝັກສະມາຊິກບໍ່ສຳເລັດ (HTTP ' + res.status + ')'));
           const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
           window.location.href = next;
         })
