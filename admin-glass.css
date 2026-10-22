@@ -147,3 +147,57 @@ body .g-pagehead{padding-left:2px;padding-right:2px}
 html{-webkit-tap-highlight-color:transparent}
 body .d2-board>*,body .deck>.switch,.g-it{will-change:auto}
 @media (hover:none){body .is-tilting{transform:none}}
+
+/* ===== ຟອມເພີ່ມໄລຍະເວລາ (ຈຳນວນ / ໜ່ວຍ / ລາຄາ / +) — ຈັດໃຫ້ເປັນລະບຽບ ===== */
+.dur-add-inline{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 112px;
+  gap:8px;
+  margin:10px 0 12px;
+  align-items:center;
+}
+.dur-add-inline .dur-add-qty{ grid-column:1; }
+.dur-add-inline .dur-add-unit{ grid-column:2; }
+.dur-add-inline .dur-add-price{ grid-column:1; }
+.dur-add-inline .dur-add-btn{ grid-column:2; }
+.dur-add-inline input,
+.dur-add-inline select{
+  width:100%; min-width:0; box-sizing:border-box; height:42px;
+  padding:0 14px; border-radius:12px;
+  border:1px solid rgba(255,0,1,.28);
+  background:rgba(255,255,255,.06); color:#fff;
+  font-size:.9rem; font-family:inherit;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.35);
+  -webkit-appearance:none; appearance:none;
+}
+.dur-add-inline select{
+  padding-right:30px; cursor:pointer;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat:no-repeat; background-position:right 12px center;
+}
+.dur-add-inline select option{ background:#14090c; color:#fff; }
+.dur-add-inline input::placeholder{ color:rgba(255,255,255,.45); }
+.dur-add-inline input:focus,
+.dur-add-inline select:focus{
+  outline:none; border-color:rgba(255,0,1,.8);
+  box-shadow:0 0 0 3px rgba(255,0,1,.2), inset 0 2px 6px rgba(0,0,0,.3);
+}
+.dur-add-inline .dur-add-btn{
+  width:100%; height:42px; border-radius:12px;
+  border:1px solid rgba(255,0,1,.5); background:rgba(255,0,1,.16);
+  color:#ff4d57; font-size:22px; font-weight:700; line-height:1; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s ease, transform .1s ease;
+}
+.dur-add-inline .dur-add-btn:hover{ background:rgba(255,0,1,.3); }
+.dur-add-inline .dur-add-btn:active{ transform:scale(.97); }
+.dur-add-inline .dur-add-btn:disabled{ opacity:.5; }
+
+/* ປຸ່ມລຶບໄລຍະເວລາໃນ chip */
+.prod-duration-chip .pdc-del-btn{
+  width:16px;height:16px;border-radius:50%;flex-shrink:0;
+  border:none;background:rgba(232,57,90,.22);color:#ff6b78;
+  font-size:12px;line-height:1;cursor:pointer;padding:0;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.prod-duration-chip .pdc-del-btn:hover{ background:rgba(232,57,90,.45); }

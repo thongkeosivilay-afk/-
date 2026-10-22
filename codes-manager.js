@@ -14,7 +14,7 @@
       const { data: ps, error } = await supabaseClient.from('products').select('*').order('created_at', { ascending: false });
       if (error) { toast('ດຶງສິນຄ້າບໍ່ສຳເລັດ: ' + error.message); return; }
       const { data: ds } = await supabaseClient.from('product_durations').select('*').order('sort_order', { ascending: true });
-      localProds = (ps || []).map((p) => ({ ...p, durations: (ds || []).filter((d) => d.product_id === p.id).map((d) => ({ ...d, stock: d.stock != null ? d.stock : 0 })) }));
+      localProds = (ps || []).map((p) => ({ ...p, durations: (ds || []).filter((d) => d.product_id === p.id).sort((a, b) => durationToHours(a.label) - durationToHours(b.label)).map((d) => ({ ...d, stock: d.stock != null ? d.stock : 0 })) }));
       fillProducts();
     } catch (e) { toast('ດຶງສິນຄ້າບໍ່ສຳເລັດ'); }
   }

@@ -108,7 +108,7 @@
       const { data: ds } = await supabaseClient.from('product_durations').select('*').order('sort_order', { ascending: true });
       localProducts = (ps || []).map((p) => ({
         ...p,
-        durations: (ds || []).filter((d) => d.product_id === p.id).map((d) => ({ ...d, stock: d.stock != null ? d.stock : 0 })),
+        durations: (ds || []).filter((d) => d.product_id === p.id).sort((a, b) => durationToHours(a.label) - durationToHours(b.label)).map((d) => ({ ...d, stock: d.stock != null ? d.stock : 0 })),
       }));
       prodErr = '';
     } catch (e) {

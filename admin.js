@@ -194,6 +194,21 @@ function setLoading(btn, loading) {
   btn.classList.toggle('loading', loading);
 }
 
+// ເຮັດໃຫ້ໄລຍະເວລາຖືກຈັດລຽງຈາກນ້ອຍ -> ຫຼາຍ (ຊົ່ວໂມງ/ວັນ/ອາທິດ/ເດືອນ) ເຊັ່ນ 12ຊມ, 1ວັນ, 3ວັນ, 7ວັນ, 30ວັນ
+function durationToHours(label) {
+  const m = String(label || '').match(/(\d+(?:\.\d+)?)\s*(.*)/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
+  const n = parseFloat(m[1]);
+  const u = (m[2] || '').trim().toLowerCase();
+  if (/ຊມ|ຊົ່ວໂມງ|^h/.test(u)) return n;
+  if (/ອາທິດ|ສັບປະດາ|^w/.test(u)) return n * 24 * 7;
+  if (/ເດືອນ|^m/.test(u)) return n * 24 * 30;
+  return n * 24;
+}
+function sortDurationsAsc(list) {
+  return (list || []).slice().sort((a, b) => durationToHours(a.label) - durationToHours(b.label));
+}
+
 function formatKipAdmin(n) {
   return Number(n || 0).toLocaleString('de-DE') + ' ກີບ';
 }
@@ -260,7 +275,7 @@ async function loadProducts() {
 
   const withStock = await Promise.all((products || []).map(async (p) => {
     const { data: stock } = await supabaseClient.rpc('product_stock', { p_product_id: p.id });
-    const ownDurations = (allDurations || []).filter(d => d.product_id === p.id);
+    const ownDurations = sortDurationsAsc((allDurations || []).filter(d => d.product_id === p.id));
     const durationsWithStock = await Promise.all(ownDurations.map(async (d) => {
       const { data: dStock } = await supabaseClient.rpc('product_duration_stock', { p_duration_id: d.id });
       return { ...d, stock: dStock ?? 0 };
@@ -550,6 +565,7 @@ function renderManageList(products) {
           ${(p.durations || []).map(d => `
             <span class="prod-duration-chip" data-duration-id="${d.id}" data-price="${d.price}" title="ກົດເພື່ອແກ້ໄຂລາຄາ">
               <span class="pdc-text">${d.label} • ${formatKipAdmin(d.price)} • ຄົງເຫຼືອ ${d.stock}</span>
+              <button type="button" class="pdc-del-btn" title="ລຶບໄລຍະເວລານີ້">×</button>
               <svg class="pdc-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             </span>
           `).join('')}
@@ -603,7 +619,14 @@ function renderManageList(products) {
     });
 
     row.querySelectorAll('.prod-duration-chip').forEach(chip => {
-      chip.addEventListener('click', () => openDurationPriceEditor(chip, id));
+      chip.addEventListener('click', (e) => {
+        if (e.target.closest('.pdc-del-btn')) {
+          e.stopPropagation();
+          deleteProductDuration(chip.dataset.durationId, id, row);
+          return;
+        }
+        openDurationPriceEditor(chip, id);
+      });
     });
 
     const durAddBtn = row.querySelector('.dur-add-btn');
@@ -646,6 +669,55 @@ async function addProductDuration(productId, row) {
 
   showToast(`ເພີ່ມ ${label} ສຳເລັດ — ຢ່າລືມເຕີມລະຫັດໃຫ້ໄລຍະເວລານີ້`);
   loadProducts();
+}
+
+// ---------- ໄລຍະເວລາ — ລຶບ ----------
+async function deleteProductDuration(durationId, productId, row) {
+  const p = currentProducts.find(x => x.id === productId);
+  const d = p && (p.durations || []).find(x => x.id === durationId);
+  if (!d) return;
+
+  if ((p.durations || []).length <= 1) {
+    showToast('ລຶບບໍ່ໄດ້ — ສິນຄ້າທີ່ເປີດໃຊ້ໄລຍະເວລາຕ້ອງມີຢ່າງໜ້ອຍ 1 ໄລຍະ');
+    return;
+  }
+
+  const ok = confirm(
+    `ລຶບໄລຍະເວລາ ${d.label} ຂອງ "${p.name || 'ສິນຄ້ານີ້'}" ?\n\n` +
+    (d.stock > 0 ? `ລະຫັດທີ່ຍັງບໍ່ໄດ້ຂາຍຂອງໄລຍະນີ້ (${d.stock} ລະຫັດ) ຈະຖືກລຶບອອກນຳ.\n` : '') +
+    'ບໍ່ສາມາດກູ້ຄືນໄດ້.'
+  );
+  if (!ok) return;
+
+  if (row) { row.style.opacity = '0.5'; row.style.pointerEvents = 'none'; }
+  try {
+    // ລຶບລະຫັດທີ່ຍັງບໍ່ຖືກຂາຍຂອງໄລຍະນີ້ກ່ອນ (ກັນ foreign key ຄ້າງ)
+    const { error: codeErr } = await supabaseClient
+      .from('product_codes')
+      .delete()
+      .eq('duration_id', durationId)
+      .is('used_by', null)
+      .eq('is_used', false);
+    if (codeErr) throw codeErr;
+
+    const { error } = await supabaseClient
+      .from('product_durations')
+      .delete()
+      .eq('id', durationId);
+    if (error) throw error;
+
+    showToast(`ລຶບ ${d.label} ແລ້ວ`);
+    loadProducts();
+  } catch (err) {
+    console.error(err);
+    const fk = /foreign key|violates|23503/i.test((err && (err.message || err.code)) || '');
+    showToast(
+      fk
+        ? `ລຶບ ${d.label} ບໍ່ໄດ້ ເພາະມີອໍເດີ/ລະຫັດທີ່ຂາຍໄປແລ້ວອ້າງອີງຢູ່`
+        : 'ລຶບບໍ່ສຳເລັດ: ' + ((err && err.message) || 'ລອງໃໝ່ອີກຄັ້ງ')
+    );
+    if (row) { row.style.opacity = ''; row.style.pointerEvents = ''; }
+  }
 }
 
 // ---------- ໄລຍະເວລາ — ແກ້ໄຂລາຄາ (ກົດທີ່ chip ເພື່ອປ່ຽນລາຄາທີ່ໃສ່ຜິດ) ----------
