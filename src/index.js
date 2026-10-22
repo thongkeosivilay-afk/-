@@ -207,6 +207,18 @@ async function route(request, env, ctx) {
   }
 }
 
+// ຈັດລຽງໄລຍະເວລາ ນ້ອຍ -> ຫຼາຍ (ຊມ < ວັນ < ອາທິດ < ເດືອນ)
+function durationToHours(label) {
+  const m = String(label || '').match(/(\d+(?:\.\d+)?)\s*(.*)/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
+  const n = parseFloat(m[1]);
+  const u = (m[2] || '').trim().toLowerCase();
+  if (/ຊມ|ຊົ່ວໂມງ|^h/.test(u)) return n;
+  if (/ອາທິດ|ສັບປະດາ|^w/.test(u)) return n * 24 * 7;
+  if (/ເດືອນ|^m/.test(u)) return n * 24 * 30;
+  return n * 24;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const response = await route(request, env, ctx);
@@ -1669,7 +1681,7 @@ async function handlePublicStorefront(request, env) {
     const durationStockMap = new Map((bulkDurationStock || []).map((r) => [r.duration_id, r.stock ?? 0]));
 
     const productsWithStock = (products || []).map((p) => {
-      const ownDurations = (durations || []).filter((d) => d.product_id === p.id);
+      const ownDurations = (durations || []).filter((d) => d.product_id === p.id).sort((a, b) => durationToHours(a.label) - durationToHours(b.label));
       const durationsWithStock = ownDurations.map((d) => ({
         id: d.id,
         label: d.label,
