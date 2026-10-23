@@ -524,7 +524,13 @@ function renderManageList(products) {
 
   list.innerHTML = products.map(p => `
     <div class="prod-row ${p.archived ? 'is-archived' : ''} ${p.paused ? 'is-paused' : ''}" data-id="${p.id}">
-      <img class="prod-thumb" src="${p.image_url || ''}" alt="">
+      <div class="prod-thumb-wrap" title="ກົດເພື່ອປ່ຽນຮູບ">
+        <img class="prod-thumb" src="${p.image_url || ''}" alt="">
+        <span class="thumb-edit-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </span>
+        <input type="file" class="edit-image-input" accept="image/*" hidden>
+      </div>
       <div class="prod-fields">
         ${p.archived ? '<div class="archived-tag">ເຊື່ອງໄວ້ — ບໍ່ສະແດງໃນໜ້າຮ້ານ</div>' : ''}
         ${p.paused ? `<div class="paused-tag">ຢຸດຂາຍຊົ່ວຄາວ${p.paused_note ? ' — ' + p.paused_note.replace(/</g, '&lt;') : ''}</div>` : ''}
@@ -601,6 +607,20 @@ function renderManageList(products) {
   list.querySelectorAll('.prod-row').forEach(row => {
     const id = row.dataset.id;
     row.querySelector('.save-btn').addEventListener('click', () => saveProduct(id, row));
+
+    const thumbWrap = row.querySelector('.prod-thumb-wrap');
+    const imgInput = row.querySelector('.edit-image-input');
+    if (thumbWrap && imgInput) {
+      thumbWrap.addEventListener('click', (e) => {
+        if (e.target === imgInput || thumbWrap.classList.contains('uploading')) return;
+        imgInput.click();
+      });
+      imgInput.addEventListener('change', () => {
+        const file = imgInput.files && imgInput.files[0];
+        imgInput.value = '';
+        if (file) changeProductImage(id, row, file);
+      });
+    }
     row.querySelector('.del-btn').addEventListener('click', () => toggleArchiveProduct(id, row));
     row.querySelector('.hard-del-btn').addEventListener('click', () => hardDeleteProduct(id, row));
 
@@ -821,6 +841,50 @@ async function removeProductLink(linkId, chipEl, productId) {
   chipEl.remove();
   const p = currentProducts.find(x => x.id === productId);
   if (p && p.links) p.links = p.links.filter(l => l.id !== linkId);
+}
+
+// ---------- ປ່ຽນຮູບສິນຄ້າ (ກົດທີ່ຮູບໃນລາຍການ) ----------
+async function changeProductImage(id, row, file) {
+  const wrap = row.querySelector('.prod-thumb-wrap');
+  const img = row.querySelector('.prod-thumb');
+  if (!file || !/^image\//.test(file.type || '')) {
+    showToast('ກະລຸນາເລືອກໄຟລ໌ຮູບພາບ');
+    return;
+  }
+
+  wrap.classList.add('uploading');
+  showToast('ກຳລັງອັບໂຫລດຮູບ...');
+  try {
+    const imageToUpload = await compressImageIfLarge(file);
+    const ext = (imageToUpload.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `products/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+
+    const { error: uploadError } = await supabaseClient.storage
+      .from('product-images')
+      .upload(path, imageToUpload);
+    if (uploadError) throw uploadError;
+
+    const { data: pub } = supabaseClient.storage.from('product-images').getPublicUrl(path);
+    const imageUrl = pub.publicUrl;
+
+    const { error: updateError } = await supabaseClient
+      .from('products')
+      .update({ image_url: imageUrl })
+      .eq('id', id);
+    if (updateError) throw updateError;
+
+    // ອັບເດດຮູບໃນໜ້າທັນທີ ໂດຍບໍ່ລ້າງຂໍ້ຄວາມທີ່ກຳລັງແກ້ຢູ່ໃນແຖວອື່ນ
+    img.style.opacity = '';
+    img.src = imageUrl;
+    const p = currentProducts.find(x => x.id === id);
+    if (p) p.image_url = imageUrl;
+    showToast('ປ່ຽນຮູບສຳເລັດ');
+  } catch (err) {
+    console.error(err);
+    showToast('ປ່ຽນຮູບບໍ່ສຳເລັດ: ' + (err && err.message ? err.message : err));
+  } finally {
+    wrap.classList.remove('uploading');
+  }
 }
 
 async function saveProduct(id, row) {
