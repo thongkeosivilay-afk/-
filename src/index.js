@@ -110,6 +110,10 @@ async function route(request, env, ctx) {
     }
 
     // เช็คสถานะปิด/เปิดเว็บ (public) — ต้องอยู่ก่อน maintenanceGate เพื่อให้หน้าปิดปรับปรุงเช็คได้ว่าเว็บเปิดกลับมาหรือยัง
+    if (url.pathname === '/api/bot/topup-decision') {
+      return handleBotTopupDecision(request, env);
+    }
+
     if (url.pathname === '/api/maintenance-status') {
       return handleMaintenanceStatus(request, env);
     }
@@ -2339,16 +2343,11 @@ async function handleTopupConfirm(request, env) {
     });
 
     // ---- แจ้งเตือนเข้า Discord: มีคนส่งสลิปเติมเงินเข้ามา รอแอดมินตรวจสอบ ----
-    await sendDiscordAlert(env, {
-      title: '💰 ມີການເຕີມເງິນເຂົ້າມາໃໝ່ (ລໍຖ້າກວດສອບ)',
-      color: 0xff0001, // แดง — เด่นชัด ต้องรีบเข้าไปดู
-      description: 'ກົດເຂົ້າໜ້າແອດມິນ (admin.html) ເພື່ອກວດສະລິບ ແລະ ອະນຸມັດ/ປະຕິເສດ',
-      fields: [
-        { name: 'ຜູ້ໃຊ້', value: user.username || '-', inline: true },
-        { name: 'ອີເມວ', value: user.email || '-', inline: true },
-        { name: 'ຈຳນວນເງິນ', value: `${amount.toLocaleString()} ກີບ`, inline: true },
-        { name: 'ສະລິບ', value: `[ເບິ່ງຮູບ](${slipUrl})`, inline: false },
-      ],
+    await sendTopupToDiscord(env, {
+      id: rows && rows[0] && rows[0].id,
+      amount,
+      user,
+      slipUrl,
     });
 
     return json({ ok: true, id: (rows && rows[0] && rows[0].id) || null });
@@ -3004,4 +3003,127 @@ async function uploadToSupabaseStorage(env, bucket, path, file) {
     throw new Error(`Supabase storage upload to "${bucket}" failed (${res.status}): ${text}`);
   }
   return `${env.SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/${bucket}/${path}`;
+}
+
+
+/* เทียบ secret แบบกัน timing attack */
+function safeEqual(a, b) {
+  const enc = new TextEncoder();
+  const x = enc.encode(String(a));
+  const y = enc.encode(String(b));
+  if (x.length !== y.length) return false;
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x[i] ^ y[i];
+  return diff === 0;
+}
+
+/* ส่งสลิปใหม่ไปที่ Edge Function เดิม -> โพสต์เข้าห้องแอดมินพร้อมปุ่ม ✅ ❌
+   ต้องตั้ง DISCORD_EDGE_URL และ BOT_API_SECRET  ถ้าไม่ได้ตั้งหรือส่งไม่สำเร็จ
+   จะ fallback ไปแจ้งผ่าน webhook เดิม (ไม่มีปุ่ม) */
+async function sendTopupToDiscord(env, { id, amount, user, slipUrl }) {
+  if (env.DISCORD_EDGE_URL && env.BOT_API_SECRET && id != null) {
+    try {
+      const res = await fetch(env.DISCORD_EDGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-site-secret': env.BOT_API_SECRET },
+        body: JSON.stringify({
+          id: String(id),
+          amount,
+          username: (user && user.username) || '-',
+          email: (user && user.email) || '-',
+          slip_url: slipUrl,
+        }),
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) return;
+      console.error('sendTopupToDiscord failed:', res.status, await res.text());
+    } catch (err) {
+      console.error('sendTopupToDiscord error:', err);
+    }
+  }
+  // fallback: webhook เดิม (ไม่มีปุ่ม)
+  await sendDiscordAlert(env, {
+    title: '💰 มีการเติมเงินเข้ามาใหม่ (รอตรวจสอบ)',
+    color: 0xff0001,
+    description: 'เข้าหน้าแอดมิน (admin.html) เพื่อตรวจสลิปและอนุมัติ/ปฏิเสธ',
+    fields: [
+      { name: 'ผู้ใช้', value: (user && user.username) || '-', inline: true },
+      { name: 'อีเมล', value: (user && user.email) || '-', inline: true },
+      { name: 'จำนวนเงิน', value: `${Number(amount).toLocaleString()} กีบ`, inline: true },
+      { name: 'สลิป', value: `[ดูรูป](${slipUrl})`, inline: false },
+    ],
+  });
+}
+
+/* ---------- POST /api/bot/topup-decision ----------
+   Edge Function เรียกตอนแอดมินกดปุ่ม
+   header:  Authorization: Bearer <BOT_API_SECRET>
+   body:    { "topup_id": "...", "decision": "approved" | "rejected" }
+   - กันกดซ้ำ: อัปเดตเฉพาะแถวที่ยัง pending (ถ้าไม่ใช่ ตอบ 409 ไม่เติมเงินซ้ำ)
+   - ถ้าเติมกระเป๋าไม่สำเร็จ จะคืนสถานะเป็น pending เพื่อให้กดใหม่ได้ */
+async function handleBotTopupDecision(request, env) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  if (!env.BOT_API_SECRET || !env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ยังตั้งค่าไม่ครบ (BOT_API_SECRET / SUPABASE)' }, 500);
+  }
+
+  const auth = request.headers.get('Authorization') || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : '';
+  if (!safeEqual(token, env.BOT_API_SECRET)) return json({ error: 'Unauthorized' }, 401);
+
+  let body = {};
+  try { body = await request.json(); } catch { /* ตกไปโดน validate ด้านล่าง */ }
+
+  const topupId = String(body.topup_id || '');
+  const decision = body.decision;
+  if (!/^[A-Za-z0-9-]{1,64}$/.test(topupId)) return json({ error: 'topup_id ไม่ถูกต้อง' }, 400);
+  if (decision !== 'approved' && decision !== 'rejected') {
+    return json({ error: 'decision ต้องเป็น approved หรือ rejected' }, 400);
+  }
+
+  const idQ = encodeURIComponent(topupId);
+
+  try {
+    // 1) "จอง" รายการ: เปลี่ยนสถานะได้เฉพาะแถวที่ยัง pending เท่านั้น
+    const claim = await sbRaw(
+      env, 'PATCH', `topup_requests?id=eq.${idQ}&status=eq.pending`,
+      { status: decision }, { prefer: 'return=representation' }
+    );
+    if (!claim.ok) {
+      console.error('topup claim failed', claim.status, claim.text);
+      return json({ error: 'อัปเดตฐานข้อมูลไม่สำเร็จ' }, 502);
+    }
+    const row = Array.isArray(claim.data) ? claim.data[0] : null;
+    if (!row) {
+      // ไม่ใช่ pending แล้ว -> บอกสถานะปัจจุบันกลับไปให้บอทแสดง
+      const cur = await sbRaw(env, 'GET', `topup_requests?id=eq.${idQ}&select=status`);
+      const curStatus = cur.ok && Array.isArray(cur.data) && cur.data[0] ? cur.data[0].status : null;
+      return json({ ok: false, already_decided: true, status: curStatus, error: 'ไม่พบรายการ หรือถูกดำเนินการไปแล้ว' }, 409);
+    }
+
+    // 2) ถ้าอนุมัติ -> เติมเงินเข้ากระเป๋า (ฟังก์ชันเดียวกับหน้าแอดมินเดิม)
+    if (decision === 'approved') {
+      try {
+        await supabaseRpcStrict(env, 'increment_wallet_balance', {
+          p_user_id: row.user_id,
+          p_amount: Math.round(Number(row.amount)),
+        });
+      } catch (err) {
+        console.error('increment_wallet_balance failed', err);
+        // คืนสถานะ เพื่อให้กดใหม่ได้ ไม่ให้ "อนุมัติแล้วแต่เงินไม่เข้า"
+        try { await sbRaw(env, 'PATCH', `topup_requests?id=eq.${idQ}`, { status: 'pending' }); } catch { /* ข้าม */ }
+        return json({ error: 'เติมเงินเข้ากระเป๋าไม่สำเร็จ: ' + err.message }, 502);
+      }
+    }
+
+    return json({
+      ok: true,
+      status: decision,
+      amount: row.amount,
+      user_email: row.user_email || null,
+    });
+  } catch (err) {
+    console.error('handleBotTopupDecision failed:', err);
+    return json({ error: 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง' }, 502);
+  }
 }
