@@ -40,3 +40,9 @@ GOOGLE_CLIENT_ID = "1036820411886-uhinuuq1aae4sf2fjdfm4b8uric57p56.apps.googleus
 # ⚠️ GOOGLE_CLIENT_SECRET ห้ามใส่ในไฟล์นี้เด็ดขาด (จะเข้า git ทันที) ตั้งแยกด้วยคำสั่ง:
 #   wrangler secret put GOOGLE_CLIENT_SECRET
 # เอาค่ามาจากหน้าเดียวกับ GOOGLE_CLIENT_ID ใน Google Cloud Console
+
+# ===== ปุ่ม ✅ ❌ อนุมัติเติมเงินในดิส (Edge Function: discord-topup) =====
+# DISCORD_EDGE_URL ไม่ใช่ความลับ ใส่ในนี้ได้ (ถ้าอยากตั้งใน Dashboard ก็ได้ — มี keep_vars = true)
+#   DISCORD_EDGE_URL = "https://ebmambgqghyzrenknkeb.supabase.co/functions/v1/discord-topup"
+# ⚠️ BOT_API_SECRET ห้ามใส่ในไฟล์นี้ ตั้งด้วย:  wrangler secret put BOT_API_SECRET
+#    (ค่าเดียวกันต้องตั้งเป็น BOT_API_SECRET ใน Supabase Edge Function secrets ด้วย)

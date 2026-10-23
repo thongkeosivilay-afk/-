@@ -1137,35 +1137,40 @@ async function decideTopup(id, status, card) {
   const btns = card.querySelectorAll('.topup-btn');
   btns.forEach(b => b.disabled = true);
 
-  const { error } = await supabaseClient
-    .from('topup_requests')
-    .update({ status })
-    .eq('id', id);
-
-  if (error) {
-    console.error(error);
-    showToast('ດຳເນີນການບໍ່ສຳເລັດ: ' + error.message);
+  // เรียก Worker (atomic: อนุมัติได้ครั้งเดียว + เติมกระเป๋าในขั้นตอนเดียว กันเติมซ้ำถ้า
+  // มีแอดมินสองคนกดพร้อมกัน หรือกดซ้ำ) แทนการ update ตารางเองจาก browser
+  let result = null, httpStatus = 0;
+  try {
+    const res = await fetch('/api/admin/topup-decision', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topup_id: id, decision: status }),
+    });
+    httpStatus = res.status;
+    result = await res.json().catch(() => ({}));
+  } catch (err) {
+    console.error(err);
+    showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້ ລອງໃໝ່');
     btns.forEach(b => b.disabled = false);
     return;
   }
 
-  let toastMsg = status === 'approved' ? 'ຢືນຢັນການເຕີມເງິນສຳເລັດແລ້ວ' : 'ປະຕິເສດຄຳຂໍແລ້ວ';
-
-  if (status === 'approved') {
-    const req = currentTopupRequests.find(r => r.id === id);
-    if (req && req.user_id) {
-      const { error: walletError } = await supabaseClient.rpc('increment_wallet_balance', {
-        p_user_id: req.user_id,
-        p_amount: Math.round(req.amount)
-      });
-      if (walletError) {
-        console.error(walletError);
-        toastMsg = 'ຢືນຢັນແລ້ວ ແຕ່ເຕີມຍອດເງິນເຂົ້າກະເປົາບໍ່ສຳເລັດ: ' + walletError.message;
-      } else {
-        toastMsg = 'ຢືນຢັນ ແລະ ເຕີມຍອດເງິນເຂົ້າກະເປົາລູກຄ້າສຳເລັດແລ້ວ';
-      }
-    }
+  if (httpStatus === 409) {
+    showToast('ລາຍການນີ້ຖືກດຳເນີນການໄປແລ້ວ (' + (result && result.status ? result.status : '-') + ')');
+    loadTopupRequests();
+    return;
   }
+  if (!result || !result.ok) {
+    console.error(result);
+    showToast('ດຳເນີນການບໍ່ສຳເລັດ: ' + ((result && result.error) || httpStatus));
+    btns.forEach(b => b.disabled = false);
+    return;
+  }
+
+  const toastMsg = status === 'approved'
+    ? 'ຢືນຢັນ ແລະ ເຕີມຍອດເງິນເຂົ້າກະເປົາລູກຄ້າສຳເລັດແລ້ວ'
+    : 'ປະຕິເສດຄຳຂໍແລ້ວ';
 
   showToast(toastMsg);
   card.style.transition = 'opacity .2s ease, transform .2s ease';
