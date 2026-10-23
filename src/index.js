@@ -109,11 +109,13 @@ async function route(request, env, ctx) {
       return handleMaintenance(request, env);
     }
 
-    // เช็คสถานะปิด/เปิดเว็บ (public) — ต้องอยู่ก่อน maintenanceGate เพื่อให้หน้าปิดปรับปรุงเช็คได้ว่าเว็บเปิดกลับมาหรือยัง
+    // บอท Discord กดอนุมัติ/ปฏิเสธเติมเงิน (ป้องกันด้วย Bearer BOT_API_SECRET) — ต้องอยู่ก่อน maintenanceGate
+    // เพื่อให้กดปุ่มในดิสได้แม้เว็บปิดปรับปรุงอยู่
     if (url.pathname === '/api/bot/topup-decision') {
       return handleBotTopupDecision(request, env);
     }
 
+    // เช็คสถานะปิด/เปิดเว็บ (public) — ต้องอยู่ก่อน maintenanceGate เพื่อให้หน้าปิดปรับปรุงเช็คได้ว่าเว็บเปิดกลับมาหรือยัง
     if (url.pathname === '/api/maintenance-status') {
       return handleMaintenanceStatus(request, env);
     }
@@ -183,6 +185,9 @@ async function route(request, env, ctx) {
     }
     if (url.pathname === '/api/topup/history') {
       return handleTopupHistory(request, env);
+    }
+    if (url.pathname === '/api/admin/topup-decision') {
+      return handleAdminTopupDecision(request, env);
     }
     if (url.pathname === '/api/orders/create') {
       return handleOrderCreate(request, env);
@@ -1493,7 +1498,11 @@ function json(data, status) {
    ถ้ายังไม่ได้ตั้งค่า (env.DISCORD_WEBHOOK_URL ว่าง) ฟังก์ชันนี้จะข้ามเงียบๆ โดยไม่ทำให้
    ระบบล็อกอิน/เติมเงินพังไปด้วย (แจ้งเตือนคือ best-effort เสริม ไม่ใช่ core flow) */
 async function sendDiscordAlert(env, { title, description, color, fields }) {
-  if (!env.DISCORD_WEBHOOK_URL) return; // ยังไม่ได้ตั้งค่า -> ข้ามไปเฉยๆ
+  if (!env.DISCORD_WEBHOOK_URL) {
+    // ไม่ตั้งค่า = ไม่เตือน — log ไว้ให้เห็นใน Cloudflare > Workers > Logs ว่าทำไมเงียบ
+    console.warn('sendDiscordAlert: DISCORD_WEBHOOK_URL ยังไม่ได้ตั้งค่า (wrangler secret put DISCORD_WEBHOOK_URL)');
+    return;
+  }
 
   const embed = {
     title,
@@ -1504,11 +1513,16 @@ async function sendDiscordAlert(env, { title, description, color, fields }) {
   };
 
   try {
-    await fetch(env.DISCORD_WEBHOOK_URL, {
+    const res = await fetch(env.DISCORD_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ embeds: [embed] }),
+      signal: AbortSignal.timeout(6000),
     });
+    // Discord ตอบ 204 เมื่อสำเร็จ — ถ้า webhook ถูกลบ/ผิด (404/401) หรือโดน rate limit (429) ต้อง log
+    if (!res.ok) {
+      console.error('sendDiscordAlert: Discord ตอบกลับ', res.status, await res.text());
+    }
   } catch (err) {
     // อย่าให้การแจ้งเตือนล้มเหลวไปทำให้ login/topup ของลูกค้าพังตาม — log ไว้เฉยๆ
     console.error('sendDiscordAlert failed:', err);
@@ -3021,6 +3035,11 @@ function safeEqual(a, b) {
    ต้องตั้ง DISCORD_EDGE_URL และ BOT_API_SECRET  ถ้าไม่ได้ตั้งหรือส่งไม่สำเร็จ
    จะ fallback ไปแจ้งผ่าน webhook เดิม (ไม่มีปุ่ม) */
 async function sendTopupToDiscord(env, { id, amount, user, slipUrl }) {
+  if (!env.DISCORD_EDGE_URL || !env.BOT_API_SECRET) {
+    console.warn('sendTopupToDiscord: ยังไม่ได้ตั้ง DISCORD_EDGE_URL / BOT_API_SECRET -> ใช้ webhook (ไม่มีปุ่มกด)');
+  } else if (id == null) {
+    console.warn('sendTopupToDiscord: insert topup_requests ไม่คืน id -> ใช้ webhook (ไม่มีปุ่มกด)');
+  }
   if (env.DISCORD_EDGE_URL && env.BOT_API_SECRET && id != null) {
     try {
       const res = await fetch(env.DISCORD_EDGE_URL, {
@@ -3073,9 +3092,48 @@ async function handleBotTopupDecision(request, env) {
 
   let body = {};
   try { body = await request.json(); } catch { /* ตกไปโดน validate ด้านล่าง */ }
+  return applyTopupDecision(env, body.topup_id, body.decision);
+}
 
-  const topupId = String(body.topup_id || '');
-  const decision = body.decision;
+/* ---------- POST /api/admin/topup-decision ----------
+   ปุ่ม "ຢືນຢັນ / ປະຕິເສດ" ในหน้าแอดมิน (admin.js) เรียกจุดนี้ — ใช้ logic atomic เดียวกับบอท Discord
+   ต้อง login เป็นแอดมิน (session cookie isAdmin) body: { topup_id, decision } */
+async function handleAdminTopupDecision(request, env) {
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  const admin = await getSessionUser(request, env);
+  if (!admin || !admin.isAdmin) {
+    return json({ error: 'ບໍ່ມີສິດເຂົ້າເຖິງ — ຕ້ອງລ໋ອກອິນເປັນແອດມິນກ່ອນ' }, 403);
+  }
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json({ error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }, 500);
+  }
+  let body = {};
+  try { body = await request.json(); } catch { /* validate ด้านล่าง */ }
+  const res = await applyTopupDecision(env, body.topup_id, body.decision);
+
+  // แจ้ง Discord (ถ้าตั้ง webhook ไว้) ว่าแอดมินคนไหนอนุมัติ/ปฏิเสธ — เป็นของเสริม ไม่กระทบผลลัพธ์
+  if (res.status === 200) {
+    try {
+      const d = await res.clone().json();
+      await sendDiscordAlert(env, {
+        title: d.status === 'approved' ? '✅ แอดมินอนุมัติเติมเงิน (หน้าเว็บ)' : '❌ แอดมินปฏิเสธเติมเงิน (หน้าเว็บ)',
+        color: d.status === 'approved' ? 0x2ecc71 : 0xe74c3c,
+        fields: [
+          { name: 'ลูกค้า', value: d.user_email || '-', inline: true },
+          { name: 'จำนวนเงิน', value: `${Number(d.amount).toLocaleString()} กีบ`, inline: true },
+          { name: 'โดยแอดมิน', value: String(admin.email || admin.username || admin.id || 'admin'), inline: true },
+        ],
+      });
+    } catch { /* ข้าม */ }
+  }
+  return res;
+}
+
+/* logic กลางของการอนุมัติ/ปฏิเสธเติมเงิน (ใช้ร่วมกันทั้งบอท Discord และหน้าแอดมิน)
+   - กันกดซ้ำ/สองคนกดพร้อมกัน: อัปเดตเฉพาะแถวที่ยัง pending (ถ้าไม่ใช่ ตอบ 409 ไม่เติมเงินซ้ำ)
+   - ถ้าเติมกระเป๋าไม่สำเร็จ จะคืนสถานะเป็น pending เพื่อให้กดใหม่ได้ */
+async function applyTopupDecision(env, rawTopupId, decision) {
+  const topupId = String(rawTopupId || '');
   if (!/^[A-Za-z0-9-]{1,64}$/.test(topupId)) return json({ error: 'topup_id ไม่ถูกต้อง' }, 400);
   if (decision !== 'approved' && decision !== 'rejected') {
     return json({ error: 'decision ต้องเป็น approved หรือ rejected' }, 400);
@@ -3095,13 +3153,12 @@ async function handleBotTopupDecision(request, env) {
     }
     const row = Array.isArray(claim.data) ? claim.data[0] : null;
     if (!row) {
-      // ไม่ใช่ pending แล้ว -> บอกสถานะปัจจุบันกลับไปให้บอทแสดง
       const cur = await sbRaw(env, 'GET', `topup_requests?id=eq.${idQ}&select=status`);
       const curStatus = cur.ok && Array.isArray(cur.data) && cur.data[0] ? cur.data[0].status : null;
       return json({ ok: false, already_decided: true, status: curStatus, error: 'ไม่พบรายการ หรือถูกดำเนินการไปแล้ว' }, 409);
     }
 
-    // 2) ถ้าอนุมัติ -> เติมเงินเข้ากระเป๋า (ฟังก์ชันเดียวกับหน้าแอดมินเดิม)
+    // 2) ถ้าอนุมัติ -> เติมเงินเข้ากระเป๋า
     if (decision === 'approved') {
       try {
         await supabaseRpcStrict(env, 'increment_wallet_balance', {
@@ -3110,7 +3167,6 @@ async function handleBotTopupDecision(request, env) {
         });
       } catch (err) {
         console.error('increment_wallet_balance failed', err);
-        // คืนสถานะ เพื่อให้กดใหม่ได้ ไม่ให้ "อนุมัติแล้วแต่เงินไม่เข้า"
         try { await sbRaw(env, 'PATCH', `topup_requests?id=eq.${idQ}`, { status: 'pending' }); } catch { /* ข้าม */ }
         return json({ error: 'เติมเงินเข้ากระเป๋าไม่สำเร็จ: ' + err.message }, 502);
       }
@@ -3123,7 +3179,7 @@ async function handleBotTopupDecision(request, env) {
       user_email: row.user_email || null,
     });
   } catch (err) {
-    console.error('handleBotTopupDecision failed:', err);
+    console.error('applyTopupDecision failed:', err);
     return json({ error: 'เกิดข้อผิดพลาด ลองใหม่อีกครั้ง' }, 502);
   }
 }
