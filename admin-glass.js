@@ -79,102 +79,155 @@ if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2Kp
  var sync=function(){mb.setAttribute('aria-checked',mb.classList.contains('is-open-action')?'false':'true')};sync();
  if(window.MutationObserver)new MutationObserver(sync).observe(mb,{attributes:true,attributeFilter:['class']})})();
 
-/* ===== เมนูฟังก์ชันแบบไอคอนกลม =====
-   กดไอคอน -> อีก 2 อันเลื่อนซ้ายหาย + ป้ายหดเข้าไอคอน + แผงเด้งออกจากไอคอน; กดซ้ำ -> ย้อนกลับ
-   อนิเมชันใช้ transform/opacity ล้วน (ไม่ขยับ layout ระหว่างเล่น) จึงลื่น
-   คุมการเปิด/ปิดแผงแทน d2GoToPanel ใน admin.js (สลับ class open เหมือนกัน: .switch, .panel-content, .d2-open) */
+/* ===== การ์ดฟังก์ชัน (shared-element) =====
+   กดการ์ดตัวเลือก -> การ์ดใบนั้นขยายจากตำแหน่ง/ขนาดเดิมเป็นการ์ดฟังก์ชันเต็มจอ (ทุกใบ)
+   ปุ่ม X อยู่มุมบนซ้ายของการ์ด; กด X -> การ์ดหดลงมาที่ตำแหน่งเดิม ขนาดเท่าการ์ดเดิมพอดี
+   - ใช้ Web Animations API (ไม่มี setTimeout คุมภาพ) · เนื้อหาในการ์ดมีขนาดคงที่ระหว่างเล่น จึงไม่คำนวณ layout ซ้ำทุกเฟรม
+   - ยังสลับ class เดิม (.switch.open / .panel-content.open / .d2-open) เหมือน admin.js จึงไม่กระทบตรรกะอื่น
+   - .switch (เนื้อหาจริง) ถูกย้ายเข้าการ์ดตอนเปิด และคืนที่เดิมตอนปิด */
 (function(){'use strict';
  var $=function(s,r){return(r||document).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+ if(!Element.prototype.animate)return;   /* เบราว์เซอร์เก่ามาก: ปล่อยให้ admin.js ทำงานแบบเดิม */
  var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches,K=RM?.01:1;
- var cur=null,closing=null,busy=false,touched=false,tk=0,timers=[],SP='cubic-bezier(.22,1,.36,1)',EZ='cubic-bezier(.2,1.08,.3,1)';
- if(!Element.prototype.animate)return;
+ var OPEN_EASE='cubic-bezier(.22,1,.36,1)',CLOSE_EASE='cubic-bezier(.32,.72,0,1)';
+ var BG_CARD='rgba(16,7,9,.8)',BG_FULL='#0b0508';
+ var cur=null,touched=false,docEl=document.documentElement;
  var panelOf=function(c){return $('.switch[data-target="'+c.getAttribute('data-goto')+'"]')};
  var bodyOf=function(c){return document.getElementById(c.getAttribute('data-goto'))};
- var cardsOf=function(g){return $$('.d2-fn-card[data-goto]',g)};
- var txt=function(c){return $('.d2-fn-text',c)};
- /* ตัวจับเวลาทั้งหมดผูกกับ "รอบ" (tk) — ถ้ามีรอบใหม่/ข้ามอนิเมชัน ตัวเก่าจะไม่ทำงานซ้อนมาทับสถานะใหม่ (สาเหตุแผงหายวาป) */
- function later(fn,ms){timers.push(setTimeout(fn,ms))}
- function stopTimers(){timers.forEach(clearTimeout);timers=[]}
- /* admin.js ตั้ง max-height ของ .switch-body ไว้ 0 ตอนปิด; ตอนเปิดด้วยเอฟเฟกต์นี้ต้องคำนวณใหม่ ไม่งั้นเนื้อหาแผงว่าง */
  function sh(sw){try{if(sw&&typeof syncSwitchHeight==='function')syncSwitchHeight(sw)}catch(e){}}
- function setOpen(c,on){var sw=panelOf(c),b=bodyOf(c);if(sw)sw.classList.toggle('open',on);if(b)b.classList.toggle('open',on);c.classList.toggle('d2-open',on);sh(sw)}
- function origin(sw,icon,box){var i=icon.getBoundingClientRect();sw.style.transformOrigin=(i.left+i.width/2-box.left)+'px '+(i.top+i.height/2-box.top)+'px'}
- function clean(sw){['width','top','left','transformOrigin','willChange'].forEach(function(k){sw.style[k]=''});sw.classList.remove('g-float')}
- function cancelAnims(){$$('.switch[data-target],.d2-fn-card,.d2-fn-text').forEach(function(x){x.getAnimations().forEach(function(a){a.cancel()})})}
- /* ข้ามอนิเมชันที่กำลังเล่น ไปสถานะสุดท้ายทันที (กดรัวๆ ก็ตอบสนองทันที ไม่โดนกลืน) */
- function settle(){
-  tk++;stopTimers();cancelAnims();
-  $$('.d2-fn-card.g-ghost').forEach(function(x){x.classList.remove('g-ghost');x.style.top=''});
-  $$('.switch[data-target]').forEach(clean);
-  if(closing){setOpen(closing,false);closing=null}
-  busy=false;if(cur)sh(panelOf(cur))}
- function clearAll(){
-  tk++;stopTimers();cancelAnims();closing=null;
-  $$('.switch[data-target]').forEach(function(x){x.classList.remove('open');clean(x);sh(x)});
-  $$('.panel-content.open').forEach(function(x){x.classList.remove('open')});
-  $$('.d2-fn-card').forEach(function(x){x.classList.remove('g-me','d2-open','g-ghost');x.style.top=''});
-  $$('.d2-cat-cards.g-picked').forEach(function(g){g.classList.remove('g-picked')});
-  cur=null;busy=false}
- /* ตอนเข้าหน้า admin.js เปิดแผงแรกค้างไว้ -> ปิดให้เหลือแต่ไอคอน (จนกว่าผู้ใช้จะกดเอง) */
- if(window.MutationObserver){var mo=new MutationObserver(function(){if(!touched&&!cur&&$('.switch.open[data-target]'))clearAll()});
-  $$('.switch[data-target]').forEach(function(s){mo.observe(s,{attributes:true,attributeFilter:['class']})})}
- (function(){var f=function(){if(!touched&&!cur)clearAll()};f();addEventListener('load',f);[400,1200,2500].forEach(function(t){setTimeout(f,t)})})();
- /* กลับมาที่แท็บ/แอป: เบราว์เซอร์อาจหยุดอนิเมชันค้างกลางทาง -> เก็บให้เข้าสถานะสุดท้าย */
- document.addEventListener('visibilitychange',function(){if(!document.hidden&&(busy||closing))settle()});
- addEventListener('pageshow',function(){if(busy||closing)settle()});
+ function mk(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e}
+ function stripIds(n){$$('[id]',n).forEach(function(x){x.removeAttribute('id')});['id','data-goto','data-bound'].forEach(function(a){n.removeAttribute(a)})}
+ function dockHide(on){var d=$('.g-dock');if(d)d.classList.toggle('hide',on)}
+ function cancelAll(S){S.anims.forEach(function(a){try{a.cancel()}catch(e){}});S.anims=[]}
+ function box(r){return{top:r.top+'px',left:r.left+'px',width:r.width+'px',height:r.height+'px'}}
+ /* สำเนาหน้าการ์ดเดิม (ไอคอน+ชื่อ+ลูกศร) ไว้ครอสเฟดระหว่างขยาย/หด */
+ function makeFace(c,w,h){var f=c.cloneNode(true);stripIds(f);f.classList.remove('d2-open','g-it');f.classList.add('xp-face');f.style.width=w+'px';f.style.height=h+'px';f.setAttribute('aria-hidden','true');return f}
 
+ /* ตอนเข้าหน้า admin.js เปิดแผงแรกค้างไว้ -> ปิดให้เหลือแต่การ์ด (จนกว่าผู้ใช้จะกดเอง) */
+ function resetClosed(){if(touched||cur)return;
+  $$('.switch[data-target].open').forEach(function(s){s.classList.remove('open');sh(s)});
+  $$('.panel-content.open').forEach(function(p){p.classList.remove('open')});
+  $$('.d2-fn-card.d2-open').forEach(function(c){c.classList.remove('d2-open')})}
+ if(window.MutationObserver){var mo=new MutationObserver(resetClosed);$$('.switch[data-target]').forEach(function(s){mo.observe(s,{attributes:true,attributeFilter:['class']})})}
+ resetClosed();addEventListener('load',resetClosed);[400,1200,2500].forEach(function(t){setTimeout(resetClosed,t)});
+
+ /* ---------- เปิด: การ์ดขยายจากตำแหน่งเดิม ---------- */
  function openIt(c){
-  var g=c.closest('.d2-cat-cards'),sw=panelOf(c),icon=$('.d2-fn-icon',c);if(!g||!sw||!icon)return;
-  touched=true;cur=c;busy=true;var my=++tk;
-  var all=cardsOf(g),cr=g.getBoundingClientRect(),R=all.map(function(x){return x.getBoundingClientRect()}),k=all.indexOf(c),others=[];
-  all.forEach(function(x,i){if(x===c)return;x.style.top=(R[i].top-cr.top)+'px';x.classList.add('g-ghost');others.push(x)});
-  g.classList.add('g-picked');c.classList.add('g-me');setOpen(c,true);
-  origin(sw,icon,sw.getBoundingClientRect());
-  var dy=R[k].top-c.getBoundingClientRect().top;
-  if(dy)c.animate([{transform:'translateY('+dy+'px)'},{transform:'none'}],{duration:560*K,easing:SP});
-  others.forEach(function(x,i){var a=x.animate([{transform:'none',opacity:1},{transform:'translateX(-115%)',opacity:0}],{duration:440*K,delay:i*45*K,easing:'cubic-bezier(.45,0,.2,1)',fill:'both'});
-   a.onfinish=function(){if(my!==tk)return;x.classList.remove('g-ghost');x.style.top='';a.cancel()}});
-  txt(c).animate([{opacity:1,transform:'none'},{opacity:0,transform:'translateX(-26px)'}],{duration:240*K,easing:'ease-in'});
-  sw.style.willChange='transform,opacity';
-  sw.animate([{opacity:0},{opacity:1}],{duration:200*K,delay:110*K,easing:'ease-out',fill:'backwards'});
-  var a=sw.animate([{transform:'scale(.04)'},{transform:'scale(1)'}],{duration:640*K,delay:110*K,easing:EZ,fill:'backwards'});
-  a.onfinish=function(){if(my!==tk)return;sw.style.willChange='';sw.style.transformOrigin='';busy=false;sh(sw)};
-  requestAnimationFrame(function(){if(my===tk)sh(sw)});
-  later(function(){if(my===tk)settle()},900*K+60)}   /* กันค้าง: ถ้า onfinish ไม่ยิง ก็เก็บเข้าสถานะเปิดสมบูรณ์ */
+  var sw=panelOf(c),pn=bodyOf(c);if(!sw||!pn)return;
+  touched=true;
+  /* ให้การ์ดนิ่งก่อนวัดตำแหน่ง (กรณีเพิ่งสลับหน้า / อนิเมชันโผล่ของหน้ายังเล่นอยู่) */
+  var grp=c.closest('.g-it');if(grp)grp.getAnimations().forEach(function(a){try{a.finish()}catch(e){}});
+  var r=c.getBoundingClientRect(),vh=window.innerHeight,vw=docEl.clientWidth;
+  if(r.height&&(r.top<8||r.bottom>vh-8)){            /* การ์ดอยู่นอกจอ -> เลื่อนมากลางจอแบบทันที */
+   docEl.style.scrollBehavior='auto';window.scrollTo(0,window.pageYOffset+r.top-Math.max(8,(vh-r.height)/2));docEl.style.scrollBehavior='';
+   r=c.getBoundingClientRect()}
+  if(!r.width)r={top:vh/2-32,left:8,width:vw-16,height:64};
+  var cs=getComputedStyle(c),R=(parseFloat(cs.borderTopLeftRadius)||26)+'px',rail=cs.getPropertyValue('--rail-color').trim();
+  var S={card:c,sw:sw,pn:pn,phase:'opening',anims:[],timer:0,done:false};
+  var title=$('.d2-fn-title',c),desc=$('.d2-fn-desc',c),icon=$('.d2-fn-icon',c);
 
+  S.root=mk('div','xp xp-anim');S.root.setAttribute('role','dialog');S.root.setAttribute('aria-modal','true');
+  S.root.setAttribute('aria-label',title?title.textContent.trim():'');
+  if(rail)S.root.style.setProperty('--rail-color',rail);
+  S.scrim=mk('div','xp-scrim');S.shell=mk('div','xp-card');S.inner=mk('div','xp-inner');
+  var head=mk('div','xp-head');
+  S.x=mk('button','xp-x','<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>');S.x.type='button';S.x.setAttribute('aria-label','ປິດ');
+  head.appendChild(S.x);
+  if(icon){var ic=icon.cloneNode(true);stripIds(ic);head.appendChild(ic)}
+  var tt=mk('div','xp-ttl'),b=mk('b');b.textContent=title?title.textContent.trim():'';tt.appendChild(b);
+  if(desc){var sp=mk('span');sp.textContent=desc.textContent.trim();tt.appendChild(sp)}
+  head.appendChild(tt);
+  S.scroll=mk('div','xp-scroll');S.inner.appendChild(head);S.inner.appendChild(S.scroll);
+  S.face=makeFace(c,r.width,r.height);
+  S.shell.appendChild(S.inner);S.shell.appendChild(S.face);S.root.appendChild(S.scrim);S.root.appendChild(S.shell);
+
+  /* ย้ายเนื้อหาจริง (.switch) เข้าการ์ด โดยวางตัวกันที่ไว้เท่าเดิม หน้าข้างหลังจะได้ไม่ขยับ */
+  var h0=sw.getBoundingClientRect().height;
+  S.ph=mk('div','xp-ph');S.ph.style.height=h0+'px';S.ph.style.flex='none';
+  sw.parentNode.insertBefore(S.ph,sw);sw.style.animation='none';S.scroll.appendChild(sw);
+  sw.classList.add('open');pn.classList.add('open');c.classList.add('d2-open');
+  document.body.appendChild(S.root);docEl.classList.add('xp-lock');dockHide(true);sh(sw);
+
+  var F=S.shell.getBoundingClientRect();                     /* ขนาดปลายทาง (จาก CSS) */
+  S.inner.style.width=F.width+'px';S.inner.style.height=F.height+'px';
+  c.style.visibility='hidden';cur=S;
+
+  var D=Math.round(640*K);
+  function A(el,kf,o){var a=el.animate(kf,o);S.anims.push(a);return a}
+  var kA=box(r);kA.borderRadius=R;var kB=box(F);kB.borderRadius='30px';
+  var main=A(S.shell,[kA,kB],{duration:D,easing:OPEN_EASE,fill:'both'});
+  A(S.shell,[{backgroundColor:BG_CARD},{backgroundColor:BG_FULL}],{duration:260*K,easing:'ease-out',fill:'both'});
+  A(S.scrim,[{opacity:0},{opacity:1}],{duration:420*K,easing:'ease-out',fill:'both'});
+  A(S.face,[{opacity:1},{opacity:0}],{duration:200*K,easing:'ease-in',fill:'forwards'});
+  A(S.inner,[{opacity:0,transform:'translate3d(0,16px,0)'},{opacity:1,transform:'translate3d(0,0,0)'}],{duration:460*K,delay:170*K,easing:OPEN_EASE,fill:'backwards'});
+  /* ไอคอน/ข้อความ/ช่องกรอก โผล่แบบเบลอแล้วคมชัดขึ้นทีละชิ้น (แยกจากอนิเมชันหลัก เพื่อไม่ถูกตัดตอนการ์ดขยายเสร็จ) */
+  S.rv=[];revealItems(S).forEach(function(e,i){S.rv.push(e.animate([{opacity:0,filter:'blur(12px)',transform:'translate3d(0,12px,0) scale(.97)'},{opacity:1,filter:'blur(0px)',transform:'translate3d(0,0,0) scale(1)'}],{duration:560*K,delay:(200+Math.min(i,9)*55)*K,easing:OPEN_EASE,fill:'backwards'}))});
+  main.onfinish=function(){openEnd(S)};
+  S.timer=setTimeout(function(){openEnd(S)},D+250);          /* กันค้าง ถ้า onfinish ไม่ยิง */
+  S.x.addEventListener('click',function(e){e.stopPropagation();closeIt()});
+  S.scrim.addEventListener('click',closeIt);
+ }
+ function revealItems(S){var hd=$('.xp-head',S.inner),host=$('.stat-panel',S.scroll)||S.scroll;return $$(':scope > *',hd).concat($$(':scope > *',host).filter(function(x){return x.offsetHeight>0}).slice(0,10))}
+ function openEnd(S){
+  if(S.done||S.phase!=='opening')return;S.phase='open';clearTimeout(S.timer);
+  cancelAll(S);S.inner.style.width='';S.inner.style.height='';
+  if(S.face.parentNode)S.face.parentNode.removeChild(S.face);
+  S.root.classList.remove('xp-anim');sh(S.sw);
+  try{S.x.focus({preventScroll:true})}catch(e){}}
+
+ /* ---------- ปิด: การ์ดหดกลับที่เดิม ขนาดเท่าการ์ดเดิม ---------- */
  function closeIt(){
-  var c=cur,g=c.closest('.d2-cat-cards'),sw=panelOf(c),icon=$('.d2-fn-icon',c);busy=true;cur=null;closing=c;var my=++tk;
-  var P=sw.getBoundingClientRect(),y0=c.getBoundingClientRect().top;
-  sw.style.width=P.width+'px';sw.style.willChange='transform,opacity';sw.classList.add('g-float');
-  g.classList.remove('g-picked');c.classList.remove('g-me');
-  var op=sw.offsetParent||g,D=op.getBoundingClientRect();
-  sw.style.top=(P.top-D.top)+'px';sw.style.left=(P.left-D.left)+'px';
-  origin(sw,icon,P);
-  var dy=y0-c.getBoundingClientRect().top;
-  if(dy)c.animate([{transform:'translateY('+dy+'px)'},{transform:'none'}],{duration:560*K,easing:SP});
-  var n=0;cardsOf(g).forEach(function(x){
-   if(x!==c)x.animate([{transform:'translateX(-115%)',opacity:0},{transform:'none',opacity:1}],{duration:560*K,delay:(200+(n++)*55)*K,easing:SP,fill:'backwards'});
-   txt(x).animate([{opacity:0,transform:'translateX(-26px)'},{opacity:1,transform:'none'}],{duration:480*K,delay:430*K,easing:SP,fill:'backwards'})});
-  var o=sw.animate([{opacity:1},{opacity:1,offset:.55},{opacity:0}],{duration:500*K,easing:'linear',fill:'forwards'});
-  var a=sw.animate([{transform:'scale(1)'},{transform:'scale(.04)'}],{duration:500*K,easing:'cubic-bezier(.5,0,.2,1)',fill:'forwards'});
-  a.onfinish=function(){if(my!==tk)return;setOpen(c,false);a.cancel();o.cancel();clean(sw);closing=null;sh(sw)};
-  later(function(){if(my===tk)settle()},1000*K+60)}
+  var S=cur;if(!S||S.done||S.phase==='closing')return;
+  if(S.phase==='opening')openEnd(S);                         /* กดปิดระหว่างเปิด: ข้ามไปสถานะเปิดสมบูรณ์ก่อน แล้วปิดต่อทันที */
+  (S.rv||[]).forEach(function(a){try{a.cancel()}catch(e){}});
+  S.phase='closing';var c=S.card;
+  c.classList.remove('d2-open');
+  var r=c.getBoundingClientRect(),F=S.shell.getBoundingClientRect();   /* วัดใหม่ตอนปิด (เผื่อจอ/ข้อมูลเปลี่ยน) */
+  var R=(parseFloat(getComputedStyle(c).borderTopLeftRadius)||26)+'px';
+  S.inner.style.width=F.width+'px';S.inner.style.height=F.height+'px';
+  S.root.classList.add('xp-anim');
+  if(S.face.parentNode)S.face.parentNode.removeChild(S.face);
+  S.face=makeFace(c,r.width,r.height);S.shell.appendChild(S.face);   /* หน้าการ์ดใหม่ (ป้ายตัวเลขอัปเดตแล้ว) */
+  dockHide(false);
+  var D=Math.round(560*K);
+  function A(el,kf,o){var a=el.animate(kf,o);S.anims.push(a);return a}
+  var kA=box(F);kA.borderRadius='30px';var kB=box(r);kB.borderRadius=R;
+  var main=A(S.shell,[kA,kB],{duration:D,easing:CLOSE_EASE,fill:'forwards'});
+  A(S.shell,[{backgroundColor:BG_FULL},{backgroundColor:BG_FULL,offset:.45},{backgroundColor:BG_CARD}],{duration:D,easing:'linear',fill:'forwards'});
+  A(S.scrim,[{opacity:1},{opacity:0}],{duration:D,easing:'ease-in-out',fill:'forwards'});
+  A(S.inner,[{opacity:1,transform:'translate3d(0,0,0)'},{opacity:0,transform:'translate3d(0,10px,0)'}],{duration:320*K,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+  A(S.face,[{opacity:0},{opacity:0,offset:.35},{opacity:1}],{duration:D,easing:'ease-out',fill:'both'});
+  /* ตอนปิด: ไอคอน/ข้อความ/เนื้อหา เบลอแล้วจางหายทีละชิ้น + หน้าการ์ดเดิมค่อยๆ ชัดขึ้นจากเบลอ */
+  revealItems(S).forEach(function(e,i){A(e,[{opacity:1,filter:'blur(0px)',transform:'scale(1)'},{opacity:0,filter:'blur(12px)',transform:'scale(.97)'}],{duration:300*K,delay:Math.min(i,6)*20*K,easing:'ease-in',fill:'forwards'})});
+  A(S.face,[{filter:'blur(12px)'},{filter:'blur(12px)',offset:.35},{filter:'blur(0px)'}],{duration:D,easing:'ease-out',fill:'both'});
+  main.onfinish=function(){closeEnd(S)};
+  S.timer=setTimeout(function(){closeEnd(S)},D+250);
+ }
+ function closeEnd(S){
+  if(S.done)return;S.done=true;clearTimeout(S.timer);cancelAll(S);
+  S.sw.classList.remove('open');S.pn.classList.remove('open');S.card.classList.remove('d2-open');
+  if(S.ph&&S.ph.parentNode)S.ph.parentNode.replaceChild(S.sw,S.ph);   /* คืน .switch ที่เดิม */
+  S.card.style.visibility='';                                          /* โชว์การ์ดจริง + ลบการ์ดจำลอง ในเฟรมเดียวกัน = ไม่มีกระพริบ */
+  if(S.root.parentNode)S.root.parentNode.removeChild(S.root);
+  docEl.classList.remove('xp-lock');dockHide(false);sh(S.sw);
+  if(cur===S)cur=null}
+ function closeNow(){var S=cur;if(!S)return;if(S.phase==='opening')openEnd(S);closeEnd(S)}
 
  document.addEventListener('click',function(e){
   var t=e.target;if(!t.closest)return;
-  if(t.closest('.g-dock button[data-k]')){clearAll();return}
-  /* แตะหัวข้อของแผงที่เปิดอยู่: ให้เอฟเฟกต์ปิดแทน (เดิม admin.js สลับ class เอง -> แผงหายวาปแต่สถานะค้าง) */
-  var hd=t.closest('.switch[data-target] .switch-head');
-  if(hd){e.stopImmediatePropagation();e.preventDefault();var s0=hd.closest('.switch');
-   if(busy)settle();if(cur&&panelOf(cur)===s0)closeIt();return}
+  if(t.closest('.g-dock button[data-k]')){closeNow();return}
+  if(t.closest('.xp'))return;
   var el=t.closest('[data-goto]');if(!el||el.classList.contains('g-quick'))return;
   var c=el.classList.contains('d2-fn-card')?el:$('.d2-fn-card[data-goto="'+el.getAttribute('data-goto')+'"]');
   if(!c||!panelOf(c))return;
-  e.stopImmediatePropagation();e.preventDefault();
-  if(busy||closing)settle();   /* ไม่ทิ้งการกดระหว่างอนิเมชัน: ข้ามไปสถานะสุดท้ายแล้วทำคำสั่งใหม่ทันที */
-  touched=true;
-  if(cur===c){if(el===c)closeIt();return}      /* กดแถวแจ้งเตือนของแผงที่เปิดอยู่แล้ว = ไม่ทำอะไร */
-  if(cur)clearAll();openIt(c)},true);
+  e.stopImmediatePropagation();e.preventDefault();       /* ไม่ให้ admin.js สลับ accordion เดิมซ้อน */
+  if(cur){if(cur.card===c)return;closeNow()}
+  openIt(c)},true);
+ document.addEventListener('keydown',function(e){if(e.key==='Escape'&&cur)closeIt()});
+ /* กลับมาที่แท็บ/แอป: เบราว์เซอร์อาจหยุดอนิเมชันค้างกลางทาง -> เก็บให้เข้าสถานะสุดท้าย */
+ function settle(){var S=cur;if(!S)return;if(S.phase==='opening')openEnd(S);else if(S.phase==='closing')closeEnd(S)}
+ document.addEventListener('visibilitychange',function(){if(!document.hidden)settle()});
+ addEventListener('pageshow',settle);
 })();
 
 })();
