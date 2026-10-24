@@ -515,97 +515,217 @@ function renderCategoryOptions(products) {
 }
 
 // ---------- ແຜງຈັດການສິນຄ້າ (ແກ້ຊື່/ລາຄາ/ລຶບ) ----------
+// ແຕ່ລະສິນຄ້າເປັນແຖວຍໍ່ — ກົດເພື່ອກາງອອກແກ້ໄຂ. ຈື່ແຖວທີ່ເປີດໄວ້ ເພື່ອບໍ່ໃຫ້ພັບຄືນເວລາ render ໃໝ່
+const manageOpenIds = new Set();
+let manageFilter = 'all';
+let manageSearchTerm = '';
+
+const PRODUCT_STATE_LABEL = { live: 'ກຳລັງຂາຍ', paused: 'ຢຸດຂາຍ', hidden: 'ເຊື່ອງໄວ້' };
+function productState(p) { return p.archived ? 'hidden' : (p.paused ? 'paused' : 'live'); }
+
+function productSummary(p) {
+  const durs = p.durations || [];
+  if (p.duration_enabled) {
+    const stock = durs.reduce((s, d) => s + (Number(d.stock) || 0), 0);
+    const from = durs.length ? Math.min(...durs.map(d => Number(d.price) || 0)) : 0;
+    return {
+      price: durs.length ? `ເລີ່ມ ${formatKipAdmin(from)}` : 'ຍັງບໍ່ມີໄລຍະເວລາ',
+      extra: '',
+      stock,
+    };
+  }
+  return { price: formatKipAdmin(p.price), extra: '', stock: Number(p.stock) || 0 };
+}
+
+const ICON_CAMERA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>';
+const ICON_CHEVRON = '<svg class="prod-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+const ICON_PENCIL = '<svg class="pdc-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+
+function initManageToolbar() {
+  const bar = document.getElementById('manageToolbar');
+  if (!bar || bar.dataset.bound) return;
+  bar.dataset.bound = '1';
+  const search = document.getElementById('manageSearch');
+  if (search) search.addEventListener('input', () => { manageSearchTerm = search.value; applyManageFilter(); });
+  bar.querySelectorAll('[data-pf]').forEach(b => {
+    b.addEventListener('click', () => { manageFilter = b.dataset.pf; applyManageFilter(); });
+  });
+}
+
+// ຄົ້ນຫາ/ກັ່ນຕອງດ້ວຍການສະຫຼັບ hidden ຂອງແຖວ — ບໍ່ render ໃໝ່ ຈຶ່ງບໍ່ເສຍຄ່າທີ່ກຳລັງພິມ
+function applyManageFilter() {
+  const list = document.getElementById('manageList');
+  const bar = document.getElementById('manageToolbar');
+  if (!list) return;
+  const term = manageSearchTerm.trim().toLowerCase();
+  const counts = { all: 0, live: 0, paused: 0, hidden: 0 };
+  let shown = 0;
+  list.querySelectorAll('.prod-row').forEach(row => {
+    const st = row.dataset.state;
+    counts.all++;
+    counts[st] = (counts[st] || 0) + 1;
+    const ok = (manageFilter === 'all' || manageFilter === st) && (!term || row.dataset.name.includes(term));
+    row.hidden = !ok;
+    if (ok) shown++;
+  });
+  if (bar) {
+    bar.querySelectorAll('[data-pf]').forEach(b => {
+      const on = b.dataset.pf === manageFilter;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      const n = b.querySelector('b');
+      if (n) n.textContent = counts[b.dataset.pf] || 0;
+    });
+  }
+  const none = list.querySelector('.pm-none');
+  if (none) none.hidden = shown > 0;
+}
+
 function renderManageList(products) {
   const list = document.getElementById('manageList');
+  initManageToolbar();
   if (!products.length) {
     list.innerHTML = '<div class="empty-note">ຍັງບໍ່ມີສິນຄ້າ — ເພີ່ມສິນຄ້າກ່ອນທີ່ແຖບ "ເພີ່ມສິນຄ້າ"</div>';
     return;
   }
 
-  list.innerHTML = products.map(p => `
-    <div class="prod-row ${p.archived ? 'is-archived' : ''} ${p.paused ? 'is-paused' : ''}" data-id="${p.id}">
-      <div class="prod-thumb-wrap" title="ກົດເພື່ອປ່ຽນຮູບ">
-        <img class="prod-thumb" src="${p.image_url || ''}" alt="">
-        <span class="thumb-edit-badge">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        </span>
-        <input type="file" class="edit-image-input" accept="image/*" hidden>
-      </div>
-      <div class="prod-fields">
-        ${p.archived ? '<div class="archived-tag">ເຊື່ອງໄວ້ — ບໍ່ສະແດງໃນໜ້າຮ້ານ</div>' : ''}
-        ${p.paused ? `<div class="paused-tag">ຢຸດຂາຍຊົ່ວຄາວ${p.paused_note ? ' — ' + p.paused_note.replace(/</g, '&lt;') : ''}</div>` : ''}
-        <div class="gx-row2">
-          <input type="text" class="edit-name" value="${(p.name || '').replace(/"/g, '&quot;')}" placeholder="ຊື່ສິນຄ້າ">
-          <input type="number" class="edit-price" value="${p.price || 0}" min="0" step="0.01" placeholder="ລາຄາ">
+  list.innerHTML = products.map(p => {
+    const st = productState(p);
+    const sum = productSummary(p);
+    const open = manageOpenIds.has(p.id);
+    const name = escapeHtmlAdmin(p.name || '');
+    const durs = p.durations || [];
+    const links = p.links || [];
+    return `
+    <div class="prod-row is-${st} ${open ? 'is-open' : ''}" data-id="${p.id}" data-state="${st}" data-name="${name.toLowerCase()}">
+      <div class="prod-summary" role="button" tabindex="0" aria-expanded="${open ? 'true' : 'false'}">
+        <div class="prod-thumb-wrap" title="ກົດເພື່ອປ່ຽນຮູບ">
+          <img class="prod-thumb" src="${escapeHtmlAdmin(p.image_url || '')}" alt="">
+          <span class="thumb-edit-badge">${ICON_CAMERA}</span>
+          <input type="file" class="edit-image-input" accept="image/*" hidden>
         </div>
-        <label class="pause-toggle-label">
-          <input type="checkbox" class="edit-paused" ${p.paused ? 'checked' : ''}>
-          ຢຸດຂາຍຊົ່ວຄາວ (ລູກຄ້າຈະສັ່ງຊື້ບໍ່ໄດ້ ຈົນກວ່າຈະເປີດຄືນ)
-        </label>
-        <div class="gx-input-wrap pause-note-wrap" style="display:${p.paused ? 'block' : 'none'};margin-bottom:4px;">
-          <input type="text" class="edit-paused-note" value="${(p.paused_note || '').replace(/"/g, '&quot;')}" placeholder="ລາຍລະອຽດ ເຊັ່ນ: ສະຕັອກໝົດ ຈະເປີດຂາຍຄືນ 20:00">
-        </div>
-        <div class="gx-input-wrap" style="margin-bottom:4px;">
-          <textarea class="edit-description" rows="3" placeholder="ລາຍລະອຽດສິນຄ້າ (ສະແດງໃຕ້ປຸ່ມຊື້ເລີຍ)" style="resize:vertical;min-height:60px;">${(p.description || '').replace(/</g, '&lt;')}</textarea>
-        </div>
-        <div class="prod-meta-row">
-          <span class="prod-stock">${p.duration_enabled ? 'ມີໄລຍະເວລາ' : `ຄົງເຫຼືອ ${p.stock} ລະຫັດ`}</span>
-          <div class="prod-actions">
-            <button class="icon-btn save-btn" title="ບັນທຶກ">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            </button>
-            <button class="icon-btn del-btn" title="${p.archived ? 'ນຳກັບມາສະແດງ' : 'ເອົາອອກຈາກໜ້າຮ້ານ'}">
-              ${p.archived ? `
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-              ` : `
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-              `}
-            </button>
-            <button class="icon-btn hard-del-btn" title="ລຶບຖາວອນ (ລຶບຖິ້ມ ບໍ່ສາມາດກູ້ຄືນໄດ້)">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-            </button>
+        <div class="prod-sum-text">
+          <div class="prod-sum-name">${name || 'ບໍ່ມີຊື່'}</div>
+          <div class="prod-sum-sub">
+            <span class="prod-sum-price">${sum.price}</span>
+            ${sum.extra ? `<span>${sum.extra}</span>` : ''}
+            <span class="${sum.stock === 0 ? 'is-out' : ''}">${sum.stock === 0 ? 'ໝົດສະຕັອກ' : `ເຫຼືອ ${sum.stock} ລະຫັດ`}</span>
           </div>
         </div>
-        ${p.duration_enabled ? `
-        <div class="prod-duration-list">
-          ${(p.durations || []).map(d => `
-            <span class="prod-duration-chip" data-duration-id="${d.id}" data-price="${d.price}" title="ກົດເພື່ອແກ້ໄຂລາຄາ">
-              <span class="pdc-text">${d.label} • ${formatKipAdmin(d.price)} • ຄົງເຫຼືອ ${d.stock}</span>
-              <button type="button" class="pdc-del-btn" title="ລຶບໄລຍະເວລານີ້">×</button>
-              <svg class="pdc-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-            </span>
-          `).join('')}
+        <span class="prod-state is-${st}">${PRODUCT_STATE_LABEL[st]}</span>
+        ${ICON_CHEVRON}
+      </div>
+
+      <div class="prod-edit" ${open ? '' : 'hidden'}>
+        <div class="pe-section">
+          <div class="pe-grid">
+            <label class="pe-field pe-grow">
+              <span>ຊື່ສິນຄ້າ</span>
+              <input type="text" class="edit-name" value="${name}" placeholder="ຊື່ສິນຄ້າ">
+            </label>
+            ${p.duration_enabled
+              ? `<input type="hidden" class="edit-price" value="${Number(p.price) || 0}">`
+              : `<label class="pe-field pe-price">
+                  <span>ລາຄາ (ກີບ)</span>
+                  <input type="number" class="edit-price" value="${Number(p.price) || 0}" min="0" step="0.01" inputmode="decimal" placeholder="ລາຄາ">
+                </label>`}
+          </div>
+          <label class="pe-field">
+            <span>ລາຍລະອຽດ <em>ສະແດງໃຕ້ປຸ່ມຊື້</em></span>
+            <textarea class="edit-description" rows="3" placeholder="ລາຍລະອຽດສິນຄ້າ">${escapeHtmlAdmin(p.description || '')}</textarea>
+          </label>
         </div>
-        <div class="dur-add-inline">
-          <input type="number" class="dur-add-qty" min="1" step="1" inputmode="numeric" placeholder="ຈຳນວນ">
-          <select class="dur-add-unit">
-            <option value="ຊມ">ຊົ່ວໂມງ</option>
-            <option value="ວັນ" selected>ວັນ</option>
-          </select>
-          <input type="number" class="dur-add-price" min="0" step="0.01" inputmode="decimal" placeholder="ລາຄາ (ກີບ)">
-          <button type="button" class="dur-add-btn" title="ເພີ່ມໄລຍະເວລາ">+</button>
-        </div>` : ''}
-        <div class="prod-links-section">
-          <div class="prod-links-list">
-            ${(p.links || []).map(l => `
-              <span class="prod-link-chip" data-link-id="${l.id}">
-                ${l.label.replace(/</g, '&lt;')}
-                <button type="button" class="link-chip-remove" title="ລຶບລິ້ງ">×</button>
+
+        <div class="pe-section">
+          <label class="pe-switch">
+            <input type="checkbox" class="edit-paused" ${p.paused ? 'checked' : ''}>
+            <span class="pe-switch-ui" aria-hidden="true"></span>
+            <span class="pe-switch-text"><b>ຢຸດຂາຍຊົ່ວຄາວ</b><small>ລູກຄ້າຈະສັ່ງຊື້ບໍ່ໄດ້ ຈົນກວ່າຈະເປີດຄືນ</small></span>
+          </label>
+          <div class="pause-note-wrap" ${p.paused ? '' : 'hidden'}>
+            <input type="text" class="edit-paused-note" value="${escapeHtmlAdmin(p.paused_note || '')}" placeholder="ແຈ້ງລູກຄ້າ ເຊັ່ນ: ສະຕັອກໝົດ ຈະເປີດຂາຍຄືນ 20:00">
+          </div>
+        </div>
+
+        ${p.duration_enabled ? `
+        <div class="pe-section">
+          <div class="pe-title">ໄລຍະເວລາ ແລະ ລາຄາ <small>ແຕະເພື່ອແກ້ລາຄາ</small></div>
+          <div class="prod-duration-list">
+            ${durs.map(d => `
+              <span class="prod-duration-chip" data-duration-id="${d.id}" data-price="${d.price}" title="ກົດເພື່ອແກ້ໄຂລາຄາ">
+                <span class="pdc-text"><b>${escapeHtmlAdmin(d.label)}</b><span>${formatKipAdmin(d.price)}</span><em class="${Number(d.stock) === 0 ? 'is-out' : ''}">ເຫຼືອ ${d.stock}</em></span>
+                ${ICON_PENCIL}
+                <button type="button" class="pdc-del-btn" title="ລຶບໄລຍະເວລານີ້" aria-label="ລຶບໄລຍະເວລານີ້">×</button>
               </span>
             `).join('')}
           </div>
-          <div class="link-add-inline">
-            <input type="text" class="link-add-label" placeholder="ຊື່ລິ້ງໂບນັດໃໝ່">
-            <input type="url" class="link-add-url" placeholder="ລິ້ງ URL">
-            <button type="button" class="link-add-btn" title="ເພີ່ມລິ້ງ">+</button>
+          <details class="pe-fold">
+            <summary>ເພີ່ມໄລຍະເວລາໃໝ່</summary>
+            <div class="dur-add-inline">
+              <input type="number" class="dur-add-qty" min="1" step="1" inputmode="numeric" placeholder="ຈຳນວນ">
+              <select class="dur-add-unit">
+                <option value="ຊມ">ຊົ່ວໂມງ</option>
+                <option value="ວັນ" selected>ວັນ</option>
+              </select>
+              <input type="number" class="dur-add-price" min="0" step="0.01" inputmode="decimal" placeholder="ລາຄາ (ກີບ)">
+              <button type="button" class="dur-add-btn" title="ເພີ່ມໄລຍະເວລາ">ເພີ່ມ</button>
+            </div>
+          </details>
+        </div>` : ''}
+
+        <div class="pe-section">
+          <div class="pe-title">ລິ້ງໂບນັດ</div>
+          <div class="prod-links-list">
+            ${links.length ? links.map(l => `
+              <span class="prod-link-chip" data-link-id="${l.id}">
+                ${escapeHtmlAdmin(l.label)}
+                <button type="button" class="link-chip-remove" title="ລຶບລິ້ງ" aria-label="ລຶບລິ້ງ">×</button>
+              </span>
+            `).join('') : '<span class="pe-none">ຍັງບໍ່ມີລິ້ງໂບນັດ</span>'}
+          </div>
+          <details class="pe-fold">
+            <summary>ເພີ່ມລິ້ງໂບນັດ</summary>
+            <div class="link-add-inline">
+              <input type="text" class="link-add-label" placeholder="ຊື່ລິ້ງ">
+              <input type="url" class="link-add-url" placeholder="https://...">
+              <button type="button" class="link-add-btn" title="ເພີ່ມລິ້ງ">ເພີ່ມ</button>
+            </div>
+          </details>
+        </div>
+
+        <div class="pe-foot">
+          <button type="button" class="pe-btn pe-primary save-btn">ບັນທຶກການແກ້ໄຂ</button>
+          <div class="pe-more">
+            <button type="button" class="pe-btn pe-ghost del-btn">${p.archived ? 'ນຳກັບມາສະແດງໃນໜ້າຮ້ານ' : 'ເຊື່ອງຈາກໜ້າຮ້ານ'}</button>
+            <button type="button" class="pe-btn pe-danger hard-del-btn">ລຶບຖາວອນ</button>
           </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('') + '<div class="empty-note pm-none" hidden>ບໍ່ພົບສິນຄ້າທີ່ຄົ້ນຫາ</div>';
 
   list.querySelectorAll('.prod-row').forEach(row => {
     const id = row.dataset.id;
+    const summary = row.querySelector('.prod-summary');
+    const editBox = row.querySelector('.prod-edit');
+
+    const toggleOpen = () => {
+      const open = !row.classList.contains('is-open');
+      row.classList.toggle('is-open', open);
+      editBox.hidden = !open;
+      summary.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) manageOpenIds.add(id); else manageOpenIds.delete(id);
+    };
+    summary.addEventListener('click', (e) => {
+      // ເມື່ອເປີດຢູ່ ການກົດຮູບ = ປ່ຽນຮູບ (ບໍ່ພັບແຖວ)
+      if (row.classList.contains('is-open') && e.target.closest('.prod-thumb-wrap')) return;
+      toggleOpen();
+    });
+    summary.addEventListener('keydown', (e) => {
+      if (e.target !== summary) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleOpen(); }
+    });
+
     row.querySelector('.save-btn').addEventListener('click', () => saveProduct(id, row));
 
     const thumbWrap = row.querySelector('.prod-thumb-wrap');
@@ -613,6 +733,7 @@ function renderManageList(products) {
     if (thumbWrap && imgInput) {
       thumbWrap.addEventListener('click', (e) => {
         if (e.target === imgInput || thumbWrap.classList.contains('uploading')) return;
+        if (!row.classList.contains('is-open')) return;
         imgInput.click();
       });
       imgInput.addEventListener('change', () => {
@@ -627,7 +748,7 @@ function renderManageList(products) {
     const pauseCb = row.querySelector('.edit-paused');
     const pauseNoteWrap = row.querySelector('.pause-note-wrap');
     pauseCb.addEventListener('change', () => {
-      pauseNoteWrap.style.display = pauseCb.checked ? 'block' : 'none';
+      pauseNoteWrap.hidden = !pauseCb.checked;
     });
 
     row.querySelector('.link-add-btn').addEventListener('click', () => addProductLink(id, row));
@@ -652,6 +773,8 @@ function renderManageList(products) {
     const durAddBtn = row.querySelector('.dur-add-btn');
     if (durAddBtn) durAddBtn.addEventListener('click', () => addProductDuration(id, row));
   });
+
+  applyManageFilter();
 }
 
 // ---------- ໄລຍະເວລາ — ເພີ່ມໃໝ່ (ຊົ່ວໂມງ / ວັນ) ໃນສິນຄ້າທີ່ມີຢູ່ແລ້ວ ----------
@@ -1221,26 +1344,29 @@ function renderResellerTiers(tiers) {
   list.innerHTML = tiers.map(t => {
     const isLifetime = t.period_days === null;
     return `
-    <div class="tier-card" data-duration-type="${t.duration_type}">
+    <div class="tier-card ${isLifetime ? 'is-lifetime' : ''}" data-duration-type="${t.duration_type}">
       <div class="tier-card-head">
         <span class="tier-card-title">${tierLabel(t.duration_type)}</span>
-        <button class="icon-btn save-btn" title="ບັນທຶກ">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        </button>
       </div>
-      <div class="tier-card-fields single">
-        ${!isLifetime ? `
-        <div>
-          <label>ໂຄວຕ້າຍອດຊື້ (ກີບ) — ຕ້ອງເຮັດໃຫ້ຄົບພາຍໃນໄລຍະ ບໍ່ຄັ້ນຈະຖືກປົດ</label>
-          <input type="number" class="edit-quota" value="${t.quota_amount ?? 0}" min="0" step="1">
-        </div>` : `
-        <div class="tier-card-lifetime-note">ຖາວອນ — ບໍ່ມີເງື່ອນໄຂໂຄວຕ້າ ໃຊ້ໄດ້ຕະຫຼອດໄປ</div>`}
-      </div>
+      ${!isLifetime ? `
+      <div class="tier-card-field">
+        <span>ໂຄວຕ້າຍອດຊື້ ຕໍ່ຮອບ</span>
+        <div class="tier-row">
+          <div class="tier-input">
+            <input type="number" class="edit-quota" value="${t.quota_amount ?? 0}" min="0" step="1" inputmode="numeric" aria-label="ໂຄວຕ້າຍອດຊື້ (ກີບ)">
+            <i>ກີບ</i>
+          </div>
+          <button type="button" class="pe-btn pe-primary save-btn">ບັນທຶກ</button>
+        </div>
+        <small>ຖ້າຊື້ບໍ່ຄົບໃນໄລຍະນີ້ ສິດຕົວແທນຈະຖືກປົດ</small>
+      </div>` : `
+      <div class="tier-card-lifetime-note">ບໍ່ມີເງື່ອນໄຂໂຄວຕ້າ ໃຊ້ໄດ້ຕະຫຼອດໄປ</div>`}
     </div>`;
   }).join('');
 
   list.querySelectorAll('.tier-card').forEach(card => {
-    card.querySelector('.save-btn').addEventListener('click', () => saveResellerTier(card));
+    const sb = card.querySelector('.save-btn');
+    if (sb) sb.addEventListener('click', () => saveResellerTier(card));
   });
 }
 
@@ -1357,15 +1483,44 @@ async function loadResellerKeys() {
   loadAgentAccounts();
 }
 
+// ---------- ຕົວຊ່ວຍສະແດງວັນເວລາ/ຊື່ ----------
+function shortDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '—';
+  return d.toLocaleString('lo-LA', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function agentNameByUserId(uid) {
+  if (!uid) return '—';
+  const a = (typeof currentAgentAccounts !== 'undefined' ? currentAgentAccounts : []).find(x => x.user_id === uid);
+  if (a && a.user_email) return a.user_email;
+  const str = String(uid);
+  return str.length > 12 ? str.slice(0, 8) + '…' : str;
+}
+
+// ກັ່ນຕອງລາຍການຄີຍ໌: ຄ່າເລີ່ມຕົ້ນ = ຍັງບໍ່ໄດ້ໃຊ້ (ເພາະເປັນສິ່ງທີ່ແອດມິນຕ້ອງການຫຼາຍທີ່ສຸດ)
+let agentKeysFilter = 'unused';
+
 function renderResellerKeysOpsStrip(keys) {
   const strip = document.getElementById('agentKeysOpsStrip');
+  if (!strip) return;
   const unused = keys.filter(k => k.status === 'unused').length;
-  const used = keys.filter(k => k.status === 'used').length;
+  const used = keys.length - unused;
   strip.innerHTML = `
-    <div class="ops-chip"><div class="ops-num">${keys.length}</div><div class="ops-label">ຄີຍ໌ທັງໝົດ</div></div>
-    <div class="ops-chip"><div class="ops-num">${unused}</div><div class="ops-label">ຍັງບໍ່ໄດ້ໃຊ້</div></div>
-    <div class="ops-chip"><div class="ops-num">${used}</div><div class="ops-label">ໃຊ້ແລ້ວ</div></div>
+    <button type="button" class="ag-seg-btn ${agentKeysFilter === 'unused' ? 'on' : ''}" data-kf="unused"><b>${unused}</b><span>ຍັງບໍ່ໄດ້ໃຊ້</span></button>
+    <button type="button" class="ag-seg-btn ${agentKeysFilter === 'used' ? 'on' : ''}" data-kf="used"><b>${used}</b><span>ໃຊ້ແລ້ວ</span></button>
   `;
+  if (!strip.dataset.bound) {
+    strip.dataset.bound = '1';
+    strip.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-kf]');
+      if (!b) return;
+      agentKeysFilter = b.dataset.kf;
+      renderResellerKeysOpsStrip(currentResellerKeys);
+      renderResellerKeys(currentResellerKeys);
+    });
+  }
 }
 
 function renderResellerKeys(keys) {
@@ -1375,19 +1530,27 @@ function renderResellerKeys(keys) {
     return;
   }
 
-  list.innerHTML = keys.map(k => `
-    <div class="agent-key-row" data-code="${k.code}" data-id="${k.id}" data-status="${k.status}">
+  const showUnused = agentKeysFilter === 'unused';
+  const shown = keys.filter(k => showUnused ? k.status === 'unused' : k.status !== 'unused');
+
+  if (!shown.length) {
+    list.innerHTML = showUnused
+      ? '<div class="empty-note">ບໍ່ມີຄີຍ໌ທີ່ຍັງບໍ່ໄດ້ໃຊ້ — ສ້າງຄີຍ໌ໃໝ່ໄດ້ຢູ່ດ້ານເທິງ</div>'
+      : '<div class="empty-note">ຍັງບໍ່ມີຄີຍ໌ທີ່ຖືກໃຊ້</div>';
+    return;
+  }
+
+  list.innerHTML = shown.map(k => `
+    <div class="agent-key-row" data-code="${escapeHtmlAdmin(k.code)}" data-id="${k.id}" data-status="${k.status}">
       <div class="agent-key-main">
-        <span class="agent-key-code">${k.code}</span>
-        <span class="agent-key-meta">
-          ${tierLabel(k.duration_type)} • ${new Date(k.created_at).toLocaleString('lo-LA')}
-          ${k.status !== 'unused' ? `<br>ໃຊ້ໂດຍ: ${k.used_by || '—'} (${k.used_at ? new Date(k.used_at).toLocaleString('lo-LA') : '—'})` : ''}
-        </span>
+        <span class="agent-key-code">${escapeHtmlAdmin(k.code)}</span>
+        <span class="agent-key-meta">${tierLabel(k.duration_type)} · ສ້າງ ${shortDateTime(k.created_at)}</span>
+        ${k.status !== 'unused' ? `<span class="agent-key-meta agent-key-used">ໃຊ້ໂດຍ ${escapeHtmlAdmin(agentNameByUserId(k.used_by))} · ${shortDateTime(k.used_at)}</span>` : ''}
       </div>
       <div class="agent-key-right">
-        <span class="key-status-tag ${k.status}">${k.status === 'unused' ? 'ຍັງບໍ່ໄດ້ໃຊ້' : (k.status === 'revoked' ? 'ຖືກປິດແລ້ວ' : 'ໃຊ້ແລ້ວ')}</span>
+        ${k.status === 'revoked' ? '<span class="key-status-tag revoked">ຖືກປິດ</span>' : ''}
         ${k.status === 'unused' ? `
-        <button type="button" class="key-copy-btn" title="ຄັດລອກ">
+        <button type="button" class="key-copy-btn" title="ຄັດລອກ" aria-label="ຄັດລອກຄີຍ໌">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         </button>` : ''}
         <button type="button" class="key-del-btn" title="ລຶບຄີຍ໌ນີ້" aria-label="ລຶບຄີຍ໌ນີ້">
@@ -1397,13 +1560,12 @@ function renderResellerKeys(keys) {
     </div>
   `).join('');
 
-  // แถบเครื่องมือ: ลบคีย์ที่ใช้แล้วทั้งหมดในครั้งเดียว (ล้างประวัติให้รายการสั้นลง)
-  const usedCount = keys.filter(k => k.status !== 'unused').length;
-  if (usedCount > 0) {
+  // ແຖບເຄື່ອງມື: ລຶບຄີຍ໌ທີ່ໃຊ້ແລ້ວທັງໝົດໃນຄັ້ງດຽວ (ສະແດງສະເພາະໃນມຸມມອງ "ໃຊ້ແລ້ວ")
+  if (!showUnused) {
     list.insertAdjacentHTML('afterbegin', `
       <div class="key-bulk-bar">
-        <span>ຄີຍ໌ທີ່ໃຊ້ແລ້ວ ${usedCount} ລາຍການ</span>
-        <button type="button" class="key-bulk-del-btn" id="agentKeysDelUsedBtn">ລຶບທີ່ໃຊ້ແລ້ວທັງໝົດ</button>
+        <span>ຄີຍ໌ທີ່ໃຊ້ແລ້ວ ${shown.length} ລາຍການ</span>
+        <button type="button" class="key-bulk-del-btn" id="agentKeysDelUsedBtn">ລຶບທັງໝົດ</button>
       </div>`);
     const bulkBtn = document.getElementById('agentKeysDelUsedBtn');
     if (bulkBtn) bulkBtn.addEventListener('click', deleteUsedResellerKeys);
@@ -1476,8 +1638,34 @@ const RESET_HOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 ມື້ — ຕ້ອງ�
 
 let currentAgentAccounts = [];
 let agentAccountsSearchTerm = '';
+let agentAccountsFilter = 'all';          // all | active | revoked
+let agentAccountsOrdersFailed = false;
 let agentAccountsCountdownTimer = null;
 let agentAccountsAutoRefreshing = false;
+
+function renderAgentAccountsStrip(accounts) {
+  const strip = document.getElementById('agentAccountsOpsStrip');
+  if (!strip) return;
+  const active = accounts.filter(a => a.is_reseller).length;
+  const revoked = accounts.length - active;
+  strip.innerHTML = [
+    ['all', 'ທັງໝົດ', accounts.length],
+    ['active', 'ທຳງານຢູ່', active],
+    ['revoked', 'ຖືກປິດ', revoked],
+  ].map(([k, label, n]) => `
+    <button type="button" class="ag-seg-btn ${agentAccountsFilter === k ? 'on' : ''}" data-af="${k}"><b>${n}</b><span>${label}</span></button>
+  `).join('');
+  if (!strip.dataset.bound) {
+    strip.dataset.bound = '1';
+    strip.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-af]');
+      if (!b) return;
+      agentAccountsFilter = b.dataset.af;
+      renderAgentAccountsStrip(currentAgentAccounts);
+      renderAgentAccounts(currentAgentAccounts, agentAccountsOrdersFailed);
+    });
+  }
+}
 
 async function loadAgentAccounts() {
   const list = document.getElementById('agentAccountsList');
@@ -1564,17 +1752,12 @@ async function loadAgentAccounts() {
 
   currentAgentAccounts = accounts;
 
-  if (strip) {
-    const active = accounts.filter(a => a.is_reseller).length;
-    const revoked = accounts.filter(a => !a.is_reseller).length;
-    strip.innerHTML = `
-      <div class="ops-chip"><div class="ops-num">${accounts.length}</div><div class="ops-label">ຕົວແທນທັງໝົດ</div></div>
-      <div class="ops-chip"><div class="ops-num">${active}</div><div class="ops-label">ທຳງານຢູ່</div></div>
-      <div class="ops-chip"><div class="ops-num">${revoked}</div><div class="ops-label">ຖືກປິດແລ້ວ</div></div>
-    `;
-  }
+  agentAccountsOrdersFailed = !ordersOk;
+  renderAgentAccountsStrip(accounts);
 
   renderAgentAccounts(currentAgentAccounts, !ordersOk);
+  // ໃຫ້ລາຍການຄີຍ໌ສະແດງອີເມວຂອງຄົນທີ່ໃຊ້ (ຂໍ້ມູນຕົວແທນເພິ່ງໂຫຼດມາ)
+  if (typeof currentResellerKeys !== 'undefined' && currentResellerKeys && currentResellerKeys.length) renderResellerKeys(currentResellerKeys);
   renderD2Dashboard();
   startAgentAccountsCountdownTicker();
 }
@@ -1661,10 +1844,12 @@ function renderAgentAccounts(accounts, ordersFailed) {
   });
 
   const term = agentAccountsSearchTerm.trim().toLowerCase();
-  const filtered = term ? accounts.filter(a => (a.user_email || '').toLowerCase().includes(term)) : accounts;
+  let filtered = term ? accounts.filter(a => (a.user_email || '').toLowerCase().includes(term)) : accounts;
+  if (agentAccountsFilter === 'active') filtered = filtered.filter(a => a.is_reseller);
+  else if (agentAccountsFilter === 'revoked') filtered = filtered.filter(a => !a.is_reseller);
 
   if (!filtered.length) {
-    list.innerHTML = '<div class="empty-note">ບໍ່ພົບຕົວແທນທີ່ຄົ້ນຫາ</div>';
+    list.innerHTML = '<div class="empty-note">ບໍ່ພົບຕົວແທນ</div>';
     return;
   }
 
@@ -1707,19 +1892,19 @@ function renderAgentAccounts(accounts, ordersFailed) {
       : `ໝົດອາຍຸ <span class="agent-acc-countdown" data-expiry="${a.period_end}">${agentCountdownText(a.period_end, 'ໝົດອາຍຸແລ້ວ')}</span>`;
 
     return `
-    <div class="agent-acc-row" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}">
-      <div class="agent-acc-main">
+    <div class="agent-acc-row ${isRevoked ? 'is-revoked' : ''}" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}">
+      <div class="agent-acc-head">
         <div class="agent-acc-email">${emailLabel}</div>
-        <div class="agent-acc-meta">
-          ລະດັບ ${tierLabel(a.duration_type)}${a.code ? ` • ຄີຍ໌ ${a.code}` : ''} • ປົດລັອກ ${a.period_start ? new Date(a.period_start).toLocaleString('lo-LA') : '—'} • ${expiryHtml}
-        </div>
-        ${progressHtml}
+        <span class="agent-state ${isRevoked ? 'off' : 'on'}">${isRevoked ? 'ຖືກປິດ' : 'ທຳງານຢູ່'}</span>
       </div>
-      <div class="agent-acc-right">
-        <span class="key-status-tag ${isRevoked ? 'revoked' : 'used'}">${isRevoked ? 'ຖືກປິດແລ້ວ' : 'ທຳງານຢູ່'}</span>
-        <button type="button" class="agent-acc-custom-btn" data-user-id="${escapeHtmlAdmin(a.user_id)}">
-          ຕັ້ງລາຄາສະເພາະ
-        </button>
+      <div class="agent-acc-meta">
+        <span class="agent-acc-tier">ລະດັບ ${tierLabel(a.duration_type)}</span>
+        ${isRevoked ? '' : `<span>${expiryHtml}</span>`}
+      </div>
+      ${isRevoked ? '' : progressHtml}
+      <div class="agent-acc-foot">${a.code ? `ຄີຍ໌ ${escapeHtmlAdmin(a.code)} · ` : ''}ປົດລັອກ ${shortDateTime(a.period_start)}</div>
+      <div class="agent-acc-actions">
+        <button type="button" class="agent-acc-custom-btn" data-user-id="${escapeHtmlAdmin(a.user_id)}">ຕັ້ງລາຄາສະເພາະ</button>
         <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-user-id="${a.user_id}" data-next="${isRevoked ? 'true' : 'false'}">
           ${isRevoked ? 'ເປີດຄືນ' : 'ປິດຕົວແທນ'}
         </button>
@@ -2005,35 +2190,37 @@ function renderAgentPriceList(products) {
 
   const shownProducts = activeProducts.filter(p => (p.category || '').trim() === agentPriceActiveCategory);
 
+  const saveBtnHtml = `
+        <button type="button" class="gx-submit price-save-btn">
+          <span class="gx-spinner"></span>
+          <span class="gx-submit-label">ບັນທຶກ</span>
+        </button>`;
+
   list.innerHTML = shownProducts.map(p => {
+    const name = escapeHtmlAdmin(p.name || '');
     if (p.duration_enabled) {
       return `
       <div class="price-prod-card" data-product-id="${p.id}">
-        <div class="price-prod-name">${(p.name || '').replace(/</g, '&lt;')}</div>
+        <div class="price-prod-head"><div class="price-prod-name">${name}</div></div>
         <div class="price-dur-list">
           ${(p.durations || []).map(d => `
             <div class="price-dur-row" data-duration-id="${d.id}">
-              <span class="price-dur-label">${d.label} <span class="price-dur-base">(ລາຄາປົກກະຕິ ${formatKipAdmin(d.price)})</span></span>
-              <input type="number" class="edit-reseller-price" placeholder="ຫວ່າງ = ໃຊ້ % ສ່ວນຫຼຸດ" value="${d.reseller_price ?? ''}" min="0" step="1">
+              <div class="price-dur-label"><b>${escapeHtmlAdmin(d.label)}</b><span class="price-dur-base">ປົກກະຕິ ${formatKipAdmin(d.price)}</span></div>
+              <div class="price-input"><input type="number" class="edit-reseller-price" placeholder="ຕາມ % ສ່ວນຫຼຸດ" value="${d.reseller_price ?? ''}" min="0" step="1" inputmode="numeric"><i>ກີບ</i></div>
             </div>
           `).join('')}
         </div>
-        <button type="button" class="gx-submit price-save-btn" style="margin-top:10px;">
-          <span class="gx-spinner"></span>
-          <span class="gx-submit-label">ບັນທຶກລາຄາຕົວແທນ</span>
-        </button>
+        ${saveBtnHtml}
       </div>`;
     }
     return `
       <div class="price-prod-card" data-product-id="${p.id}">
-        <div class="price-prod-name">${(p.name || '').replace(/</g, '&lt;')} <span class="price-dur-base">(ລາຄາປົກກະຕິ ${formatKipAdmin(p.price)})</span></div>
+        <div class="price-prod-head"><div class="price-prod-name">${name}</div></div>
         <div class="price-dur-row" data-single="true">
-          <input type="number" class="edit-reseller-price" placeholder="ຫວ່າງ = ໃຊ້ % ສ່ວນຫຼຸດ" value="${p.reseller_price ?? ''}" min="0" step="1">
+          <div class="price-dur-label"><b>ລາຄາຕົວແທນ</b><span class="price-dur-base">ປົກກະຕິ ${formatKipAdmin(p.price)}</span></div>
+          <div class="price-input"><input type="number" class="edit-reseller-price" placeholder="ຕາມ % ສ່ວນຫຼຸດ" value="${p.reseller_price ?? ''}" min="0" step="1" inputmode="numeric"><i>ກີບ</i></div>
         </div>
-        <button type="button" class="gx-submit price-save-btn" style="margin-top:10px;">
-          <span class="gx-spinner"></span>
-          <span class="gx-submit-label">ບັນທຶກລາຄາຕົວແທນ</span>
-        </button>
+        ${saveBtnHtml}
       </div>`;
   }).join('');
 

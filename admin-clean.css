@@ -1,0 +1,469 @@
+/* =========================================================
+   admin-clean.css — จัดระเบียบหน้า "ຈັດການສິນຄ້າ" และ "ລະບົບຕົວແທນ"
+   โหลดหลัง admin-glass.css · ใช้ #id นำหน้าทุกกฎ เพื่อชนะสไตล์กระจกเดิมโดยไม่ต้อง !important
+
+   หลักคิด
+   - แถวเดียวต่อรายการ พับ/กางได้ → เห็นภาพรวมก่อน แก้ไขเมื่อแตะ
+   - สีแดงใช้กับ "ปุ่มหลัก" เท่านั้น (บันทึก / สร้าง) ส่วนอื่นเป็นโทนกลาง
+   - ปุ่มมีข้อความกำกับ ไม่ใช้ไอคอนล้วนที่ดูซ้ำกัน (เดิมมีถังขยะ 2 อันติดกัน)
+   - พื้นที่แตะทุกจุด ≥ 44px
+   ========================================================= */
+
+#panelManage,
+#panelAgent{
+  --c-surface:rgba(255,255,255,.045);
+  --c-surface-2:rgba(255,255,255,.08);
+  --c-line:rgba(255,255,255,.11);
+  --c-text:#f5f0f2;
+  --c-muted:#a99fa5;
+  --c-faint:#7f757b;
+  --c-accent:#ff2a2a;
+  --c-ok:#43d98a;
+  --c-warn:#f4bb4e;
+  --c-bad:#ff6464;
+  --c-font:'Noto Sans Lao','Chakra Petch',sans-serif;
+  --c-num:'Chakra Petch','Noto Sans Lao',sans-serif;
+  font-family:var(--c-font);
+  color:var(--c-text);
+}
+
+body :is(#panelManage,#panelAgent) [hidden]{display:none!important}
+
+/* ---------- หัวข้อ/คำอธิบายของแต่ละส่วน ---------- */
+body :is(#panelManage,#panelAgent) .stat-panel{
+  background:none;border:0;box-shadow:none;border-radius:0;
+  padding:0;margin:0 0 20px;
+}
+body :is(#panelManage,#panelAgent) .stat-panel>h3{
+  display:flex;align-items:center;gap:8px;
+  margin:0 0 10px;font:700 15px/1.3 var(--c-font);color:var(--c-text);
+}
+body :is(#panelManage,#panelAgent) .stat-panel>h3>svg{display:none}
+body .xp :is(#panelManage,#panelAgent) .stat-panel>h3:not(:has(button)){display:none}
+body :is(#panelManage,#panelAgent) .stat-panel .panel-sub{
+  margin:0 0 14px;font:400 13px/1.55 var(--c-font);color:var(--c-muted);
+}
+body #panelAgent .stat-panel .panel-sub{margin-bottom:12px}
+
+body :is(#panelManage,#panelAgent) .mini-refresh{
+  margin-left:auto;width:40px;height:40px;border-radius:12px;
+  background:var(--c-surface);border:1px solid var(--c-line);color:var(--c-muted);
+}
+body :is(#panelManage,#panelAgent) .mini-refresh svg{width:17px;height:17px;stroke:currentColor}
+body #panelAgent .stat-panel:has(>.ag-seg){display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:start}
+body #panelAgent .stat-panel:has(>.ag-seg)>h3{grid-column:2;grid-row:1;margin:0;font-size:0}
+body #panelAgent .stat-panel:has(>.ag-seg)>.ag-seg{grid-column:1;grid-row:1}
+body #panelAgent .stat-panel:has(>.ag-seg)>:not(h3):not(.ag-seg){grid-column:1/-1}
+body #panelAgent .stat-panel:has(>.ag-seg) .mini-refresh{width:48px;height:62px;margin:0}
+
+body :is(#panelManage,#panelAgent) .empty-note{
+  padding:28px 12px;text-align:center;color:var(--c-muted);
+  font:400 13.5px/1.6 var(--c-font);
+  border:1px dashed var(--c-line);border-radius:14px;
+}
+
+/* ---------- ช่องกรอก ---------- */
+body :is(#panelManage,#panelAgent) :is(input,select,textarea):where(:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file])){
+  width:100%;box-sizing:border-box;min-height:46px;height:auto;
+  padding:10px 14px;border-radius:12px;
+  background:rgba(255,255,255,.06);border:1px solid var(--c-line);
+  color:var(--c-text);font:500 15px/1.4 var(--c-font);
+  box-shadow:none;
+}
+body :is(#panelManage,#panelAgent) textarea{min-height:92px;resize:vertical;line-height:1.55}
+body :is(#panelManage,#panelAgent) :is(input,select,textarea)::placeholder{color:var(--c-faint);font-weight:400}
+body :is(#panelManage,#panelAgent) :is(input,select,textarea):where(:not([type=checkbox]):not([type=radio])):focus{
+  outline:none;background:rgba(255,255,255,.09);
+  border-color:rgba(255,255,255,.5);box-shadow:0 0 0 3px rgba(255,42,42,.28);
+}
+body :is(#panelManage,#panelAgent) input[type=number]{font-family:var(--c-num);font-variant-numeric:tabular-nums}
+
+/* ---------- ปุ่ม ---------- */
+body :is(#panelManage,#panelAgent) .pe-btn{
+  min-height:46px;padding:0 18px;border-radius:12px;
+  border:1px solid var(--c-line);background:var(--c-surface-2);color:var(--c-text);
+  font:700 14px/1.3 var(--c-font);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;text-align:center;
+  transition:transform .15s,background .2s,border-color .2s;
+}
+body :is(#panelManage,#panelAgent) .pe-btn:active{transform:scale(.98)}
+body :is(#panelManage,#panelAgent) .pe-btn:disabled{opacity:.55;cursor:default}
+body :is(#panelManage,#panelAgent) .pe-primary{background:var(--c-accent);border-color:transparent;color:#fff}
+body :is(#panelManage,#panelAgent) .pe-danger{background:rgba(255,100,100,.09);border-color:rgba(255,100,100,.38);color:var(--c-bad)}
+body :is(#panelManage,#panelAgent) .pe-ghost{background:transparent}
+@media (hover:hover){
+  body :is(#panelManage,#panelAgent) .pe-btn:hover{border-color:rgba(255,255,255,.4)}
+  body :is(#panelManage,#panelAgent) .pe-primary:hover{background:#ff4343;border-color:transparent}
+}
+body :is(#panelManage,#panelAgent) :is(button,summary,.prod-summary,.ag-tab,.pm-chip,.ag-seg-btn,.agent-cat-tab):focus-visible{
+  outline:2px solid #fff;outline-offset:2px;
+}
+
+/* พับ/กางส่วนเสริม (เพิ่มไลຍະເວລາ / ເພີ່ມລິ້ງ) */
+body #panelManage .pe-fold{margin-top:6px}
+body #panelManage .pe-fold>summary{
+  list-style:none;cursor:pointer;min-height:44px;padding:0 2px;
+  display:inline-flex;align-items:center;gap:8px;
+  font:700 13.5px/1.3 var(--c-font);color:var(--c-bad);
+}
+body #panelManage .pe-fold>summary::-webkit-details-marker{display:none}
+body #panelManage .pe-fold>summary::before{
+  content:"+";display:grid;place-items:center;width:22px;height:22px;border-radius:50%;
+  border:1.5px solid currentColor;font:700 15px/1 var(--c-num);
+}
+body #panelManage .pe-fold[open]>summary::before{content:"–"}
+
+/* =========================================================
+   1) จัดการสินค้า
+   ========================================================= */
+body #panelManage .pm-toolbar{display:grid;gap:10px;margin:0 0 14px}
+body #panelManage .pm-search{position:relative}
+body #panelManage .pm-search svg{
+  position:absolute;left:14px;top:50%;width:18px;height:18px;transform:translateY(-50%);
+  color:var(--c-faint);pointer-events:none;
+}
+body #panelManage .pm-search input{padding-left:42px}
+body #panelManage .pm-chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 -2px;padding:0 2px}
+body #panelManage .pm-chips::-webkit-scrollbar{display:none}
+body #panelManage .pm-chip{
+  flex:none;min-height:40px;padding:0 12px;border-radius:99px;
+  border:1px solid var(--c-line);background:transparent;color:var(--c-muted);
+  font:600 13px/1 var(--c-font);cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+}
+body #panelManage .pm-chip b{font:700 13px/1 var(--c-num);color:var(--c-text)}
+body #panelManage .pm-chip.on{background:var(--c-text);border-color:transparent;color:#1a0f13}
+body #panelManage .pm-chip.on b{color:#1a0f13}
+
+body #panelManage #manageList{display:grid;gap:10px}
+
+body #panelManage .prod-row{
+  display:block;padding:0;opacity:1;
+  border:1px solid var(--c-line);border-radius:16px;
+  background:var(--c-surface);overflow:hidden;
+  transition:background .2s,border-color .2s;
+}
+body #panelManage .prod-row:last-child{border-bottom:1px solid var(--c-line)}
+body #panelManage .prod-row.is-open{background:var(--c-surface-2);border-color:rgba(255,255,255,.22)}
+body #panelManage .prod-row.is-hidden .prod-summary{opacity:.55}
+
+/* แถวสรุป */
+body #panelManage .prod-summary{
+  display:flex;align-items:center;gap:12px;min-height:72px;padding:12px;
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+body #panelManage .prod-thumb-wrap{position:relative;width:48px;height:48px;flex:none}
+body #panelManage .prod-thumb{width:48px;height:48px;border-radius:12px;object-fit:cover;background:rgba(255,255,255,.06);border:1px solid var(--c-line)}
+body #panelManage .thumb-edit-badge{display:none;right:-5px;bottom:-5px;width:24px;height:24px;border:2px solid #17101a;background:var(--c-accent)}
+body #panelManage .prod-row.is-open .thumb-edit-badge{display:flex}
+body #panelManage .prod-sum-text{flex:1;min-width:0}
+body #panelManage .prod-sum-name{
+  font:700 15px/1.35 var(--c-font);color:var(--c-text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+body #panelManage .prod-sum-sub{display:flex;flex-wrap:wrap;gap:2px 12px;margin-top:3px;font:400 12.5px/1.45 var(--c-font);color:var(--c-muted)}
+body #panelManage .prod-sum-price{color:var(--c-text);font:600 12.5px/1.45 var(--c-num);font-variant-numeric:tabular-nums}
+body #panelManage .is-out{color:var(--c-warn)}
+body #panelManage .prod-state{flex:none;padding:5px 10px;border-radius:99px;font:700 11.5px/1 var(--c-font);white-space:nowrap}
+body #panelManage .prod-state.is-live{display:none}
+body #panelManage .prod-state.is-paused{color:var(--c-warn);background:rgba(244,187,78,.14)}
+body #panelManage .prod-state.is-hidden{color:var(--c-muted);background:rgba(255,255,255,.08)}
+body #panelManage .prod-chev{flex:none;width:18px;height:18px;color:var(--c-faint);transition:transform .2s}
+body #panelManage .prod-row.is-open .prod-chev{transform:rotate(180deg)}
+
+/* ส่วนแก้ไข */
+body #panelManage .prod-edit{padding:0 14px 16px;border-top:1px solid var(--c-line)}
+body #panelManage .pe-section{padding:16px 0;border-bottom:1px solid var(--c-line)}
+body #panelManage .pe-grid{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+body #panelManage .pe-grow{flex:1 1 170px}
+body #panelManage .pe-price{flex:0 0 132px}
+body #panelManage .pe-field{display:block;min-width:0}
+body #panelManage .pe-field>span{display:block;margin-bottom:6px;font:600 13px/1.4 var(--c-font);color:var(--c-muted)}
+body #panelManage .pe-field em{margin-left:6px;font-style:normal;font-weight:400;color:var(--c-faint)}
+body #panelManage .pe-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin-bottom:12px;font:700 14px/1.4 var(--c-font);color:var(--c-text)}
+body #panelManage .pe-title small{font:400 12px/1.4 var(--c-font);color:var(--c-faint)}
+body #panelManage .pe-none{font:400 13px/1.5 var(--c-font);color:var(--c-faint)}
+
+/* สวิตช์ ຢຸດຂາຍຊົ່ວຄາວ */
+body #panelManage .pe-switch{position:relative;display:flex;align-items:center;gap:12px;min-height:48px;cursor:pointer}
+body #panelManage .pe-switch input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+body #panelManage .pe-switch-ui{
+  flex:none;position:relative;width:48px;height:30px;border-radius:99px;
+  background:rgba(255,255,255,.16);transition:background .2s;
+}
+body #panelManage .pe-switch-ui::after{
+  content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .2s;
+}
+body #panelManage .pe-switch input:checked+.pe-switch-ui{background:var(--c-warn)}
+body #panelManage .pe-switch input:checked+.pe-switch-ui::after{transform:translateX(18px)}
+body #panelManage .pe-switch input:focus-visible+.pe-switch-ui{outline:2px solid #fff;outline-offset:3px}
+body #panelManage .pe-switch-text{display:grid;gap:2px;min-width:0}
+body #panelManage .pe-switch-text b{font:700 14.5px/1.35 var(--c-font)}
+body #panelManage .pe-switch-text small{font:400 12.5px/1.45 var(--c-font);color:var(--c-muted)}
+body #panelManage .pause-note-wrap{margin-top:10px}
+body #panelManage .pause-note-wrap input{border-color:rgba(244,187,78,.45);background:rgba(244,187,78,.07)}
+
+/* ໄລຍະເວລາ: เป็นแถวอ่านง่าย แทนชิปเล็ก ๆ */
+body #panelManage .prod-duration-list{display:grid;gap:8px;margin:0 0 6px}
+body #panelManage .prod-duration-chip{
+  display:flex;align-items:center;gap:8px;min-height:52px;padding:0 6px 0 14px;
+  border-radius:12px;background:rgba(255,255,255,.05);border:1px solid var(--c-line);
+  color:var(--c-text);font-size:14px;cursor:pointer;
+}
+body #panelManage .prod-duration-chip:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}
+body #panelManage .pdc-text{flex:1;min-width:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px}
+body #panelManage .pdc-text b{min-width:48px;font:700 15px/1.3 var(--c-font)}
+body #panelManage .pdc-text span{font:600 14px/1.3 var(--c-num);font-variant-numeric:tabular-nums}
+body #panelManage .pdc-text em{margin-left:auto;font:400 12.5px/1.3 var(--c-font);font-style:normal;color:var(--c-muted)}
+body #panelManage .prod-duration-chip .pdc-edit-icon{width:16px;height:16px;flex:none;opacity:1;color:var(--c-faint)}
+body #panelManage .prod-duration-chip .pdc-del-btn{
+  flex:none;width:40px;height:40px;border-radius:10px;border:0;background:transparent;
+  color:var(--c-muted);font-size:22px;line-height:1;cursor:pointer;
+  display:grid;place-items:center;padding:0;
+}
+body #panelManage .prod-duration-chip .pdc-del-btn:hover{background:rgba(255,100,100,.18);color:var(--c-bad)}
+/* โหมดแก้ราคาในแถว */
+body #panelManage .prod-duration-chip.is-editing{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.5);padding:6px;cursor:default}
+body #panelManage .prod-duration-chip .pdc-price-input{flex:1;width:auto;min-width:0;min-height:42px;border-radius:10px}
+body #panelManage .prod-duration-chip :is(.pdc-save-btn,.pdc-cancel-btn){
+  flex:none;width:42px;height:42px;border-radius:10px;border:0;cursor:pointer;display:grid;place-items:center;
+}
+body #panelManage .prod-duration-chip .pdc-save-btn{background:rgba(67,217,138,.18);color:var(--c-ok)}
+body #panelManage .prod-duration-chip .pdc-cancel-btn{background:rgba(255,100,100,.14);color:var(--c-bad)}
+body #panelManage .prod-duration-chip :is(.pdc-save-btn,.pdc-cancel-btn) svg{width:18px;height:18px}
+
+/* ຟອມເພີ່ມໄລຍະເວລາ */
+body #panelManage .dur-add-inline{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:10px;margin:6px 0 0;align-items:stretch}
+body #panelManage .dur-add-inline :is(input,select){height:auto;min-height:46px}
+body #panelManage .dur-add-inline .dur-add-btn{
+  grid-column:1/-1;min-height:46px;border-radius:12px;border:0;cursor:pointer;
+  background:var(--c-surface-2);color:var(--c-text);font:700 14px/1 var(--c-font);
+}
+body #panelManage .dur-add-inline .dur-add-btn:active{transform:scale(.98)}
+
+/* ລິ້ງໂບນັດ */
+body #panelManage .prod-links-list{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 4px}
+body #panelManage .prod-link-chip{
+  display:inline-flex;align-items:center;gap:6px;min-height:38px;padding:0 4px 0 14px;
+  border-radius:99px;background:rgba(255,255,255,.06);border:1px solid var(--c-line);
+  font:500 13.5px/1.2 var(--c-font);color:var(--c-text);
+}
+body #panelManage .link-chip-remove{
+  width:30px;height:30px;border-radius:50%;border:0;cursor:pointer;
+  background:rgba(255,255,255,.08);color:var(--c-muted);font-size:18px;line-height:1;
+  display:grid;place-items:center;padding:0;
+}
+body #panelManage .link-chip-remove:hover{background:rgba(255,100,100,.2);color:var(--c-bad)}
+body #panelManage .link-add-inline{display:grid;gap:10px;margin-top:6px}
+body #panelManage .link-add-inline input{background:rgba(255,255,255,.06);color:var(--c-text)}
+body #panelManage .link-add-inline .link-add-btn{
+  width:100%;height:auto;min-height:46px;border-radius:12px;border:0;cursor:pointer;
+  background:var(--c-surface-2);color:var(--c-text);font:700 14px/1 var(--c-font);
+}
+
+/* ປຸ່ມບັນທຶກ + ເຄື່ອງມືອັນຕະລາຍ (แยกชัดเจน ไม่ปนกับปุ่มบันทึก) */
+body #panelManage .pe-foot{display:grid;gap:14px;padding-top:16px}
+body #panelManage .pe-foot .save-btn{width:100%;min-height:50px;font-size:15px}
+body #panelManage .pe-more{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding-top:14px;border-top:1px dashed var(--c-line)}
+body #panelManage .pe-more .pe-btn{min-height:46px;padding:6px 10px;font-size:13px;font-weight:600}
+
+/* =========================================================
+   2) ລະບົບຕົວແທນ
+   ========================================================= */
+body #panelAgent .ag-tabs{
+  position:sticky;top:0;z-index:6;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  padding:4px;margin:0 0 16px;border-radius:14px;
+  background:#1b1317;border:1px solid var(--c-line);
+}
+body #panelAgent .ag-tab{
+  min-height:44px;padding:0 4px;border:0;border-radius:10px;
+  background:transparent;color:var(--c-muted);
+  font:700 14.5px/1 var(--c-font);cursor:pointer;
+  transition:background .2s,color .2s;
+}
+body #panelAgent .ag-tab.on{background:var(--c-text);color:#1a0f13}
+
+/* โชว์ทีละแท็บ */
+body #panelAgent[data-ag-now="accounts"] .stat-panel:not([data-ag="accounts"]),
+body #panelAgent[data-ag-now="keys"] .stat-panel:not([data-ag="keys"]),
+body #panelAgent[data-ag-now="tiers"] .stat-panel:not([data-ag="tiers"]),
+body #panelAgent[data-ag-now="prices"] .stat-panel:not([data-ag="prices"]){display:none}
+
+/* ตัวกรอง (ตัวเลข + ชื่อ) */
+body #panelAgent .ag-seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin:0 0 12px}
+body #panelAgent .ag-seg-btn{
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;
+  min-height:62px;padding:10px 12px;border-radius:14px;
+  border:1px solid var(--c-line);background:var(--c-surface);color:var(--c-muted);
+  cursor:pointer;text-align:left;transition:background .2s,border-color .2s;
+}
+body #panelAgent .ag-seg-btn b{font:700 22px/1 var(--c-num);color:var(--c-text);font-variant-numeric:tabular-nums}
+body #panelAgent .ag-seg-btn span{font:500 12.5px/1.2 var(--c-font)}
+body #panelAgent .ag-seg-btn.on{background:var(--c-surface-2);border-color:rgba(255,255,255,.6)}
+body #panelAgent .ag-seg-btn.on span{color:var(--c-text)}
+
+body #panelAgent .search-row-agent{margin:0 0 12px}
+
+/* ---- ບັນຊີຕົວແທນ ---- */
+body #panelAgent #agentAccountsList{display:grid;gap:10px}
+body #panelAgent .agent-acc-row{
+  display:flex;flex-direction:column;align-items:stretch;flex-wrap:nowrap;gap:10px;
+  padding:14px;border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface);
+}
+body #panelAgent .agent-acc-row:last-child{border-bottom:1px solid var(--c-line)}
+body #panelAgent .agent-acc-row.is-revoked{background:transparent}
+body #panelAgent .agent-acc-row.is-revoked .agent-acc-email{color:var(--c-muted)}
+body #panelAgent .agent-acc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+body #panelAgent .agent-acc-email{min-width:0;font:700 15px/1.4 var(--c-font);color:var(--c-text);word-break:break-all}
+body #panelAgent .agent-state{
+  flex:none;display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:99px;font:700 12px/1 var(--c-font);white-space:nowrap;
+}
+body #panelAgent .agent-state::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+body #panelAgent .agent-state.on{color:var(--c-ok);background:rgba(67,217,138,.12)}
+body #panelAgent .agent-state.off{color:var(--c-bad);background:rgba(255,100,100,.12)}
+body #panelAgent .agent-acc-meta{display:flex;flex-wrap:wrap;gap:2px 16px;margin:0;font:400 13px/1.6 var(--c-font);color:var(--c-muted)}
+body #panelAgent .agent-acc-tier{color:var(--c-text);font-weight:600}
+body #panelAgent .agent-acc-countdown{min-width:0;color:var(--c-text);font:600 13px/1.6 var(--c-num)}
+body #panelAgent .agent-acc-progress{max-width:none;margin:0}
+body #panelAgent .agent-acc-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+body #panelAgent .agent-acc-bar-fill{background:var(--c-accent)}
+body #panelAgent .agent-acc-bar-fill.full{background:var(--c-ok)}
+body #panelAgent .agent-acc-progress-text{margin-top:6px;font:400 12.5px/1.5 var(--c-font);color:var(--c-muted);font-variant-numeric:tabular-nums}
+body #panelAgent .agent-acc-hold{margin:0;font:500 12.5px/1.5 var(--c-font);color:var(--c-warn)}
+body #panelAgent .agent-acc-hold .agent-acc-countdown{color:var(--c-warn)}
+body #panelAgent .agent-acc-live-dot{width:7px;height:7px;flex:none}
+body #panelAgent .agent-acc-note{margin:0;font:400 12.5px/1.5 var(--c-font);color:var(--c-warn)}
+body #panelAgent .agent-acc-foot{font:400 12px/1.5 var(--c-font);color:var(--c-faint);word-break:break-all}
+body #panelAgent .agent-acc-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+body #panelAgent :is(.agent-acc-custom-btn,.agent-acc-toggle-btn){
+  min-height:46px;padding:0 10px;border-radius:12px;
+  font:700 13.5px/1.2 var(--c-font);cursor:pointer;
+}
+body #panelAgent .agent-acc-custom-btn{background:var(--c-surface-2);border:1px solid var(--c-line);color:var(--c-text)}
+body #panelAgent .agent-acc-custom-btn.is-open{border-color:rgba(255,255,255,.6)}
+body #panelAgent .agent-acc-toggle-btn{background:rgba(255,100,100,.09);border:1px solid rgba(255,100,100,.38);color:var(--c-bad)}
+body #panelAgent .agent-acc-toggle-btn.is-revoked{background:rgba(67,217,138,.12);border-color:rgba(67,217,138,.4);color:var(--c-ok)}
+
+/* ຕັ້ງລາຄາສະເພາະຄົນ (แผงที่กางใต้ตัวแทน) */
+body #panelAgent .agent-custom-panel{margin:0;padding:12px;border-radius:14px;background:rgba(0,0,0,.3);border:1px solid var(--c-line)}
+body #panelAgent .agent-custom-note{margin-bottom:10px;font:400 12.5px/1.55 var(--c-font);color:var(--c-muted)}
+body #panelAgent .agent-custom-search{margin-bottom:10px}
+body #panelAgent .agent-custom-body{max-height:55vh;overflow-y:auto;padding-right:2px}
+body #panelAgent .agent-custom-cat-title{margin:14px 0 6px;font:700 13px/1.4 var(--c-font);color:var(--c-text)}
+body #panelAgent .agent-custom-prod{padding:10px 0;border-bottom:1px solid var(--c-line)}
+body #panelAgent .agent-custom-prod-name{margin-bottom:6px;font:700 14px/1.4 var(--c-font)}
+body #panelAgent .agent-custom-row{display:grid;gap:6px;margin-top:8px}
+body #panelAgent .agent-custom-label{flex:none;font:500 13.5px/1.45 var(--c-font);color:var(--c-text)}
+body #panelAgent .agent-custom-label .price-dur-base{display:block;margin-top:1px}
+body #panelAgent .agent-custom-input{flex:none;min-width:0;width:100%}
+body #panelAgent .agent-custom-panel .gx-submit{margin-top:14px}
+
+/* ---- ຄີຍ໌ ---- */
+body #panelAgent .stat-panel[data-ag="keys"]:has(#agentCreateKeyBtn){
+  padding:16px;border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface);
+}
+body #panelAgent .stat-panel[data-ag="keys"]:has(#agentCreateKeyBtn) .panel-sub{margin-bottom:14px}
+body #panelAgent .gx-field{margin:0 0 12px}
+body #panelAgent .gx-field label{display:block;margin-bottom:6px;font:600 13px/1.4 var(--c-font);color:var(--c-muted)}
+body #panelAgent .gx-input-wrap{margin:0}
+
+body #panelAgent .gx-submit{
+  position:relative;overflow:hidden;width:100%;min-height:48px;margin-top:0;padding:0 16px;
+  border-radius:12px;border:0;background:var(--c-accent);color:#fff;
+  font:700 14.5px/1.2 var(--c-font);letter-spacing:0;cursor:pointer;
+}
+body #panelAgent .gx-submit .gx-spinner{border-color:rgba(255,255,255,.3);border-top-color:#fff}
+body #panelAgent .gx-msg{margin-top:10px;font:500 13px/1.5 var(--c-font)}
+body #panelAgent .gx-msg:not(.show){margin:0;min-height:0;height:0;overflow:hidden}
+
+body #panelAgent #agentKeysList{display:grid;gap:8px}
+body #panelAgent .agent-key-row{
+  display:flex;align-items:center;flex-wrap:nowrap;gap:10px;
+  padding:12px 10px 12px 14px;border:1px solid var(--c-line);border-radius:14px;background:var(--c-surface);
+}
+body #panelAgent .agent-key-row:last-child{border-bottom:1px solid var(--c-line)}
+body #panelAgent .agent-key-main{flex:1 1 auto;min-width:0;gap:3px;overflow-wrap:anywhere}
+body #panelAgent .agent-key-code{font:700 15.5px/1.3 var(--c-num);letter-spacing:.6px;color:var(--c-text)}
+body #panelAgent .agent-key-meta{font:400 12.5px/1.5 var(--c-font);color:var(--c-muted)}
+body #panelAgent .agent-key-used{color:var(--c-text)}
+body #panelAgent .agent-key-right{flex:none;flex-wrap:nowrap;gap:6px}
+body #panelAgent :is(.key-copy-btn,.key-del-btn){
+  width:42px;height:42px;border-radius:12px;display:grid;place-items:center;padding:0;cursor:pointer;
+  background:var(--c-surface-2);border:1px solid var(--c-line);color:var(--c-text);
+}
+body #panelAgent .key-del-btn{background:transparent;color:var(--c-bad);border-color:rgba(255,100,100,.3)}
+body #panelAgent :is(.key-copy-btn,.key-del-btn) svg{width:18px;height:18px}
+body #panelAgent .key-status-tag{padding:5px 10px;border-radius:99px;font:700 12px/1 var(--c-font);letter-spacing:0}
+body #panelAgent .key-status-tag.revoked{background:rgba(255,100,100,.12);border:0;color:var(--c-bad)}
+body #panelAgent .key-bulk-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 8px;font:400 13px/1.4 var(--c-font);color:var(--c-muted)}
+body #panelAgent .key-bulk-del-btn{
+  min-height:40px;padding:0 14px;border-radius:12px;cursor:pointer;
+  background:rgba(255,100,100,.09);border:1px solid rgba(255,100,100,.38);color:var(--c-bad);
+  font:700 13px/1 var(--c-font);
+}
+body #panelAgent .new-key-banner{margin-top:14px;padding:14px;border-radius:14px}
+
+/* ---- ລະດັບ ---- */
+body #panelAgent #agentTierList{display:grid;gap:10px}
+body #panelAgent .tier-card{
+  display:grid;gap:14px;padding:16px;border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface);
+}
+body #panelAgent .tier-card:last-child{border-bottom:1px solid var(--c-line)}
+body #panelAgent .tier-card-head{display:flex;align-items:center;gap:10px}
+body #panelAgent .tier-card-title{font:700 17px/1.3 var(--c-font);color:var(--c-text)}
+body #panelAgent .tier-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px}
+body #panelAgent .tier-row .pe-btn{width:auto;min-width:96px}
+body #panelAgent .tier-card-field{display:grid;gap:6px;margin:0}
+body #panelAgent .tier-card-field>span{font:600 13px/1.4 var(--c-font);color:var(--c-muted)}
+body #panelAgent .tier-input,
+body #panelAgent .price-input{position:relative}
+body #panelAgent :is(.tier-input,.price-input) input{padding-right:58px}
+body #panelAgent :is(.tier-input,.price-input) i{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font:500 13px/1 var(--c-font);font-style:normal;color:var(--c-muted);pointer-events:none;
+}
+body #panelAgent :is(.tier-input,.price-input) input:placeholder-shown+i{display:none}
+body #panelAgent .tier-card-field small{font:400 12.5px/1.5 var(--c-font);color:var(--c-faint)}
+body #panelAgent .tier-card-lifetime-note{font:400 13px/1.5 var(--c-font);color:var(--c-muted)}
+
+/* ---- ລາຄາຕົວແທນລາຍສິນຄ້າ ---- */
+body #panelAgent .agent-cat-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -2px 14px;padding:0 2px}
+body #panelAgent .agent-cat-row::-webkit-scrollbar{display:none}
+body #panelAgent .agent-cat-tab{
+  flex:none;flex-direction:row;align-items:center;gap:8px;min-width:0;min-height:42px;padding:0 14px;
+  border-radius:99px;border:1px solid var(--c-line);background:transparent;
+}
+body #panelAgent .agent-cat-tab .agent-cat-name{font:600 13.5px/1 var(--c-font);color:var(--c-muted)}
+body #panelAgent .agent-cat-tab .agent-cat-count{font:600 12px/1 var(--c-num);color:var(--c-faint)}
+body #panelAgent .agent-cat-tab.active{background:var(--c-text);border-color:transparent}
+body #panelAgent .agent-cat-tab.active .agent-cat-name,
+body #panelAgent .agent-cat-tab.active .agent-cat-count{color:#1a0f13}
+
+body #panelAgent #agentPriceList{display:grid;gap:10px}
+body #panelAgent .price-prod-card{
+  display:grid;gap:14px;padding:16px;border:1px solid var(--c-line);border-radius:16px;background:var(--c-surface);
+}
+body #panelAgent .price-prod-card:last-child{border-bottom:1px solid var(--c-line)}
+body #panelAgent .price-prod-name{margin:0;font:700 15px/1.4 var(--c-font);color:var(--c-text)}
+body #panelAgent .price-dur-list{display:grid;gap:12px}
+body #panelAgent .price-dur-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(140px,46%);align-items:center;gap:12px}
+body #panelAgent .price-dur-label{display:grid;gap:2px;min-width:0;font:400 14px/1.4 var(--c-font);color:var(--c-text)}
+body #panelAgent .price-dur-label b{font-weight:700}
+body #panelAgent .price-dur-base{display:block;font:400 12.5px/1.4 var(--c-font);color:var(--c-muted)}
+body #panelAgent .price-dur-row input{min-width:0;flex:none}
+body #panelAgent .price-prod-card .gx-submit{
+  background:var(--c-surface-2);border:1px solid var(--c-line);color:var(--c-text);
+  padding:0 16px;min-height:46px;font-size:14px;
+}
+body #panelAgent .price-prod-card .gx-submit .gx-spinner{border-color:rgba(255,255,255,.25);border-top-color:#fff}
+
+@media (max-width:370px){
+  body #panelAgent .price-dur-row{grid-template-columns:1fr}
+  body #panelManage .pe-more{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  body :is(#panelManage,#panelAgent) *{transition:none!important}
+}

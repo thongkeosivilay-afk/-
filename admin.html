@@ -17,6 +17,7 @@
 
 <link href="weather-fx.css?v=20261011a" rel="stylesheet"/>
 <link href="admin-glass.css?v=20261024a" rel="stylesheet"/>
+<link href="admin-clean.css?v=20261024a" rel="stylesheet"/>
 </head>
 <body>
 <div class="ambient-glow">
@@ -351,7 +352,16 @@
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
         ຈັດການສິນຄ້າ
       </h3>
-<p class="panel-sub">ລາຍການສິນຄ້າທັງໝົດ — ແກ້ໄຂຂໍ້ມູນ, ຢຸດຂາຍຊົ່ວຄາວ ຫຼືລຶບອອກໄດ້ຈາກຈຸດນີ້</p>
+<p class="panel-sub">ແຕະສິນຄ້າເພື່ອແກ້ໄຂ</p>
+<div class="pm-toolbar" id="manageToolbar">
+<div class="pm-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="manageSearch" type="search" autocomplete="off" placeholder="ຄົ້ນຫາສິນຄ້າ..."/></div>
+<div class="pm-chips" role="group" aria-label="ກັ່ນຕອງສິນຄ້າ">
+<button type="button" class="pm-chip on" data-pf="all" aria-pressed="true">ທັງໝົດ <b>0</b></button>
+<button type="button" class="pm-chip" data-pf="live" aria-pressed="false">ກຳລັງຂາຍ <b>0</b></button>
+<button type="button" class="pm-chip" data-pf="paused" aria-pressed="false">ຢຸດຂາຍ <b>0</b></button>
+<button type="button" class="pm-chip" data-pf="hidden" aria-pressed="false">ເຊື່ອງໄວ້ <b>0</b></button>
+</div>
+</div>
 <div id="manageList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
 </div>
 </div>
@@ -557,23 +567,29 @@ IJKL-9012"></textarea></div>
 </div>
 <div class="switch-body"><div class="switch-body-inner">
 <!-- ===== PANEL: ລະບົບຕົວແທນ (ລວມ 3 ສ່ວນຍ່ອຍໄວ້ໃນ panel-content ດຽວ ເພື່ອໃຫ້ accordion JS ເປີດ/ປິດຖືກຕ້ອງ) ===== -->
-<div class="panel-content" id="panelAgent">
+<div class="panel-content" id="panelAgent" data-ag-now="accounts">
+<div class="ag-tabs" role="tablist" aria-label="ເມນູລະບົບຕົວແທນ">
+<button type="button" class="ag-tab on" role="tab" data-ag="accounts" aria-selected="true">ຕົວແທນ</button>
+<button type="button" class="ag-tab" role="tab" data-ag="keys" aria-selected="false">ຄີຍ໌</button>
+<button type="button" class="ag-tab" role="tab" data-ag="tiers" aria-selected="false">ລະດັບ</button>
+<button type="button" class="ag-tab" role="tab" data-ag="prices" aria-selected="false">ລາຄາ</button>
+</div>
 <!-- ---- ສ່ວນຍ່ອຍ 1: ຕັ້ງຄ່າລະດັບ (tiers) ---- -->
-<div class="stat-panel">
+<div class="stat-panel" data-ag="tiers">
 <h3>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
         ຕັ້ງຄ່າລະດັບຕົວແທນ
       </h3>
-<p class="panel-sub">ກຳນົດສ່ວນຫຼຸດ ແລະ ໂຄວຕ້າຍອດຊື້ຂອງແຕ່ລະລະດັບ — ຄີຍ໌ໃໝ່ທີ່ໃຊ້ຫຼັງຈາກນີ້ຈະໃຊ້ຄ່າຫຼ້າສຸດ (ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວຈະບໍ່ຖືກກະທົບ)</p>
+<p class="panel-sub">ແກ້ໄຂມີຜົນກັບຄີຍ໌ທີ່ໃຊ້ຫຼັງຈາກນີ້ ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວບໍ່ຖືກກະທົບ</p>
 <div id="agentTierList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
 </div>
 <!-- ---- ສ່ວນຍ່ອຍ 2: ສ້າງຄີຍ໌ ---- -->
-<div class="stat-panel u-mt-16">
+<div class="stat-panel u-mt-16" data-ag="keys">
 <h3>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="10" rx="2" width="18" x="3" y="11"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
         ສ້າງຄີຍ໌ຕົວແທນໃໝ່
       </h3>
-<p class="panel-sub">ເລືອກລະດັບ ແລ້ວກົດສ້າງ — ຄີຍ໌ຈະສ້າງແບບສຸ່ມ ນຳໄປໃຫ້ລູກຄ້າກອກໃນໜ້າໂປຣໄຟລ໌ເພື່ອປົດລັອກລາຄາຕົວແທນ</p>
+<p class="panel-sub">ເລືອກລະດັບ ແລ້ວສ້າງຄີຍ໌ ສົ່ງໃຫ້ລູກຄ້າກອກໃນໜ້າໂປຣໄຟລ໌</p>
 <div class="gx-field">
 <label>ລະດັບ</label>
 <div class="gx-input-wrap"><select id="agentKeyTierSelect"></select></div>
@@ -586,7 +602,7 @@ IJKL-9012"></textarea></div>
 <div id="agentNewKeyResult"></div>
 </div>
 <!-- ---- ສ່ວນຍ່ອຍ 3: ລາຍການຄີຍ໌ ---- -->
-<div class="stat-panel u-mt-16">
+<div class="stat-panel u-mt-16" data-ag="keys">
 <h3>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
         ລາຍການຄີຍ໌
@@ -594,12 +610,11 @@ IJKL-9012"></textarea></div>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
 </button>
 </h3>
-<p class="panel-sub">ຄີຍ໌ທັງໝົດທີ່ເຄີຍສ້າງ — ຄີຍ໌ທີ່ໃຊ້ແລ້ວຈະສະແດງວ່າໃຜເປັນຄົນໃຊ້</p>
-<div class="ops-strip" id="agentKeysOpsStrip"></div>
+<div class="ag-seg" id="agentKeysOpsStrip"></div>
 <div id="agentKeysList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
 </div>
 <!-- ---- ສ່ວນຍ່ອຍ 3.5: ຈັດການຕົວແທນ ---- -->
-<div class="stat-panel u-mt-16">
+<div class="stat-panel u-mt-16" data-ag="accounts">
 <h3>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
         ຈັດການຕົວແທນ
@@ -607,18 +622,17 @@ IJKL-9012"></textarea></div>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
 </button>
 </h3>
-<p class="panel-sub">ຄົນທີ່ໃຊ້ຄີຍ໌ໄປແລ້ວ — ເບິ່ງຍອດຊື້ສະສົມທຽບກັບເປົ້າຂອງລະດັບຕົນ ແລະ ປິດສິດຕົວແທນໄດ້ຈາກບ່ອນນີ້</p>
-<div class="ops-strip" id="agentAccountsOpsStrip"></div>
-<div class="search-row-agent"><input id="agentAccountsSearch" placeholder="ຄົ້ນຫາອີເມວ/ຊື່ຕົວແທນ..." type="text"/></div>
+<div class="ag-seg" id="agentAccountsOpsStrip"></div>
+<div class="search-row-agent"><input id="agentAccountsSearch" placeholder="ຄົ້ນຫາອີເມວຕົວແທນ..." type="search" autocomplete="off"/></div>
 <div id="agentAccountsList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
 </div>
 <!-- ---- ສ່ວນຍ່ອຍ 4: ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ ---- -->
-<div class="stat-panel u-mt-16">
+<div class="stat-panel u-mt-16" data-ag="prices">
 <h3>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"></path></svg>
         ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ
       </h3>
-<p class="panel-sub">ຕັ້ງລາຄາທີ່ຕ້ອງການໃຫ້ຕົວແທນຊື້ຕໍ່ສິນຄ້າ (ຫຼືຕໍ່ໄລຍະເວລາ) ໄດ້ໂດຍກົງ — ຖ້າເວັ້ນຫວ່າງໄວ້ ລະບົບຈະໃຊ້ສ່ວນຫຼຸດ % ຂອງລະດັບຕົວແທນແທນອັດຕະໂນມັດ (ລາຄານີ້ໃຊ້ຄືກັນທຸກລະດັບ ບໍ່ແຍກຕາມ tier)</p>
+<p class="panel-sub">ລາຄາທີ່ຕົວແທນຊື້ ໃຊ້ຄືກັນທຸກລະດັບ — ເວັ້ນຫວ່າງ = ໃຊ້ສ່ວນຫຼຸດ % ຂອງລະດັບແທນ</p>
 <div class="agent-cat-row" id="agentPriceCatTabs"></div>
 <div id="agentPriceList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
 </div>
@@ -1107,5 +1121,6 @@ IJKL-9012"></textarea></div>
 <script src="topup-notify.js?v=20261023a"></script>
 <script src="weather-fx.js?v=20261018f" defer></script>
 <script src="admin-glass.js?v=20261024c" defer></script>
+<script src="admin-clean.js?v=20261024a" defer></script>
 </body>
 </html>
