@@ -231,3 +231,16 @@ if(!RM&&window.MutationObserver)['d2KpiProducts','d2KpiStock','d2KpiTopup','d2Kp
 })();
 
 })();
+
+/* ===== เปิดแผงตามที่เลือกมาจากไอคอนแอดมินลอยในหน้าร้าน (admin-fab.js ฝากชื่อแผงไว้ใน sessionStorage 'adminOpen') =====
+   รอจน admin.js แสดงหน้าแอดมินและผูกการ์ดเสร็จ แล้วสั่งกดการ์ดใบนั้นให้เอง (ครั้งเดียว ไม่เปิดซ้ำตอนรีเฟรช) */
+(function(){'use strict';
+ var id=null;try{id=sessionStorage.getItem('adminOpen');sessionStorage.removeItem('adminOpen')}catch(e){}
+ if(!id||!/^panel[A-Za-z]+$/.test(id))return;
+ var tries=0;
+ (function wait(){
+  var app=document.getElementById('adminApp'),c=document.querySelector('.d2-fn-card[data-goto="'+id+'"]');
+  if(app&&app.style.display==='block'&&c&&c.dataset.bound){setTimeout(function(){c.click()},450);return}
+  if(++tries<100)setTimeout(wait,150);
+ })();
+})();

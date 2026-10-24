@@ -1,0 +1,96 @@
+/* admin-fab.css — ปุ่มแอดมินลอย + เมนูวงโค้ง 5 ไอคอน */
+.admin-fab,.afm-item{
+  font:inherit;color:#fff;-webkit-tap-highlight-color:transparent;font-family:'Noto Sans Lao',system-ui,sans-serif;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.admin-fab{
+  position:fixed;left:0;top:0;z-index:90;width:56px;height:56px;padding:0;border-radius:50%;
+  display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(255,255,255,.14),rgba(255,255,255,.02)),#140a0d;
+  border:2px solid #ff0001;
+  box-shadow:0 10px 24px -8px rgba(255,0,1,.65),0 0 0 4px rgba(0,0,0,.35);
+  touch-action:none;cursor:grab;visibility:hidden;
+  transition:background .3s,box-shadow .3s;
+}
+.admin-fab.is-ready{visibility:visible;animation:afIn .35s cubic-bezier(.22,1,.36,1) both}
+.admin-fab.is-open{background:linear-gradient(145deg,#ff4a4a,#c40000);box-shadow:0 12px 28px -6px rgba(255,0,1,.85),0 0 0 4px rgba(0,0,0,.35)}
+.admin-fab::after{content:"";position:absolute;inset:-2px;border-radius:50%;border:2px solid rgba(255,0,1,.7);opacity:0;pointer-events:none}
+.admin-fab.is-open::after{animation:afRing .6s ease-out}
+.admin-fab.is-pulse::after{animation:afRingIn .6s ease-out}
+.af-ic{position:absolute;inset:0;display:grid;place-items:center;transition:transform .45s cubic-bezier(.34,1.56,.64,1),opacity .2s}
+.af-ic svg,.afm-item svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.af-close{opacity:0;transform:rotate(-90deg) scale(.4)}
+.admin-fab.is-open .af-shield{opacity:0;transform:rotate(90deg) scale(.4)}
+.admin-fab.is-open .af-close{opacity:1;transform:none}
+.admin-fab.is-dragging{cursor:grabbing;transform:scale(1.12);box-shadow:0 16px 30px -8px rgba(255,0,1,.8),0 0 0 6px rgba(255,0,1,.18)}
+.admin-fab.is-snapping{transition:left .3s cubic-bezier(.22,1,.36,1),top .3s cubic-bezier(.22,1,.36,1),transform .2s,background .3s}
+.admin-fab:focus-visible,.afm-item:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+/* ฉากหลังมัวเมื่อเปิดเมนู */
+.afm-scrim{
+  position:fixed;inset:0;z-index:88;opacity:0;pointer-events:none;
+  background:radial-gradient(circle at var(--bx,80%) var(--by,50%),rgba(255,0,1,.22),rgba(0,0,0,.72) 62%);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
+  transition:opacity .6s ease .1s;will-change:opacity;
+}
+.afm-scrim.is-open{opacity:1;pointer-events:auto;transition:opacity .45s ease}
+
+/* ไอคอนเด้งออกจากปุ่มเป็นวงโค้ง (ปิด: ดูดกลับเข้าปุ่ม) */
+.afm-item{
+  position:fixed;z-index:89;width:52px;height:52px;margin:-26px 0 0 -26px;padding:0;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;
+  background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.03)),#190c10;
+  border:1.5px solid rgba(255,70,70,.65);
+  box-shadow:0 10px 22px -8px rgba(0,0,0,.9),0 0 18px -6px rgba(255,0,1,.55);
+  opacity:0;pointer-events:none;
+  transform:translate3d(0,0,0) scale(.3);rotate:-200deg;
+  transition:transform .75s cubic-bezier(.65,0,.25,1) calc((4 - var(--i)) * 45ms),rotate .75s cubic-bezier(.65,0,.25,1) calc((4 - var(--i)) * 45ms),opacity .3s ease calc((4 - var(--i)) * 45ms + .4s);
+  will-change:transform,opacity;backface-visibility:hidden;
+}
+.afm-item svg{width:23px;height:23px}
+.afm-item span{
+  position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);
+  font:600 11.5px/1.2 'Noto Sans Lao',system-ui,sans-serif;white-space:nowrap;
+  text-shadow:0 1px 6px #000,0 0 3px #000;opacity:0;transition:opacity .2s;
+}
+.admin-fab.is-open ~ .afm-item{pointer-events:auto}
+.afm-item:active{filter:brightness(1.25)}
+body .afm-scrim.is-open ~ .afm-item{
+  opacity:1;pointer-events:auto;
+  transform:translate3d(var(--dx),var(--dy),0) scale(1);rotate:0deg;
+  transition:rotate 0s,transform .8s cubic-bezier(.22,1,.36,1) calc(var(--i) * 60ms),opacity .45s ease calc(var(--i) * 60ms);
+}
+body .afm-scrim.is-open ~ .afm-item span{opacity:1;transition-delay:calc(var(--i) * 60ms + .35s)}
+
+@keyframes afIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+@keyframes afRingIn{0%{opacity:0;transform:scale(2.1)}55%{opacity:.85}100%{opacity:0;transform:scale(1)}}
+@keyframes afRing{from{opacity:.9;transform:scale(1)}to{opacity:0;transform:scale(1.9)}}
+@media (prefers-reduced-motion:reduce){
+  .admin-fab.is-ready,.admin-fab.is-open::after,.admin-fab.is-pulse::after{animation:none}
+  .afm-item,.af-ic,.admin-fab.is-snapping{transition:opacity .15s!important}
+  body .afm-scrim.is-open ~ .afm-item{transition:opacity .15s!important}
+}
+
+/* ===== ชั้นที่ 2: เมื่อเลือกหมวด ไอคอนหลักหดกลับเข้าปุ่ม แล้วตัวเลือกย่อยเด้งออกมา ===== */
+body .afm-scrim.is-open.is-sub ~ .afm-item{
+  opacity:0;pointer-events:none;transform:translate3d(0,0,0) scale(.3);rotate:-200deg;
+  transition:transform .75s cubic-bezier(.65,0,.25,1) calc((4 - var(--i)) * 45ms),rotate .75s cubic-bezier(.65,0,.25,1) calc((4 - var(--i)) * 45ms),opacity .3s ease calc((4 - var(--i)) * 45ms + .4s);
+}
+body .afm-scrim.is-open.is-sub ~ .afm-item span{opacity:0;transition-delay:0s}
+
+.afm-sheet{position:fixed;left:0;top:0;width:0;height:0;z-index:89;visibility:hidden;pointer-events:none}
+.afm-sheet.is-on{visibility:visible}
+/* ตัวเลือกชั้น 2 = วงกลมไอคอน + ชื่อใต้ไอคอน (หน้าตาเดียวกับชั้นแรก) */
+.afm-sub{
+  opacity:0;pointer-events:none;transform:translate3d(0,0,0) scale(.3);rotate:-200deg;
+  transition:transform .75s cubic-bezier(.65,0,.25,1) calc((5 - var(--n)) * 45ms),rotate .75s cubic-bezier(.65,0,.25,1) calc((5 - var(--n)) * 45ms),opacity .3s ease calc((5 - var(--n)) * 45ms + .4s);
+}
+.afm-sub span{opacity:0;transition:opacity .15s}
+.afm-sheet.is-in .afm-sub{
+  opacity:1;pointer-events:auto;transform:translate3d(var(--dx),var(--dy),0) scale(1);rotate:0deg;
+  transition:rotate 0s,transform .8s cubic-bezier(.22,1,.36,1) calc(.12s + var(--n) * 60ms),opacity .45s ease calc(.12s + var(--n) * 60ms);
+}
+.afm-sheet.is-in .afm-sub span{opacity:1;transition:opacity .35s ease calc(var(--n) * 60ms + .45s)}
+@media (prefers-reduced-motion:reduce){
+  .afm-sub,.afm-sheet.is-in .afm-sub{transition:opacity .15s!important}
+}

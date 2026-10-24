@@ -491,6 +491,19 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await fetch('/api/me', { cache: 'no-store' });
       const data = await res.json();
 
+      // ---- ไอคอนแอดมินลอย (เมนูลัด 2 ชั้นไปหน้า admin): โหลดเฉพาะแอดมินที่ล็อกอินอยู่เท่านั้น ----
+      // คนทั่วไป/ยังไม่ล็อกอิน จะไม่โหลดไฟล์เหล่านี้เลย (ฝั่ง admin.html ยังเช็คสิทธิ์ซ้ำที่ server เหมือนเดิม)
+      if (data.loggedIn && data.user && data.user.isAdmin && !document.querySelector('.admin-fab')) {
+        const fabCss = document.createElement('link');
+        fabCss.rel = 'stylesheet';
+        fabCss.href = 'admin-fab.css?v=20261024c';
+        document.head.appendChild(fabCss);
+        const fabJs = document.createElement('script');
+        fabJs.src = 'admin-fab.js?v=20261024c';
+        fabJs.defer = true;
+        document.body.appendChild(fabJs);
+      }
+
       // ---- ปุ่ม Admin: โผล่เฉพาะตอนล็อกอินอยู่แล้ว "และ" เป็นแอดมินเท่านั้น ----
       // คนทั่วไป/ยังไม่ล็อกอิน จะไม่เห็นปุ่มนี้เลย
       if (adminLink) {
