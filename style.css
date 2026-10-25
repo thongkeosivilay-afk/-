@@ -2016,3 +2016,18 @@ html.perf-lite .fav-btn.is-on svg{ animation:none; }
   -webkit-mask-image:linear-gradient(to bottom, #000 55%, transparent 100%);
   mask-image:linear-gradient(to bottom, #000 55%, transparent 100%);
 }
+
+/* ===== v2: ຮູບສິນຄ້າສູງອັດຕະໂນມັດຕາມສັດສ່ວນຮູບ (ກວ້າງຄົງທີ່) + ລຶບເສັ້ນຕັດລະຫວ່າງຮູບກັບເນື້ອຫາ ===== */
+.prod-card.grid-card .prod-media{
+  min-height:110px;
+  -webkit-mask-image:linear-gradient(to bottom, #000 70%, transparent 100%);
+  mask-image:linear-gradient(to bottom, #000 70%, transparent 100%);
+}
+.prod-card.grid-card .prod-media:has(> img.prod-img){
+  aspect-ratio:auto; display:block; background:none; box-shadow:none;
+}
+.prod-card.grid-card .prod-media img.prod-img{
+  display:block; width:100%; height:auto; max-width:100%;
+  -webkit-mask-image:none; mask-image:none;
+}
+.prod-card.grid-card .prod-body{ margin-top:0; }
