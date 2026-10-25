@@ -1,27 +1,12 @@
 /* =========================================================
    stat-card-fx.css — การ์ดสถิติหน้าแรก (Red Crystal)
    โหลดต่อจาก style.css (เขียนทับสไตล์ .stat-card เดิมเฉพาะในหน้าแรก)
-   - แสงวิ่งรอบขอบ / แสงเรืองพัลส์ / แสงกวาดผ่านผิว / ประกายดาว
+   - (เอาแอนิเมชันและเอฟเฟกต์เคลื่อนไหวออกทั้งหมดแล้ว เพื่อไม่ให้เครื่องค้าง)
    - ไอคอนกรอบคริสตัล + ตัวเลขไล่สีขาว→แดง
    พื้นหลังคริสตัลวาดโดย stat-card-fx.js (canvas.scfx-bg)
    ========================================================= */
 
-@property --scfx-a { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
 
-@keyframes scfx-spin { to { --scfx-a: 360deg; } }
-@keyframes scfx-pulse {
-  0%, 100% { box-shadow: 0 0 18px -8px rgba(255,0,1,.5), 0 8px 26px -14px rgba(255,0,1,.45), inset 0 0 18px -12px rgba(255,60,40,.5); }
-  50%      { box-shadow: 0 0 34px -6px rgba(255,0,1,.85), 0 10px 40px -12px rgba(255,0,1,.7), inset 0 0 28px -10px rgba(255,80,60,.8); }
-}
-@keyframes scfx-sweep { 0% { transform: translateX(-140%) skewX(-22deg); } 55%, 100% { transform: translateX(260%) skewX(-22deg); } }
-@keyframes scfx-twinkle { 0%, 100% { opacity: 0; transform: scale(.3); } 50% { opacity: 1; transform: scale(1); } }
-@keyframes scfx-shine { to { background-position: 0 -200%; } }
-@keyframes scfx-float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-1.5px) scale(1.07); } }
-@keyframes scfx-glow {
-  0%, 100% { filter: drop-shadow(0 0 3px rgba(255,40,30,.8)); }
-  50%      { filter: drop-shadow(0 0 8px #ff2a1f) drop-shadow(0 0 14px rgba(255,0,0,.7)); }
-}
-@keyframes scfx-ishine { 0%, 45% { transform: translate(-130%, -130%) rotate(35deg); } 80%, 100% { transform: translate(130%, 130%) rotate(35deg); } }
 
 /* ---------- ตัวการ์ด ---------- */
 .stats .stat-card {
@@ -29,50 +14,12 @@
   min-height: 86px; padding: 14px 12px; gap: 11px;
   border-radius: 16px; border: 1px solid rgba(255,0,1,.4);
   background: #000;
-  animation: scfx-pulse 3.6s ease-in-out infinite;
-  transition: transform .25s ease, filter .25s ease;
+  box-shadow: 0 0 18px -8px rgba(255,0,1,.5), inset 0 0 18px -12px rgba(255,60,40,.5);
 }
-.stats .stat-card:nth-child(2) { animation-delay: -.9s; }
-.stats .stat-card:nth-child(3) { animation-delay: -1.8s; }
-.stats .stat-card:nth-child(4) { animation-delay: -2.7s; }
-.stats .stat-card:active { transform: scale(.97); filter: brightness(1.25) saturate(1.2); }
 
 /* พื้นหลังคริสตัล (canvas) อยู่ล่างสุด เนื้อหาอยู่เหนือมัน */
 .stats .stat-card > canvas.scfx-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; pointer-events: none; }
-.stats .stat-card > :not(canvas):not(.scfx-spark) { position: relative; z-index: 1; min-width: 0; }
-
-/* แสงวิ่งตามเส้นขอบ */
-.stats .stat-card::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; z-index: 3; pointer-events: none;
-  background: conic-gradient(from var(--scfx-a), transparent 0deg, transparent 250deg, rgba(255,40,30,.15) 290deg, #ff2a1f 330deg, #fff3ee 352deg, #ff2a1f 360deg);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  animation: scfx-spin 4.2s linear infinite;
-  filter: drop-shadow(0 0 5px #f00) drop-shadow(0 0 12px rgba(255,0,0,.8));
-}
-.stats .stat-card:nth-child(2)::before { animation-delay: -1.2s; }
-.stats .stat-card:nth-child(3)::before { animation-duration: 5s; animation-direction: reverse; }
-.stats .stat-card:nth-child(4)::before { animation-delay: -2.4s; }
-
-/* แสงกวาดผ่านผิวคริสตัล */
-.stats .stat-card::after {
-  content: ""; position: absolute; top: -20%; bottom: -20%; left: 0; width: 38%; z-index: 2; pointer-events: none;
-  background: linear-gradient(100deg, transparent 0%, rgba(255,90,70,0) 20%, rgba(255,150,130,.22) 48%, rgba(255,255,255,.28) 50%, rgba(255,90,70,0) 80%, transparent 100%);
-  mix-blend-mode: screen;
-  animation: scfx-sweep 5.5s ease-in-out infinite;
-}
-.stats .stat-card:nth-child(2)::after { animation-delay: -1.4s; }
-.stats .stat-card:nth-child(3)::after { animation-delay: -2.8s; }
-.stats .stat-card:nth-child(4)::after { animation-delay: -4.1s; }
-
-/* ประกายดาว */
-.stats .stat-card .scfx-spark {
-  position: absolute; z-index: 4; width: 10px; height: 10px; pointer-events: none; opacity: 0;
-  background: radial-gradient(circle, #fff 0 1.5px, rgba(255,80,60,.9) 2.5px, transparent 5px);
-  clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%);
-  filter: drop-shadow(0 0 4px #f00);
-  animation: scfx-twinkle 2.6s ease-in-out infinite;
-}
+.stats .stat-card > :not(canvas) { position: relative; z-index: 1; min-width: 0; }
 
 /* ---------- ไอคอน ---------- */
 .stats .stat-icon {
@@ -81,25 +28,9 @@
   background: radial-gradient(circle at 30% 20%, rgba(255,70,50,.38), transparent 55%), linear-gradient(150deg, #3a0000 0%, #120000 70%);
   box-shadow: 0 0 16px -2px rgba(255,0,1,.6), 0 6px 14px -6px #000, inset 0 1px 0 rgba(255,170,150,.35), inset 0 -8px 14px -8px rgba(255,0,0,.45);
 }
-.stats .stat-icon::before {
-  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.2px;
-  background: conic-gradient(from var(--scfx-a), rgba(255,40,30,.15), rgba(255,40,30,.15) 55%, #ff3a2c 80%, #fff 95%, rgba(255,40,30,.15));
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
-  animation: scfx-spin 3s linear infinite;
-}
-.stats .stat-icon::after {
-  content: ""; position: absolute; left: -20%; top: -20%; width: 140%; height: 30%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
-  animation: scfx-ishine 4.2s ease-in-out infinite; pointer-events: none;
-}
 .stats .stat-icon svg {
   width: 21px; height: 21px; stroke-width: 2; position: relative; z-index: 1;
-  animation: scfx-float 3.2s ease-in-out infinite, scfx-glow 2.4s ease-in-out infinite;
 }
-.stats .stat-card:nth-child(2) .stat-icon svg, .stats .stat-card:nth-child(2) .stat-icon::after { animation-delay: -.8s; }
-.stats .stat-card:nth-child(3) .stat-icon svg, .stats .stat-card:nth-child(3) .stat-icon::after { animation-delay: -1.6s; }
-.stats .stat-card:nth-child(4) .stat-icon svg, .stats .stat-card:nth-child(4) .stat-icon::after { animation-delay: -2.4s; }
 
 /* ---------- ข้อความ + ตัวเลข ---------- */
 .stats .stat-label {
@@ -109,12 +40,9 @@
 .stats .stat-value {
   font-size: clamp(20px, 6.4vw, 25px); font-weight: 800; letter-spacing: .01em; line-height: 1.15;
   font-variant-numeric: tabular-nums; white-space: nowrap;
-  background: linear-gradient(180deg, #fff 0%, #ffd2c8 22%, #ff4636 52%, #ff0001 72%, #a30000 100%);
-  background-size: 100% 200%; background-position: 0 0;
+  background: linear-gradient(180deg, #fff 0%, #ffd2c8 22%, #ff4636 62%, #ff0001 100%);
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent; color: transparent;
-  filter: drop-shadow(0 0 7px rgba(255,0,0,.65)) drop-shadow(0 2px 2px #000);
-  animation: scfx-shine 3.6s linear infinite;
 }
 .stats .stat-value .unit {
   -webkit-text-fill-color: rgba(255,225,220,.78); color: rgba(255,225,220,.78);
@@ -128,22 +56,4 @@
   .stats .stat-icon svg { width: 18px; height: 18px; }
   .stats .stat-value { font-size: 19px; }
   .stats .stat-value .unit { font-size: 11px; margin-left: 3px; }
-}
-
-/* ---------- ประหยัดแบต: การ์ดที่พ้นจอหยุดเล่นแอนิเมชัน ---------- */
-.stats .stat-card.scfx-off,
-.stats .stat-card.scfx-off::before,
-.stats .stat-card.scfx-off::after,
-.stats .stat-card.scfx-off .stat-icon::before,
-.stats .stat-card.scfx-off .stat-icon::after,
-.stats .stat-card.scfx-off .stat-icon svg,
-.stats .stat-card.scfx-off .stat-value,
-.stats .stat-card.scfx-off .scfx-spark { animation-play-state: paused; }
-
-/* ผู้ใช้ตั้งค่าลดการเคลื่อนไหว */
-@media (prefers-reduced-motion: reduce) {
-  .stats .stat-card, .stats .stat-card::before, .stats .stat-card::after,
-  .stats .stat-icon::before, .stats .stat-icon::after, .stats .stat-icon svg,
-  .stats .stat-value, .stats .stat-card .scfx-spark { animation: none !important; }
-  .stats .stat-card .scfx-spark { opacity: .7; }
 }

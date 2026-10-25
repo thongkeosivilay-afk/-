@@ -133,15 +133,6 @@
       card.insertBefore(cv, card.firstChild);
       canvases.push(cv);
 
-      for (var k = 0; k < 3; k++) {
-        var sp = document.createElement('i');
-        sp.className = 'scfx-spark';
-        sp.style.left = (8 + Math.random() * 84) + '%';
-        sp.style.top = (10 + Math.random() * 78) + '%';
-        sp.style.animationDelay = (-(Math.random() * 2.6) - i * 0.3) + 's';
-        sp.style.animationDuration = (2 + Math.random() * 2.2) + 's';
-        card.appendChild(sp);
-      }
     });
 
     function paint(cv) {
@@ -174,13 +165,6 @@
       window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(paintAll, 150); });
     }
 
-    // การ์ดที่อยู่นอกจอ -> หยุดแอนิเมชันชั่วคราว
-    if ('IntersectionObserver' in window) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (en) { en.target.classList.toggle('scfx-off', !en.isIntersecting); });
-      }, { threshold: 0 });
-      cards.forEach(function (c) { io.observe(c); });
-    }
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
