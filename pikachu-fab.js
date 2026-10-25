@@ -97,11 +97,28 @@
   function syncLinks(){
     var r=fab.getBoundingClientRect();
     links.style.left=(r.right+8)+'px';
-    links.style.bottom=(document.documentElement.clientHeight-r.bottom+10)+'px';
+    // ใช้ค่า bottom (position:fixed) ชุดเดียวกับปิกาจู → ไอคอนอยู่ระดับเดียวกันเสมอ
+    // แม้แถบ URL ของ Safari ยุบ/ขยาย หรือหน้าเลื่อน (ไม่พึ่ง clientHeight / getBoundingClientRect ที่อาจคลาดกัน)
+    var b=parseFloat(getComputedStyle(fab).bottom);
+    if(isNaN(b))b=document.documentElement.clientHeight-r.bottom;
+    links.style.bottom=(b+10)+'px';
   }
   function follow(ms){ // แถบเมนูล่างเปิด/ปิดแล้วปิกาจูลอยขึ้นลง → ให้แถวไอคอนตามไปด้วย
     var t0=performance.now();
     (function f(now){syncLinks();if(now-t0<ms)requestAnimationFrame(f)})(t0);
+  }
+  // เลื่อนหน้า / ปรับขนาดวิวพอร์ต (แถบ URL มือถือยุบ-ขยาย) → ซิงก์ตำแหน่งไอคอนใหม่
+  var syncT=0;
+  function kick(){
+    if(state!=='away')return;
+    var n=performance.now();if(n-syncT<120)return;syncT=n;
+    follow(500);
+  }
+  window.addEventListener('scroll',kick,{passive:true});
+  window.addEventListener('orientationchange',function(){setTimeout(function(){if(state==='away')follow(500)},200)});
+  if(window.visualViewport){
+    visualViewport.addEventListener('resize',kick);
+    visualViewport.addEventListener('scroll',kick);
   }
   new MutationObserver(function(){if(state==='away')follow(700)}).observe(document.body,{attributes:true,attributeFilter:['class']});
   window.addEventListener('resize',function(){
