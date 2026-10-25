@@ -1850,6 +1850,16 @@ input, select, textarea{ font-size:16px !important; }
 .prod-card.grid-card .prod-sold-tag svg{width:13px;height:13px;color:#ff7a1a}
 .prod-card.grid-card .prod-stamp{top:8px;right:8px;display:flex;align-items:center;gap:4px;padding:4px 10px 4px 7px;border-radius:99px;font-size:11px;font-weight:800;color:#fff;background:linear-gradient(135deg,#ffb020,#ff5a00);box-shadow:0 4px 12px -3px rgba(255,90,0,.7)}
 .prod-card.grid-card .prod-stamp svg{width:12px;height:12px}
+.prod-card.grid-card .prod-stamp.is-hot{top:6px;right:6px;padding:0;gap:0;border-radius:0;background:none;box-shadow:none;width:64px;filter:drop-shadow(0 4px 8px rgba(255,90,0,.55));animation:hotGlow 1.3s ease-in-out infinite}
+.prod-card.grid-card .prod-stamp.is-hot .hot-badge{width:100%;height:auto;display:block}
+@keyframes hotGlow{0%,100%{filter:drop-shadow(0 3px 6px rgba(255,90,0,.45))}50%{filter:drop-shadow(0 4px 12px rgba(255,150,20,.85))}}
+.hot-badge .hb-t{transform-box:fill-box;transform-origin:0% 60%;animation:hbFlick .8s ease-in-out infinite alternate;will-change:transform}
+.hot-badge .hb-t1{animation-duration:.62s}
+.hot-badge .hb-t2{animation-duration:.78s;animation-delay:-.3s}
+.hot-badge .hb-t3{animation-duration:.55s;animation-delay:-.15s}
+.hot-badge .hb-t4{animation-duration:.9s;animation-delay:-.5s}
+@keyframes hbFlick{0%{transform:scale(1,1) skewY(0)}35%{transform:scale(1.14,.88) skewY(-7deg)}70%{transform:scale(.9,1.12) skewY(6deg)}100%{transform:scale(1.08,1) skewY(-3deg)}}
+@media (prefers-reduced-motion:reduce){.prod-card.grid-card .prod-stamp.is-hot,.hot-badge .hb-t{animation:none}}
 .prod-card.grid-card .prod-sold-tag svg{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .prod-card.grid-card .prod-price{order:0}
 .prod-card.grid-card .prod-status{order:1}
