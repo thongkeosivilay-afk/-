@@ -1879,3 +1879,72 @@ html.perf-lite .prod-media .prod-stamp.is-hot .hot-badge .hb-t{animation:hbFlick
 .prod-card.grid-card.wb-pc > .prod-stamp.is-hot{ top:-13px; right:-9px; z-index:5; transform:rotate(-12deg); transform-origin:50% 50%; }
 .prod-card.grid-card.wb-pc > .prod-stamp.is-hot .hot-badge{ width:100%; height:auto; display:block; }
 html.perf-lite .prod-card > .prod-stamp.is-hot .hot-badge .hb-t{ animation:hbFlick .8s ease-in-out infinite alternate !important; }
+
+
+/* =========================================================
+   ການ໌ດໝວດໝູ່ v5 — ຮູບແບນເນີ່ເຕັມຄວາມກວ້າງ + ແຖບລຸ່ມ (ຊື່ໝວດ / ຈຳນວນ / ປຸ່ມ)
+   ແສງແດງວິ່ງວົນຮອບຂອບການ໌ດ, ຮອຍຕໍ່ລະຫວ່າງຮູບກັບແຖບລຸ່ມຈາງລົງແບບນຸ້ມໆ ບໍ່ມີເສັ້ນຕັດ
+   ========================================================= */
+@property --cat-a{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+
+.cat-item{ border-color:#000; background:linear-gradient(105deg,#0a0a0a 0%,#090909 55%,#140506 100%); }
+.cat-item::before{
+  content:""; position:absolute; inset:-1px; border-radius:inherit; padding:1.5px;
+  z-index:4; pointer-events:none;
+  background:conic-gradient(from var(--cat-a),#4a0509 0deg,#4a0509 250deg,#ff2a2a 310deg,#fff2f2 335deg,#ff2a2a 350deg,#4a0509 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  animation:cat-spin 4s linear infinite;
+}
+@keyframes cat-spin{ to{ --cat-a:360deg; } }
+html.perf-lite .cat-item::before{ animation:none; }
+@media (prefers-reduced-motion:reduce){ .cat-item::before{ animation:none; } }
+
+/* ຮູບຈາງລົງເຂົ້າແຖບລຸ່ມ */
+.cat-banner-media.has-image{
+  -webkit-mask-image:linear-gradient(to bottom,#000 78%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 78%,transparent 100%);
+}
+.cat-banner::after{ background:linear-gradient(to top,#0a0a0a 0%,rgba(10,10,10,.35) 18%,transparent 42%); }
+
+/* ແຖບລຸ່ມ */
+.cat-meta{
+  position:relative; z-index:2; min-height:0; border-top:0;
+  padding:4px 14px 14px; margin-top:-6px;
+  display:flex; align-items:center; gap:10px;
+  background:linear-gradient(180deg,transparent,#0b0505 45%,#060303);
+  border-radius:0 0 16px 16px;
+}
+.cat-meta::before{
+  content:""; position:absolute; left:0; right:0; top:-14px; height:28px; pointer-events:none;
+  background:radial-gradient(55% 100% at 50% 50%,rgba(255,40,50,.18),transparent 75%);
+}
+.cat-meta-name{
+  flex:1 1 0; min-width:0; margin:0;
+  font-size:15px; font-weight:800; line-height:1.15; text-transform:uppercase;
+  color:#e0001a; text-shadow:0 0 10px rgba(200,0,20,.35);
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word;
+}
+.cat-stats{ flex:0 0 auto; display:flex; flex-direction:column; gap:5px; }
+.cat-st{ display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:500; color:#bdb1b1; white-space:nowrap; }
+.cat-st b{ color:#fff; font-weight:700; font-size:11.5px; }
+.cat-st i{ width:6px; height:6px; border-radius:50%; background:#ff1427; box-shadow:0 0 6px #ff1427; flex-shrink:0; }
+.cat-st-stock i{ background:#2ee66b; box-shadow:0 0 6px #2ee66b; }
+.cat-cta{
+  flex:0 0 auto; height:32px; padding:0 14px; border-radius:999px;
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  font-size:12.5px; font-weight:700; color:#fff; white-space:nowrap;
+  background:linear-gradient(180deg,#ff1a1a 0%,#d00000 55%,#a30000 100%);
+  border:1px solid rgba(255,120,120,.55);
+  box-shadow:inset 0 2px 3px rgba(255,255,255,.28),inset 0 -3px 4px rgba(0,0,0,.25),0 4px 12px rgba(255,0,0,.4);
+  transition:filter .2s ease, transform .2s ease;
+}
+.cat-cta svg{ width:16px; height:16px; flex-shrink:0; }
+@media (hover:hover) and (pointer:fine){
+  .cat-item:hover .cat-cta{ filter:brightness(1.12); transform:scale(1.03); }
+}
+@media (max-width:360px){
+  .cat-meta{ padding:4px 10px 12px; gap:8px; }
+  .cat-cta{ padding:0 10px; font-size:11.5px; }
+  .cat-cta svg{ display:none; }
+}

@@ -70,13 +70,15 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="cat-glare"></div>
         </div>
         <div class="cat-meta">
-          <div class="cat-meta-text">
-            <div class="cat-meta-name">${escapeHtml(category.name)}</div>
-            <div class="cat-meta-count">${productCount.toLocaleString('en-US')} ລາຍການ • ຄົງເຫຼືອ ${stockCount.toLocaleString('en-US')} ຊິ້ນ</div>
+          <div class="cat-meta-name">${escapeHtml(category.name)}</div>
+          <div class="cat-stats">
+            <div class="cat-st"><i></i><span><b>${productCount.toLocaleString('en-US')}</b> ລາຍການ</span></div>
+            <div class="cat-st cat-st-stock"><i></i><span>ຄົງເຫຼືອ <b>${stockCount.toLocaleString('en-US')}</b> ຊິ້ນ</span></div>
           </div>
-          <div class="cat-meta-arrow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </div>
+          <span class="cat-cta">
+            <svg viewBox="0 0 32 32" fill="none" stroke="#ffd0d0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12 14 4M22 12 18 4M3 12h26l-3 14H6L3 12Z"/><path d="M11 16v6M16 16v6M21 16v6"/></svg>
+            <span>ເລືອກເບິ່ງສິນຄ້າ</span>
+          </span>
         </div>
       </a>`;
   }
