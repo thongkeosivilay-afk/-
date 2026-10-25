@@ -316,6 +316,67 @@
     box-shadow:0 0 4px var(--red-glow); flex-shrink:0;
   }
 
+  /* ---------- Weekly best sellers: 2 ການ໌ດ ເລື່ອນໄປຊ້າຍແບບວົນ (weekly-best.js) ---------- */
+  .wb-viewport{
+    position:relative;
+    overflow:hidden;
+    margin:14px -20px 0;
+    padding:4px 20px 6px;
+    touch-action:pan-y;
+  }
+  .wb-track{
+    display:flex;
+    gap:12px;
+    will-change:transform;
+  }
+  .wb-card{
+    flex:0 0 calc((100% - 12px) / 2);
+    min-width:0;
+    display:flex; flex-direction:column;
+    background:linear-gradient(155deg, rgba(255,255,255,.05), rgba(255,255,255,.008) 55%), var(--card);
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    overflow:hidden;
+    color:inherit; text-decoration:none;
+    position:relative;
+    box-shadow:0 10px 20px -14px rgba(0,0,0,.85);
+    -webkit-user-drag:none; user-select:none;
+  }
+  .wb-card.is-top{ border-color:rgba(255,0,1,.45); box-shadow:0 10px 24px -14px rgba(255,0,1,.55); }
+  .wb-media{ position:relative; aspect-ratio:16/11; background:#151515; overflow:hidden; }
+  .wb-media img{ width:100%; height:100%; object-fit:cover; display:block; pointer-events:none; }
+  .wb-img-fallback{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  .wb-img-fallback svg{ width:30px; height:30px; color:var(--text-faint); }
+  .wb-body{ padding:10px 12px 12px; min-width:0; }
+  .wb-name{ font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .wb-price{ margin-top:4px; font-size:13px; font-weight:800; color:var(--red-glow); white-space:nowrap; }
+  .wb-from{ font-size:10px; font-weight:600; color:var(--text-dim); }
+  .wb-sold{
+    margin-top:6px; font-size:10.5px; color:var(--text-dim);
+    display:flex; align-items:center; gap:4px; white-space:nowrap;
+  }
+  .wb-sold svg{ width:11px; height:11px; color:var(--red-glow); flex-shrink:0; }
+  .wb-wrap{ position:relative; }
+  .wb-nav{
+    position:absolute; z-index:2;
+    top:calc(var(--wb-img-h, 120px) - 42px);
+    width:42px; height:42px; padding:0; border-radius:50%;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.55); color:#fff;
+    border:1px solid rgba(255,255,255,.22);
+    -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:background .2s, transform .15s;
+  }
+  .wb-nav svg{ width:22px; height:22px; }
+  .wb-nav:active{ background:var(--red); transform:scale(.92); }
+  .wb-prev{ left:-4px; }
+  .wb-next{ right:-4px; }
+  .wb-wrap.has-nav .wb-nav{ display:flex; }
+  @media (prefers-reduced-motion: reduce){
+    .wb-track{ transition:none !important; }
+  }
+
   /* ---------- Placeholder fields (for you to fill in with real data) ---------- */
   .todo{
     opacity:.5;

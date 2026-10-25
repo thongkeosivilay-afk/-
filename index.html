@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="page-loader.css">
 <title>ຮ້ານເກມອອນລາຍ</title>
 <!-- style.css : ຮວມ CSS/ໂຕນສີ/ໄລເອົ້າທັງໝົດ -->
-<link href="style.css?v=20261009a" rel="stylesheet"/>
+<link href="style.css?v=20261025a" rel="stylesheet"/>
 <link href="tabbar-close-fx.css?v=20261004b" rel="stylesheet"/>
 <link href="page-transition.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
@@ -104,6 +104,20 @@
 <div class="rp-track" id="rpTrack"></div>
 </div>
 </section>
+<!-- Weekly best sellers: ສະແດງ 2 ການ໌ດ ເລື່ອນໄປຊ້າຍແລ້ວການ໌ດໃໝ່ເຂົ້າມາ ວົນຕໍ່ເນື່ອງ
+     ຂໍ້ມູນຈິງຈາກ GET /api/public/weekly-best-sellers (weekly-best.js) — ຖ້າອາທິດນີ້ຍັງບໍ່ມີຍອດຂາຍ ຈະເຊື່ອງທັງ section -->
+<section class="section u-hidden" id="weeklyBestSection">
+<div class="section-title">
+<svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><path d="M12 2c1 3.5 4 5 4 9a4 4 0 0 1-8 0c0-1.5.6-2.6 1.4-3.6C10.2 9 11 8 11 6.5 11 5 11.5 3.5 12 2Z"></path><path d="M6 15a6 6 0 0 0 12 0"></path></svg>
+      ສິນຄ້າຂາຍດີປະຈຳອາທິດ
+    </div>
+<div class="en u-caption-faint">Weekly Best Sellers</div>
+<div class="wb-wrap" id="wbWrap">
+<div class="wb-viewport" id="wbViewport"><div class="wb-track" id="wbTrack"></div></div>
+<button class="wb-nav wb-prev" id="wbPrev" type="button" aria-label="ກ່ອນໜ້າ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+<button class="wb-nav wb-next" id="wbNext" type="button" aria-label="ຖັດໄປ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+</div>
+</section>
 <!-- Categories -->
 <section class="section" id="categories">
 <div class="section-title u-mb-16">
@@ -138,6 +152,7 @@
 <script src="storefront-data.js"></script>
 <script src="storefront.js"></script>
 <script src="recent-purchases.js"></script>
+<script src="weekly-best.js"></script>
 <script src="promo-popup.js"></script>
 <script src="tabbar-close-fx.js?v=20261004b"></script>
 <script src="script.js?v=20261009a"></script>
