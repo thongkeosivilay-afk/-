@@ -171,6 +171,9 @@ async function route(request, env, ctx) {
     if (url.pathname === '/api/public/recent-purchases') {
       return handleRecentPurchases(request, env);
     }
+    if (url.pathname === '/api/public/weekly-best-sellers') {
+      return handleWeeklyBestSellers(request, env);
+    }
     if (url.pathname === '/api/public/top-spenders') {
       return handleTopSpenders(request, env, ctx);
     }
@@ -1853,6 +1856,103 @@ async function handleRecentPurchases(request, env) {
   } catch (err) {
     console.error('handleRecentPurchases failed:', err);
     return json({ error: 'ດຶງລາຍການສິນຄ້າຊື້ລ່າສຸດບໍ່ສຳເລັດ' }, 502);
+  }
+}
+
+/* ---------- 6b-2) GET /api/public/weekly-best-sellers ----------
+   index.html -> weekly-best.js ใช้แสดงแถบ "สินค้าขายดีประจำสัปดาห์"
+   นับจากออเดอร์ status = completed ใน 7 วันล่าสุด (rolling) จัดกลุ่มตาม product_name
+   เรียงจากขายได้มากไปน้อย (เท่ากันให้ตัวที่ขายล่าสุดมาก่อน) เอาแค่ TOP_N ตัว
+   - join กับ products เพื่อเอา id/รูป/ราคา (สินค้าที่ถูกลบ/archive แล้วจะไม่แสดง)
+   - สินค้าในหมวดหมู่ที่แอดมินปิดไว้จะไม่แสดง (ตรงกับที่ลูกค้าเห็นใน storefront)
+   - ไม่มียอดขายในสัปดาห์นี้เลย -> คืน items ว่าง (หน้าเว็บจะซ่อน section เอง ไม่สร้างข้อมูลปลอม) */
+async function handleWeeklyBestSellers(request, env) {
+  if (request.method !== 'GET') return json({ error: 'Method not allowed' }, 405);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return json(
+      { error: 'Worker ຍັງບໍ່ໄດ້ຕັ້ງຄ່າ SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' },
+      500
+    );
+  }
+
+  const TOP_N = 6;
+  const DAYS = 7;
+  const PAGE = 1000;
+  const MAX_PAGES = 10;
+
+  try {
+    const since = new Date(Date.now() - DAYS * 24 * 60 * 60 * 1000).toISOString();
+    const catCols = [1, 2, 3, 4].flatMap((i) => [`category_${i}_name`, `category_${i}_enabled`]);
+
+    const [products, durations, settingsRows] = await Promise.all([
+      supabaseSelect(env, 'products', {
+        select: 'id,name,category,price,image_url,duration_enabled,paused',
+        or: '(archived.is.null,archived.eq.false)',
+      }),
+      supabaseSelect(env, 'product_durations', { select: 'product_id,price' }),
+      supabaseSelect(env, 'site_settings', { select: catCols.join(','), id: 'eq.1', limit: '1' }),
+    ]);
+
+    // นับยอดขายรายสินค้าในช่วง 7 วัน (แบ่งหน้าทีละ 1000 แถว เหมือน getSoldCountsByProductName)
+    const stats = new Map(); // name -> { count, last }
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const rows = await supabaseSelect(env, 'orders', {
+        select: 'product_name,created_at',
+        status: 'eq.completed',
+        created_at: `gte.${since}`,
+        order: 'created_at.desc',
+        limit: String(PAGE),
+        offset: String(page * PAGE),
+      });
+      (rows || []).forEach((row) => {
+        if (!row.product_name) return;
+        const cur = stats.get(row.product_name) || { count: 0, last: row.created_at };
+        cur.count += 1;
+        stats.set(row.product_name, cur);
+      });
+      if (!rows || rows.length < PAGE) break;
+    }
+
+    const settings = (settingsRows && settingsRows[0]) || {};
+    const disabledCategoryNames = new Set();
+    [1, 2, 3, 4].forEach((i) => {
+      if (settings[`category_${i}_enabled`] === false) {
+        disabledCategoryNames.add(String(settings[`category_${i}_name`] || `ໝວດໝູ່ ${i}`).trim());
+      }
+    });
+
+    const minDurationPrice = new Map(); // product_id -> ราคาต่ำสุดของแพ็กเกจเวลา
+    (durations || []).forEach((d) => {
+      const price = Number(d.price);
+      if (!Number.isFinite(price)) return;
+      const cur = minDurationPrice.get(d.product_id);
+      if (cur === undefined || price < cur) minDurationPrice.set(d.product_id, price);
+    });
+
+    const productByName = new Map((products || []).map((p) => [p.name, p]));
+
+    const items = [...stats.entries()]
+      .map(([name, st]) => ({ name, st, product: productByName.get(name) }))
+      .filter(({ product }) => product && !disabledCategoryNames.has(String(product.category || '').trim()))
+      .sort((a, b) => b.st.count - a.st.count || String(b.st.last).localeCompare(String(a.st.last)))
+      .slice(0, TOP_N)
+      .map(({ name, st, product }, idx) => ({
+        rank: idx + 1,
+        productId: product.id,
+        productName: name,
+        image: product.image_url || null,
+        price: product.duration_enabled
+          ? (minDurationPrice.has(product.id) ? minDurationPrice.get(product.id) : null)
+          : product.price,
+        fromPrice: !!product.duration_enabled,
+        paused: !!product.paused,
+        soldThisWeek: st.count,
+      }));
+
+    return json({ ok: true, days: DAYS, items });
+  } catch (err) {
+    console.error('handleWeeklyBestSellers failed:', err);
+    return json({ error: 'ດຶງສິນຄ້າຂາຍດີປະຈຳອາທິດບໍ່ສຳເລັດ' }, 502);
   }
 }
 
