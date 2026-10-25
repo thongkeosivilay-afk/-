@@ -212,7 +212,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const isPinned = (p) => isFav(p.id) && isRec(p);
   function orderByFavs(products) {
     const pinned = favs.map((id) => products.find((p) => String(p.id) === id)).filter((p) => p && isRec(p));
-    const rest = products.filter((p) => !isPinned(p));
+    // ສິນຄ້າທີ່ເຫຼືອ: ຂາຍດີ (soldCount ຫຼາຍ) ຢູ່ເທິງສຸດ -> ຖ້າຂາຍເທົ່າກັນ ໃຫ້ສິນຄ້າທີ່ມີສະຕັອກຫຼາຍກວ່າມາກ່ອນ -> ຖ້າຍັງເທົ່າກັນ ຮັກສາລຳດັບເດີມ
+    const rest = products
+      .map((p, i) => ({ p, i }))
+      .filter((x) => !isPinned(x.p))
+      .sort((a, b) => {
+        const sa = Number(a.p.soldCount) || 0;
+        const sb = Number(b.p.soldCount) || 0;
+        if (sb !== sa) return sb - sa;
+        const ka = window.StorefrontData.productTotalStock(a.p);
+        const kb = window.StorefrontData.productTotalStock(b.p);
+        if (kb !== ka) return kb - ka;
+        return a.i - b.i;
+      })
+      .map((x) => x.p);
     return [...pinned, ...rest];
   }
   // ປ້າຍ "ສິນຄ້າທີ່ແນະນຳ" + ຫົວໃຈ — ສະແດງສະເພາະສິນຄ້າທີ່ຊື້ເກີນ 2 ຄັ້ງ
