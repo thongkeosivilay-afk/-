@@ -1871,3 +1871,11 @@ html.perf-lite .prod-media .prod-stamp.is-hot .hot-badge .hb-t{animation:hbFlick
 .prod-card.grid-card .prod-row{margin-bottom:1px}
 .prod-card.grid-card .buy-btn{order:2}
 .prod-card.grid-card .prod-sold-tag{order:3}
+
+/* ---------- ป้าย HOT ของสินค้าขายดีอันดับ 1: วางคร่อมขอบการ์ดมุมขวาบน เอียงซ้ายเล็กน้อย ---------- */
+.wb-viewport{ margin-top:-4px; padding-top:22px; }
+.prod-card.grid-card.wb-pc.is-top-seller{ overflow:visible; }
+.prod-card.grid-card.wb-pc.is-top-seller > .prod-media{ border-radius:15px 15px 0 0; }
+.prod-card.grid-card.wb-pc > .prod-stamp.is-hot{ top:-13px; right:-9px; z-index:5; transform:rotate(-12deg); transform-origin:50% 50%; }
+.prod-card.grid-card.wb-pc > .prod-stamp.is-hot .hot-badge{ width:100%; height:auto; display:block; }
+html.perf-lite .prod-card > .prod-stamp.is-hot .hot-badge .hb-t{ animation:hbFlick .8s ease-in-out infinite alternate !important; }
