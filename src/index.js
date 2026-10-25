@@ -1915,9 +1915,15 @@ async function handleWeeklyBestSellers(request, env) {
 
     const settings = (settingsRows && settingsRows[0]) || {};
     const disabledCategoryNames = new Set();
+    const enabledCategoryNames = new Set(); // หมวดที่เปิดอยู่จริงบนหน้าร้าน (ตรงกับ categories[] ของ /api/public/storefront)
     [1, 2, 3, 4].forEach((i) => {
       if (settings[`category_${i}_enabled`] === false) {
         disabledCategoryNames.add(String(settings[`category_${i}_name`] || `ໝວດໝູ່ ${i}`).trim());
+      }
+    });
+    [1, 2, 3, 4].forEach((i) => {
+      if (settings[`category_${i}_enabled`] !== false) {
+        enabledCategoryNames.add(String(settings[`category_${i}_name`] || `ໝວດໝູ່ ${i}`).trim());
       }
     });
 
@@ -1933,7 +1939,12 @@ async function handleWeeklyBestSellers(request, env) {
 
     const items = [...stats.entries()]
       .map(([name, st]) => ({ name, st, product: productByName.get(name) }))
-      .filter(({ product }) => product && !disabledCategoryNames.has(String(product.category || '').trim()))
+      .filter(({ product }) => {
+        if (!product) return false;
+        const cat = String(product.category || '').trim();
+        // ต้องอยู่ในหมวดที่เปิดอยู่บนหน้าร้านจริงเท่านั้น (สินค้าไร้หมวด/หมวดไม่ตรง/หมวดที่ปิด = ลูกค้าไม่เห็นในเว็บ จึงไม่แสดง)
+        return enabledCategoryNames.has(cat) && !disabledCategoryNames.has(cat);
+      })
       .sort((a, b) => b.st.count - a.st.count || String(b.st.last).localeCompare(String(a.st.last)))
       .slice(0, TOP_N)
       .map(({ name, st, product }, idx) => ({
