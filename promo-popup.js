@@ -38,18 +38,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   overlay.className = 'promo-popup-overlay';
   overlay.innerHTML = `
     <div class="promo-popup" role="dialog" aria-modal="true" aria-label="ໂປຣໂມຊັ່ນ">
-      <button type="button" class="promo-popup-close" id="promoPopupCloseX" aria-label="ປິດ">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
-      </button>
       <div class="promo-popup-img-wrap">
         <img src="${escHtml(promo.image)}" alt="ໂປຣໂມຊັ່ນ">
       </div>
       <div class="promo-popup-footer">
-        <label class="promo-popup-check-row">
-          <input type="checkbox" id="promoPopupHideCheck">
-          ບໍ່ໂຊວ໌ອີກ 1 ຊົ່ວໂມງ
-        </label>
         <button type="button" class="promo-popup-close-all" id="promoPopupCloseAll">ປິດທັງໝົດ</button>
+        <label class="promo-popup-switch-row">
+          <span class="promo-popup-switch-text">1h</span>
+          <input type="checkbox" id="promoPopupHideCheck" class="promo-popup-switch-input" role="switch">
+          <span class="promo-popup-switch" aria-hidden="true"></span>
+        </label>
       </div>
     </div>
   `;
@@ -67,7 +65,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setTimeout(() => overlay.remove(), 250);
   }
 
-  overlay.querySelector('#promoPopupCloseX').addEventListener('click', closePopup);
   overlay.querySelector('#promoPopupCloseAll').addEventListener('click', closePopup);
   overlay.addEventListener('click', (e) => {
     if (e.target === overlay) closePopup(); // ກົດພື້ນທີ່ນອກກ່ອງ ໃຫ້ປິດ
