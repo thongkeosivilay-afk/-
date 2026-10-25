@@ -356,6 +356,7 @@
     display:flex; align-items:center; gap:4px; white-space:nowrap;
   }
   .wb-sold svg{ width:11px; height:11px; color:var(--red-glow); flex-shrink:0; }
+  .wb-track > .prod-card.wb-pc{ flex:0 0 calc((100% - 12px) / 2); min-width:0; width:auto; }
   .wb-wrap{ position:relative; }
   .wb-nav{
     position:absolute; z-index:2;
