@@ -1997,3 +1997,22 @@ html.perf-lite .fav-btn.is-on svg{ animation:none; }
 .fav-btn{ width:auto; height:28px; padding:0 10px 0 8px; border-radius:999px; gap:5px; font:700 10.5px/1 inherit; font-family:inherit; white-space:nowrap; }
 .fav-btn svg{ width:14px; height:14px; }
 .fav-btn span{ font-size:10.5px; font-weight:700; letter-spacing:0; }
+
+/* ===== ການ໌ດສິນຄ້າ: ຄວາມສູງປັບອັດຕະໂນມັດຕາມເນື້ອຫາ, ຄວາມກວ້າງຄົງທີ່ (ຍືດໄດ້ແຕ່ຂຶ້ນ-ລົງ) ===== */
+.prod-grid{ grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start; }
+.prod-card.grid-card{ min-width:0; max-width:100%; height:auto; align-self:start; }
+.prod-card.grid-card .prod-body{ min-width:0; }
+.prod-card.grid-card .prod-name{
+  white-space:normal; overflow:visible; text-overflow:clip;
+  overflow-wrap:anywhere; word-break:break-word; min-width:0;
+}
+.prod-card.grid-card .prod-status{ white-space:normal; overflow-wrap:anywhere; min-width:0; }
+.prod-card.grid-card .prod-row{ min-width:0; }
+
+/* ===== ການ໌ດສິນຄ້າ: ເສັ້ນຕັດລະຫວ່າງຮູບກັບເນື້ອຫາ -> ຈາງ/ເບລີ ແບບການ໌ດໝວດໝູ່ ===== */
+.prod-card.grid-card .prod-media{ box-shadow:none; }
+.prod-card.grid-card .prod-media img.prod-img{
+  border:0;
+  -webkit-mask-image:linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-image:linear-gradient(to bottom, #000 55%, transparent 100%);
+}
