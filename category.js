@@ -162,6 +162,66 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<div class="prod-sold-tag">${FLAME_SVG}ຂາຍແລ້ວ ${count.toLocaleString('en-US')} ອັນ</div>`;
   }
 
+  // ---------- ປັກໝຸດສິນຄ້າ (ຫົວໃຈ) — ເກັບໃນເຄື່ອງລູກຄ້າເອງ (localStorage), ໃໝ່ສຸດຢູ່ໜ້າສຸດ ----------
+  const FAV_KEY = 'fav_products_v1';
+  const HEART_SVG = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+  function loadFavs() {
+    try {
+      const arr = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+      return Array.isArray(arr) ? arr.map(String) : [];
+    } catch (e) { return []; }
+  }
+  function saveFavs(arr) {
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(arr.slice(0, 200))); } catch (e) { /* ເກັບບໍ່ໄດ້ກໍປ່ອຍຜ່ານ */ }
+  }
+  let favs = loadFavs();
+
+  // ສິນຄ້າທີ່ລູກຄ້າຄົນນີ້ "ຊື້ເກີນ 2 ຄັ້ງ" (ຄືຊື້ 3 ຄັ້ງຂຶ້ນໄປ) = ສິນຄ້າທີ່ແນະນຳ -> ຈຶ່ງມີຫົວໃຈໃຫ້ຕິກປັກໝຸດ
+  // ນັບຈາກປະຫວັດການສັ່ງຊື້ຈິງ (GET /api/orders/history) ຖ້າຍັງບໍ່ໄດ້ login ຫຼືດຶງບໍ່ໄດ້ = ບໍ່ມີປ້າຍ/ຫົວໃຈ
+  const REC_MIN_BUYS = 3;
+  const BATCH_WINDOW_MS = 90 * 1000; // ຊື້ຫຼາຍຈຳນວນໃນການກົດ "ຊື້ເລີຍ" ຄັ້ງດຽວ (ຫຼາຍແຖວໃກ້ກັນ) ນັບເປັນ 1 ຄັ້ງ — ຄືກັນກັບໜ້າ orders.js
+  let recNames = new Set();
+  const isRec = (p) => recNames.has(String(p.name || ''));
+  async function fetchRecommendedNames() {
+    try {
+      const res = await fetch('/api/orders/history', { cache: 'no-store' });
+      if (!res.ok) return new Set();
+      const data = await res.json().catch(() => ({}));
+      if (!data || !data.ok) return new Set();
+      const count = {};
+      const lastAt = {};
+      (data.items || []).forEach((r) => {
+        if (r.status && r.status !== 'completed') return;
+        const name = String(r.product_name || '');
+        if (!name) return;
+        const t = new Date(r.created_at).getTime();
+        if (!(name in lastAt) || Math.abs(lastAt[name] - t) > BATCH_WINDOW_MS) count[name] = (count[name] || 0) + 1;
+        lastAt[name] = t;
+      });
+      return new Set(Object.keys(count).filter((n) => count[n] >= REC_MIN_BUYS));
+    } catch (e) { return new Set(); }
+  }
+  const isFav = (id) => favs.includes(String(id));
+  function toggleFav(id) {
+    id = String(id);
+    favs = isFav(id) ? favs.filter((x) => x !== id) : [id, ...favs];
+    saveFavs(favs);
+    return isFav(id);
+  }
+  // ສິນຄ້າທີ່ປັກໝຸດຂຶ້ນກ່ອນ (ອັນທີ່ກົດຫຼ້າສຸດຢູ່ເທິງສຸດ) ແລ້ວຕາມດ້ວຍສິນຄ້າທີ່ເຫຼືອຕາມລຳດັບເດີມ
+  const isPinned = (p) => isFav(p.id) && isRec(p);
+  function orderByFavs(products) {
+    const pinned = favs.map((id) => products.find((p) => String(p.id) === id)).filter((p) => p && isRec(p));
+    const rest = products.filter((p) => !isPinned(p));
+    return [...pinned, ...rest];
+  }
+  // ປ້າຍ "ສິນຄ້າທີ່ແນະນຳ" + ຫົວໃຈ — ສະແດງສະເພາະສິນຄ້າທີ່ຊື້ເກີນ 2 ຄັ້ງ
+  function favBtnHTML(product) {
+    if (!isRec(product)) return '';
+    const on = isFav(product.id);
+    return `<button type="button" class="fav-btn${on ? ' is-on' : ''}" data-fav="${escapeHtml(product.id)}" aria-pressed="${on}" aria-label="ສິນຄ້າທີ່ແນະນຳ — ປັກໝຸດ">${HEART_SVG}<span>ສິນຄ້າທີ່ແນະນຳ</span></button>`;
+  }
+
   function cardHTML(product, topSellerId) {
     const stock = window.StorefrontData.productTotalStock(product);
     const buyable = window.StorefrontData.isProductBuyable(product);
@@ -172,10 +232,12 @@ document.addEventListener('DOMContentLoaded', () => {
       'prod-card', 'grid-card',
       resellerInfo.isReseller ? 'is-reseller' : '',
       isTopSeller ? 'is-top-seller' : '',
+      isPinned(product) ? 'is-fav' : '',
     ].filter(Boolean).join(' ');
     const stampHTML = isTopSeller ? `<div class="prod-stamp is-hot"><svg class="hot-badge" viewBox="0 0 124 64" role="img" aria-label="HOT" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="hbG" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#ffb23a"/><stop offset=".55" stop-color="#ff6a12"/><stop offset="1" stop-color="#e83a00"/></linearGradient><linearGradient id="hbT" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff5a0a"/><stop offset=".6" stop-color="#ff9a1f"/><stop offset="1" stop-color="#ffd24a"/></linearGradient><linearGradient id="hbH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g class="hb-flames" fill="url(#hbT)" stroke="#a82600" stroke-width="1.4" stroke-linejoin="round"><path class="hb-t hb-t1" d="M76 18C88 18 96 12 100 2C106 10 104 20 96 26C90 30 84 30 76 30Z"/><path class="hb-t hb-t2" d="M76 26C92 24 104 20 114 14C114 24 110 30 102 34C94 38 86 38 76 38Z"/><path class="hb-t hb-t3" d="M76 34C92 34 106 36 118 42C108 46 100 48 90 49C84 50 80 50 76 50Z"/><path class="hb-t hb-t4" d="M76 42C88 46 96 52 100 62C92 60 86 58 76 54Z"/></g><path d="M8 34C8 22 20 15 36 15H62C80 15 88 22 88 34C88 46 80 53 62 53H36C20 53 8 46 8 34Z" fill="url(#hbG)" stroke="#a82600" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 30C16 21 26 18 40 18H62C50 22 30 22 14 30Z" fill="url(#hbH)"/><text x="48" y="42" text-anchor="middle" font-family="'Lilita One','Arial Black',Impact,sans-serif" font-weight="900" font-style="italic" font-size="27" fill="#3a0d00" fill-opacity=".55" transform="translate(2 2) skewX(-8)">HOT</text><text x="48" y="42" text-anchor="middle" font-family="'Lilita One','Arial Black',Impact,sans-serif" font-weight="900" font-style="italic" font-size="27" fill="#fff" stroke="#fff" stroke-width=".6" transform="skewX(-8)">HOT</text></svg></div>` : '';
     return `
       <article class="${cardClass}" data-pid="${escapeHtml(product.id)}">
+        ${favBtnHTML(product)}
         <div class="${mediaClass}">
           ${stampHTML}
           ${mediaBodyHTML(product, state, product.id)}
@@ -249,19 +311,60 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const topSellerId = findTopSellerId(products);
-      grid.innerHTML = products.map((p) => cardHTML(p, topSellerId)).join('');
-      if (emptyEl) emptyEl.style.display = 'none';
 
-      wireBuyButtons(products);
+      // ສ້າງກຣິດໃໝ່ (ສິນຄ້າປັກໝຸດຂຶ້ນກ່ອນ) + ຄົງຄ່າຄົ້ນຫາທີ່ພິມຄ້າງໄວ້
+      const recHead = document.querySelector('#rec-head');
+      function renderGrid() {
+        if (recHead) recHead.style.display = products.some(isPinned) ? '' : 'none';
+        grid.innerHTML = orderByFavs(products).map((p) => cardHTML(p, topSellerId)).join('');
+        if (emptyEl) emptyEl.style.display = 'none';
+        wireBuyButtons(products);
+        if (searchInput && searchInput.value.trim()) searchInput.dispatchEvent(new Event('input'));
+      }
+      renderGrid();
       wireSearch(products);
 
-      // ---- ยิงเช็คราคาตัวแทนต่อ (ไม่บล็อกการเรนเดอร์ครั้งแรก) ถ้าเป็นตัวแทนค่อยเรนเดอร์การ์ดใหม่ ----
+      // ດຶງປະຫວັດການຊື້ມາຫາສິນຄ້າທີ່ຊື້ເກີນ 2 ຄັ້ງ ແລ້ວວາດໃໝ່ (ບໍ່ບລັອກການສະແດງສິນຄ້າຄັ້ງທຳອິດ)
+      fetchRecommendedNames().then((names) => {
+        if (!names.size) return;
+        recNames = names;
+        renderGrid();
+      });
+
+      // ກົດຫົວໃຈ -> ສິນຄ້າເລື່ອນຂຶ້ນເທິງສຸດ (ກົດອີກຄັ້ງ = ຍົກເລີກປັກໝຸດ)
+      grid.addEventListener('click', (e) => {
+        const btn = e.target.closest('.fav-btn');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const before = {};
+        grid.querySelectorAll('.prod-card[data-pid]').forEach((c) => { before[c.dataset.pid] = c.getBoundingClientRect(); });
+        const nowOn = toggleFav(btn.dataset.fav);
+        renderGrid();
+        const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          || document.documentElement.classList.contains('perf-lite');
+        if (!calm) {
+          grid.querySelectorAll('.prod-card[data-pid]').forEach((c) => {
+            const b = before[c.dataset.pid];
+            if (!b || !c.animate) return;
+            const a = c.getBoundingClientRect();
+            const dx = b.left - a.left, dy = b.top - a.top;
+            if (!dx && !dy) return;
+            c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
+              { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' });
+          });
+        }
+        if (nowOn) {
+          const head = document.querySelector('#rec-head');
+          if (head && head.getBoundingClientRect().top < 0) head.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+        }
+      });
+
+      // ---- ຍິງເຊັກລາຄາຕົວແທນຕໍ່ (ບໍ່ບລັອກການເຣນເດີຄັ້ງທຳອິດ) ຖ້າເປັນຕົວແທນຄ່ອຍເຣນເດີການ໌ດໃໝ່ ----
       window.StorefrontData.fetchResellerInfo().then((info) => {
         if (!info.isReseller) return;
         resellerInfo = info;
-        grid.innerHTML = products.map((p) => cardHTML(p, topSellerId)).join('');
-        wireBuyButtons(products);
-        wireSearch(products);
+        renderGrid();
       });
     })
     .catch(() => {

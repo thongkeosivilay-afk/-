@@ -1985,3 +1985,8 @@ html.perf-lite .fav-btn.is-on svg{ animation:none; }
 .cat-banner.fit-img{ aspect-ratio:auto; }
 .cat-banner.fit-img .cat-banner-media{ position:relative; inset:auto; }
 .cat-banner.fit-img .cat-banner-media img{ width:100%; max-width:100%; height:auto; aspect-ratio:auto 757/265; object-fit:contain; display:block; }
+
+/* ປ້າຍ "ສິນຄ້າທີ່ແນະນຳ" + ຫົວໃຈ (ແບບ pill) ສຳລັບສິນຄ້າທີ່ຊື້ເກີນ 2 ຄັ້ງ */
+.fav-btn{ width:auto; height:28px; padding:0 10px 0 8px; border-radius:999px; gap:5px; font:700 10.5px/1 inherit; font-family:inherit; white-space:nowrap; }
+.fav-btn svg{ width:14px; height:14px; }
+.fav-btn span{ font-size:10.5px; font-weight:700; letter-spacing:0; }
