@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ຈຳນວນ/ຄົງເຫຼືອ ຄືເດີມ
     return `
       <a class="cat-item" href="category.html?cat=${category.index}">
-        <div class="cat-banner">
+        <div class="cat-banner${category.image ? ' fit-img' : ''}">
           <div class="cat-banner-bg"></div>
           <div class="cat-banner-media${category.image ? ' has-image' : ''}">${mediaHTML}</div>
           <div class="cat-glare"></div>
