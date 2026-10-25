@@ -1,0 +1,45 @@
+/* =========================================================
+   pikachu-fab.css — ปิกาจูพิกเซลแทนปุ่มแชทลอย (.chat-fab)
+   โหลดหลัง style.css เพื่อเขียนทับหน้าตาวงกลมแดงเดิม (ตำแหน่ง/การลอยหนีแถบเมนูยังใช้ของเดิม)
+   ========================================================= */
+.chat-fab.pika-fab{
+  right:14px; width:66px; height:auto; padding:0; border:0; border-radius:0;
+  background:none; box-shadow:none; display:block; cursor:pointer;
+  -webkit-tap-highlight-color:transparent; touch-action:manipulation;
+  transform:translateX(var(--pk-dx,0px));
+  transition:bottom .4s cubic-bezier(.2,1.3,.4,1), transform .42s cubic-bezier(.2,.75,.3,1);
+}
+.chat-fab.pika-fab svg.pk{display:block;width:100%;height:auto;overflow:visible;shape-rendering:crispEdges;color:inherit}
+/* ท่าทาง: ขยับแบบสเต็ปพิกเซล (เบา ไม่ใช้ filter) */
+.pika-fab .all{animation:pkBob 1.6s steps(1) infinite;transform-origin:50% 100%;transform-box:fill-box}
+@keyframes pkBob{0%{transform:translateY(0)}50%{transform:translateY(.6px)}}
+.pika-fab .tail{animation:pkTl 1.2s steps(1) infinite}
+@keyframes pkTl{0%{transform:translate(0,0)}25%{transform:translate(.7px,-.7px)}50%{transform:translate(0,0)}75%{transform:translate(-.5px,.5px)}}
+.pika-fab .eL{animation:pkEL 5s steps(1) infinite}.pika-fab .eR{animation:pkER 5s steps(1) 1.3s infinite}
+@keyframes pkEL{0%,84%,100%{transform:none}88%{transform:translate(-1px,0)}94%{transform:translate(0,1px)}}
+@keyframes pkER{0%,84%,100%{transform:none}88%{transform:translate(1px,0)}94%{transform:translate(0,1px)}}
+.pika-fab .lids{opacity:0;animation:pkBl 4s steps(1) infinite}
+@keyframes pkBl{0%,93%,100%{opacity:0}94%,97%{opacity:1}}
+.pika-fab .sp{opacity:0;animation:pkZp 1.4s steps(1) infinite}.pika-fab .sp2{animation-delay:.7s}
+@keyframes pkZp{0%{opacity:0}10%{opacity:1}22%{opacity:0}40%{opacity:1}50%,100%{opacity:0}}
+.pika-fab.jump .all{animation:pkHop .55s steps(6)}
+@keyframes pkHop{0%{transform:scale(1.06,.9)}35%{transform:translateY(-4px)}70%{transform:translateY(0) scale(1.05,.92)}100%{transform:none}}
+.pika-fab.jump .sp{animation-duration:.3s;animation-iteration-count:3}
+.pika-fab.pika-paused .pk *{animation-play-state:paused}
+/* ท่าวิ่ง: เอนตัวไปทางที่วิ่ง */
+.pika-fab svg.pk{transition:transform .12s steps(2)}
+.pika-fab.run-l svg.pk{transform:rotate(-10deg) translateX(-1px)}
+.pika-fab.run-r svg.pk{transform:rotate(10deg) translateX(1px)}
+/* แถวไอคอนช่องทางติดต่อ เลื่อนตามหลังปิกาจู */
+.pika-links{position:fixed;z-index:49;display:flex;align-items:center;gap:8px;pointer-events:none}
+.pika-links a{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.55),0 0 0 2px rgba(255,255,255,.14);opacity:0;transform:translateX(var(--from,-80px)) scale(.4);transition:transform .34s cubic-bezier(.3,1.5,.5,1),opacity .16s linear;transition-delay:var(--d,0s);-webkit-tap-highlight-color:transparent}
+.pika-links a svg{width:20px;height:20px}
+.pika-links.show a{opacity:1;transform:none;pointer-events:auto}
+.pika-empty{padding:8px 12px;border-radius:12px;background:#1a0a0a;border:1px solid rgba(255,0,1,.4);color:#ffd9d4;font:600 12px/1.3 'Noto Sans Lao',system-ui,sans-serif;white-space:nowrap;opacity:0;transition:opacity .2s}
+.pika-links.show .pika-empty{opacity:1}
+/* สายฟ้า */
+.bolt{position:fixed;width:0;height:0;z-index:400;pointer-events:none}
+.bolt svg{position:absolute;left:0;top:0;overflow:visible;fill:#ffe53b;shape-rendering:crispEdges;filter:drop-shadow(0 0 3px #ffb800)}
+.pk.zap{animation:pkZap .3s steps(1)}
+@keyframes pkZap{0%,40%{filter:drop-shadow(0 0 12px rgba(255,229,59,.95)) brightness(1.25)}20%,60%{filter:drop-shadow(0 0 10px rgba(255,200,40,.6))}100%{filter:none}}
+@media (prefers-reduced-motion:reduce){.chat-fab.pika-fab{transition-duration:.01s}.pika-links a{transition-duration:.01s;transition-delay:0s !important}.pika-fab .pk *,
