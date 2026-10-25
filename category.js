@@ -208,6 +208,57 @@ document.addEventListener('DOMContentLoaded', () => {
     saveFavs(favs);
     return isFav(id);
   }
+  // ---------- ປັບສີພື້ນການ໌ດໃຫ້ເຂົ້າກັບຮູບສິນຄ້າອັດຕະໂນມັດ ----------
+  // ສຸ່ມສີເສັ້ນລຸ່ມຂອງຮູບ (canvas) -> ເຮັດໃຫ້ມືດລົງພໍດີ -> ໃສ່ເປັນພື້ນການ໌ດ ຮູບຈຶ່ງຄ່ອຍໆຈາງເຂົ້າພື້ນສີດຽວກັນ
+  // ຖ້າເຊີບເວີຮູບບໍ່ອະນຸຍາດ CORS ຈະອ່ານສີບໍ່ໄດ້ -> ປ່ອຍພື້ນດຳເດີມ (ບໍ່ກະທົບການສະແດງຮູບ)
+  const tintCache = new Map();
+  function sampleEdgeColor(url) {
+    if (tintCache.has(url)) return tintCache.get(url);
+    const p = new Promise((resolve) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        try {
+          const w = im.naturalWidth, h = im.naturalHeight;
+          if (!w || !h) return resolve(null);
+          const c = document.createElement('canvas');
+          c.width = 24; c.height = 6;
+          const ctx = c.getContext('2d', { willReadFrequently: true });
+          ctx.drawImage(im, 0, Math.floor(h * 0.82), w, Math.max(1, Math.floor(h * 0.18)), 0, 0, 24, 6);
+          const d = ctx.getImageData(0, 0, 24, 6).data;
+          let r = 0, g = 0, b = 0, n = 0;
+          for (let i = 0; i < d.length; i += 4) {
+            if (d[i + 3] < 40) continue;
+            r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+          }
+          if (!n) return resolve(null);
+          resolve([r / n, g / n, b / n]);
+        } catch (e) { resolve(null); }
+      };
+      im.onerror = () => resolve(null);
+      im.src = url;
+    });
+    tintCache.set(url, p);
+    return p;
+  }
+  function tintCards(root) {
+    root.querySelectorAll('.prod-card[data-pid] img.prod-img').forEach((img) => {
+      const card = img.closest('.prod-card');
+      const url = img.getAttribute('src');
+      if (!card || !url) return;
+      sampleEdgeColor(url).then((rgb) => {
+        if (!rgb) return;
+        // ຮັກສາໂທນມືດ ໃຫ້ຕົວໜັງສືຂາວອ່ານງ່າຍ: ຈຳກັດຄວາມສະຫວ່າງສູງສຸດ ~72
+        const mx = Math.max(rgb[0], rgb[1], rgb[2]) || 1;
+        const k = Math.min(1, 72 / mx);
+        const top = rgb.map((v) => Math.round(v * k));
+        const bot = top.map((v) => Math.round(v * 0.55));
+        card.style.setProperty('--pc-bg', `linear-gradient(180deg, rgb(${top.join(',')}) 0%, rgb(${top.join(',')}) 45%, rgb(${bot.join(',')}) 100%)`);
+        card.style.setProperty('--pc-bd', `rgba(${Math.min(255, top[0] * 2 + 20)},${Math.min(255, top[1] * 2 + 20)},${Math.min(255, top[2] * 2 + 20)},.28)`);
+      });
+    });
+  }
+
   // ສິນຄ້າທີ່ປັກໝຸດຂຶ້ນກ່ອນ (ອັນທີ່ກົດຫຼ້າສຸດຢູ່ເທິງສຸດ) ແລ້ວຕາມດ້ວຍສິນຄ້າທີ່ເຫຼືອຕາມລຳດັບເດີມ
   const isPinned = (p) => isFav(p.id) && isRec(p);
   function orderByFavs(products) {
@@ -332,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML = orderByFavs(products).map((p) => cardHTML(p, topSellerId)).join('');
         if (emptyEl) emptyEl.style.display = 'none';
         wireBuyButtons(products);
+        tintCards(grid);
         if (searchInput && searchInput.value.trim()) searchInput.dispatchEvent(new Event('input'));
       }
       renderGrid();
