@@ -637,6 +637,14 @@ function renderManageList(products) {
         </div>
 
         <div class="pe-section">
+          <label class="pin-heart-toggle">
+            <input type="checkbox" class="edit-featured" ${p.featured ? 'checked' : ''}>
+            <span class="pin-heart-ui"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+            <span class="pin-heart-text"><b>ປັກໝຸດສິນຄ້າ (ຫົວໃຈ)</b><small>ຂຶ້ນຢູ່ເທິງສຸດຂອງໜ້າໝວດໝູ່</small></span>
+          </label>
+        </div>
+
+        <div class="pe-section">
           <label class="pe-switch">
             <input type="checkbox" class="edit-paused" ${p.paused ? 'checked' : ''}>
             <span class="pe-switch-ui" aria-hidden="true"></span>
@@ -1017,12 +1025,13 @@ async function saveProduct(id, row) {
   const paused = row.querySelector('.edit-paused').checked;
   const pausedNote = row.querySelector('.edit-paused-note').value.trim();
   const description = row.querySelector('.edit-description').value.trim();
+  const featured = row.querySelector('.edit-featured').checked;
   if (!name) return;
 
   btn.style.color = 'var(--ink-500)';
   const { error } = await supabaseClient
     .from('products')
-    .update({ name, price, paused, paused_note: paused ? (pausedNote || null) : null, description: description || null })
+    .update({ name, price, paused, paused_note: paused ? (pausedNote || null) : null, description: description || null, featured })
     .eq('id', id);
   if (error) {
     console.error(error);
@@ -1031,7 +1040,7 @@ async function saveProduct(id, row) {
   }
   showToast('ບັນທຶກສຳເລັດ');
   const p = currentProducts.find(x => x.id === id);
-  if (p) { p.name = name; p.price = price; p.paused = paused; p.paused_note = paused ? pausedNote : null; p.description = description; }
+  if (p) { p.name = name; p.price = price; p.paused = paused; p.paused_note = paused ? pausedNote : null; p.description = description; p.featured = featured; }
   loadProducts();
 }
 
@@ -3087,6 +3096,7 @@ async function initAdminPanel() {
     const price = parseFloat(document.getElementById('pPrice').value) || 0;
     const description = document.getElementById('pDescription').value.trim();
     const durationEnabled = document.getElementById('pDurationEnabled').checked;
+    const featured = document.getElementById('pFeatured').checked;
 
     let durationRows = [];
     if (durationEnabled) {
@@ -3158,7 +3168,8 @@ async function initAdminPanel() {
           price: durationEnabled ? 0 : price,
           image_url: imageUrl,
           duration_enabled: durationEnabled,
-          description: description || null
+          description: description || null,
+          featured
         })
         .select()
         .single();
@@ -3190,6 +3201,7 @@ async function initAdminPanel() {
       addForm.reset();
       document.getElementById('pDescription').value = '';
       pDurationEnabled.checked = false;
+      document.getElementById('pFeatured').checked = false;
       durationOptionsWrap.style.display = 'none';
       basePriceField.style.display = 'block';
       durationOptionsList.querySelectorAll('.dur-price').forEach(inp => { inp.style.display = 'none'; inp.value = ''; });

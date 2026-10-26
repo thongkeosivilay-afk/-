@@ -260,9 +260,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ສິນຄ້າທີ່ປັກໝຸດຂຶ້ນກ່ອນ (ອັນທີ່ກົດຫຼ້າສຸດຢູ່ເທິງສຸດ) ແລ້ວຕາມດ້ວຍສິນຄ້າທີ່ເຫຼືອຕາມລຳດັບເດີມ
-  const isPinned = (p) => isFav(p.id) && isRec(p);
+  // ແອດມິນປັກໝຸດ (ຕິກຫົວໃຈໃນຫ້ອງແອດມິນ) ຂຶ້ນເທິງສຸດກ່ອນທຸກຢ່າງ — ລຳດັບຕາມທີ່ server ສົ່ງມາ (ໃໝ່ສຸດກ່ອນ)
+  const isAdminPinned = (p) => !!p.featured;
+  const isPinned = (p) => isAdminPinned(p) || (isFav(p.id) && isRec(p));
   function orderByFavs(products) {
-    const pinned = favs.map((id) => products.find((p) => String(p.id) === id)).filter((p) => p && isRec(p));
+    const adminPinned = products.filter(isAdminPinned);
+    const pinned = favs.map((id) => products.find((p) => String(p.id) === id)).filter((p) => p && isRec(p) && !isAdminPinned(p));
     // ສິນຄ້າທີ່ເຫຼືອ: ຂາຍດີ (soldCount ຫຼາຍ) ຢູ່ເທິງສຸດ -> ຖ້າຂາຍເທົ່າກັນ ໃຫ້ສິນຄ້າທີ່ມີສະຕັອກຫຼາຍກວ່າມາກ່ອນ -> ຖ້າຍັງເທົ່າກັນ ຮັກສາລຳດັບເດີມ
     const rest = products
       .map((p, i) => ({ p, i }))
@@ -277,10 +280,11 @@ document.addEventListener('DOMContentLoaded', () => {
         return a.i - b.i;
       })
       .map((x) => x.p);
-    return [...pinned, ...rest];
+    return [...adminPinned, ...pinned, ...rest];
   }
   // ປ້າຍ "ສິນຄ້າທີ່ແນະນຳ" + ຫົວໃຈ — ສະແດງສະເພາະສິນຄ້າທີ່ຊື້ເກີນ 2 ຄັ້ງ
   function favBtnHTML(product) {
+    if (isAdminPinned(product)) return `<div class="admin-pin-badge" aria-label="ສິນຄ້າປັກໝຸດ">${HEART_SVG}<span>ແນະນຳ</span></div>`;
     if (!isRec(product)) return '';
     const on = isFav(product.id);
     return `<button type="button" class="fav-btn${on ? ' is-on' : ''}" data-fav="${escapeHtml(product.id)}" aria-pressed="${on}" aria-label="ສິນຄ້າທີ່ແນະນຳ — ປັກໝຸດ">${HEART_SVG}<span>ສິນຄ້າທີ່ແນະນຳ</span></button>`;

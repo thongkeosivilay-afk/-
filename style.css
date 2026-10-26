@@ -2031,3 +2031,13 @@ html.perf-lite .fav-btn.is-on svg{ animation:none; }
   -webkit-mask-image:none; mask-image:none;
 }
 .prod-card.grid-card .prod-body{ margin-top:0; }
+
+
+/* ປ້າຍຫົວໃຈ — ສິນຄ້າທີ່ແອດມິນປັກໝຸດ (ບໍ່ກົດໄດ້) */
+.admin-pin-badge{
+  position:absolute; top:8px; left:8px; z-index:6; height:28px; padding:0 10px 0 8px; border-radius:999px;
+  display:flex; align-items:center; gap:5px; color:#ff2a3c; background:rgba(255,0,1,.18);
+  border:1px solid rgba(255,60,70,.75); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+  font-size:10.5px; font-weight:700; line-height:1; white-space:nowrap; pointer-events:none;
+}
+.admin-pin-badge svg{ width:14px; height:14px; fill:currentColor; }
