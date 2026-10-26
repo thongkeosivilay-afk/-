@@ -1670,7 +1670,7 @@ async function handlePublicStorefront(request, env) {
       }),
       // archived เป็น null ได้ (แถวเก่าก่อนมีคอลัมน์นี้) จึงต้องรวม is.null ด้วย ไม่ใช่แค่ eq.false
       supabaseSelect(env, 'products', {
-        select: 'id,name,category,price,reseller_price,image_url,duration_enabled,paused,paused_note,description,created_at',
+        select: 'id,name,category,price,reseller_price,image_url,duration_enabled,paused,paused_note,description,featured,created_at',
         or: '(archived.is.null,archived.eq.false)',
         order: 'created_at.desc',
       }),
@@ -1722,6 +1722,7 @@ async function handlePublicStorefront(request, env) {
         paused: !!p.paused,
         paused_note: p.paused_note || null,
         description: p.description || null,
+        featured: !!p.featured,
         stock: productStockMap.get(p.id) ?? 0,
         durations: durationsWithStock,
         soldCount: soldCountsByName.get(p.name) || 0,
