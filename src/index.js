@@ -1718,12 +1718,12 @@ async function handlePublicStorefront(request, env) {
       }),
       // archived เป็น null ได้ (แถวเก่าก่อนมีคอลัมน์นี้) จึงต้องรวม is.null ด้วย ไม่ใช่แค่ eq.false
       supabaseSelect(env, 'products', {
-        select: 'id,name,category,price,reseller_price,image_url,duration_enabled,paused,paused_note,description,featured,created_at',
+        select: 'id,name,category,price,reseller_price,reseller_price_2,image_url,duration_enabled,paused,paused_note,description,featured,created_at',
         or: '(archived.is.null,archived.eq.false)',
         order: 'created_at.desc',
       }),
       supabaseSelect(env, 'product_durations', {
-        select: 'id,product_id,label,price,reseller_price,sort_order',
+        select: 'id,product_id,label,price,reseller_price,reseller_price_2,sort_order',
         order: 'sort_order.asc',
       }),
       getRegisteredUserCount(env),
@@ -1756,6 +1756,7 @@ async function handlePublicStorefront(request, env) {
         label: d.label,
         price: d.price,
         resellerPrice: d.reseller_price,
+        resellerPrice2: d.reseller_price_2,
         stock: durationStockMap.get(d.id) ?? 0,
       }));
 
@@ -1765,6 +1766,7 @@ async function handlePublicStorefront(request, env) {
         category: p.category,
         price: p.price,
         resellerPrice: p.reseller_price,
+        resellerPrice2: p.reseller_price_2,
         image_url: p.image_url,
         duration_enabled: !!p.duration_enabled,
         paused: !!p.paused,
@@ -2802,7 +2804,7 @@ async function handleResellerStatusGet(request, env) {
 
   try {
     const rows = await supabaseSelect(env, 'reseller_status', {
-      select: 'is_reseller,duration_type,period_start,period_end,quota_target,discount_percent',
+      select: 'is_reseller,duration_type,period_start,period_end,quota_target,discount_percent,display_name',
       user_id: `eq.${user.id}`,
       limit: '1',
     });
@@ -2822,7 +2824,10 @@ async function handleResellerStatusGet(request, env) {
         console.error('reseller custom prices load skipped:', err);
       }
     }
-    return json({ ok: true, status: row, customPrices });
+    // group2 = ตัวแทนที่แอดมินตั้งชื่อให้แล้ว (ได้ราคา reseller_price_2) — ไม่ส่งชื่อจริงออกไป
+    const status = row ? { ...row, group2: !!(row.display_name && String(row.display_name).trim()) } : null;
+    if (status) delete status.display_name;
+    return json({ ok: true, status, customPrices });
   } catch (err) {
     console.error('handleResellerStatusGet failed:', err);
     return json({ ok: true, status: null });
