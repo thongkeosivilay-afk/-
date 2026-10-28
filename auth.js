@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* ---------- 2) Toast helper ---------- */
   let toastTimer = null;
-  function showToast(message, isError = false) {
+  function showToast(message, isError = false, duration = 2600) {
     let toast = document.querySelector('.toast');
     if (!toast) {
       toast = document.createElement('div');
@@ -42,24 +42,46 @@ document.addEventListener('DOMContentLoaded', () => {
     toast.querySelector('span').textContent = message;
     toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
   }
 
   /* ---------- 3) Discord / Google buttons ---------- */
   // ถ้า URL หน้านี้มี ?next=/xxx.html (เช่น มาจากหน้าโปรไฟล์ที่ยังไม่ login) ให้พาไปที่นั่นต่อหลัง login สำเร็จ
   const nextParam = new URLSearchParams(window.location.search).get('next');
+  // กันกดซ้ำจนเริ่ม OAuth หลายรอบ (แต่ละรอบสร้าง state ใหม่ ทับ cookie state รอบก่อน -> callback รอบแรกจะ state ไม่ตรง)
+  // ต้องรีเซ็ตตอนกลับมาหน้านี้ด้วยปุ่มย้อนกลับ (iOS Safari เก็บหน้าไว้ใน bfcache) ไม่งั้นปุ่มจะกดไม่ติดอีกเลย
+  let oauthBusy = false;
+  window.addEventListener('pageshow', () => { oauthBusy = false; });
+  function startOAuth(provider) {
+    if (oauthBusy) return;
+    oauthBusy = true;
+    window.location.href = `/auth/${provider}/login` + (nextParam ? `?next=${encodeURIComponent(nextParam)}` : '');
+  }
   document.querySelectorAll('.btn-discord').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const url = '/auth/discord/login' + (nextParam ? `?next=${encodeURIComponent(nextParam)}` : '');
-      window.location.href = url;
-    });
+    btn.addEventListener('click', () => startOAuth('discord'));
   });
   document.querySelectorAll('.btn-google').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const url = '/auth/google/login' + (nextParam ? `?next=${encodeURIComponent(nextParam)}` : '');
-      window.location.href = url;
-    });
+    btn.addEventListener('click', () => startOAuth('google'));
   });
+
+  // ข้อความแจ้งเตือนเมื่อ Worker ส่งกลับมาที่ /login.html?error=<รหัส> (ผู้ใช้ยกเลิก / state หมดอายุ / ผู้ให้บริการขัดข้อง ฯลฯ)
+  const AUTH_ERRORS = {
+    cancelled: 'ທ່ານໄດ້ຍົກເລີກການເຂົ້າສູ່ລະບົບ',
+    state: 'ລິ້ງເຂົ້າສູ່ລະບົບໝົດອາຍຸ ກະລຸນາກົດເຂົ້າສູ່ລະບົບໃໝ່ອີກຄັ້ງ',
+    provider: 'ເຊື່ອມຕໍ່ກັບ Google/Discord ບໍ່ສຳເລັດ ກະລຸນາລອງໃໝ່',
+    profile: 'ດຶງຂໍ້ມູນບັນຊີບໍ່ສຳເລັດ ກະລຸນາລອງໃໝ່',
+    server: 'ລະບົບຂັດຂ້ອງຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ',
+  };
+  const authErrCode = new URLSearchParams(window.location.search).get('error');
+  if (authErrCode) {
+    const msg = Object.prototype.hasOwnProperty.call(AUTH_ERRORS, authErrCode) ? AUTH_ERRORS[authErrCode] : AUTH_ERRORS.server;
+    showToast(msg, true, 6000);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete('error');
+      window.history.replaceState(null, '', u.pathname + u.search + u.hash);
+    } catch (e) { /* ไม่เป็นไร */ }
+  }
 
   /* ---------- 4) Form validation helpers ---------- */
   function setFieldError(fieldEl, message) {
