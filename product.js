@@ -540,12 +540,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (backCat) backLink.href = `category.html?cat=${encodeURIComponent(backCat)}`;
 
       if (product.duration_enabled) {
-        durations = (product.durations || []).map((d) => ({ id: d.id, label: d.label, price: d.price, resellerPrice: d.resellerPrice, stock: d.stock || 0 }));
+        durations = (product.durations || []).map((d) => ({ id: d.id, label: d.label, price: d.price, resellerPrice: d.resellerPrice, resellerPrice2: d.resellerPrice2, stock: d.stock || 0 }));
         // ເລືອກໄລຍະທຳອິດທີ່ຍັງມີສະຕັອກເປັນຄ່າເລີ່ມຕົ້ນ (ຖ້າມີ)
         const firstInStock = durations.findIndex((d) => d.stock > 0);
         selectedIndex = firstInStock >= 0 ? firstInStock : 0;
       } else {
-        durations = [{ id: null, label: null, price: Number(product.price) || 0, resellerPrice: product.resellerPrice, stock: product.stock || 0 }];
+        durations = [{ id: null, label: null, price: Number(product.price) || 0, resellerPrice: product.resellerPrice, resellerPrice2: product.resellerPrice2, stock: product.stock || 0 }];
         selectedIndex = 0;
       }
 
@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!info.isReseller) { if (couponBox) couponBox.style.visibility = ''; return; }
 
       durations.forEach((d) => {
-        d.price = window.StorefrontData.effectivePrice(d.price, d.resellerPrice, info, { productId: product && product.id, durationId: product && product.duration_enabled ? d.id : null });
+        d.price = window.StorefrontData.effectivePrice(d.price, d.resellerPrice, info, { productId: product && product.id, durationId: product && product.duration_enabled ? d.id : null, resellerPrice2: d.resellerPrice2 });
       });
 
       resellerActive = true;

@@ -8,7 +8,7 @@
   if (!bar) return;
 
   var KEY = 'agTab';
-  var VALID = ['accounts', 'keys', 'tiers', 'prices'];
+  var VALID = ['accounts', 'accounts2', 'keys', 'tiers', 'prices'];
   var tabs = Array.prototype.slice.call(bar.querySelectorAll('[data-ag]'));
 
   function set(name, scrollTop) {

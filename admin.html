@@ -577,6 +577,7 @@ IJKL-9012"></textarea></div>
 <div class="panel-content" id="panelAgent" data-ag-now="accounts">
 <div class="ag-tabs" role="tablist" aria-label="ເມນູລະບົບຕົວແທນ">
 <button type="button" class="ag-tab on" role="tab" data-ag="accounts" aria-selected="true">ຕົວແທນ</button>
+<button type="button" class="ag-tab" role="tab" data-ag="accounts2" aria-selected="false">ຕົວແທນ 2</button>
 <button type="button" class="ag-tab" role="tab" data-ag="keys" aria-selected="false">ຄີຍ໌</button>
 <button type="button" class="ag-tab" role="tab" data-ag="tiers" aria-selected="false">ລະດັບ</button>
 <button type="button" class="ag-tab" role="tab" data-ag="prices" aria-selected="false">ລາຄາ</button>
@@ -632,6 +633,20 @@ IJKL-9012"></textarea></div>
 <div class="ag-seg" id="agentAccountsOpsStrip"></div>
 <div class="search-row-agent"><input id="agentAccountsSearch" placeholder="ຄົ້ນຫາອີເມວຕົວແທນ..." type="search" autocomplete="off"/></div>
 <div id="agentAccountsList"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
+</div>
+<!-- ---- ສ່ວນຍ່ອຍ 3.6: ຕົວແທນ 2 (ຕົວແທນທີ່ແອດມິນຕັ້ງຊື່ໃຫ້ແລ້ວ — ໄດ້ລາຄາຕົວແທນ 2) ---- -->
+<div class="stat-panel u-mt-16" data-ag="accounts2">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        ຕົວແທນ 2
+        <button class="mini-refresh" id="agentAccounts2RefreshBtn" title="ໂຫຼດຄືນໃໝ່" type="button">
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+</button>
+</h3>
+<p class="panel-sub">ຕົວແທນທີ່ຕັ້ງຊື່ໃຫ້ແລ້ວ ຈະມາຢູ່ນີ້ ແລະໄດ້ລາຄາ "ຕົວແທນ 2" (ຕັ້ງໃນແທັບ ລາຄາ) — ລຶບຊື່ອອກ = ກັບໄປແທັບ ຕົວແທນ</p>
+<div class="ag-seg" id="agentAccounts2OpsStrip"></div>
+<div class="search-row-agent"><input id="agentAccounts2Search" placeholder="ຄົ້ນຫາອີເມວ ຫຼື ຊື່ຕົວແທນ..." type="search" autocomplete="off"/></div>
+<div id="agentAccounts2List"><div class="empty-note">ກຳລັງໂຫຼດ...</div></div>
 </div>
 <!-- ---- ສ່ວນຍ່ອຍ 4: ຕັ້ງລາຄາຕົວແທນລາຍສິນຄ້າ ---- -->
 <div class="stat-panel u-mt-16" data-ag="prices">

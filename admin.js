@@ -1652,28 +1652,38 @@ let agentAccountsOrdersFailed = false;
 let agentAccountsCountdownTimer = null;
 let agentAccountsAutoRefreshing = false;
 
+// ຕົວແທນ 2 = ຕົວແທນທີ່ແອດມິນຕັ້ງຊື່ (display_name) ໃຫ້ແລ້ວ — ກົງກັບ get_effective_price ໃນ Supabase
+function isAgentGroup2(a) {
+  return !!(a && a.display_name && String(a.display_name).trim());
+}
+
 function renderAgentAccountsStrip(accounts) {
-  const strip = document.getElementById('agentAccountsOpsStrip');
-  if (!strip) return;
-  const active = accounts.filter(a => a.is_reseller).length;
-  const revoked = accounts.length - active;
-  strip.innerHTML = [
-    ['all', 'ທັງໝົດ', accounts.length],
-    ['active', 'ທຳງານຢູ່', active],
-    ['revoked', 'ຖືກປິດ', revoked],
-  ].map(([k, label, n]) => `
+  [
+    { id: 'agentAccounts2OpsStrip', list: (accounts || []).filter(isAgentGroup2) },
+    { id: 'agentAccountsOpsStrip', list: (accounts || []).filter(a => !isAgentGroup2(a)) },
+  ].forEach(({ id, list: grp }) => {
+    const strip = document.getElementById(id);
+    if (!strip) return;
+    const active = grp.filter(a => a.is_reseller).length;
+    const revoked = grp.length - active;
+    strip.innerHTML = [
+      ['all', 'ທັງໝົດ', grp.length],
+      ['active', 'ທຳງານຢູ່', active],
+      ['revoked', 'ຖືກປິດ', revoked],
+    ].map(([k, label, n]) => `
     <button type="button" class="ag-seg-btn ${agentAccountsFilter === k ? 'on' : ''}" data-af="${k}"><b>${n}</b><span>${label}</span></button>
   `).join('');
-  if (!strip.dataset.bound) {
-    strip.dataset.bound = '1';
-    strip.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-af]');
-      if (!b) return;
-      agentAccountsFilter = b.dataset.af;
-      renderAgentAccountsStrip(currentAgentAccounts);
-      renderAgentAccounts(currentAgentAccounts, agentAccountsOrdersFailed);
-    });
-  }
+    if (!strip.dataset.bound) {
+      strip.dataset.bound = '1';
+      strip.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-af]');
+        if (!b) return;
+        agentAccountsFilter = b.dataset.af;
+        renderAgentAccountsStrip(currentAgentAccounts);
+        renderAgentAccounts(currentAgentAccounts, agentAccountsOrdersFailed);
+      });
+    }
+  });
 }
 
 async function loadAgentAccounts() {
@@ -1834,7 +1844,12 @@ function startAgentAccountsCountdownTicker() {
 }
 
 function renderAgentAccounts(accounts, ordersFailed) {
-  const list = document.getElementById('agentAccountsList');
+  renderAgentAccountsList('agentAccountsList', (accounts || []).filter(a => !isAgentGroup2(a)), ordersFailed);
+  renderAgentAccountsList('agentAccounts2List', (accounts || []).filter(isAgentGroup2), ordersFailed);
+}
+
+function renderAgentAccountsList(listId, accounts, ordersFailed) {
+  const list = document.getElementById(listId);
   if (!list) return;
 
   // เก็บสภาพแผง "ຕັ້ງລາຄາສະເພາະ" ที่เปิดอยู่ + ค่าที่พิมพ์ค้างไว้ ก่อน render ใหม่ (รีเฟรชอัตโนมัติ/ค้นหา/ปิด-เปิดตัวแทน)
@@ -1860,7 +1875,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
   else if (agentAccountsFilter === 'revoked') filtered = filtered.filter(a => !a.is_reseller);
 
   if (!filtered.length) {
-    list.innerHTML = '<div class="empty-note">ບໍ່ພົບຕົວແທນ</div>';
+    list.innerHTML = '<div class="empty-note">' + (listId === 'agentAccounts2List' ? 'ຍັງບໍ່ມີຕົວແທນ 2 — ຕັ້ງຊື່ໃຫ້ຕົວແທນຈຶ່ງຈະມາຢູ່ນີ້' : 'ບໍ່ພົບຕົວແທນ') + '</div>';
     return;
   }
 
@@ -2338,6 +2353,7 @@ function renderAgentPriceList(products) {
             <div class="price-dur-row" data-duration-id="${d.id}">
               <div class="price-dur-label"><b>${escapeHtmlAdmin(d.label)}</b><span class="price-dur-base">ປົກກະຕິ ${formatKipAdmin(d.price)}</span></div>
               <div class="price-input"><input type="number" class="edit-reseller-price" placeholder="ຕາມ % ສ່ວນຫຼຸດ" value="${d.reseller_price ?? ''}" min="0" step="1" inputmode="numeric"><i>ກີບ</i></div>
+              <div class="price-input price-input-2"><input type="number" class="edit-reseller-price-2" placeholder="ຕົວແທນ 2 (ຖ້າບໍ່ໃສ່ ໃຊ້ລາຄາຕົວແທນ)" value="${d.reseller_price_2 ?? ''}" min="0" step="1" inputmode="numeric"><i>ກີບ</i></div>
             </div>
           `).join('')}
         </div>
@@ -2350,6 +2366,7 @@ function renderAgentPriceList(products) {
         <div class="price-dur-row" data-single="true">
           <div class="price-dur-label"><b>ລາຄາຕົວແທນ</b><span class="price-dur-base">ປົກກະຕິ ${formatKipAdmin(p.price)}</span></div>
           <div class="price-input"><input type="number" class="edit-reseller-price" placeholder="ຕາມ % ສ່ວນຫຼຸດ" value="${p.reseller_price ?? ''}" min="0" step="1" inputmode="numeric"><i>ກີບ</i></div>
+          <div class="price-input price-input-2"><input type="number" class="edit-reseller-price-2" placeholder="ຕົວແທນ 2 (ຖ້າບໍ່ໃສ່ ໃຊ້ລາຄາຕົວແທນ)" value="${p.reseller_price_2 ?? ''}" min="0" step="1" inputmode="numeric"><i>ກີບ</i></div>
         </div>
         ${saveBtnHtml}
       </div>`;
@@ -2373,9 +2390,11 @@ async function saveAgentPrices(card) {
         const input = row.querySelector('.edit-reseller-price');
         const val = input.value.trim();
         const resellerPrice = val === '' ? null : Number(val);
+        const val2 = (row.querySelector('.edit-reseller-price-2').value || '').trim();
+        const resellerPrice2 = val2 === '' ? null : Number(val2);
         const { error } = await supabaseClient
           .from('product_durations')
-          .update({ reseller_price: resellerPrice })
+          .update({ reseller_price: resellerPrice, reseller_price_2: resellerPrice2 })
           .eq('id', durationId);
         if (error) throw error;
       }
@@ -2383,9 +2402,11 @@ async function saveAgentPrices(card) {
       const input = card.querySelector('.price-dur-row[data-single="true"] .edit-reseller-price');
       const val = input.value.trim();
       const resellerPrice = val === '' ? null : Number(val);
+      const val2 = (card.querySelector('.price-dur-row[data-single="true"] .edit-reseller-price-2').value || '').trim();
+      const resellerPrice2 = val2 === '' ? null : Number(val2);
       const { error } = await supabaseClient
         .from('products')
-        .update({ reseller_price: resellerPrice })
+        .update({ reseller_price: resellerPrice, reseller_price_2: resellerPrice2 })
         .eq('id', productId);
       if (error) throw error;
     }
@@ -3463,13 +3484,22 @@ async function initAdminPanel() {
   const agentAccountsRefreshBtn = document.getElementById('agentAccountsRefreshBtn');
   if (agentAccountsRefreshBtn) agentAccountsRefreshBtn.addEventListener('click', loadAgentAccounts);
 
-  const agentAccountsSearch = document.getElementById('agentAccountsSearch');
-  if (agentAccountsSearch) {
-    agentAccountsSearch.addEventListener('input', (e) => {
+  const agentAccounts2RefreshBtn = document.getElementById('agentAccounts2RefreshBtn');
+  if (agentAccounts2RefreshBtn) agentAccounts2RefreshBtn.addEventListener('click', loadAgentAccounts);
+
+  ['agentAccountsSearch', 'agentAccounts2Search'].forEach((id) => {
+    const inp = document.getElementById(id);
+    if (!inp) return;
+    inp.addEventListener('input', (e) => {
       agentAccountsSearchTerm = e.target.value;
+      // ซิงค์คำค้นหาให้ช่องค้นหาของอีกแท็บด้วย
+      ['agentAccountsSearch', 'agentAccounts2Search'].forEach((o) => {
+        const other = document.getElementById(o);
+        if (other && other !== e.target) other.value = e.target.value;
+      });
       renderAgentAccounts(currentAgentAccounts);
     });
-  }
+  });
 
   // ---- แผง "ເອົາລະຫັດອອກ" (codes-remove-admin.js): เอารหัสที่ยังไม่ขายออก/ย้ายสินค้า ----
   try {

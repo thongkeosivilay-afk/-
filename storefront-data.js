@@ -65,7 +65,7 @@
                 customPrices[r.scope_key] = Number(r.price);
               }
             });
-            return { isReseller: true, discountPercent: Number(status.discount_percent) || 0, customPrices };
+            return { isReseller: true, group2: !!status.group2, discountPercent: Number(status.discount_percent) || 0, customPrices };
           }
           return { isReseller: false, discountPercent: 0, customPrices: {} };
         })
@@ -85,6 +85,11 @@
       const custom = resellerInfo.customPrices[key];
       if (custom !== undefined && Number.isFinite(custom)) return custom;
     }
+    // ตัวแทน 2 (ตั้งชื่อแล้ว): ใช้ resellerPrice2 ถ้ามี ก่อนราคาตัวแทนปกติ (ตรงกับ get_effective_price)
+    const p2 = ids && ids.resellerPrice2;
+    if (resellerInfo.group2 && p2 !== null && p2 !== undefined && p2 !== '') {
+      return Number(p2);
+    }
     if (resellerPrice !== null && resellerPrice !== undefined && resellerPrice !== '') {
       // resellerPrice ຄືລາຄາສຸດທ້າຍທີ່ຕົວແທນຈ່າຍໂດຍກົງ (ບໍ່ແມ່ນຈຳນວນທີ່ລົດ)
       return Number(resellerPrice);
@@ -99,11 +104,11 @@
     if (!product) return null;
     if (product.duration_enabled) {
       const prices = (product.durations || [])
-        .map((d) => effectivePrice(d.price, d.resellerPrice, resellerInfo, { productId: product.id, durationId: d.id }))
+        .map((d) => effectivePrice(d.price, d.resellerPrice, resellerInfo, { productId: product.id, durationId: d.id, resellerPrice2: d.resellerPrice2 }))
         .filter((n) => Number.isFinite(n) && n > 0);
       return prices.length ? Math.min(...prices) : null;
     }
-    return effectivePrice(product.price, product.resellerPrice, resellerInfo, { productId: product.id, durationId: null });
+    return effectivePrice(product.price, product.resellerPrice, resellerInfo, { productId: product.id, durationId: null, resellerPrice2: product.resellerPrice2 });
   }
 
   // ສະຕັອກລວມທີ່ຈະໂຊວ໌: ສິນຄ້າແບບມີໄລຍະເວລາ = ລວມສະຕັອກທຸກໄລຍະ, ທຳມະດາ = stock ຂອງມັນເລີຍ

@@ -287,6 +287,7 @@ body #panelAgent .ag-tab.on{background:var(--c-text);color:#1a0f13}
 
 /* โชว์ทีละแท็บ */
 body #panelAgent[data-ag-now="accounts"] .stat-panel:not([data-ag="accounts"]),
+body #panelAgent[data-ag-now="accounts2"] .stat-panel:not([data-ag="accounts2"]),
 body #panelAgent[data-ag-now="keys"] .stat-panel:not([data-ag="keys"]),
 body #panelAgent[data-ag-now="tiers"] .stat-panel:not([data-ag="tiers"]),
 body #panelAgent[data-ag-now="prices"] .stat-panel:not([data-ag="prices"]){display:none}
@@ -486,3 +487,6 @@ body #panelAgent .price-prod-card .gx-submit .gx-spinner{border-color:rgba(255,2
 @media (prefers-reduced-motion:reduce){
   body :is(#panelManage,#panelAgent) *{transition:none!important}
 }
+
+/* ราคาตัวแทน 2 — ช่องที่สองในแถวราคา เต็มแถว */
+body #panelAgent .price-dur-row .price-input-2{grid-column:1/-1}
