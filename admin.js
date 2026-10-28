@@ -1853,7 +1853,9 @@ function renderAgentAccounts(accounts, ordersFailed) {
   });
 
   const term = agentAccountsSearchTerm.trim().toLowerCase();
-  let filtered = term ? accounts.filter(a => (a.user_email || '').toLowerCase().includes(term)) : accounts;
+  let filtered = term
+    ? accounts.filter(a => (a.user_email || '').toLowerCase().includes(term) || (a.display_name || '').toLowerCase().includes(term))
+    : accounts;
   if (agentAccountsFilter === 'active') filtered = filtered.filter(a => a.is_reseller);
   else if (agentAccountsFilter === 'revoked') filtered = filtered.filter(a => !a.is_reseller);
 
@@ -1901,9 +1903,12 @@ function renderAgentAccounts(accounts, ordersFailed) {
       : `ໝົດອາຍຸ <span class="agent-acc-countdown" data-expiry="${a.period_end}">${agentCountdownText(a.period_end, 'ໝົດອາຍຸແລ້ວ')}</span>`;
 
     return `
-    <div class="agent-acc-row ${isRevoked ? 'is-revoked' : ''}" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}">
+    <div class="agent-acc-row ${isRevoked ? 'is-revoked' : ''}" data-user-id="${escapeHtmlAdmin(a.user_id)}" data-email="${escapeHtmlAdmin(a.user_email || '')}" data-name="${escapeHtmlAdmin(a.display_name || '')}">
       <div class="agent-acc-head">
-        <div class="agent-acc-email">${emailLabel}</div>
+        <div class="agent-acc-title">
+          ${a.display_name ? `<div class="agent-acc-name">${escapeHtmlAdmin(a.display_name)}</div>` : ''}
+          <div class="agent-acc-email">${emailLabel}</div>
+        </div>
         <span class="agent-state ${isRevoked ? 'off' : 'on'}">${isRevoked ? 'ຖືກປິດ' : 'ທຳງານຢູ່'}</span>
       </div>
       <div class="agent-acc-meta">
@@ -1917,6 +1922,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
         <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-user-id="${a.user_id}" data-next="${isRevoked ? 'true' : 'false'}">
           ${isRevoked ? 'ເປີດຄືນ' : 'ປິດຕົວແທນ'}
         </button>
+        <button type="button" class="agent-acc-name-btn" data-user-id="${escapeHtmlAdmin(a.user_id)}">${a.display_name ? 'ແກ້ໄຂຊື່' : 'ຕັ້ງຊື່'}</button>
         ${isRevoked ? `<button type="button" class="agent-acc-delete-btn" data-user-id="${escapeHtmlAdmin(a.user_id)}">ລຶບບັນຊີຕົວແທນ</button>` : ''}
       </div>
       <div class="agent-custom-panel" hidden></div>
@@ -1929,6 +1935,9 @@ function renderAgentAccounts(accounts, ordersFailed) {
   });
   list.querySelectorAll('.agent-acc-custom-btn').forEach(btn => {
     btn.addEventListener('click', () => toggleAgentCustomPanel(btn));
+  });
+  list.querySelectorAll('.agent-acc-name-btn').forEach(btn => {
+    btn.addEventListener('click', () => renameAgentAccount(btn));
   });
   list.querySelectorAll('.agent-acc-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => deleteAgentAccount(btn));
@@ -2144,6 +2153,57 @@ async function toggleAgentStatus(btn) {
   }
   showToast(nextIsReseller ? 'ເປີດສິດຕົວແທນຄືນແລ້ວ' : 'ປິດສິດຕົວແທນແລ້ວ');
   await loadAgentAccounts();
+}
+
+// ---------- ຕັ້ງຊື່ຕົວແທນ (reseller_status.display_name) ----------
+// ຊື່ເອີ້ນທີ່ແອດມິນຕັ້ງເອງ (ເຊັ່ນ "ຮ້ານພີ່ເອ") ສະແດງຄູ່ກັບອີເມວໃນລາຍຊື່ — ບໍ່ກະທົບສິດ/ລາຄາ/ການຊື້ ແລະ ຄົ້ນຫາດ້ວຍຊື່ໄດ້
+// ປ່ອຍວ່າງແລ້ວບັນທຶກ = ລຶບຊື່ອອກ ; ບໍ່ອັບເດດ updated_at ເພື່ອບໍ່ໃຫ້ແຖວເດ້ງຂຶ້ນເທິງສຸດຍ້ອນແຄ່ປ່ຽນຊື່
+const AGENT_NAME_MAX = 40;
+async function renameAgentAccount(btn) {
+  const userId = btn.dataset.userId;
+  if (!userId) return;
+  const row = btn.closest('.agent-acc-row');
+  const current = row ? (row.dataset.name || '') : '';
+  const email = row ? row.dataset.email : '';
+
+  const input = window.prompt(
+    `ຕັ້ງຊື່ຕົວແທນ${email ? ' (' + email + ')' : ''}\nສູງສຸດ ${AGENT_NAME_MAX} ຕົວອັກສອນ — ປ່ອຍວ່າງ = ລຶບຊື່ອອກ`,
+    current
+  );
+  if (input === null) return; // ກົດຍົກເລີກ
+
+  const name = input.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+  if ([...name].length > AGENT_NAME_MAX) {
+    showToast(`ຊື່ຍາວເກີນໄປ (ສູງສຸດ ${AGENT_NAME_MAX} ຕົວອັກສອນ)`);
+    return;
+  }
+  if (name === current) {
+    showToast('ບໍ່ມີການປ່ຽນແປງ');
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const { data, error } = await supabaseClient
+      .from('reseller_status')
+      .update({ display_name: name || null })
+      .eq('user_id', userId)
+      .select('user_id');
+
+    if (error) {
+      console.error(error);
+      showToast('ບັນທຶກຊື່ບໍ່ສຳເລັດ: ' + error.message);
+      return;
+    }
+    if (!data || !data.length) {
+      showToast('ບັນທຶກບໍ່ໄດ້ — ບໍ່ພົບຕົວແທນນີ້ (ອາດຖືກລຶບໄປແລ້ວ)');
+    } else {
+      showToast(name ? 'ບັນທຶກຊື່ແລ້ວ' : 'ລຶບຊື່ແລ້ວ');
+    }
+    await loadAgentAccounts();
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ---------- ລຶບບັນຊີຕົວແທນທີ່ຖືກປິດແລ້ວ ----------

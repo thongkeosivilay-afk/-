@@ -347,10 +347,22 @@ body #panelAgent .agent-acc-custom-btn.is-open{border-color:rgba(255,255,255,.6)
 body #panelAgent .agent-acc-toggle-btn{background:rgba(255,100,100,.09);border:1px solid rgba(255,100,100,.38);color:var(--c-bad)}
 body #panelAgent .agent-acc-toggle-btn.is-revoked{background:rgba(67,217,138,.12);border-color:rgba(67,217,138,.4);color:var(--c-ok)}
 body #panelAgent .agent-acc-delete-btn{
-  grid-column:1 / -1;min-height:44px;padding:0 10px;border-radius:12px;
+  min-height:46px;padding:0 10px;border-radius:12px;
   font:700 13.5px/1.2 var(--c-font);cursor:pointer;
   background:transparent;border:1px dashed rgba(255,100,100,.5);color:var(--c-bad);
 }
+body #panelAgent .agent-acc-name-btn{
+  min-height:46px;padding:0 10px;border-radius:12px;
+  font:700 13.5px/1.2 var(--c-font);cursor:pointer;
+  background:var(--c-surface-2);border:1px solid var(--c-line);color:var(--c-text);
+}
+body #panelAgent .agent-acc-name-btn:disabled{opacity:.6;cursor:default}
+/* ปุ่มสุดท้ายในแถวเดียว (ไม่มีปุ่มลบมาคู่) ให้เต็มความกว้าง */
+body #panelAgent .agent-acc-actions > .agent-acc-name-btn:last-child{grid-column:1 / -1}
+body #panelAgent .agent-acc-title{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+body #panelAgent .agent-acc-name{min-width:0;font:700 16px/1.35 var(--c-font);color:var(--c-text);word-break:break-word}
+body #panelAgent .agent-acc-row.is-revoked .agent-acc-name{color:var(--c-muted)}
+body #panelAgent .agent-acc-name + .agent-acc-email{font-size:12.5px;font-weight:500;color:var(--c-muted)}
 body #panelAgent .agent-acc-delete-btn:active{background:rgba(255,100,100,.12)}
 body #panelAgent .agent-acc-delete-btn:disabled{opacity:.6;cursor:default}
 
