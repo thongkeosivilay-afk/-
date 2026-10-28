@@ -1917,6 +1917,7 @@ function renderAgentAccounts(accounts, ordersFailed) {
         <button type="button" class="agent-acc-toggle-btn ${isRevoked ? 'is-revoked' : ''}" data-user-id="${a.user_id}" data-next="${isRevoked ? 'true' : 'false'}">
           ${isRevoked ? 'ເປີດຄືນ' : 'ປິດຕົວແທນ'}
         </button>
+        ${isRevoked ? `<button type="button" class="agent-acc-delete-btn" data-user-id="${escapeHtmlAdmin(a.user_id)}">ລຶບບັນຊີຕົວແທນ</button>` : ''}
       </div>
       <div class="agent-custom-panel" hidden></div>
     </div>`;
@@ -1928,6 +1929,9 @@ function renderAgentAccounts(accounts, ordersFailed) {
   });
   list.querySelectorAll('.agent-acc-custom-btn').forEach(btn => {
     btn.addEventListener('click', () => toggleAgentCustomPanel(btn));
+  });
+  list.querySelectorAll('.agent-acc-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => deleteAgentAccount(btn));
   });
 
   // คืนแผงที่เปิดอยู่พร้อมค่าที่พิมพ์ค้างไว้
@@ -2140,6 +2144,64 @@ async function toggleAgentStatus(btn) {
   }
   showToast(nextIsReseller ? 'ເປີດສິດຕົວແທນຄືນແລ້ວ' : 'ປິດສິດຕົວແທນແລ້ວ');
   await loadAgentAccounts();
+}
+
+// ---------- ລຶບບັນຊີຕົວແທນທີ່ຖືກປິດແລ້ວ ----------
+// ລຶບໄດ້ສະເພາະຕົວແທນທີ່ "ຖືກປິດ" (is_reseller = false) ເທົ່ານັ້ນ — ກັນລຶບຕົວແທນທີ່ຍັງທຳງານຢູ່ໂດຍບັງເອີນ
+// ຂັ້ນຕອນ: 1) ລຶບແຖວໃນ reseller_status (ມີເງື່ອນໄຂ is_reseller=false ຢູ່ຝັ່ງຖານຂໍ້ມູນຊ້ຳອີກຊັ້ນ)
+//          2) ລຶບລາຄາສະເພາະຂອງຄົນນັ້ນໃນ reseller_custom_prices (ຕາຕະລາງນີ້ບໍ່ມີ foreign key ຜູກກັບ reseller_status)
+// ບໍ່ລຶບ reseller_keys (ປະຫວັດຄີຍ໌ທີ່ໃຊ້ແລ້ວ) — ຄີຍ໌ເດີມຈຶ່ງໃຊ້ຊ້ຳບໍ່ໄດ້ ແລະ ປະຫວັດຍັງຢູ່ຄົບ
+async function deleteAgentAccount(btn) {
+  const userId = btn.dataset.userId;
+  if (!userId) return;
+  const row = btn.closest('.agent-acc-row');
+  const email = row ? row.dataset.email : '';
+  const label = email || userId;
+
+  if (!window.confirm(
+    `ລຶບບັນຊີຕົວແທນ "${label}" ຖາວອນ?\n\n` +
+    `• ຈະລຶບຂໍ້ມູນຕົວແທນ ແລະ ລາຄາສະເພາະຂອງຄົນນີ້ທັງໝົດ\n` +
+    `• ບັນຊີລູກຄ້າ/ປະຫວັດການສັ່ງຊື້ ບໍ່ຖືກລຶບ\n` +
+    `• ກູ້ຄືນບໍ່ໄດ້`
+  )) return;
+
+  btn.disabled = true;
+  try {
+    // 1) ລຶບແຖວຕົວແທນ — ສະເພາະທີ່ຖືກປິດຢູ່ເທົ່ານັ້ນ ແລະ ຂໍແຖວທີ່ຖືກລຶບກັບຄືນມາເພື່ອຢືນຢັນວ່າລຶບຈິງ
+    const { data: removed, error } = await supabaseClient
+      .from('reseller_status')
+      .delete()
+      .eq('user_id', userId)
+      .eq('is_reseller', false)
+      .select('user_id');
+
+    if (error) {
+      console.error(error);
+      showToast('ລຶບບັນຊີຕົວແທນບໍ່ສຳເລັດ: ' + error.message);
+      return;
+    }
+    if (!removed || !removed.length) {
+      // ບໍ່ມີແຖວຖືກລຶບ = ຕົວແທນນີ້ຖືກເປີດຄືນແລ້ວ ຫຼື ຖືກລຶບໄປກ່ອນແລ້ວ
+      showToast('ລຶບບໍ່ໄດ້ — ຕົວແທນນີ້ອາດຖືກເປີດຄືນ ຫຼື ຖືກລຶບໄປແລ້ວ');
+      await loadAgentAccounts();
+      return;
+    }
+
+    // 2) ລຶບລາຄາສະເພາະ (ເຮັດຫຼັງຈາກຢືນຢັນວ່າລຶບແຖວຕົວແທນແລ້ວ ເພື່ອບໍ່ໃຫ້ລາຄາຂອງຕົວແທນທີ່ຍັງຢູ່ຫາຍໄປ)
+    const { error: priceErr } = await supabaseClient
+      .from('reseller_custom_prices')
+      .delete()
+      .eq('user_id', userId);
+    if (priceErr) {
+      console.error(priceErr);
+      showToast('ລຶບບັນຊີແລ້ວ ແຕ່ລຶບລາຄາສະເພາະບໍ່ສຳເລັດ: ' + priceErr.message);
+    } else {
+      showToast('ລຶບບັນຊີຕົວແທນແລ້ວ');
+    }
+    await loadAgentAccounts();
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 

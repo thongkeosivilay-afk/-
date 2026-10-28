@@ -346,6 +346,13 @@ body #panelAgent .agent-acc-custom-btn{background:var(--c-surface-2);border:1px 
 body #panelAgent .agent-acc-custom-btn.is-open{border-color:rgba(255,255,255,.6)}
 body #panelAgent .agent-acc-toggle-btn{background:rgba(255,100,100,.09);border:1px solid rgba(255,100,100,.38);color:var(--c-bad)}
 body #panelAgent .agent-acc-toggle-btn.is-revoked{background:rgba(67,217,138,.12);border-color:rgba(67,217,138,.4);color:var(--c-ok)}
+body #panelAgent .agent-acc-delete-btn{
+  grid-column:1 / -1;min-height:44px;padding:0 10px;border-radius:12px;
+  font:700 13.5px/1.2 var(--c-font);cursor:pointer;
+  background:transparent;border:1px dashed rgba(255,100,100,.5);color:var(--c-bad);
+}
+body #panelAgent .agent-acc-delete-btn:active{background:rgba(255,100,100,.12)}
+body #panelAgent .agent-acc-delete-btn:disabled{opacity:.6;cursor:default}
 
 /* ຕັ້ງລາຄາສະເພາະຄົນ (แผงที่กางใต้ตัวแทน) */
 body #panelAgent .agent-custom-panel{margin:0;padding:12px;border-radius:14px;background:rgba(0,0,0,.3);border:1px solid var(--c-line)}
