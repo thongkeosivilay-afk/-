@@ -130,13 +130,13 @@ async function route(request, env, ctx) {
       return handleLogin(request, env);
     }
     if (url.pathname === '/auth/discord/callback') {
-      return handleCallback(request, env);
+      return safeAuthCallback(handleCallback, request, env);
     }
     if (url.pathname === '/auth/google/login') {
       return handleGoogleLogin(request, env);
     }
     if (url.pathname === '/auth/google/callback') {
-      return handleGoogleCallback(request, env);
+      return safeAuthCallback(handleGoogleCallback, request, env);
     }
     if (url.pathname === '/auth/logout') {
       return handleLogout();
@@ -576,7 +576,45 @@ async function maintenanceGate(request, env, url) {
 function getCookie(request, name) {
   const cookieHeader = request.headers.get('Cookie') || '';
   const match = cookieHeader.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
-  return match ? decodeURIComponent(match[1]) : null;
+  if (!match) return null;
+  try { return decodeURIComponent(match[1]); } catch { return null; }
+}
+
+/* ---------- helper: ปลายทางหลังล็อกอิน ต้องเป็น path ภายในเว็บเราเท่านั้น ----------
+   กัน open redirect: ?next=//evil.com หรือ /\\evil.com เดิมผ่านเช็ค startsWith('/') ได้ แล้วถูกเด้งออกนอกเว็บหลังล็อกอิน */
+function safeNextPath(raw) {
+  if (typeof raw !== 'string' || raw.length > 512) return '/';
+  if (!raw.startsWith('/') || raw.startsWith('//') || raw.startsWith('/' + String.fromCharCode(92))) return '/';
+  if (/[\u0000-\u001f\u007f]/.test(raw)) return '/';
+  return raw;
+}
+
+/* ---------- helper: ล็อกอินไม่สำเร็จ -> กลับหน้า login พร้อมรหัส error (หน้า login แสดงข้อความให้ผู้ใช้เอง) ---------- */
+function authFailRedirect(code) {
+  const headers = new Headers({
+    Location: `/login.html?error=${encodeURIComponent(code)}`,
+    'Cache-Control': 'no-store',
+  });
+  headers.append('Set-Cookie', 'oauth_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+  headers.append('Set-Cookie', 'oauth_next=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+  return new Response(null, { status: 302, headers });
+}
+
+/* ---------- helper: ครอบ callback ของ OAuth — เกิด exception (เน็ตตัด/JSON เพี้ยน) ต้องไม่ขึ้นหน้า error ดิบ ---------- */
+async function safeAuthCallback(fn, request, env) {
+  try {
+    return await fn(request, env);
+  } catch (err) {
+    console.error('OAuth callback crashed:', err && err.message ? err.message : err);
+    return authFailRedirect('server');
+  }
+}
+
+/* ---------- helper: ผู้ใช้กดยกเลิก/ผู้ให้บริการส่ง ?error= กลับมา ---------- */
+function oauthProviderErrorRedirect(url) {
+  const err = url.searchParams.get('error');
+  if (!err) return null;
+  return authFailRedirect(err === 'access_denied' ? 'cancelled' : 'provider');
 }
 
 /* ---------- 1) /auth/discord/login ----------
@@ -588,8 +626,7 @@ async function handleLogin(request, env) {
   const redirectUri = `${url.origin}/auth/discord/callback`;
 
   // ปลายทางที่จะเด้งกลับไปหลังล็อกอินสำเร็จ (เช่น /admin.html) — กันเปิดลิงก์ไปเว็บอื่น
-  let next = url.searchParams.get('next') || '/';
-  if (!next.startsWith('/')) next = '/';
+  const next = safeNextPath(url.searchParams.get('next') || '/');
 
   const params = new URLSearchParams({
     client_id: env.DISCORD_CLIENT_ID,
@@ -623,15 +660,15 @@ async function handleCallback(request, env) {
   const state = url.searchParams.get('state');
   const savedState = getCookie(request, 'oauth_state');
 
-  if (!code || !state || state !== savedState) {
-    return new Response(
-      'ການລ໋ອກອິນລົ້ມເຫຼວ: state ບໍ່ກົງກັນ (ອາດຖືກ CSRF ຫຼືເປີດລິ້ງເກົ່າ)',
-      { status: 400 }
-    );
+  const providerErr = oauthProviderErrorRedirect(url);
+  if (providerErr) return providerErr;
+
+  if (!code || !state || !savedState || state !== savedState) {
+    return authFailRedirect('state');
   }
 
   const redirectUri = `${url.origin}/auth/discord/callback`;
-  const nextPath = getCookie(request, 'oauth_next') || '/';
+  const nextPath = safeNextPath(getCookie(request, 'oauth_next') || '/');
 
   // ---- แลก code เป็น access_token (ต้องทำฝั่ง server เท่านั้น เพราะใช้ client_secret) ----
   const tokenRes = await fetch('https://discord.com/api/oauth2/token', {
@@ -649,7 +686,7 @@ async function handleCallback(request, env) {
   if (!tokenRes.ok) {
     const errText = await tokenRes.text();
     console.error('Discord token exchange failed:', errText);
-    return new Response('ແລກ token ກັບ Discord ບໍ່ສຳເລັດ', { status: 502 });
+    return authFailRedirect('provider');
   }
   const tokenData = await tokenRes.json();
 
@@ -657,7 +694,11 @@ async function handleCallback(request, env) {
   const userRes = await fetch('https://discord.com/api/users/@me', {
     headers: { Authorization: `Bearer ${tokenData.access_token}` },
   });
-  const discordUser = await userRes.json();
+  const discordUser = await userRes.json().catch(() => null);
+  if (!userRes.ok || !discordUser || !discordUser.id) {
+    console.error('Discord userinfo failed: status', userRes.status);
+    return authFailRedirect('profile');
+  }
 
   // ---- เช็คสิทธิ์แอดมิน: อีเมล Discord ต้องอยู่ใน ADMIN_EMAILS และต้องยืนยันแล้ว ----
   const isAdmin =
@@ -697,13 +738,13 @@ async function handleCallback(request, env) {
   });
 
   // ---- ปิด session ด้วย cookie แล้วเด้งกลับไปยังปลายทางเดิม (เช่น /admin.html) ----
-  const headers = new Headers({ Location: nextPath });
+  const headers = new Headers({ Location: nextPath, 'Cache-Control': 'no-store' });
   headers.append(
     'Set-Cookie',
     `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`
   );
-  headers.append('Set-Cookie', 'oauth_state=; Path=/; Max-Age=0'); // ล้าง state cookie ทิ้ง
-  headers.append('Set-Cookie', 'oauth_next=; Path=/; Max-Age=0'); // ล้าง next cookie ทิ้ง
+  headers.append('Set-Cookie', 'oauth_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'); // ล้าง state cookie ทิ้ง
+  headers.append('Set-Cookie', 'oauth_next=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'); // ล้าง next cookie ทิ้ง
 
   return new Response(null, { status: 302, headers });
 }
@@ -716,8 +757,7 @@ async function handleGoogleLogin(request, env) {
   const url = new URL(request.url);
   const redirectUri = `${url.origin}/auth/google/callback`;
 
-  let next = url.searchParams.get('next') || '/';
-  if (!next.startsWith('/')) next = '/';
+  const next = safeNextPath(url.searchParams.get('next') || '/');
 
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
@@ -754,15 +794,15 @@ async function handleGoogleCallback(request, env) {
   const state = url.searchParams.get('state');
   const savedState = getCookie(request, 'oauth_state');
 
-  if (!code || !state || state !== savedState) {
-    return new Response(
-      'ການລ໋ອກອິນລົ້ມເຫຼວ: state ບໍ່ກົງກັນ (ອາດຖືກ CSRF ຫຼືເປີດລິ້ງເກົ່າ)',
-      { status: 400 }
-    );
+  const providerErr = oauthProviderErrorRedirect(url);
+  if (providerErr) return providerErr;
+
+  if (!code || !state || !savedState || state !== savedState) {
+    return authFailRedirect('state');
   }
 
   const redirectUri = `${url.origin}/auth/google/callback`;
-  const nextPath = getCookie(request, 'oauth_next') || '/';
+  const nextPath = safeNextPath(getCookie(request, 'oauth_next') || '/');
 
   // ---- แลก code เป็น access_token (ต้องทำฝั่ง server เท่านั้น เพราะใช้ client_secret) ----
   const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
@@ -780,7 +820,7 @@ async function handleGoogleCallback(request, env) {
   if (!tokenRes.ok) {
     const errText = await tokenRes.text();
     console.error('Google token exchange failed:', errText);
-    return new Response('ແລກ token ກັບ Google ບໍ່ສຳເລັດ', { status: 502 });
+    return authFailRedirect('provider');
   }
   const tokenData = await tokenRes.json();
 
@@ -788,7 +828,11 @@ async function handleGoogleCallback(request, env) {
   const userRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
     headers: { Authorization: `Bearer ${tokenData.access_token}` },
   });
-  const googleUser = await userRes.json();
+  const googleUser = await userRes.json().catch(() => null);
+  if (!userRes.ok || !googleUser || !googleUser.sub) {
+    console.error('Google userinfo failed: status', userRes.status);
+    return authFailRedirect('profile');
+  }
 
   // ---- เช็คสิทธิ์แอดมิน: ใช้ ADMIN_EMAILS ลิสต์เดียวกับฝั่ง Discord ----
   const isAdmin =
@@ -818,21 +862,21 @@ async function handleGoogleCallback(request, env) {
     ],
   });
 
-  const headers = new Headers({ Location: nextPath });
+  const headers = new Headers({ Location: nextPath, 'Cache-Control': 'no-store' });
   headers.append(
     'Set-Cookie',
     `session=${sessionId}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`
   );
-  headers.append('Set-Cookie', 'oauth_state=; Path=/; Max-Age=0');
-  headers.append('Set-Cookie', 'oauth_next=; Path=/; Max-Age=0');
+  headers.append('Set-Cookie', 'oauth_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
+  headers.append('Set-Cookie', 'oauth_next=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
 
   return new Response(null, { status: 302, headers });
 }
 
 /* ---------- 3) /auth/logout ---------- */
 async function handleLogout() {
-  const headers = new Headers({ Location: '/' });
-  headers.append('Set-Cookie', 'session=; Path=/; Max-Age=0');
+  const headers = new Headers({ Location: '/', 'Cache-Control': 'no-store' });
+  headers.append('Set-Cookie', 'session=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0');
   return new Response(null, { status: 302, headers });
 }
 
@@ -1111,7 +1155,11 @@ async function getSessionUser(request, env) {
   if (!sessionId) return null;
 
   const raw = await env.SESSIONS.get(sessionId);
-  if (!raw) return null;
+  if (!raw) {
+    // มี cookie แต่ KV ไม่พบ = session หมดอายุ/ถูกลบ หรือ KV ยังไม่ sync (eventual consistency) — ดูได้ใน Workers Logs
+    console.warn('getSessionUser: มี cookie session แต่ไม่พบใน KV (ไม่ log ค่า cookie)');
+    return null;
+  }
 
   const user = JSON.parse(raw);
   // บัญชีที่ถูกแอดมินแบน = ถือว่า "ไม่ได้ล็อกอิน" ทุกที่ (สั่งซื้อ/เติมเงิน/โปรไฟล์ใช้ไม่ได้) ; แอดมินไม่โดนแบน
