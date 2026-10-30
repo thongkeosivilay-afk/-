@@ -233,7 +233,27 @@ function durationToHours(label) {
 
 export default {
   async fetch(request, env, ctx) {
-    const response = await route(request, env, ctx);
+    let response;
+    try {
+      response = await route(request, env, ctx);
+    } catch (err) {
+      // กัน Worker พังเป็นหน้า error ดิบ (เช่น KV โควต้าเต็ม / Supabase ล่ม) — ตอบ JSON/ข้อความอ่านง่ายแทน
+      console.error('route crashed:', err && err.stack ? err.stack : err);
+      const path = new URL(request.url).pathname;
+      if (path.startsWith('/api/')) {
+        response = new Response(JSON.stringify({ error: 'ລະບົບຂັດຂ້ອງຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      } else if (path.startsWith('/auth/')) {
+        response = authFailRedirect('server');
+      } else {
+        response = new Response('Server error — please try again', {
+          status: 500,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+        });
+      }
+    }
     return withSecurityHeaders(response);
   },
 };
@@ -706,8 +726,7 @@ async function handleCallback(request, env) {
     discordUser.verified === true &&
     ADMIN_EMAILS.some(e => e.toLowerCase() === discordUser.email.toLowerCase());
 
-  // ---- สร้าง session แล้วเก็บลง KV (อายุ 7 วัน) ----
-  const sessionId = crypto.randomUUID();
+  // ---- สร้าง session (คุกกี้ลงลายเซ็น — ไม่พึ่ง KV) อายุ 7 วัน ----
   const sessionData = {
     id: discordUser.id,
     username: discordUser.global_name || discordUser.username,
@@ -720,10 +739,7 @@ async function handleCallback(request, env) {
     createdAt: Date.now(),
   };
 
-  await env.SESSIONS.put(sessionId, JSON.stringify(sessionData), {
-    expirationTtl: 60 * 60 * 24 * 7, // 7 วัน
-  });
-  try { await rememberProfile(env, sessionData); } catch (err) { console.error('rememberProfile failed:', err); }
+  const sessionId = await createSession(env, sessionData);
 
   // ---- แจ้งเตือนเข้า Discord: มีคนล็อกอินผ่าน Discord ----
   await sendDiscordAlert(env, {
@@ -1154,14 +1170,18 @@ async function getSessionUser(request, env) {
   const sessionId = getCookie(request, 'session');
   if (!sessionId) return null;
 
-  const raw = await env.SESSIONS.get(sessionId);
-  if (!raw) {
-    // มี cookie แต่ KV ไม่พบ = session หมดอายุ/ถูกลบ หรือ KV ยังไม่ sync (eventual consistency) — ดูได้ใน Workers Logs
-    console.warn('getSessionUser: มี cookie session แต่ไม่พบใน KV (ไม่ log ค่า cookie)');
-    return null;
+  let user = null;
+  if (sessionId.startsWith(SESSION_PREFIX)) {
+    // session แบบใหม่: คุกกี้ลงลายเซ็น HMAC — ตรวจในตัว Worker เลย ไม่ต้องอ่าน KV (ไม่มี eventual consistency / โควต้า KV)
+    user = await verifySession(env, sessionId);
+    if (!user) return null;
+  } else {
+    // session แบบเก่า (UUID ใน KV) — รองรับไว้ให้คนที่ล็อกอินค้างอยู่ก่อนอัปเดตไม่โดนเด้งออก
+    let raw = null;
+    try { raw = await env.SESSIONS.get(sessionId); } catch (err) { console.error('getSessionUser: อ่าน KV ไม่ได้', err); return null; }
+    if (!raw) return null;
+    try { user = JSON.parse(raw); } catch { return null; }
   }
-
-  const user = JSON.parse(raw);
   // บัญชีที่ถูกแอดมินแบน = ถือว่า "ไม่ได้ล็อกอิน" ทุกที่ (สั่งซื้อ/เติมเงิน/โปรไฟล์ใช้ไม่ได้) ; แอดมินไม่โดนแบน
   if (user && !user.isAdmin && user.id != null && await isUserBanned(env, String(user.id))) return null;
   return user;
@@ -1223,20 +1243,27 @@ async function handlePasswordSignup(request, env) {
   if (password.length < 6) return json({ error: 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ' }, 400);
 
   // ---- ສ້າງຜູ້ໃຊ້ໃໝ່ຜ່ານ Supabase Auth Admin API (ຢືນຢັນອີເມວທັນທີ ບໍ່ຕ້ອງລໍ email link) ----
-  const createRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-    },
-    body: JSON.stringify({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { username },
-    }),
-  });
+  let createRes;
+  try {
+    createRes = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      },
+      body: JSON.stringify({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { username },
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch (err) {
+    console.error('handlePasswordSignup: เชื่อมต่อ Supabase ไม่ได้', err);
+    return json({ error: 'ເຊື່ອມຕໍ່ຖານຂໍ້ມູນບໍ່ໄດ້ຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 502);
+  }
 
   const createData = await createRes.json().catch(() => ({}));
 
@@ -1306,25 +1333,49 @@ async function handlePasswordLogin(request, env) {
   // ---- ຄວາມປອດໄພ: ຈຳກັດຈຳນວນຄັ້ງທີ່ພະຍາຍາມລ໋ອກອິນຜິດ (ກັນ brute-force ເດົາລະຫັດຜ່ານ) ----
   // ນັບແຍກຕາມອີເມວ (ບໍ່ແມ່ນ IP ເພາະ Worker ນີ້ບໍ່ໄດ້ເກັບ IP ໄວ້ໃນ KV ຢູ່ແລ້ວ) ໃຊ້
   // env.SESSIONS KV ດຽວກັນ (ບໍ່ຕ້ອງເພີ່ມ binding ໃໝ່) key ແຍກ namespace ຄື "loginlimit:"
-  const limited = await isRateLimited(env, `loginlimit:${email}`, 8, 15 * 60);
+  // นับแยกตาม อีเมล + IP (เดิมนับตามอีเมลอย่างเดียว -> ใครก็ได้พิมพ์ผิดใส่อีเมลเราจนเจ้าของบัญชีโดนล็อก 15 นาที)
+  const clientIp = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const limitKey = `loginlimit:${email}:${clientIp}`;
+  const limited = await isRateLimited(env, limitKey, 8, 15 * 60);
   if (limited) {
     return json({ error: 'ພະຍາຍາມລ໋ອກອິນຜິດຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 15 ນາທີແລ້ວລອງໃໝ່' }, 429);
   }
 
   // ---- ກວດອີເມວ/ລະຫັດຜ່ານຜ່ານ Supabase Auth token endpoint ----
-  const tokenRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-    },
-    body: JSON.stringify({ email, password }),
-  });
+  let tokenRes;
+  try {
+    tokenRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+      body: JSON.stringify({ email, password }),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch (err) {
+    console.error('handlePasswordLogin: เชื่อมต่อ Supabase ไม่ได้', err);
+    return json({ error: 'ເຊື່ອມຕໍ່ຖານຂໍ້ມູນບໍ່ໄດ້ຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 502);
+  }
 
   const tokenData = await tokenRes.json().catch(() => ({}));
 
   if (!tokenRes.ok) {
-    await bumpRateLimit(env, `loginlimit:${email}`, 15 * 60);
+    const code = (tokenData && (tokenData.error_code || tokenData.code)) || '';
+    const msg = (tokenData && (tokenData.msg || tokenData.message || tokenData.error_description || tokenData.error)) || '';
+    console.error('handlePasswordLogin: Supabase token failed', tokenRes.status, code, msg);
+    // key ผิด/ไม่มีสิทธิ์ -> ปัญหาการตั้งค่า ไม่ใช่รหัสผ่านผิด (เดิมบอกว่า "รหัสผ่านผิด" ทุกกรณี ทำให้หาสาเหตุไม่เจอ)
+    if (tokenRes.status === 401 || tokenRes.status === 403 || /invalid api key|no api key/i.test(msg)) {
+      return json({ error: 'ຕັ້ງຄ່າ SUPABASE_SERVICE_ROLE_KEY ບໍ່ຖືກ (ເບິ່ງ wrangler secret)' }, 500);
+    }
+    // Supabase ล่ม/ช้า -> ไม่ใช่ความผิดของผู้ใช้ ไม่นับเข้า rate limit
+    if (tokenRes.status >= 500 || tokenRes.status === 429) {
+      return json({ error: 'ລະບົບຖານຂໍ້ມູນຂັດຂ້ອງຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 503);
+    }
+    if (code === 'email_not_confirmed' || /email not confirmed/i.test(msg)) {
+      return json({ error: 'ອີເມວນີ້ຍັງບໍ່ໄດ້ຢືນຢັນ' }, 400);
+    }
+    await bumpRateLimit(env, limitKey, 15 * 60);
     return json({ error: 'ອີເມວ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ' }, 400);
   }
 
@@ -1445,24 +1496,103 @@ async function handleChangePassword(request, env) {
    ບໍ່ແມ່ນ atomic ຮ້ອຍເປີເຊັນ (KV read-then-write ມີ race ນ້ອຍໆໄດ້ຖ້າຍິງພ້ອມກັນຫຼາຍຫົວ) ແຕ່ພຽງພໍ
    ສຳລັບກັນ brute-force ທົ່ວໄປ (ບໍ່ໄດ້ອອກແບບມາຮັບການໂຈມຕີລະດັບ botnet ຂະໜາດໃຫຍ່) */
 async function isRateLimited(env, key, maxAttempts, windowSeconds) {
-  const raw = await env.SESSIONS.get(key);
-  const count = raw ? Number(raw) || 0 : 0;
-  return count >= maxAttempts;
+  try {
+    const raw = await env.SESSIONS.get(key);
+    const count = raw ? Number(raw) || 0 : 0;
+    return count >= maxAttempts;
+  } catch (err) {
+    console.error('isRateLimited: อ่าน KV ไม่ได้ (ปล่อยผ่าน ไม่ให้ลูกค้าล็อกอินไม่ได้)', err);
+    return false;
+  }
 }
 async function bumpRateLimit(env, key, windowSeconds) {
-  const raw = await env.SESSIONS.get(key);
-  const count = raw ? Number(raw) || 0 : 0;
-  await env.SESSIONS.put(key, String(count + 1), { expirationTtl: windowSeconds });
+  try {
+    const raw = await env.SESSIONS.get(key);
+    const count = raw ? Number(raw) || 0 : 0;
+    // KV ต้อง expirationTtl >= 60 วินาที
+    await env.SESSIONS.put(key, String(count + 1), { expirationTtl: Math.max(60, windowSeconds) });
+  } catch (err) {
+    console.error('bumpRateLimit: เขียน KV ไม่ได้ (ข้าม)', err);
+  }
 }
 
 /* ---------- helper: ສ້າງ session ໃໝ່ (KV + cookie) ໃຊ້ຮ່ວມກັນທັງ Discord ແລະ ອີເມວ/ລະຫັດຜ່ານ ---------- */
 async function createSession(env, sessionData) {
-  const sessionId = crypto.randomUUID();
-  await env.SESSIONS.put(sessionId, JSON.stringify(sessionData), {
-    expirationTtl: 60 * 60 * 24 * 7, // 7 ວັນ
-  });
+  let sessionId = await signSession(env, sessionData);
+  if (!sessionId) {
+    // ไม่มี secret สำหรับเซ็นชื่อ (ไม่มีทั้ง SESSION_SECRET และ SUPABASE_SERVICE_ROLE_KEY) -> ใช้วิธีเก่า (KV)
+    sessionId = crypto.randomUUID();
+    await env.SESSIONS.put(sessionId, JSON.stringify(sessionData), {
+      expirationTtl: SESSION_TTL_S,
+    });
+  }
   try { await rememberProfile(env, sessionData); } catch (err) { console.error('rememberProfile failed:', err); }
   return sessionId;
+}
+
+/* ---------- session แบบคุกกี้ลงลายเซ็น (stateless) ----------
+   เดิมเก็บ session ใน Cloudflare KV ซึ่งทำให้ล็อกอินพังเป็นระยะ:
+     1) KV เป็น eventual consistency — ล็อกอินเสร็จแล้วเด้งไปหน้าถัดไป อ่านไม่เจอ (ดูเหมือนล็อกอินไม่สำเร็จ)
+     2) KV แพ็กเกจฟรีเขียนได้ 1,000 ครั้ง/วัน — เต็มแล้ว put() error -> ล็อกอินพังทั้งเว็บ
+   ตอนนี้ข้อมูล session อยู่ในคุกกี้เลย เซ็นด้วย HMAC-SHA256 (ปลอมไม่ได้) ไม่ต้องใช้ KV
+   Secret ใช้ SESSION_SECRET ถ้าตั้งไว้ ไม่งั้นใช้ SUPABASE_SERVICE_ROLE_KEY (มีอยู่แล้ว ไม่ต้องตั้งเพิ่ม) */
+const SESSION_PREFIX = 'v1.';
+const SESSION_TTL_S = 60 * 60 * 24 * 7;
+const _enc = new TextEncoder();
+const _dec = new TextDecoder();
+
+function b64urlFromBytes(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+function bytesFromB64url(str) {
+  const b64 = str.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((str.length + 3) % 4);
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+let _sessKeyCache = { secret: null, key: null };
+async function getSessionHmacKey(env) {
+  const secret = env.SESSION_SECRET || env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) return null;
+  if (_sessKeyCache.secret === secret && _sessKeyCache.key) return _sessKeyCache.key;
+  const key = await crypto.subtle.importKey(
+    'raw', _enc.encode('dekmash-session-v1:' + secret),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']
+  );
+  _sessKeyCache = { secret, key };
+  return key;
+}
+async function signSession(env, data) {
+  const key = await getSessionHmacKey(env);
+  if (!key) return null;
+  const build = async (d) => {
+    const payload = b64urlFromBytes(_enc.encode(JSON.stringify({ u: d, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_S })));
+    const sig = b64urlFromBytes(new Uint8Array(await crypto.subtle.sign('HMAC', key, _enc.encode(payload))));
+    return SESSION_PREFIX + payload + '.' + sig;
+  };
+  let token = await build(data);
+  // คุกกี้ต้องไม่เกิน ~4KB — ถ้ายาวเกิน ตัดรูปโปรไฟล์ออก (รูปยังดึงจาก KV/โปรไฟล์ได้)
+  if (token.length > 3500) token = await build({ ...data, avatar: null });
+  return token;
+}
+async function verifySession(env, token) {
+  try {
+    const key = await getSessionHmacKey(env);
+    if (!key) return null;
+    const parts = token.slice(SESSION_PREFIX.length).split('.');
+    if (parts.length !== 2) return null;
+    const [payload, sig] = parts;
+    const ok = await crypto.subtle.verify('HMAC', key, bytesFromB64url(sig), _enc.encode(payload));
+    if (!ok) return null;
+    const obj = JSON.parse(_dec.decode(bytesFromB64url(payload)));
+    if (!obj || !obj.u || typeof obj.exp !== 'number' || obj.exp < Math.floor(Date.now() / 1000)) return null;
+    return obj.u;
+  } catch {
+    return null;
+  }
 }
 
 /* ---------- helper: ตอบ JSON พร้อมแปะ session cookie (ใช้กับ signup/login ด้วยอีเมล) ---------- */
