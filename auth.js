@@ -103,6 +103,41 @@ document.addEventListener('DOMContentLoaded', () => {
     return raw;
   }
 
+  // ---- ສົ່ງຄຳຂໍໄປ API ແບບທົນຕໍ່ error: ມີ timeout, ອ່ານ response ທີ່ບໍ່ແມ່ນ JSON ໄດ້, ແລະ ກວດວ່າ session ຕິດຈິງ (/api/me) ກ່ອນເປີດໜ້າຕໍ່ໄປ ----
+  async function authRequest(url, payload, failMsg) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    let res;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'same-origin',
+        signal: ctrl.signal,
+      });
+    } catch (err) {
+      throw new Error(err && err.name === 'AbortError'
+        ? 'ເຊື່ອມຕໍ່ຊ້າເກີນໄປ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ'
+        : 'ເຊື່ອມຕໍ່ອິນເຕີເນັດບໍ່ໄດ້ ກະລຸນາກວດເນັດແລ້ວລອງໃໝ່');
+    } finally {
+      clearTimeout(timer);
+    }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || (failMsg + ' (HTTP ' + res.status + ')'));
+
+    // ຢືນຢັນວ່າ cookie session ຖືກເກັບແລ້ວຈິງ (ບາງ browser/ໂໝດສ່ວນຕົວບລັອກ cookie) — ລອງ 3 ເທື່ອ
+    for (let i = 0; i < 3; i++) {
+      try {
+        const meRes = await fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' });
+        const me = await meRes.json().catch(() => ({}));
+        if (me && me.loggedIn) return data;
+      } catch (e) { /* ລອງໃໝ່ */ }
+      await new Promise((r) => setTimeout(r, 400));
+    }
+    throw new Error('ເຂົ້າສູ່ລະບົບແລ້ວ ແຕ່ browser ບໍ່ເກັບ cookie — ກະລຸນາປິດໂໝດສ່ວນຕົວ/ເປີດ cookie ແລ້ວລອງໃໝ່');
+  }
+
   /* ---------- 5) Login form ---------- */
   const loginForm = document.querySelector('#login-form');
   if (loginForm) {
@@ -127,14 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'ກຳລັງເຂົ້າສູ່ລະບົບ...';
 
-      fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pw }),
-      })
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data.error || ('ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ (HTTP ' + res.status + ')'));
+      authRequest('/api/auth/login', { email, password: pw }, 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
+        .then(() => {
           const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
           window.location.href = next;
         })
@@ -189,14 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'ກຳລັງສ້າງບັນຊີ...';
 
-      fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password: pw }),
-      })
-        .then(async (res) => {
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok) throw new Error(data.error || ('ສະໝັກສະມາຊິກບໍ່ສຳເລັດ (HTTP ' + res.status + ')'));
+      authRequest('/api/auth/signup', { username, email, password: pw }, 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ')
+        .then(() => {
           const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
           window.location.href = next;
         })
