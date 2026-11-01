@@ -811,9 +811,10 @@ async function handleGoogleCallback(request, env) {
   const savedState = getCookie(request, 'oauth_state');
 
   const providerErr = oauthProviderErrorRedirect(url);
-  if (providerErr) return providerErr;
+  if (providerErr) { dbgAuth('google.callback.provider_error', { err: url.searchParams.get('error') }); return providerErr; }
 
   if (!code || !state || !savedState || state !== savedState) {
+    dbgAuth('google.callback.state_fail', { hasCode: !!code, hasState: !!state, hasSavedState: !!savedState, match: state === savedState, host: url.host, ua: (request.headers.get('User-Agent') || '').slice(0, 80) });
     return authFailRedirect('state');
   }
 
@@ -835,7 +836,8 @@ async function handleGoogleCallback(request, env) {
 
   if (!tokenRes.ok) {
     const errText = await tokenRes.text();
-    console.error('Google token exchange failed:', errText);
+    console.error('Google token exchange failed:', tokenRes.status, errText);
+    dbgAuth('google.callback.token_fail', { status: tokenRes.status, redirectUri });
     return authFailRedirect('provider');
   }
   const tokenData = await tokenRes.json();
@@ -878,6 +880,16 @@ async function handleGoogleCallback(request, env) {
     ],
   });
 
+  dbgAuth('google.callback.ok', {
+    sub: String(googleUser.sub).slice(-4),
+    signed: String(sessionId).startsWith(SESSION_PREFIX),   // false = ไม่มี secret -> ใช้ KV
+    cookieLen: String(sessionId).length,                    // ถ้าเกิน ~3800 เสี่ยงเบราว์เซอร์ทิ้งคุกกี้
+    hasSecret: !!(env.SESSION_SECRET || env.SUPABASE_SERVICE_ROLE_KEY),
+    next: nextPath,
+    host: url.host,
+    ua: (request.headers.get('User-Agent') || '').slice(0, 80),
+  });
+
   const headers = new Headers({ Location: nextPath, 'Cache-Control': 'no-store' });
   headers.append(
     'Set-Cookie',
@@ -905,8 +917,10 @@ async function handleLogout() {
 async function handleMe(request, env) {
   const sessionUser = await getSessionUser(request, env);
   if (!sessionUser) {
+    dbgAuth('me.loggedOut', { ua: (request.headers.get('User-Agent') || '').slice(0, 80) });
     return json({ loggedIn: false });
   }
+  dbgAuth('me.loggedIn', { sub: String(sessionUser.id).slice(-4), admin: !!sessionUser.isAdmin });
 
   // จำรูปโปรไฟล์ไว้ใน KV (profile:<id>) ให้หน้าจัดอันดับ — ไม่ block response ถ้าพลาด
   try { await rememberProfile(env, sessionUser); } catch (err) { console.error('rememberProfile failed:', err); }
@@ -1168,22 +1182,25 @@ async function backfillProfiles(env, wanted) {
 /* ---------- helper: อ่าน session cookie -> ผู้ใช้ปัจจุบัน (หรือ null) ---------- */
 async function getSessionUser(request, env) {
   const sessionId = getCookie(request, 'session');
-  if (!sessionId) return null;
+  if (!sessionId) { dbgAuth('session.none', { path: new URL(request.url).pathname, hasCookieHeader: !!request.headers.get('Cookie') }); return null; }
 
   let user = null;
   if (sessionId.startsWith(SESSION_PREFIX)) {
     // session แบบใหม่: คุกกี้ลงลายเซ็น HMAC — ตรวจในตัว Worker เลย ไม่ต้องอ่าน KV (ไม่มี eventual consistency / โควต้า KV)
     user = await verifySession(env, sessionId);
-    if (!user) return null;
+    if (!user) { dbgAuth('session.verify_fail', { len: sessionId.length, hasSecret: !!(env.SESSION_SECRET || env.SUPABASE_SERVICE_ROLE_KEY) }); return null; }
   } else {
     // session แบบเก่า (UUID ใน KV) — รองรับไว้ให้คนที่ล็อกอินค้างอยู่ก่อนอัปเดตไม่โดนเด้งออก
     let raw = null;
     try { raw = await env.SESSIONS.get(sessionId); } catch (err) { console.error('getSessionUser: อ่าน KV ไม่ได้', err); return null; }
-    if (!raw) return null;
+    if (!raw) { dbgAuth('session.kv_miss', { len: sessionId.length }); return null; }
     try { user = JSON.parse(raw); } catch { return null; }
   }
   // บัญชีที่ถูกแอดมินแบน = ถือว่า "ไม่ได้ล็อกอิน" ทุกที่ (สั่งซื้อ/เติมเงิน/โปรไฟล์ใช้ไม่ได้) ; แอดมินไม่โดนแบน
-  if (user && !user.isAdmin && user.id != null && await isUserBanned(env, String(user.id))) return null;
+  if (user && !user.isAdmin && user.id != null && await isUserBanned(env, String(user.id))) {
+    dbgAuth('session.banned', { sub: String(user.id).slice(-4) });
+    return null;
+  }
   return user;
 }
 
@@ -1536,6 +1553,10 @@ async function createSession(env, sessionData) {
      2) KV แพ็กเกจฟรีเขียนได้ 1,000 ครั้ง/วัน — เต็มแล้ว put() error -> ล็อกอินพังทั้งเว็บ
    ตอนนี้ข้อมูล session อยู่ในคุกกี้เลย เซ็นด้วย HMAC-SHA256 (ปลอมไม่ได้) ไม่ต้องใช้ KV
    Secret ใช้ SESSION_SECRET ถ้าตั้งไว้ ไม่งั้นใช้ SUPABASE_SERVICE_ROLE_KEY (มีอยู่แล้ว ไม่ต้องตั้งเพิ่ม) */
+// [DEBUG-AUTH] log สั้นๆ ไม่มีข้อมูลลับ (ไม่ log token/อีเมลเต็ม) — ดูด้วย `wrangler tail` ; ลบทิ้งได้เมื่อแก้เสร็จ
+function dbgAuth(tag, info) {
+  try { console.log('[auth] ' + tag + ' ' + JSON.stringify(info)); } catch { /* ข้าม */ }
+}
 const SESSION_PREFIX = 'v1.';
 const SESSION_TTL_S = 60 * 60 * 24 * 7;
 const _enc = new TextEncoder();
