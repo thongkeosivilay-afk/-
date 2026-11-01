@@ -1,0 +1,21 @@
+/* Discord Widget ໃນ footer — ໃຊ້ຕົວແປສີຂອງ style.css (--card, --card-border, --text-*, --green) */
+.dcw{ text-align:left; background:var(--card,#0a0a0a); border:1px solid var(--card-border,#1e1e1e); border-radius:20px; overflow:hidden; margin:0 0 28px; }
+.dcw-head{ display:flex; align-items:center; gap:12px; padding:14px; }
+.dcw-ico{ width:44px; height:44px; border-radius:12px; background:#5865f2; display:grid; place-items:center; flex-shrink:0; }
+.dcw-ico svg{ width:26px; height:26px; fill:#fff; }
+.dcw-title{ flex:1; min-width:0; }
+.dcw-title b{ display:block; font:700 17px 'Rajdhani','Noto Sans Lao',sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dcw-title span{ font-size:11px; color:var(--text-faint,#777); }
+.dcw-online{ display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:#111; border:1px solid var(--card-border,#1e1e1e); font:600 13px 'Rajdhani',sans-serif; white-space:nowrap; }
+.dcw-online i{ width:8px; height:8px; border-radius:50%; background:var(--green,#2ecc71); box-shadow:0 0 8px var(--green,#2ecc71); }
+.dcw-online small{ font:400 11px 'Noto Sans Lao',sans-serif; color:var(--text-dim,#999); }
+.dcw-list{ border-top:1px solid var(--card-border,#1e1e1e); border-bottom:1px solid var(--card-border,#1e1e1e); padding:6px 14px; max-height:216px; overflow-y:auto; }
+.dcw-m{ display:flex; align-items:center; gap:12px; padding:8px 0; }
+.dcw-av{ position:relative; width:38px; height:38px; flex-shrink:0; }
+.dcw-av img{ width:100%; height:100%; border-radius:50%; object-fit:cover; background:#222; }
+.dcw-av em{ position:absolute; right:-2px; bottom:-2px; width:14px; height:14px; border-radius:50%; border:3px solid var(--card,#0a0a0a); }
+.dcw-av .online{ background:#2ecc71; } .dcw-av .idle{ background:#e8b34a; } .dcw-av .dnd{ background:#ed4245; }
+.dcw-name{ font-size:14px; color:#e8e8e8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dcw-join{ display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 14px 14px; padding:12px; border-radius:12px; background:#5865f2; color:#fff; font-weight:600; font-size:14px; transition:filter .15s, transform .15s; }
+.dcw-join:hover{ filter:brightness(1.12); } .dcw-join:active{ transform:scale(.98); }
+.dcw-join svg{ width:20px; height:20px; fill:#fff; }
