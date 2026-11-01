@@ -1,21 +1,54 @@
-/* Discord Widget ໃນ footer — ໃຊ້ຕົວແປສີຂອງ style.css (--card, --card-border, --text-*, --green) */
-.dcw{ text-align:left; background:var(--card,#0a0a0a); border:1px solid var(--card-border,#1e1e1e); border-radius:20px; overflow:hidden; margin:0 0 28px; }
-.dcw-head{ display:flex; align-items:center; gap:12px; padding:14px; }
-.dcw-ico{ width:44px; height:44px; border-radius:12px; background:#5865f2; display:grid; place-items:center; flex-shrink:0; }
-.dcw-ico svg{ width:26px; height:26px; fill:#fff; }
+/* =====================================================================
+   Footer ແບບໃໝ່ + Discord card  (ໃຊ້ຄູ່ກັບ <footer class="sf"> ໃນ index.html)
+   ===================================================================== */
+footer.sf{
+  text-align:left; margin-top:40px; padding:18px 16px 100px;
+  border-top:1px solid #1a1a1a;
+}
+footer.sf .sf-brand{ display:flex; align-items:center; gap:10px; }
+footer.sf .footer-logo.logo{ width:38px; height:38px; margin:0; border-radius:0; overflow:visible; background:none; }
+footer.sf .footer-logo.logo img{ transform:none; width:100%; height:100%; object-fit:contain; }
+footer.sf .footer-logo.logo svg{ width:26px; height:26px; }
+footer.sf .fname{ margin:0; font-family:'Rajdhani','Noto Sans Lao',sans-serif; font-weight:600; font-size:20px; letter-spacing:.4px; color:#fff; line-height:1.2; }
+
+footer.sf .sf-desc{ margin:16px 0 0; font-size:14.5px; line-height:22px; color:#8d8d94; }
+
+footer.sf .sf-cols{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:34px; }
+footer.sf .sf-col h4{ font-size:16px; font-weight:500; color:#f4f4f5; line-height:1.4; margin:0 0 12px; }
+footer.sf .sf-col a{ display:block; font-size:15.5px; line-height:1.4; color:#8d8d94; padding:6px 0; transition:color .15s; }
+footer.sf .sf-col a:hover{ color:#fff; }
+
+footer.sf #discord-widget{ margin-top:30px; }
+footer.sf .sf-rule{ height:1px; background:#1a1a1a; margin:42px 0 0; }
+footer.sf .sf-copy{ margin-top:26px; text-align:center; font-size:15px; color:#8d8d94; line-height:1.5; }
+footer.sf .sf-copy .fcopy-name{ font-family:'Rajdhani','Noto Sans Lao',sans-serif; }
+footer.sf .sf-legal{ display:flex; justify-content:center; flex-wrap:wrap; gap:6px 18px; margin-top:12px; }
+footer.sf .sf-legal a{ font-size:14.5px; color:#8d8d94; padding:4px 0; transition:color .15s; }
+footer.sf .sf-legal a:hover{ color:#fff; }
+footer.sf .fsocial{ margin:18px 0 0; }
+footer.sf .footer-social-link{ width:38px; height:38px; }
+footer.sf #admin-link{ display:block; text-align:center; margin-top:14px; }
+
+/* ---------- Discord card ---------- */
+.dcw{ text-align:left; background:#0a0a0a; border:1px solid #1c1c1c; border-radius:20px; overflow:hidden; }
+.dcw-head{ display:flex; align-items:center; gap:10px; padding:13px 14px; }
+.dcw-ico{ width:36px; height:36px; border-radius:11px; background:#5865f2; display:grid; place-items:center; flex-shrink:0; }
+.dcw-ico svg{ width:22px; height:22px; fill:#fff; }
 .dcw-title{ flex:1; min-width:0; }
-.dcw-title b{ display:block; font:700 17px 'Rajdhani','Noto Sans Lao',sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dcw-title span{ font-size:11px; color:var(--text-faint,#777); }
-.dcw-online{ display:flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; background:#111; border:1px solid var(--card-border,#1e1e1e); font:600 13px 'Rajdhani',sans-serif; white-space:nowrap; }
-.dcw-online i{ width:8px; height:8px; border-radius:50%; background:var(--green,#2ecc71); box-shadow:0 0 8px var(--green,#2ecc71); }
-.dcw-online small{ font:400 11px 'Noto Sans Lao',sans-serif; color:var(--text-dim,#999); }
-.dcw-list{ border-top:1px solid var(--card-border,#1e1e1e); border-bottom:1px solid var(--card-border,#1e1e1e); padding:6px 14px; max-height:216px; overflow-y:auto; }
-.dcw-m{ display:flex; align-items:center; gap:12px; padding:8px 0; }
-.dcw-av{ position:relative; width:38px; height:38px; flex-shrink:0; }
-.dcw-av img{ width:100%; height:100%; border-radius:50%; object-fit:cover; background:#222; }
-.dcw-av em{ position:absolute; right:-2px; bottom:-2px; width:14px; height:14px; border-radius:50%; border:3px solid var(--card,#0a0a0a); }
-.dcw-av .online{ background:#2ecc71; } .dcw-av .idle{ background:#e8b34a; } .dcw-av .dnd{ background:#ed4245; }
-.dcw-name{ font-size:14px; color:#e8e8e8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.dcw-join{ display:flex; align-items:center; justify-content:center; gap:8px; margin:12px 14px 14px; padding:12px; border-radius:12px; background:#5865f2; color:#fff; font-weight:600; font-size:14px; transition:filter .15s, transform .15s; }
-.dcw-join:hover{ filter:brightness(1.12); } .dcw-join:active{ transform:scale(.98); }
+.dcw-title b{ display:block; font-family:'Rajdhani','Noto Sans Lao',sans-serif; font-weight:600; font-size:19px; letter-spacing:.3px; line-height:1.2; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dcw-title span{ display:block; margin-top:1px; font-size:12px; line-height:1.3; color:#7d7d84; }
+.dcw-online{ display:flex; align-items:center; gap:7px; height:30px; padding:0 13px; border-radius:999px; background:#141416; white-space:nowrap; flex-shrink:0; }
+.dcw-online i{ width:6px; height:6px; border-radius:50%; background:#3ba55d; }
+.dcw-online span{ font-family:'Rajdhani',sans-serif; font-weight:600; font-size:16px; color:#fff; }
+.dcw-online small{ font-size:13px; color:#b4b4b8; }
+.dcw-list{ border-top:1px solid #1a1a1a; border-bottom:1px solid #1a1a1a; padding:5px 15px; max-height:168px; overflow-y:auto; scrollbar-width:none; }
+.dcw-list::-webkit-scrollbar{ display:none; }
+.dcw-m{ display:flex; align-items:center; gap:10px; height:40px; }
+.dcw-av{ position:relative; width:28px; height:28px; flex-shrink:0; }
+.dcw-av img{ width:100%; height:100%; border-radius:50%; object-fit:cover; background:#222; display:block; }
+.dcw-av em{ position:absolute; right:-3px; bottom:-3px; width:11px; height:11px; border-radius:50%; box-shadow:0 0 0 2.5px #0a0a0a; }
+.dcw-av .online{ background:#3ba55d; } .dcw-av .idle{ background:#e5b53c; } .dcw-av .dnd{ background:#e5484d; }
+.dcw-name{ font-size:15px; color:#f2f2f2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dcw-join{ display:flex; align-items:center; justify-content:center; gap:8px; height:36px; margin:13px 13px 12px; border-radius:12px; background:#5865f2; color:#fff; font-weight:500; font-size:15px; transition:filter .15s, transform .15s; }
+.dcw-join:hover{ filter:brightness(1.1); } .dcw-join:active{ transform:scale(.98); }
 .dcw-join svg{ width:20px; height:20px; fill:#fff; }
