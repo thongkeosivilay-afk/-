@@ -84,7 +84,7 @@ function withSecurityHeaders(response) {
       "script-src-attr 'unsafe-hashes' 'sha256-MhtPZXr7+LpJUY5qtMutB+qWfQtMaPccfe7QXtCcEYc='; " +
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
       "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; " +
-      "connect-src 'self' https://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; " +
+      "connect-src 'self' https://*.supabase.co https://discord.com; frame-ancestors 'none'; base-uri 'self'; " +
       "form-action 'self'"
   );
   headers.set('X-Content-Type-Options', 'nosniff');
