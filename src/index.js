@@ -1056,6 +1056,17 @@ async function isUsernameTaken(env, username) {
   });
   return !!(rows && rows.length);
 }
+/* แนะนำชื่อที่ยังว่าง (ตรวจกับฐานข้อมูลแล้ว) — ใช้ตอนชื่อที่ลูกค้าพิมพ์ซ้ำ */
+async function suggestUsernames(env, base) {
+  const clean = String(base || '').replace(/[^A-Za-z0-9._-]/g, '').slice(0, 18) || 'user';
+  const r = (n) => Math.floor(Math.random() * n);
+  const two = () => String(10 + r(90));
+  const three = () => String(100 + r(900));
+  const cands = [...new Set([clean + two(), clean + '_' + two(), clean + three(), clean + '.' + two(), clean + '_FF', clean + '_' + three(), clean + '99'])]
+    .filter((c) => /^[A-Za-z0-9._-]{3,24}$/.test(c) && !RESERVED_USERNAMES.has(c.toLowerCase()));
+  const checked = await Promise.all(cands.map((c) => isUsernameTaken(env, c).then((t) => (t ? null : c)).catch(() => null)));
+  return checked.filter(Boolean).slice(0, 3);
+}
 async function handleCheckUsername(request, env, url) {
   const user = await getSessionUser(request, env);
   if (!user) return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
@@ -1067,7 +1078,7 @@ async function handleCheckUsername(request, env, url) {
   if (!/^[A-Za-z0-9._-]{3,24}$/.test(u)) return json({ available: false, reason: 'format' });
   if (RESERVED_USERNAMES.has(u.toLowerCase())) return json({ available: false, reason: 'reserved' });
   try {
-    if (await isUsernameTaken(env, u)) return json({ available: false, reason: 'taken' });
+    if (await isUsernameTaken(env, u)) return json({ available: false, reason: 'taken', suggestions: await suggestUsernames(env, u) });
   } catch (err) {
     console.error('handleCheckUsername failed:', err);
     return json({ error: 'ກວດຊື່ບໍ່ສຳເລັດ' }, 502);
@@ -1093,7 +1104,7 @@ async function handleSetUsername(request, env) {
   if ((custom && custom.username) || user.nameChosen) return json({ error: 'ບັນຊີນີ້ຕັ້ງຊື່ແລ້ວ', alreadySet: true }, 403);
 
   try {
-    if (await isUsernameTaken(env, username)) return json({ error: 'ຊື່ນີ້ມີຄົນໃຊ້ແລ້ວ ລອງຊື່ອື່ນ' }, 409);
+    if (await isUsernameTaken(env, username)) return json({ error: 'ຊື່ນີ້ມີຄົນໃຊ້ແລ້ວ ລອງຊື່ອື່ນ', taken: true, suggestions: await suggestUsernames(env, username) }, 409);
     await supabaseUpsert(env, 'user_profiles', 'user_id', { user_id: String(user.id), username, updated_at: new Date().toISOString() });
   } catch (err) {
     console.error('handleSetUsername failed:', err);
