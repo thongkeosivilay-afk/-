@@ -1,16 +1,15 @@
 /* signup.css — ดีไชน์ใหม่หน้าสมัครสมาชิก (โหลดต่อจาก auth.css) */
 :root{ --err:#ff5a5a; --ok:#35d07f; }
-body{ background:#000; }
+html{ background:#000; }
+body{ background:#000; font-family:'Prompt','Noto Sans Lao',system-ui,sans-serif; }
 body::before,body::after{ content:""; position:fixed; width:300px; height:300px; border-radius:50%; pointer-events:none;
   background:radial-gradient(circle,rgba(255,0,0,.2),transparent 68%); filter:blur(26px); }
 body::before{ left:-170px; top:38%; } body::after{ right:-170px; top:44%; }
 .auth-shell{ max-width:450px; padding:24px 14px 34px; }
 .auth-back{ margin-bottom:14px; }
-.auth-crest{ width:84px; height:84px; margin-bottom:10px; filter:drop-shadow(0 0 22px rgba(255,0,0,.35)); }
-.auth-crest-inner{ border-radius:24px; }
-.auth-brand{ font-size:18px; letter-spacing:.4px; color:#fff; }
-.auth-brand:empty{ display:none; }
-.auth-tagline{ margin-bottom:18px; }
+.auth-crest-inner{ width:46px; height:46px; margin:0 auto; border-radius:0; overflow:visible; }
+.auth-crest-inner img{ filter:drop-shadow(0 0 14px rgba(255,0,0,.35)); }
+.auth-eyebrow{ margin-top:14px; }
 
 .auth-card{ background:#0e0e0f; border:1px solid #232325; border-radius:26px; padding:28px 22px 24px;
   box-shadow:0 24px 70px rgba(0,0,0,.8); animation:su-rise .4s cubic-bezier(.2,.8,.2,1) both; }
@@ -66,3 +65,20 @@ body::before{ left:-170px; top:38%; } body::after{ right:-170px; top:44%; }
 
 .auth-switch{ margin-top:18px; }
 @media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+
+/* ปุ่มโซเชียลแบบ ไอคอน | ข้อความ | ลูกศร */
+.social{ display:grid !important; grid-template-columns:38px 1fr 38px; align-items:center; gap:8px; padding:0 8px; --mx:50%; --my:50%; isolation:isolate; }
+.social>*{ position:relative; z-index:1; }
+.social .slbl{ text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.social .ico{ width:38px; height:38px; border-radius:12px; display:grid; place-items:center; transition:transform .4s cubic-bezier(.34,1.56,.64,1); }
+.social .go{ width:38px; height:38px; display:grid; place-items:center; opacity:0; transform:translateX(-10px); transition:opacity .25s,transform .4s cubic-bezier(.2,.8,.2,1); }
+.social .go svg{ width:18px; height:18px; }
+.social::before{ content:""; position:absolute; inset:0; z-index:0; opacity:0; transition:opacity .3s; background:radial-gradient(150px circle at var(--mx) var(--my),var(--spot,rgba(255,255,255,.3)),transparent 70%); }
+.social:hover::before{ opacity:1; }
+.social:hover .ico{ transform:scale(1.08) rotate(-6deg); } .social:hover .go{ opacity:1; transform:none; }
+.btn-discord .ico{ background:rgba(255,255,255,.18); box-shadow:inset 0 0 0 1px rgba(255,255,255,.22); }
+.btn-google{ --spot:rgba(66,133,244,.18); }
+.btn-google .ico{ background:#fff; box-shadow:0 2px 7px rgba(0,0,0,.16),inset 0 0 0 1px rgba(0,0,0,.05); }
+.btn-google .ico svg{ width:20px; height:20px; } .btn-google .go{ color:#4285f4; }
+.social .rip{ position:absolute; z-index:0; border-radius:50%; pointer-events:none; background:rgba(255,255,255,.35); }
+.btn-google .rip{ background:rgba(66,133,244,.25); }

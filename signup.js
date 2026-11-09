@@ -26,4 +26,14 @@
       f._had = f.classList.contains('has-error');
     }).observe(f, { attributes: true, attributeFilter: ['class'] });
   });
+  // ไฟสปอตตามนิ้ว/เมาส์ + คลื่นตอนกดปุ่มโซเชียล
+  document.querySelectorAll('.social').forEach(function (b) {
+    b.addEventListener('pointermove', function (e) { var r = b.getBoundingClientRect(); b.style.setProperty('--mx', (e.clientX - r.left) + 'px'); b.style.setProperty('--my', (e.clientY - r.top) + 'px'); });
+    b.addEventListener('click', function (e) {
+      if (reduce) return;
+      var r = b.getBoundingClientRect(), d = Math.max(r.width, r.height) * 2.4, x = e.clientX ? e.clientX - r.left : r.width / 2, y = e.clientX ? e.clientY - r.top : r.height / 2;
+      var s = document.createElement('span'); s.className = 'rip'; s.style.cssText = 'left:' + (x - d / 2) + 'px;top:' + (y - d / 2) + 'px;width:' + d + 'px;height:' + d + 'px'; b.appendChild(s);
+      var a = s.animate([{ transform: 'scale(0)', opacity: .9 }, { transform: 'scale(1)', opacity: 0 }], { duration: 700, easing: 'cubic-bezier(.2,.8,.2,1)' }); a.onfinish = function () { s.remove(); };
+    });
+  });
 })();

@@ -7,13 +7,14 @@
 <link rel="stylesheet" href="page-loader.css">
 <title>ລົງຊື່ເຂົ້າໃຊ້</title>
 <link rel="stylesheet" href="auth.css">
-<link rel="stylesheet" href="signup.css?v=1">
+<link rel="stylesheet" href="signup.css?v=3">
 <link rel="stylesheet" href="page-transition.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Noto+Sans+Lao+Looped:wght@600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
 <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&family=Noto+Sans+Lao+Looped:wght@600;700;800&family=Orbitron:wght@600;700;800;900&family=Rajdhani:wght@500;600;700&family=Lilita+One&display=swap" rel="stylesheet"/></noscript>
 <link href="weather-fx.css?v=20261011a" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 </head>
 <body>
 
@@ -24,17 +25,10 @@
     ກັບໜ້າຫຼັກ
   </a>
 
-  <div class="auth-crest">
-    <div class="auth-crest-inner logo">
-      <img src="assets/logo.png" alt="logo">
-    </div>
-  </div>
-  <div class="auth-brand en"></div>
-  <div class="auth-tagline">ຍິນດີຕ້ອນຮັບກັບຄືນ</div>
-
   <div class="auth-card-wrap">
     <div class="auth-card">
-      <div class="auth-eyebrow">ຍິນດີຕ້ອນຮັບກັບມາ</div>
+      <div class="auth-crest-inner logo"><img alt="logo" src="assets/logo.png"/></div>
+<div class="auth-eyebrow">ຍິນດີຕ້ອນຮັບກັບມາ</div>
       <div class="auth-card-title">ລົງຊື່ເຂົ້າໃຊ້</div>
       <div class="auth-card-sub">ເຂົ້າບັນຊີເພື່ອສັ່ງຊື້ ແລະ ຕິດຕາມອໍເດີ້ ໃນ <b class="brand-name-inline"></b></div>
       <nav class="auth-tabs" role="tablist">
@@ -47,7 +41,7 @@
           <label for="login-email">ອີເມວ</label>
           <div class="field-input">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-            <input id="login-email" type="email" placeholder="you@example.com" autocomplete="email" required>
+            <input id="login-email" type="email" placeholder="ອີເມວ" autocomplete="email" required>
           </div>
           <div class="field-error"></div>
         </div>
@@ -56,7 +50,7 @@
           <label for="login-password">ລະຫັດຜ່ານ</label>
           <div class="field-input">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-            <input id="login-password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+            <input id="login-password" type="password" placeholder="ລະຫັດຜ່ານ" autocomplete="current-password" required>
             <button type="button" class="field-toggle" aria-label="ສະແດງລະຫັດຜ່ານ">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
@@ -77,15 +71,9 @@
 
       <div class="divider">ຫຼື</div>
 
-      <button type="button" class="btn-block btn-discord">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.9-1.52.07.07 0 0 0-.08.04c-.21.38-.45.86-.61 1.24a18.3 18.3 0 0 0-5.46 0 12.6 12.6 0 0 0-.62-1.24.08.08 0 0 0-.08-.04c-1.7.29-3.34.8-4.9 1.52a.07.07 0 0 0-.03.03C.53 8.7-.32 12.9.1 17.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.87-.9.08.08 0 0 1 0-.13c.13-.09.25-.19.37-.28a.07.07 0 0 1 .08 0c3.93 1.8 8.18 1.8 12.06 0a.07.07 0 0 1 .08 0c.12.1.24.19.37.28a.08.08 0 0 1 0 .13c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.12c.37.7.78 1.36 1.23 2a.08.08 0 0 0 .08.02 19.8 19.8 0 0 0 6.01-3.03.08.08 0 0 0 .03-.05c.5-4.83-.83-9-3.51-12.66a.06.06 0 0 0-.03-.03ZM8.02 14.6c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.95 2.42-2.15 2.42Zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.94 2.42-2.15 2.42Z"/></svg>
-        ເຂົ້າສູ່ລະບົບດ້ວຍ Discord
-      </button>
+      <button class="btn-block btn-discord social" type="button"><span class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.32 4.37a19.8 19.8 0 0 0-4.9-1.52.07.07 0 0 0-.08.04c-.21.38-.45.86-.61 1.24a18.3 18.3 0 0 0-5.46 0 12.6 12.6 0 0 0-.62-1.24.08.08 0 0 0-.08-.04c-1.7.29-3.34.8-4.9 1.52a.07.07 0 0 0-.03.03C.53 8.7-.32 12.9.1 17.06a.08.08 0 0 0 .03.06 19.9 19.9 0 0 0 6 3.03.08.08 0 0 0 .08-.03c.46-.63.87-1.3 1.23-2a.08.08 0 0 0-.04-.11 13 13 0 0 1-1.87-.9.08.08 0 0 1 0-.13c.13-.09.25-.19.37-.28a.07.07 0 0 1 .08 0c3.93 1.8 8.18 1.8 12.06 0a.07.07 0 0 1 .08 0c.12.1.24.19.37.28a.08.08 0 0 1 0 .13c-.6.35-1.22.65-1.87.9a.08.08 0 0 0-.04.12c.37.7.78 1.36 1.23 2a.08.08 0 0 0 .08.02 19.8 19.8 0 0 0 6.01-3.03.08.08 0 0 0 .03-.05c.5-4.83-.83-9-3.51-12.66a.06.06 0 0 0-.03-.03ZM8.02 14.6c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.95 2.42-2.15 2.42Zm7.97 0c-1.18 0-2.15-1.08-2.15-2.42 0-1.33.95-2.42 2.15-2.42 1.21 0 2.17 1.1 2.15 2.42 0 1.34-.94 2.42-2.15 2.42Z"/></svg></span><span class="slbl">ເຂົ້າສູ່ລະບົບດ້ວຍ Discord</span><span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
 
-      <button type="button" class="btn-block btn-google">
-        <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.1 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.1 17.7 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.6H24v9h12.6c-.5 3-2.2 5.5-4.7 7.2l7.4 5.7c4.3-4 6.8-9.9 6.8-17.3Z"/><path fill="#FBBC05" d="M10.5 19.3a14.5 14.5 0 0 0 0 9.3l-7.9 6.1a24 24 0 0 1 0-21.5l7.9 6.1Z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.4-5.7c-2.1 1.4-4.7 2.2-7.6 2.2-6.3 0-11.6-3.6-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48Z"/></svg>
-        ເຂົ້າສູ່ລະບົບດ້ວຍ Google
-      </button>
+      <button class="btn-block btn-google social" type="button"><span class="ico"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.6 2.4 30.1 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.1 17.7 9.5 24 9.5Z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.6H24v9h12.6c-.5 3-2.2 5.5-4.7 7.2l7.4 5.7c4.3-4 6.8-9.9 6.8-17.3Z"/><path fill="#FBBC05" d="M10.5 19.3a14.5 14.5 0 0 0 0 9.3l-7.9 6.1a24 24 0 0 1 0-21.5l7.9 6.1Z"/><path fill="#34A853" d="M24 48c6.1 0 11.3-2 15-5.5l-7.4-5.7c-2.1 1.4-4.7 2.2-7.6 2.2-6.3 0-11.6-3.6-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48Z"/></svg></span><span class="slbl">ເຂົ້າສູ່ລະບົບດ້ວຍ Google</span><span class="go"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
     </div>
   </div>
 
@@ -97,7 +85,7 @@
 <script src="page-transition.js"></script>
 <script src="storefront-data.js"></script>
 <script src="auth.js?v=20261028a"></script>
-<script src="signup.js?v=2"></script>
+<script src="signup.js?v=3"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
 </body>
 </html>
