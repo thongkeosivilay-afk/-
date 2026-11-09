@@ -5,6 +5,17 @@
   var SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
   var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
 
+  // ยอดเงินย่อ: 49,000 -> 49K, 49,500 -> 49.5K, 1,250,000 -> 1.25M
+  function short(n) {
+    n = Number(n || 0);
+    var a = Math.abs(n), v, u;
+    if (a >= 1e9) { v = n / 1e9; u = 'B'; }
+    else if (a >= 1e6) { v = n / 1e6; u = 'M'; }
+    else if (a >= 1e3) { v = n / 1e3; u = 'K'; }
+    else return String(Math.round(n));
+    return String(Math.floor(Math.abs(v) * 100) / 100 * (v < 0 ? -1 : 1)) + u;
+  }
+
   function saved() { try { return localStorage.getItem(KEY); } catch (e) { return null; } }
   function save(t) { try { localStorage.setItem(KEY, t); } catch (e) {} }
 
@@ -39,7 +50,8 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (d && d.loggedIn && d.user) {
-          txt.textContent = Number(d.user.balance || 0).toLocaleString('en-US') + ' ₭';
+          txt.textContent = short(d.user.balance);
+          chip.setAttribute('title', Number(d.user.balance || 0).toLocaleString('en-US') + ' ₭');
           chip.setAttribute('href', 'topup.html');
         }
       })

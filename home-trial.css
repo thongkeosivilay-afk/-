@@ -24,8 +24,15 @@ header.trial-hdr .brand-name{ font-family:inherit; font-size:18px; font-weight:7
 .hdr-icon{ width:37px; padding:0; }
 /* ปุ่มเมนู = .login-btn เดิม (script.js ใช้งานต่อ) — ล้างสไตล์ปุ่มแดงเดิม */
 header.trial-hdr .login-btn.hdr-icon{ background:#1a1a1a; border-radius:14px; padding:0; gap:0; }
+/* ตอนล็อกอินแล้ว script.js จะใส่รูป+ชื่อลงในปุ่มนี้ -> ซ่อน แล้วโชว์ไอคอนเมนู 3 ขีดแทน (กดแล้วเมนูเด้งเหมือนเดิม) */
 header.trial-hdr .login-btn.hdr-icon.is-authed{
-  width:auto; padding:0 10px 0 5px; gap:7px; border:0; background:#1a1a1a; color:#e6e6e8;
+  position:relative; width:37px; padding:0; gap:0; border:0; box-shadow:none; background:#1a1a1a; color:#e6e6e8;
+}
+header.trial-hdr .login-btn.hdr-icon.is-authed > *{ display:none !important; }
+header.trial-hdr .login-btn.hdr-icon.is-authed::before{
+  content:""; width:20px; height:20px; background:currentColor;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h16M4 12h16M4 17h16'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 7h16M4 12h16M4 17h16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 @media (max-width:360px){ header.trial-hdr .brand-name{ font-size:15px; } }
 
@@ -140,3 +147,9 @@ header.trial-hdr .login-btn.hdr-icon.is-authed{
 :root[data-theme="light"] .dcw-online{ background:#efeff3; }
 :root[data-theme="light"] .dcw-list{ border-color:#e4e4ea; }
 :root[data-theme="light"] .dcw-av em{ box-shadow:0 0 0 2.5px #fff; }
+
+/* ---------- ระยะจากขอบจอด้านล่าง (ให้ชิดขึ้น) ---------- */
+/* ท้ายหน้า: เดิมเว้น 100px -> เหลือ 20px (+ safe-area ของ iPhone) */
+footer.sf{ padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px)); }
+/* ปุ่มแชทลอย: เดิมสูงจากขอบล่าง 24px -> 14px (ตอนเมนูเด้งขึ้นยังใช้ค่าเดิมจาก style.css) */
+.chat-fab{ bottom:calc(14px + env(safe-area-inset-bottom, 0px)); }
