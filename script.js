@@ -258,16 +258,11 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.setAttribute('aria-haspopup', 'true');
     loginBtn.setAttribute('aria-expanded', 'false');
     loginBtn.setAttribute('aria-controls', 'acctTabbar');
-    if (user.avatar) {
-      const img = document.createElement('img');
-      img.src = user.avatar;
-      img.alt = user.username;
-      loginBtn.appendChild(img);
-    }
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = user.username;
-    loginBtn.appendChild(nameSpan);
-    loginBtn.title = user.username;
+    // ปุ่มเมนูในหัวเว็บ = ไอคอนขีด 3 ขีด (☰) แทนรูปโปรไฟล์+ชื่อ — รูป/ชื่ออยู่ในลิ้นชักเมนูแล้ว
+    loginBtn.classList.add('sm-burger');
+    loginBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>';
+    loginBtn.title = 'ເມນູ';
+    loginBtn.setAttribute('aria-label', 'ເມນູ');
 
     // ---- เมนูร้านค้าแบบลิ้นชักใหม่ (store-menu.js/css) แทนแถบไอคอนด้านล่าง + การ์ดโปรไฟล์เดิม ----
     // โค้ดแถบเดิมด้านล่างยังอยู่ครบ (ไม่ได้ลบ) แต่ไม่ถูกเรียกใช้แล้วเพราะ return ตรงนี้
@@ -275,7 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!document.querySelector('link[href^="store-menu.css"]')) {
       const smCss = document.createElement('link');
       smCss.rel = 'stylesheet';
-      smCss.href = 'store-menu.css?v=20261110b';
+      smCss.href = 'store-menu.css?v=20261110c';
       document.head.appendChild(smCss);
     }
     const mountSm = () => window.StoreMenu.mount({ loginBtn, user });
@@ -283,7 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mountSm();
     } else {
       const smJs = document.createElement('script');
-      smJs.src = 'store-menu.js?v=20261110b';
+      smJs.src = 'store-menu.js?v=20261110c';
       smJs.onload = mountSm;
       smJs.onerror = () => loginBtn.addEventListener('click', () => { window.location.href = 'profile.html'; });
       document.body.appendChild(smJs);

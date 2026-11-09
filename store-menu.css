@@ -156,3 +156,18 @@ body.sm-on .tabbar, body.sm-on .acct-card{ display:none !important; }
 @media (prefers-reduced-motion: reduce){
   .sm-panel, .sm-backdrop, .sm-sub, .sm-chev{ transition-duration:.01s; }
 }
+
+/* ---------- ปุ่มเมนูในหัวเว็บ (ขีด 3 ขีด) ตอนล็อกอินแล้ว ---------- */
+header .login-btn.sm-burger,
+header.trial-hdr .login-btn.hdr-icon.is-authed.sm-burger{
+  width:37px; height:37px; min-width:37px; padding:0; gap:0; margin:0;
+  display:flex; align-items:center; justify-content:center;
+  background:#1a1a1a; color:#e6e6e8; border:0; border-radius:14px; box-shadow:none;
+  cursor:pointer; flex-shrink:0;
+}
+header .login-btn.sm-burger svg{ width:20px; height:20px; display:block; }
+header .login-btn.sm-burger:active{ transform:scale(.93); }
+header .login-btn.sm-burger[aria-expanded="true"]{ background:#2a1214; color:#ff4d4f; }
+:root[data-theme="light"] header .login-btn.sm-burger,
+:root[data-theme="light"] header.trial-hdr .login-btn.hdr-icon.is-authed.sm-burger{ background:#efeff3; color:#25252b; }
+:root[data-theme="light"] header .login-btn.sm-burger[aria-expanded="true"]{ background:#ffe9ea; color:#e00001; }
