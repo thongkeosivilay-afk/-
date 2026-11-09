@@ -1024,31 +1024,10 @@ async function avatarHash(userId) {
    เปลี่ยนชื่อที่แสดง — เก็บใน KV profile:<id>.username แล้ว /api/me เอาไปทับชื่อจาก session/Discord/Google
    (ใช้ได้ทุกบัญชีและมีผลทุกเครื่อง) ; จำกัด 5 ครั้ง/ชั่วโมง */
 async function handleUpdateProfile(request, env) {
+  // ล็อกชื่อแล้ว: ตั้งชื่อได้ครั้งเดียวตอนสมัคร (อังกฤษเท่านั้น) และเปลี่ยนภายหลังไม่ได้
   const user = await getSessionUser(request, env);
   if (!user) return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
-  let body;
-  try { body = await request.json(); } catch { return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400); }
-
-  const username = String(body.username || '').normalize('NFC').replace(/\s+/g, ' ').trim();
-  if (!/^[\p{L}\p{M}\p{N} ._-]{2,24}$/u.test(username)) {
-    return json({ error: 'ຊື່ຕ້ອງມີ 2-24 ໂຕ (ຕົວອັກສອນ ຕົວເລກ ຍະຫວ່າງ . _ - ເທົ່ານັ້ນ)' }, 400);
-  }
-  if (await isRateLimited(env, `pfnamelimit:${user.id}`, 5, 60 * 60)) {
-    return json({ error: 'ປ່ຽນຊື່ຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 1 ຊົ່ວໂມງ' }, 429);
-  }
-  if (env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY) {
-    try {
-      await supabaseUpsert(env, 'user_profiles', 'user_id', { user_id: String(user.id), username, updated_at: new Date().toISOString() });
-    } catch (err) {
-      console.error('update-profile: เขียน user_profiles ไม่สำเร็จ', err);
-      return json({ error: 'ບັນທຶກບໍ່ສຳເລັດ ກະລຸນາລອງໃໝ່' }, 500);
-    }
-  } else {
-    const custom = await readCustom(env, user.id);
-    await env.SESSIONS.put(`pcustom:${user.id}`, JSON.stringify({ ...custom, username }));
-  }
-  await bumpRateLimit(env, `pfnamelimit:${user.id}`, 60 * 60);
-  return json({ ok: true, username });
+  return json({ error: 'Username cannot be changed' }, 403);
 }
 
 /* ---------- POST /api/account/avatar  { image: "data:image/jpeg;base64,..." } หรือ { remove: true } ----------
@@ -1255,7 +1234,7 @@ async function handlePasswordSignup(request, env) {
   const email = (body.email || '').trim().toLowerCase();
   const password = body.password || '';
 
-  if (username.length < 3) return json({ error: 'ຊື່ຜູ້ໃຊ້ຕ້ອງມີຢ່າງໜ້ອຍ 3 ໂຕ' }, 400);
+  if (!/^[A-Za-z0-9._-]{3,24}$/.test(username)) return json({ error: 'Username must be 3-24 characters: English letters, numbers, . _ - only' }, 400);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: 'ອີເມວບໍ່ຖືກຕ້ອງ' }, 400);
   if (password.length < 6) return json({ error: 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ' }, 400);
 
@@ -1307,6 +1286,9 @@ async function handlePasswordSignup(request, env) {
   }
 
   const authUser = createData;
+  try {
+    await supabaseUpsert(env, 'user_profiles', 'user_id', { user_id: String(authUser.id), username, updated_at: new Date().toISOString() });
+  } catch (err) { console.error('signup: เขียน user_profiles ไม่สำเร็จ (ไม่กระทบการสมัคร)', err); }
   const sessionId = await createSession(env, {
     id: authUser.id,
     username,
