@@ -1,0 +1,166 @@
+/* =========================================================
+   responsive.css — ปรับเลย์เอาต์ให้พอดีกับทุกหน้าจอ (โหลดเป็นไฟล์สุดท้ายของทุกหน้า)
+   มือถือแนวตั้ง = ไม่แตะอะไรเลย (เหมือนเดิม 100%)
+   - แท็บเล็ต/ไอแพดแนวตั้ง  : ≥ 768px
+   - โน้ตบุ๊ก / ไอแพดแนวนอน : ≥ 1100px
+   - คอมพิวเตอร์จอใหญ่      : ≥ 1440px
+   - มือถือแนวนอน           : จอเตี้ย (สูง ≤ 520px) แนวนอน
+   ตัวแปร --page-w = ความกว้างของ "คอลัมน์หน้าเว็บ" ในแต่ละขนาดจอ
+   ========================================================= */
+
+:root{ --page-w:480px; }
+
+/* ---------- ความกว้างหน้าเว็บ ---------- */
+@media (min-width:768px){
+  :root{ --page-w:720px; }
+  /* หน้ารายการ/ประวัติ/อันดับ: กว้างปานกลาง */
+  body:has(.oh-main), body:has(.th-main), body:has(.lb-main), body:has(.legal-wrap){ --page-w:680px; }
+  /* หน้าฟอร์ม: เติมเงิน / โปรไฟล์ / ตัวแทน / สินค้า — แคบเพื่ออ่านง่าย */
+  body:has(.topup-main), body:has(.p-content), body:has(.rs-main), body:has(.prod-title-wrap){ --page-w:600px; }
+}
+@media (min-width:1100px){
+  :root{ --page-w:1000px; }
+  body:has(.oh-main), body:has(.th-main), body:has(.lb-main), body:has(.legal-wrap){ --page-w:780px; }
+  body:has(.topup-main), body:has(.p-content), body:has(.rs-main), body:has(.prod-title-wrap){ --page-w:680px; }
+}
+@media (min-width:1440px){
+  :root{ --page-w:1160px; }
+  body:has(.oh-main), body:has(.th-main), body:has(.lb-main), body:has(.legal-wrap){ --page-w:840px; }
+  body:has(.topup-main), body:has(.p-content), body:has(.rs-main), body:has(.prod-title-wrap){ --page-w:720px; }
+}
+
+@media (min-width:768px), (orientation:landscape) and (max-height:520px){
+  .shell{ max-width:var(--page-w); }
+  header, header.trial-hdr{ width:calc(min(100%, var(--page-w)) - 20px); }
+  .tabbar{ width:calc(min(100%, var(--page-w)) - 24px); }
+  .rs-main, .legal-wrap{ max-width:var(--page-w); }
+  .cs-sheet{ max-width:min(var(--page-w), 560px); }
+  .cs-overlay{ align-items:center; }
+  .cs-sheet{ border-radius:22px; border-bottom:1px solid var(--card-border); }
+}
+
+/* =========================================================
+   แท็บเล็ต / จอกว้าง  (≥ 768px)
+   ========================================================= */
+@media (min-width:768px){
+  .shell{ padding-top:92px; }
+
+  /* ----- หน้าแรก ----- */
+  .trial-hero{ padding-top:44px; }
+  .trial-hero h1.headline{ font-size:54px; }
+  .trial-hero .hl-line{ font-size:50px; }
+  .trial-hero .sub{ font-size:16px; max-width:560px; }
+  .trial-hero .cta-row{ max-width:520px; }
+  .cta{ height:48px; font-size:16px; }
+  .promo{ margin:30px 20px 0; border-radius:16px; }
+  .promo.has-image img{ border-radius:16px; }
+
+  .stats{ grid-template-columns:repeat(4, 1fr); gap:14px; padding:26px 20px 8px; }
+  .section{ padding:44px 20px 6px; }
+  .section-title{ font-size:20px; }
+
+  /* "ทำไมต้องเลือกเรา" 2 คอลัมน์ */
+  .section:has(> .why-card){ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .section:has(> .why-card) > .section-title{ grid-column:1 / -1; margin-bottom:2px; }
+  .section:has(> .why-card) .why-card{ margin-bottom:0; }
+
+  /* ร้านขายดีประจำสัปดาห์: ยังโชว์ 2 ใบ (JS เลื่อนทีละใบ) แต่จำกัดความกว้างไม่ให้ใบใหญ่เกินไป */
+  .wb-wrap{ max-width:620px; margin-left:auto; margin-right:auto; }
+
+  /* หมวดหมู่ 2 คอลัมน์ */
+  .cat-stack{ display:grid; grid-template-columns:1fr 1fr; gap:18px; padding:2px 20px 6px; }
+
+  /* สินค้าในหมวด 3 คอลัมน์ */
+  .prod-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; padding:26px 20px 34px; }
+
+  /* ฟุตเตอร์ */
+  footer.sf{ padding-left:28px; padding-right:28px; }
+
+  /* ----- หน้ารายการ ----- */
+  .oh-main, .th-main{ padding:22px 24px 48px; }
+  .p-shell{ padding-left:24px; padding-right:24px; }
+  .topup-methods{ gap:16px; }
+}
+
+/* =========================================================
+   โน้ตบุ๊ก / ไอแพดแนวนอน  (≥ 1100px)
+   ========================================================= */
+@media (min-width:1100px){
+  .shell{ padding-top:96px; }
+  .trial-hero h1.headline{ font-size:64px; }
+  .trial-hero .hl-line{ font-size:58px; }
+  .trial-hero .cta-row{ max-width:560px; }
+
+  .stats, .section, .cat-stack{ padding-left:28px; padding-right:28px; }
+  .prod-grid{ grid-template-columns:repeat(4, minmax(0, 1fr)); gap:18px; padding-left:28px; padding-right:28px; }
+  .promo{ margin-left:28px; margin-right:28px; }
+  .rp-carousel{ margin-left:-28px; margin-right:-28px; padding-left:28px; padding-right:28px; }
+
+  /* หน้าประวัติ: รายการ 2 คอลัมน์ ดูไม่โล่ง */
+  .oh-list, .th-list{ display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+}
+
+@media (min-width:1440px){
+  .trial-hero{ padding-top:56px; }
+  .prod-grid{ gap:20px; }
+}
+
+/* ---------- เอฟเฟกต์เมาส์ชี้ (เฉพาะอุปกรณ์ที่มีเมาส์/ทัชแพด) ---------- */
+@media (hover:hover) and (pointer:fine){
+  .cat-item, .prod-card, .why-card, .stat-card, .oh-item, .th-item{ transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
+  .cat-item.cat-in-view:hover, .prod-card.grid-card:hover{ transform:translateY(-4px); }
+  .cta, .hdr-btn, .sm-item, .sm-topup{ cursor:pointer; }
+  .cta:hover{ transform:translateY(-1px); }
+  .hdr-btn:hover{ filter:brightness(1.25); }
+  .sm-item:hover{ background:#131315; }
+  .sm-item.is-active:hover{ background:linear-gradient(180deg,#221113 0%,#150c0d 100%); }
+  .sm-topup:hover{ filter:brightness(1.1); }
+  footer.sf a:hover{ color:#fff; }
+}
+
+/* =========================================================
+   มือถือแนวนอน (จอกว้างแต่เตี้ย)
+   ========================================================= */
+@media (orientation:landscape) and (max-height:520px){
+  /* กันรอยบาก (notch) ด้านข้างของ iPhone */
+  .shell{ padding-top:72px; padding-left:env(safe-area-inset-left,0px); padding-right:env(safe-area-inset-right,0px); }
+  header, header.trial-hdr{ top:6px; }
+
+  .trial-hero{ padding-top:14px; }
+  .hero-hex{ display:none; }
+  .trial-hero h1.headline{ margin-top:0; font-size:32px; }
+  .trial-hero .hl-line{ font-size:30px; }
+  .trial-hero .sub{ margin-top:8px; font-size:13px; }
+  .trial-hero .cta-row{ margin-top:14px; max-width:460px; }
+  .cta{ height:40px; }
+  .promo{ margin-top:16px; }
+
+  .stats{ grid-template-columns:repeat(4, 1fr); gap:10px; padding-top:16px; }
+  .section{ padding-top:26px; }
+  .section:has(> .why-card){ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .section:has(> .why-card) > .section-title{ grid-column:1 / -1; }
+  .section:has(> .why-card) .why-card{ margin-bottom:0; }
+  .cat-stack{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .prod-grid{ grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+  .wb-wrap{ max-width:560px; margin-left:auto; margin-right:auto; }
+
+  /* โมดัล/ชีทต่างๆ ไม่ให้สูงเกินจอ */
+  .cs-sheet{ max-height:92vh; }
+
+  /* ลิ้นชักเมนู: กระชับให้ทุกอย่างพอดีในจอเตี้ย */
+  .sm-panel{ max-width:440px; padding-right:env(safe-area-inset-right,0px); }
+  .sm-head{ padding-top:calc(12px + env(safe-area-inset-top,0px)); }
+  .sm-title{ font-size:20px; }
+  .sm-user{ padding-top:10px; }
+  .sm-ava{ width:34px; height:34px; font-size:15px; }
+  .sm-bal{ padding:12px 22px 14px; }
+  .sm-bal-num{ font-size:24px; margin-top:4px; }
+  .sm-topup{ height:34px; }
+  .sm-sec{ padding-top:12px; padding-bottom:4px; }
+  .sm-item{ min-height:40px; font-size:15px; }
+  .sm-foot{ padding-top:4px; padding-bottom:8px; }
+  .sm-foot .sm-item{ min-height:42px; }
+}
+
+/* ---------- จอเล็กมากๆ / ไอแพดแนวตั้งเล็ก: กันล้นขอบ ---------- */
+img, video{ max-width:100%; }
