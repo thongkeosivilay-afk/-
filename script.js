@@ -275,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!document.querySelector('link[href^="store-menu.css"]')) {
       const smCss = document.createElement('link');
       smCss.rel = 'stylesheet';
-      smCss.href = 'store-menu.css?v=20261110a';
+      smCss.href = 'store-menu.css?v=20261110b';
       document.head.appendChild(smCss);
     }
     const mountSm = () => window.StoreMenu.mount({ loginBtn, user });
@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
       mountSm();
     } else {
       const smJs = document.createElement('script');
-      smJs.src = 'store-menu.js?v=20261110a';
+      smJs.src = 'store-menu.js?v=20261110b';
       smJs.onload = mountSm;
       smJs.onerror = () => loginBtn.addEventListener('click', () => { window.location.href = 'profile.html'; });
       document.body.appendChild(smJs);
