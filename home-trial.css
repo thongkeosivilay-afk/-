@@ -140,3 +140,21 @@ header.trial-hdr .login-btn.hdr-icon.is-authed{
 :root[data-theme="light"] .dcw-online{ background:#efeff3; }
 :root[data-theme="light"] .dcw-list{ border-color:#e4e4ea; }
 :root[data-theme="light"] .dcw-av em{ box-shadow:0 0 0 2.5px #fff; }
+
+/* =========================================================
+   เงาบางๆ (ธีมมืดเท่านั้น) — เพิ่มความลอยนิดหน่อย ไม่ฉูดฉาด
+   ปรับความเข้มได้ที่ตัวแปร --sh ด้านล่าง (0 = ไม่มีเงา, .5 = ค่าปัจจุบัน)
+   ========================================================= */
+:root:not([data-theme="light"]){ --sh:.5; }
+:root:not([data-theme="light"]) header.trial-hdr{
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 8px 20px -10px rgba(0,0,0,var(--sh));
+}
+:root:not([data-theme="light"]) .cta-ghost{ box-shadow:0 6px 16px -10px rgba(0,0,0,var(--sh)); }
+:root:not([data-theme="light"]) .promo.has-image img{ box-shadow:0 10px 24px -14px rgba(0,0,0,.7); }
+:root:not([data-theme="light"]) .stats .stat-card,
+:root:not([data-theme="light"]) .why-card,
+:root:not([data-theme="light"]) .rp-card,
+:root:not([data-theme="light"]) .cat-item,
+:root:not([data-theme="light"]) .dcw{
+  box-shadow:0 10px 22px -16px rgba(0,0,0,.75);
+}
