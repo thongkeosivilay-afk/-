@@ -73,3 +73,82 @@ header.trial-hdr .login-btn.hdr-icon.is-authed{
 .promo .pp-sub{ font-size:9px; font-weight:600; color:#ffeaea; }
 .promo.has-image{ aspect-ratio:auto; background:transparent; display:block; }
 .promo.has-image img{ border-radius:2px; }
+
+/* =========================================================
+   ธีมสว่าง — ใช้เมื่อ <html data-theme="light"> (สลับด้วยปุ่มพระอาทิตย์/พระจันทร์ในหัวเว็บ)
+   ========================================================= */
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f5f5f8; --bg-raise:#ffffff; --card:#ffffff; --card-border:#e4e4ea;
+  --text:#15151a; --text-dim:#5c5c66; --text-faint:#8a8a94;
+  background:#f5f5f8;
+}
+/* ปิดสภาพอากาศพื้นหลัง (ออกแบบมาสำหรับธีมมืด) และคืนสีพื้นหลัง */
+:root[data-theme="light"] :not(html)[class*="wfx-"]{ display:none !important; }
+:root[data-theme="light"].wfx-on body,
+:root[data-theme="light"].wfx-on .shell{ background:var(--bg) !important; }
+:root[data-theme="light"] body{ background:var(--bg); color:var(--text); }
+
+/* Header */
+:root[data-theme="light"] header.trial-hdr{ background:#fff; border-color:#e4e4ea; box-shadow:0 6px 20px -10px rgba(20,20,40,.18); }
+:root[data-theme="light"] header.trial-hdr .brand-name{ color:#15151a; }
+:root[data-theme="light"] .hdr-btn,
+:root[data-theme="light"] header.trial-hdr .login-btn.hdr-icon,
+:root[data-theme="light"] header.trial-hdr .login-btn.hdr-icon.is-authed{ background:#efeff3; color:#25252b; }
+:root[data-theme="light"] .hdr-bal{ color:#15151a; }
+:root[data-theme="light"] .hdr-icon svg{ stroke:#2a2a30; }
+
+/* Hero */
+:root[data-theme="light"] .trial-hero h1.headline{ color:#15151a; }
+:root[data-theme="light"] .trial-hero .hl-line{ background:linear-gradient(180deg,#1a1a1f 30%,#ff0001 100%); -webkit-background-clip:text; background-clip:text; }
+:root[data-theme="light"] .trial-hero .sub{ color:#5c5c66; }
+:root[data-theme="light"] .cta-ghost{ background:#fff; color:#15151a; border-color:#d9d9e0; }
+:root[data-theme="light"] .cta-primary{ box-shadow:0 8px 22px -8px rgba(255,0,1,.7), 0 1px 0 rgba(255,255,255,.35) inset; }
+
+/* Stats */
+:root[data-theme="light"] .stats .stat-card{ background:#fff; border:1px solid rgba(255,0,1,.22); box-shadow:0 8px 20px -14px rgba(20,20,40,.25); }
+:root[data-theme="light"] .stats .stat-card > canvas.scfx-bg{ display:none; }
+:root[data-theme="light"] .stats .stat-icon{ background:#ffeaea; color:#e00001; box-shadow:none; }
+:root[data-theme="light"] .stats .stat-label{ color:#5c5c66; text-shadow:none; }
+:root[data-theme="light"] .stats .stat-value{ background:none; -webkit-text-fill-color:#e00001; color:#e00001; }
+:root[data-theme="light"] .stats .stat-value .unit{ -webkit-text-fill-color:#6a6a74; color:#6a6a74; }
+
+/* Why / Recent / Weekly */
+:root[data-theme="light"] .why-card{ background:#fff; border-color:#e4e4ea; box-shadow:0 8px 20px -16px rgba(20,20,40,.25); }
+:root[data-theme="light"] .why-icon{ background:#ffeaea; }
+:root[data-theme="light"] .rp-card,
+:root[data-theme="light"] .wb-card{ background:#fff; border-color:#e4e4ea; box-shadow:0 8px 18px -14px rgba(20,20,40,.3); }
+:root[data-theme="light"] .wb-card.is-top{ border-color:rgba(255,0,1,.45); }
+:root[data-theme="light"] .rp-card img,
+:root[data-theme="light"] .rp-card .rp-icon-fallback,
+:root[data-theme="light"] .wb-media{ background:#ececf0; }
+
+/* Categories */
+:root[data-theme="light"] .cat-item{ background:#fff; border-color:#e4e4ea; box-shadow:0 12px 26px -18px rgba(20,20,40,.35); }
+:root[data-theme="light"] .cat-banner-bg{ background:#ececf0; }
+:root[data-theme="light"] .cat-banner::after{ background:linear-gradient(to top,#fff 0%,rgba(255,255,255,.35) 18%,transparent 42%); }
+:root[data-theme="light"] .cat-meta{ background:linear-gradient(180deg,transparent,#fff 45%,#fff); }
+:root[data-theme="light"] .cat-meta::before{ background:radial-gradient(55% 100% at 50% 50%,rgba(255,40,50,.1),transparent 75%); }
+:root[data-theme="light"] .cat-meta-name{ color:#d0001a; text-shadow:none; }
+:root[data-theme="light"] .cat-st{ color:#6a6a74; }
+:root[data-theme="light"] .cat-st b{ color:#15151a; }
+
+/* Footer + Discord */
+:root[data-theme="light"] footer.sf .fname{ color:#15151a; }
+:root[data-theme="light"] footer.sf .sf-desc,
+:root[data-theme="light"] footer.sf .sf-col a,
+:root[data-theme="light"] footer.sf .sf-copy,
+:root[data-theme="light"] footer.sf .sf-legal a{ color:#5c5c66; }
+:root[data-theme="light"] footer.sf .sf-col h4{ color:#15151a; }
+:root[data-theme="light"] footer.sf .sf-col a:hover,
+:root[data-theme="light"] footer.sf .sf-legal a:hover{ color:#000; }
+:root[data-theme="light"] footer.sf .sf-rule{ background:#e4e4ea; }
+:root[data-theme="light"] .dcw{ background:#fff; border-color:#e4e4ea; }
+:root[data-theme="light"] .dcw-title b,
+:root[data-theme="light"] .dcw-online span,
+:root[data-theme="light"] .dcw-name{ color:#15151a; }
+:root[data-theme="light"] .dcw-title span,
+:root[data-theme="light"] .dcw-online small{ color:#6a6a74; }
+:root[data-theme="light"] .dcw-online{ background:#efeff3; }
+:root[data-theme="light"] .dcw-list{ border-color:#e4e4ea; }
+:root[data-theme="light"] .dcw-av em{ box-shadow:0 0 0 2.5px #fff; }
