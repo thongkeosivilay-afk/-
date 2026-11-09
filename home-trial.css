@@ -1,5 +1,6 @@
 /* home-trial.css — ดีไซน์หน้าแรกแบบทดลอง (โหลดต่อจาก style.css, ใช้กับ index-trial.html เท่านั้น) */
 .shell{ padding-top:76px; }
+:root:not([data-theme="light"]) body{ background:radial-gradient(120% 340px at 50% 0, #17171a 0%, #0b0b0c 70%) no-repeat #080809; }
 
 /* ---------- Header ---------- */
 header.trial-hdr{
@@ -29,50 +30,37 @@ header.trial-hdr .login-btn.hdr-icon.is-authed{
 @media (max-width:360px){ header.trial-hdr .brand-name{ font-size:15px; } }
 
 /* ---------- Hero ---------- */
-.trial-hero{ padding:26px 14px 0; text-align:center; display:flex; flex-direction:column; align-items:center; }
-.hero-hex{ filter:drop-shadow(0 0 9px rgba(255,0,1,.45)); }
-.trial-hero h1.headline{ margin:22px 0 0; font-size:40px; font-weight:400; line-height:1.2; letter-spacing:-.3px; }
+.trial-hero{ padding:30px 15px 0; text-align:center; display:flex; flex-direction:column; align-items:center; }
+.hero-hex{ filter:drop-shadow(0 0 10px rgba(255,0,1,.5)); margin-top:2px; }
+.trial-hero h1.headline{ margin:20px 0 0; font-size:40px; font-weight:400; line-height:1.22; letter-spacing:-.3px; color:#fff; }
 .trial-hero .hl-line{
-  display:block; margin-top:2px; font-size:38px; font-weight:500; line-height:1.2;
-  background:linear-gradient(180deg,#fff 35%,#ff0001 100%);
+  display:block; margin-top:0; font-size:38px; font-weight:400; line-height:1.22;
+  background:linear-gradient(180deg,#f4f4f4 20%,#8a8a8a 100%);
   -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent;
 }
 .trial-hero h1.headline .hl{ color:transparent; -webkit-text-fill-color:transparent; }
-.trial-hero .sub{ margin:22px 8px 0; max-width:none; font-size:14px; line-height:2; color:#999; }
-.trial-hero .cta-row{ display:flex; gap:9px; width:100%; margin:20px 0 0; padding:0 4px; box-sizing:border-box; flex-wrap:nowrap; }
+.trial-hero .sub{ margin:18px 7px 0; max-width:none; font-size:14px; line-height:1.65; color:#9a9a9c; }
+.trial-hero .cta-row{ display:flex; gap:9px; width:100%; margin:22px 0 0; padding:0; box-sizing:border-box; flex-wrap:nowrap; }
 .cta{
   flex:1 1 0; display:flex; align-items:center; justify-content:center; gap:10px;
-  height:42px; border-radius:14px; font-size:15px; font-weight:600; font-family:inherit;
+  height:42px; border-radius:15px; font-size:15px; font-weight:600; font-family:inherit;
   text-decoration:none; -webkit-tap-highlight-color:transparent; transition:transform .15s ease;
 }
 .cta:active{ transform:scale(.97); }
 .cta-primary{
   background:var(--red); color:#fff; border:1px solid rgba(255,255,255,.25);
-  box-shadow:0 8px 26px -6px var(--red), 0 1px 0 rgba(255,255,255,.35) inset;
+  box-shadow:0 10px 28px -8px var(--red), 0 1px 0 rgba(255,255,255,.4) inset;
 }
-.cta-ghost{ background:#0a0a0a; color:#f1f1f3; border:1px solid #2a2a2a; }
+.cta-ghost{ background:#0b0b0c; color:#f1f1f3; border:1px solid #26262a; }
 
-/* ---------- Banner 4:1 (ถ้าแอดมินตั้งรูป Hero จะถูกแทนที่ด้วยรูปจริงอัตโนมัติ) ---------- */
+/* ---------- Banner: รูป Hero เดิมของเว็บ (storefront.js ใส่ <img> ให้เอง) ---------- */
 .promo{
   position:relative; overflow:hidden; box-sizing:border-box;
-  margin:24px 14px 0; padding:0; min-height:0; aspect-ratio:4 / 1; border:0; border-radius:2px;
-  background:radial-gradient(60% 130% at 50% 55%, #7a0b0b 0%, #2a0505 58%, #0a0202 100%);
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  margin:24px 16px 0; padding:0; min-height:0; aspect-ratio:748 / 262; border:0; border-radius:12px;
+  background:#101012; display:block;
 }
-.promo .pp-pill{
-  display:flex; align-items:center; gap:5px; padding:2px 9px; border-radius:99px;
-  background:rgba(20,4,4,.75); border:1px solid rgba(255,110,110,.4);
-  font-size:7px; font-weight:600; letter-spacing:.5px; color:#ffe3e3;
-}
-.promo .pp-pill i{ width:5px; height:5px; border-radius:50%; background:var(--red); }
-.promo .pp-title{
-  font-family:'Orbitron',sans-serif; font-weight:900; font-size:25px; line-height:1; letter-spacing:.5px;
-  background:linear-gradient(180deg,#fff 35%,#ff0001 100%);
-  -webkit-background-clip:text; background-clip:text; color:transparent; -webkit-text-fill-color:transparent;
-}
-.promo .pp-sub{ font-size:9px; font-weight:600; color:#ffeaea; }
-.promo.has-image{ aspect-ratio:auto; background:transparent; display:block; }
-.promo.has-image img{ border-radius:2px; }
+.promo.has-image{ aspect-ratio:auto; background:transparent; }
+.promo.has-image img{ width:100%; height:auto; display:block; border-radius:12px; }
 
 /* =========================================================
    ธีมสว่าง — ใช้เมื่อ <html data-theme="light"> (สลับด้วยปุ่มพระอาทิตย์/พระจันทร์ในหัวเว็บ)
