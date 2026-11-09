@@ -1,5 +1,7 @@
 /* home-trial.css — ดีไซน์หน้าแรกแบบทดลอง (โหลดต่อจาก style.css, ใช้กับ index-trial.html เท่านั้น) */
 .shell{ padding-top:76px; }
+/* ระยะข้อความหัวเรื่องจากแถบหัวเว็บ: ปรับตัวเลขนี้ (100 = ห่างเท่าเดิมตอนมีไอคอน, 0 = ชิดสุด) */
+:root{ --hero-top:40; }
 :root:not([data-theme="light"]) body{ background:radial-gradient(120% 340px at 50% 0, #17171a 0%, #0b0b0c 70%) no-repeat #080809; }
 
 /* ---------- Header ---------- */
@@ -30,9 +32,8 @@ header.trial-hdr .login-btn.hdr-icon.is-authed{
 @media (max-width:380px){ header.trial-hdr .brand-name{ font-size:15px; } header.trial-hdr .logo{ width:42px; height:42px; } }
 
 /* ---------- Hero ---------- */
-.trial-hero{ padding:30px 15px 0; text-align:center; display:flex; flex-direction:column; align-items:center; }
-.hero-hex{ filter:drop-shadow(0 0 10px rgba(255,0,1,.5)); margin-top:2px; }
-.trial-hero h1.headline{ margin:20px 0 0; font-size:40px; font-weight:400; line-height:1.22; letter-spacing:-.3px; color:#fff; }
+.trial-hero{ padding:calc(50px * var(--hero-top, 40) / 100) 15px 0; text-align:center; display:flex; flex-direction:column; align-items:center; }
+.trial-hero h1.headline{ margin:0; font-size:40px; font-weight:400; line-height:1.22; letter-spacing:-.3px; color:#fff; }
 .trial-hero .hl-line{
   display:block; margin-top:0; font-size:38px; font-weight:400; line-height:1.22;
   background:linear-gradient(180deg,#f4f4f4 20%,#8a8a8a 100%);
