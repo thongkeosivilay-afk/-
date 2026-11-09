@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="page-loader.css">
 <title>ສະໝັກສະມາຊິກ</title>
 <link href="auth.css" rel="stylesheet"/>
+<link href="signup.css?v=1" rel="stylesheet"/>
 <link href="page-transition.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
@@ -22,7 +23,7 @@
     ກັບໜ້າຫຼັກ
   </a>
 <div class="auth-crest">
-<div class="auth-crest-inner">
+<div class="auth-crest-inner logo">
 <img alt="logo" src="assets/logo.png"/>
 </div>
 </div>
@@ -30,8 +31,13 @@
 <div class="auth-tagline">ສ້າງບັນຊີໃໝ່ ໃຊ້ເວລາບໍ່ເຖິງນາທີ</div>
 <div class="auth-card-wrap">
 <div class="auth-card">
-<div class="auth-card-title">ສະໝັກສະມາຊິກ</div>
-<div class="auth-card-sub">ສ້າງບັນຊີເພື່ອເລີ່ມສັ່ງຊື້ ແລະ ຮັບໂປຣໂມຊັ່ນພິເສດ</div>
+<div class="auth-eyebrow">ສະໝັກສະມາຊິກ</div>
+<div class="auth-card-title">ສ້າງບັນຊີໃໝ່</div>
+<div class="auth-card-sub">ເລີ່ມຕົ້ນໃຊ້ງານ <b class="brand-name-inline"></b></div>
+<nav class="auth-tabs" role="tablist">
+<a class="auth-tab" id="tab-login" href="login.html" role="tab" aria-selected="false">ເຂົ້າສູ່ລະບົບ</a>
+<a class="auth-tab" href="signup.html" role="tab" aria-selected="true">ສະໝັກສະມາຊິກ</a>
+</nav>
 <form id="signup-form" novalidate="">
 <div class="field" id="signup-username-field">
 <label for="signup-username">ຊື່ຜູ້ໃຊ້</label>
@@ -96,6 +102,7 @@
 <script src="page-transition.js"></script>
 <script src="storefront-data.js"></script>
 <script src="auth.js?v=20261028a"></script>
+<script src="signup.js?v=2"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
 </body>
 </html>

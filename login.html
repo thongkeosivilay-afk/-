@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="page-loader.css">
 <title>ລົງຊື່ເຂົ້າໃຊ້</title>
 <link rel="stylesheet" href="auth.css">
+<link rel="stylesheet" href="signup.css?v=1">
 <link rel="stylesheet" href="page-transition.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +25,7 @@
   </a>
 
   <div class="auth-crest">
-    <div class="auth-crest-inner">
+    <div class="auth-crest-inner logo">
       <img src="assets/logo.png" alt="logo">
     </div>
   </div>
@@ -33,8 +34,13 @@
 
   <div class="auth-card-wrap">
     <div class="auth-card">
+      <div class="auth-eyebrow">ຍິນດີຕ້ອນຮັບກັບມາ</div>
       <div class="auth-card-title">ລົງຊື່ເຂົ້າໃຊ້</div>
-      <div class="auth-card-sub">ເຂົ້າສູ່ບັນຊີຂອງທ່ານເພື່ອສັ່ງຊື້ ແລະ ຕິດຕາມອໍເດີ້</div>
+      <div class="auth-card-sub">ເຂົ້າບັນຊີເພື່ອສັ່ງຊື້ ແລະ ຕິດຕາມອໍເດີ້ ໃນ <b class="brand-name-inline"></b></div>
+      <nav class="auth-tabs" role="tablist">
+        <a class="auth-tab" href="login.html" role="tab" aria-selected="true">ເຂົ້າສູ່ລະບົບ</a>
+        <a class="auth-tab" href="signup.html" role="tab" aria-selected="false">ສະໝັກສະມາຊິກ</a>
+      </nav>
 
       <form id="login-form" novalidate>
         <div class="field" id="login-email-field">
@@ -91,6 +97,7 @@
 <script src="page-transition.js"></script>
 <script src="storefront-data.js"></script>
 <script src="auth.js?v=20261028a"></script>
+<script src="signup.js?v=2"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
 </body>
 </html>
