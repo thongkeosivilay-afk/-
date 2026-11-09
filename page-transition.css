@@ -36,3 +36,7 @@
     transform:none !important;
   }
 }
+
+/* มาจากการสลับแท็บ login <-> signup: ไม่เล่นแอนิเมชั่นเลื่อนเข้า (ใช้ครอสเฟดของเบราว์เซอร์แทน) */
+.pt-skip .shell,
+.pt-skip .auth-shell{ animation:none !important; }

@@ -82,3 +82,8 @@ body::before{ left:-170px; top:38%; } body::after{ right:-170px; top:44%; }
 .btn-google .ico svg{ width:20px; height:20px; } .btn-google .go{ color:#4285f4; }
 .social .rip{ position:absolute; z-index:0; border-radius:50%; pointer-events:none; background:rgba(255,255,255,.35); }
 .btn-google .rip{ background:rgba(66,133,244,.25); }
+
+/* ครอสเฟดนุ่มๆ ระหว่างหน้า login <-> signup (Safari 18.2+/Chrome 126+; เบราว์เซอร์เก่าจะข้ามไปเอง) */
+@view-transition{ navigation:auto; }
+::view-transition-old(root),
+::view-transition-new(root){ animation-duration:.18s; }

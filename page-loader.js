@@ -9,6 +9,19 @@
    ========================================================= */
 (function () {
   var root = document.documentElement;
+
+  // สลับแท็บ ເຂົ້າສູ່ລະບົບ <-> ສະໝັກສະມາຊິກ: ไม่โชว์หน้าโหลด (page-transition.js ตั้งธงไว้ก่อนเปลี่ยนหน้า)
+  // ธงใช้ครั้งเดียวแล้วลบทิ้ง + หมดอายุใน 5 วินาที กันค้างไปโดนการเปิดหน้าครั้งอื่น
+  try {
+    var skipAt = +sessionStorage.getItem('skipPageLoader');
+    sessionStorage.removeItem('skipPageLoader');
+    if (skipAt && Date.now() - skipAt < 5000) {
+      root.classList.add('pt-skip');
+      // ยังคงให้ __plBuild ใช้ได้ (หน้าอื่นที่เรียกใช้ตอนกดลิงก์) แต่ไม่สร้าง overlay หน้านี้
+      window.__plBuild = window.__plBuild || function () { var d = document.createElement('div'); d.id = 'page-loader'; d.style.display = 'none'; return d; };
+      return;
+    }
+  } catch (e) {}
   var MIN_SHOW_MS = 1150;  // โชว์อย่างน้อยเท่านี้ (มิลลิวินาที) จะได้เห็นปิกาจูวิ่ง — อยากให้ช้า/เร็วกว่านี้แก้เลขตรงนี้
   var MAX_WAIT_MS = 8000;  // รอนานสุด แล้วเปิดหน้าให้เลย
   var EXIT_MS = 320;       // ความยาวเฟดออก (ต้องมากกว่า .25s ในสไตล์ด้านล่าง)

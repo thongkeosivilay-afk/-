@@ -87,6 +87,17 @@
     // แค่กระโดดไป #hash ในหน้าเดิม ไม่ต้องเล่นแอนิเมชั่นสลับหน้า
     if (url.pathname === location.pathname && url.search === location.search && url.hash) return;
 
+    // สลับแท็บ login <-> signup: ไปหน้าใหม่ทันที ไม่โชว์หน้าโหลด ไม่เล่นแอนิเมชั่นออก
+    // (ตั้งธงให้ page-loader.js ของหน้าถัดไปข้ามหน้าโหลด — ภาพสลับนุ่มๆ ด้วย view-transition ใน signup.css)
+    var authRe = /(^|\/)(login|signup)(\.html)?$/;
+    if (authRe.test(location.pathname) && authRe.test(url.pathname) && url.pathname !== location.pathname) {
+      try { sessionStorage.setItem('skipPageLoader', String(Date.now())); } catch (err) {}
+      e.preventDefault();
+      navigating = true;
+      location.href = href;
+      return;
+    }
+
     e.preventDefault();
     navigating = true;
     wrapper.style.willChange = 'transform, opacity';
