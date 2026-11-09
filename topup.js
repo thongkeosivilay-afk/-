@@ -354,8 +354,9 @@ document.addEventListener('DOMContentLoaded', () => {
         BANKS[2].name = store.qrLabel2 || 'ບັນຊີທະນາຄານ 2';
         QR_IMAGES[2] = store.qrUrl2;
         if (name2El) name2El.textContent = BANKS[2].name;
-        if (method2Btn) method2Btn.style.display = '';
+        if (method2Btn) { method2Btn.classList.remove('u-hidden'); method2Btn.style.display = ''; }
       } else if (method2Btn) {
+        method2Btn.classList.add('u-hidden');
         method2Btn.style.display = 'none';
       }
 
