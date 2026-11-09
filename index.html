@@ -9,6 +9,8 @@
 <title>ຮ້ານເກມອອນລາຍ</title>
 <!-- style.css : ຮວມ CSS/ໂຕນສີ/ໄລເອົ້າທັງໝົດ -->
 <link href="style.css?v=20261025cat3" rel="stylesheet"/>
+<link href="home-trial.css?v=4" rel="stylesheet"/>
+<script src="home-trial.js?v=2"></script>
 <link href="pikachu-fab.css?v=20261025b" rel="stylesheet"/>
 <link href="stat-card-fx.css?v=20261025b" rel="stylesheet"/>
 <link href="tabbar-close-fx.css?v=20261004b" rel="stylesheet"/>
@@ -22,41 +24,40 @@
 </head>
 <body>
 <div class="shell">
-<!-- Header -->
-<header>
-<div class="brand">
-<div class="logo has-custom-logo">
-<img alt="logo" src="assets/logo.png"/>
-</div>
+<!-- Header (ทดลอง: ดีไซน์ใหม่) -->
+<header class="trial-hdr">
+<a class="brand" href="index.html" aria-label="Home">
+<div class="logo has-custom-logo"><img alt="logo" src="assets/logo.png"/></div>
 <span class="brand-name en"></span>
-</div>
-<button class="login-btn" type="button">
-<svg fill="currentColor" viewbox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm0 2c-4.42 0-8 2.24-8 5v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1c0-2.76-3.58-5-8-5Z"></path></svg>
-<span>ລົງຊື່ເຂົ້າໃຊ້</span>
+</a>
+<div class="hdr-actions">
+<a class="hdr-btn hdr-bal" id="trialBal" href="/login.html" aria-label="ຍອດເງິນ">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v3"/><path d="M3 5v13a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 12v4h-4a2 2 0 0 1 0-4z"/></svg>
+<span id="trialBalText">0 ₭</span>
+</a>
+<button class="hdr-btn hdr-icon" type="button" id="trialTheme" aria-label="ປ່ຽນທີມ">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6e6e8" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
 </button>
+<button class="hdr-btn hdr-icon login-btn" type="button" aria-label="ເມນູ">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e6e6e8" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+</button>
+</div>
 </header>
-<!-- Hero -->
-<section class="hero">
-<span class="eyebrow"><svg class="eyebrow-icon" fill="currentColor" viewbox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8Z"></path></svg> <span class="eyebrow-text"></span></span>
-<h1 class="headline display-lo">ຍິນດີຕ້ອນຮັບສູ່ <span class="hl"></span></h1>
+<!-- Hero (ทดลอง) -->
+<section class="hero trial-hero">
+<svg class="hero-hex" width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 2.5l12.5 7.2v14.6L17 31.5 4.5 24.3V9.7z" fill="rgba(255,0,1,.18)" stroke="var(--red)" stroke-width="3" stroke-linejoin="round"/></svg>
+<h1 class="headline display-lo">ຍິນດີຕ້ອນຮັບ<span class="hl-line">ສູ່ <span class="hl"></span></span></h1>
 <p class="sub"></p>
 <div class="cta-row">
-<button class="btn btn-primary">
-<svg fill="none" height="16" viewbox="0 0 24 24" width="16"><path d="M6 6h15l-1.5 9h-12L6 6Z" stroke="#fff" stroke-linejoin="round" stroke-width="1.8"></path><path d="M6 6L5 3H2" stroke="#fff" stroke-linecap="round" stroke-width="1.8"></path><circle cx="9" cy="20" fill="#fff" r="1.4"></circle><circle cx="17" cy="20" fill="#fff" r="1.4"></circle></svg>
-        ເລີ່ມຕົ້ນໃຊ້ງານ
-      </button>
-<button class="btn btn-ghost">
-        ວິທີໃຊ້ງານ
-        <svg fill="none" height="15" viewbox="0 0 24 24" width="15"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg>
-</button>
+<a class="cta cta-primary" href="#categories"><span>ເບິ່ງສິນຄ້າທັງໝົດ</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+<a class="cta cta-ghost" href="topup.html">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0 0 4h14a1 1 0 0 1 1 1v3"/><path d="M3 5v13a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-3"/><path d="M21 12v4h-4a2 2 0 0 1 0-4z"/></svg>
+<span>ເຕີມເງິນ</span></a>
 </div>
 </section>
-<!-- Promo banner placeholder -->
-<div class="promo">
-<svg fill="none" stroke="var(--text-faint)" stroke-width="1.4" viewbox="0 0 24 24"><rect height="15" rx="2" width="18" x="3" y="4"></rect><circle cx="8.5" cy="9.5" r="1.5"></circle><path d="M21 15l-5-5-9 9"></path></svg>
-<strong>ພື້ນທີ່ໃສ່ຮູບໂປຣໂມຊັ່ນ</strong>
-<span>(ໃສ່ຮູບພາບຂອງທ່ານເອງບ່ອນນີ້ — ຂະໜາດແນະນຳ 1200×450px)</span>
-</div>
+<!-- Banner: ใช้รูป Hero เดิมของเว็บ (แอดมินตั้งไว้) — storefront.js ใส่รูปให้อัตโนมัติ -->
+<div class="promo"></div>
 <!-- Stats -->
 <div class="stats">
 <div class="stat-card">
