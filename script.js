@@ -269,6 +269,27 @@ document.addEventListener('DOMContentLoaded', () => {
     loginBtn.appendChild(nameSpan);
     loginBtn.title = user.username;
 
+    // ---- เมนูร้านค้าแบบลิ้นชักใหม่ (store-menu.js/css) แทนแถบไอคอนด้านล่าง + การ์ดโปรไฟล์เดิม ----
+    // โค้ดแถบเดิมด้านล่างยังอยู่ครบ (ไม่ได้ลบ) แต่ไม่ถูกเรียกใช้แล้วเพราะ return ตรงนี้
+    // ถ้าอยากกลับไปใช้แบบเดิม: ลบบล็อกนี้ (จนถึง return;) ทิ้งได้เลย
+    if (!document.querySelector('link[href^="store-menu.css"]')) {
+      const smCss = document.createElement('link');
+      smCss.rel = 'stylesheet';
+      smCss.href = 'store-menu.css?v=20261110a';
+      document.head.appendChild(smCss);
+    }
+    const mountSm = () => window.StoreMenu.mount({ loginBtn, user });
+    if (window.StoreMenu) {
+      mountSm();
+    } else {
+      const smJs = document.createElement('script');
+      smJs.src = 'store-menu.js?v=20261110a';
+      smJs.onload = mountSm;
+      smJs.onerror = () => loginBtn.addEventListener('click', () => { window.location.href = 'profile.html'; });
+      document.body.appendChild(smJs);
+    }
+    return;
+
     // ---- สร้างแถบไอคอนด้านล่าง ----
     const tabs = TB_TABS.filter((t) => !t.adminOnly || user.isAdmin);
     const currentKey = tbCurrentKey();
