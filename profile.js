@@ -126,11 +126,12 @@ document.addEventListener('DOMContentLoaded', () => {
     avatarRemoveBtn.hidden = !(state.avatar && state.avatar.startsWith(AVATAR_PREFIX)) || !!state.pending;
   }
   function updateNameUi() {
+    if (!nameInput) return;
     const v = nameInput.value.trim();
     nameCount.textContent = `${nameInput.value.length}/24`;
     nameSaveBtn.disabled = !v || v === state.username;
   }
-  nameInput.addEventListener('input', () => { setFieldError(document.getElementById('pNameField'), ''); updateNameUi(); });
+  if (nameInput) nameInput.addEventListener('input', () => { setFieldError(document.getElementById('pNameField'), ''); updateNameUi(); });
 
   document.getElementById('pAvatarEditBtn').addEventListener('click', () => avatarInput.click());
   avatarBox.addEventListener('click', () => avatarInput.click());
@@ -227,7 +228,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  document.getElementById('pNameForm').addEventListener('submit', async (e) => {
+  const pNameFormEl = document.getElementById('pNameForm');
+  if (pNameFormEl) pNameFormEl.addEventListener('submit', async (e) => {
     e.preventDefault();
     const field = document.getElementById('pNameField');
     const name = nameInput.value.replace(/\s+/g, ' ').trim();
@@ -287,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ---- Name / badge ----
     document.getElementById('pUsername').textContent = user.username || 'ຜູ້ໃຊ້';
     document.getElementById('pInfoUsername').textContent = user.username || '—';
-    nameInput.value = user.username || '';
+    if (nameInput) nameInput.value = user.username || '';
     updateNameUi();
     const badge = document.getElementById('pBadge');
     const badgeText = document.getElementById('pBadgeText');

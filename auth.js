@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const pw2 = pw2Field.querySelector('input').value;
 
       let ok = true;
-      if (username.length < 3) { setFieldError(userField, 'ຊື່ຜູ້ໃຊ້ຕ້ອງມີຢ່າງໜ້ອຍ 3 ໂຕ'); ok = false; }
+      if (!/^[A-Za-z0-9._-]{3,24}$/.test(username)) { setFieldError(userField, 'Username: 3-24 characters, English letters, numbers, . _ - only'); ok = false; }
       else setFieldError(userField, '');
 
       if (!emailPattern.test(email)) { setFieldError(emailField, 'ກະລຸນາໃສ່ອີເມວໃຫ້ຖືກຕ້ອງ'); ok = false; }

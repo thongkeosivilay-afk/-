@@ -38,7 +38,7 @@
 <label for="signup-username">ຊື່ຜູ້ໃຊ້</label>
 <div class="field-input">
 <svg fill="none" stroke="currentColor" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a8 8 0 0 1 16 0v1"></path></svg>
-<input autocomplete="username" id="signup-username" placeholder="ຊື່ຜູ້ໃຊ້ (ຢ່າງໜ້ອຍ 3 ຕົວ)" required="" type="text"/>
+<input autocomplete="username" id="signup-username" placeholder="Username (English, 3-24 characters)" required="" type="text" maxlength="24" pattern="[A-Za-z0-9._-]{3,24}" autocapitalize="none" spellcheck="false"/>
 </div>
 <div class="field-error"></div>
 </div>
@@ -90,7 +90,7 @@
 </div>
 <script src="page-transition.js"></script>
 <script src="storefront-data.js"></script>
-<script src="auth.js?v=20261028a"></script>
+<script src="auth.js?v=20261110n"></script>
 <script src="signup.js?v=3"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
 </body>

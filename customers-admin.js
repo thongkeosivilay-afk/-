@@ -182,10 +182,11 @@
   }
 
   function patchCard(el, u) {
-    const name = u.email || u.username || u.user_id;
+    const name = u.username || u.email || u.user_id;
+    const sub = [u.username && u.email ? u.email : '', u.user_id].filter(Boolean).join(' · ');
     const b = el.querySelector('.cu-who b'), s = el.querySelector('.cu-who small');
     if (b.textContent !== name) b.textContent = name;
-    if (s.textContent !== String(u.user_id)) s.textContent = u.user_id;
+    if (s.textContent !== sub) s.textContent = sub;
     const prev = el._bal;
     el._bal = u.balance;
     if (prev !== undefined && prev !== u.balance) flash(el, u.balance > prev ? 'flash-up' : 'flash-down');
