@@ -153,6 +153,12 @@ async function route(request, env, ctx) {
     if (url.pathname === '/api/account/change-password' && request.method === 'POST') {
       return handleChangePassword(request, env);
     }
+    if (url.pathname === '/api/account/set-username' && request.method === 'POST') {
+      return handleSetUsername(request, env);
+    }
+    if (url.pathname === '/api/account/check-username' && request.method === 'GET') {
+      return handleCheckUsername(request, env, url);
+    }
     if (url.pathname === '/api/account/update-profile' && request.method === 'POST') {
       return handleUpdateProfile(request, env);
     }
@@ -948,7 +954,12 @@ async function handleMe(request, env) {
   const merged = { ...sessionUser };
   if (typeof custom.username === 'string' && custom.username) merged.username = custom.username;
   if (isAvatarUrl(custom.avatar)) merged.avatar = custom.avatar;
-  return json({ loggedIn: true, user: { ...merged, balance, hasPassword } });
+  // needsUsername: ยังไม่มีชื่อที่ตั้งเอง -> หน้าเว็บ (name-gate.js) จะบังคับให้ตั้งชื่อก่อนใช้งาน
+  // (แอดมินไม่โดนบังคับ ; บัญชีอีเมลที่ตั้งชื่อตอนสมัครแล้ว = nameChosen)
+  const needsUsername = !sessionUser.isAdmin
+    && !(typeof custom.username === 'string' && custom.username)
+    && !sessionUser.nameChosen;
+  return json({ loggedIn: true, user: { ...merged, balance, hasPassword, needsUsername } });
 }
 
 /* ---------- helper: จำรูปโปรไฟล์ผู้ใช้ (KV: profile:<user.id>) ----------
@@ -1028,6 +1039,68 @@ async function handleUpdateProfile(request, env) {
   const user = await getSessionUser(request, env);
   if (!user) return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
   return json({ error: 'Username cannot be changed' }, 403);
+}
+
+/* ---------- บังคับตั้งชื่อ (ครั้งแรก/ครั้งเดียว) ----------
+   ใช้กับบัญชีที่ยังไม่มีชื่อ (ส่วนมาก = สมัครผ่าน Discord/Google) — หน้าเว็บ name-gate.js เรียก 2 เส้นนี้
+     GET  /api/account/check-username?u=xxx  -> { available, reason? }   (ต้อง login)
+     POST /api/account/set-username {username} -> { ok, username }       (ตั้งได้ครั้งเดียว เฉพาะคนที่ยังไม่มีชื่อ)
+   เก็บลง user_profiles.username (แหล่งเดียวกับที่ /api/me อ่านไปทับชื่อ) — แนะนำให้สร้าง unique index กันชื่อซ้ำตอนกดพร้อมกัน (ดู SQL ที่ให้ไว้) */
+const RESERVED_USERNAMES = new Set(['admin', 'administrator', 'root', 'system', 'support', 'moderator', 'mod', 'owner', 'staff', 'beertj', 'dekmash', 'dekmashshop']);
+async function isUsernameTaken(env, username) {
+  // ilike = ไม่สนตัวพิมพ์เล็ก/ใหญ่ ; "_" เป็น wildcard ของ LIKE จึงต้อง escape ให้เทียบตรงตัว
+  const rows = await supabaseSelect(env, 'user_profiles', {
+    select: 'user_id',
+    username: 'ilike.' + username.replace(/_/g, '\\_'),
+    limit: '1',
+  });
+  return !!(rows && rows.length);
+}
+async function handleCheckUsername(request, env, url) {
+  const user = await getSessionUser(request, env);
+  if (!user) return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'ລະບົບຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase' }, 500);
+  const limitKey = `chknamelimit:${user.id}`;
+  if (await isRateLimited(env, limitKey, 60, 5 * 60)) return json({ error: 'ກວດຊື່ຖີ່ເກີນໄປ ກະລຸນາລໍຖ້າສັກຄູ່' }, 429);
+  await bumpRateLimit(env, limitKey, 5 * 60);
+  const u = String(url.searchParams.get('u') || '').trim();
+  if (!/^[A-Za-z0-9._-]{3,24}$/.test(u)) return json({ available: false, reason: 'format' });
+  if (RESERVED_USERNAMES.has(u.toLowerCase())) return json({ available: false, reason: 'reserved' });
+  try {
+    if (await isUsernameTaken(env, u)) return json({ available: false, reason: 'taken' });
+  } catch (err) {
+    console.error('handleCheckUsername failed:', err);
+    return json({ error: 'ກວດຊື່ບໍ່ສຳເລັດ' }, 502);
+  }
+  return json({ available: true });
+}
+async function handleSetUsername(request, env) {
+  const user = await getSessionUser(request, env);
+  if (!user) return json({ error: 'ກະລຸນາລ໋ອກອິນກ່ອນ', requireLogin: true }, 401);
+  if (user.isAdmin) return json({ error: 'ບັນຊີແອດມິນບໍ່ຕ້ອງຕັ້ງຊື່' }, 403);
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return json({ error: 'ລະບົບຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase' }, 500);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400); }
+  const username = String((body && body.username) || '').trim();
+  if (!/^[A-Za-z0-9._-]{3,24}$/.test(username)) return json({ error: 'Username must be 3-24 characters: English letters, numbers, . _ - only' }, 400);
+  if (RESERVED_USERNAMES.has(username.toLowerCase())) return json({ error: 'ຊື່ນີ້ຖືກສະຫງວນໄວ້ ກະລຸນາໃຊ້ຊື່ອື່ນ' }, 409);
+  const limitKey = `setnamelimit:${user.id}`;
+  if (await isRateLimited(env, limitKey, 10, 10 * 60)) return json({ error: 'ລອງຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 10 ນາທີ' }, 429);
+  await bumpRateLimit(env, limitKey, 10 * 60);
+
+  // ตั้งได้ครั้งเดียว: ถ้ามีชื่ออยู่แล้ว (ใน user_profiles หรือสมัครอีเมลพร้อมชื่อ) ห้ามทับ
+  const custom = await readCustom(env, user.id);
+  if ((custom && custom.username) || user.nameChosen) return json({ error: 'ບັນຊີນີ້ຕັ້ງຊື່ແລ້ວ', alreadySet: true }, 403);
+
+  try {
+    if (await isUsernameTaken(env, username)) return json({ error: 'ຊື່ນີ້ມີຄົນໃຊ້ແລ້ວ ລອງຊື່ອື່ນ' }, 409);
+    await supabaseUpsert(env, 'user_profiles', 'user_id', { user_id: String(user.id), username, updated_at: new Date().toISOString() });
+  } catch (err) {
+    console.error('handleSetUsername failed:', err);
+    if (/23505|duplicate key|unique/i.test(String(err && err.message))) return json({ error: 'ຊື່ນີ້ມີຄົນໃຊ້ແລ້ວ ລອງຊື່ອື່ນ' }, 409);
+    return json({ error: 'ບັນທຶກບໍ່ສຳເລັດ ກະລຸນາລອງໃໝ່' }, 500);
+  }
+  return json({ ok: true, username });
 }
 
 /* ---------- POST /api/account/avatar  { image: "data:image/jpeg;base64,..." } หรือ { remove: true } ----------
@@ -1297,6 +1370,7 @@ async function handlePasswordSignup(request, env) {
     isAdmin: false,
     discordLinked: false,
     passwordAuth: true, // ບັນຊີນີ້ມີລະຫັດຜ່ານແທ້ (ໃຊ້ບອກ hasPassword ໃນ /api/me ສຳລັບໜ້າໂປຣໄຟລ໌)
+    nameChosen: true, // ตั้งชื่อตอนสมัครแล้ว ไม่ต้องโดนบังคับตั้งชื่อ
     createdAt: Date.now(),
   });
 
@@ -1391,6 +1465,7 @@ async function handlePasswordLogin(request, env) {
     isAdmin: false,
     discordLinked: false,
     passwordAuth: true,
+    nameChosen: !!(authUser.user_metadata && authUser.user_metadata.username),
     createdAt: Date.now(),
   });
 
