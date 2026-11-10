@@ -189,6 +189,9 @@
   // ທີ່ໃຊ້ auth.css ແທນ) — ຖ້າແອດມິນປ່ອຍວ່າງ ຈະບໍ່ໂຊວ໌ຫຍັງເລີຍ, ລູກຄ້າກົດ × ປິດໄດ້ (ຈື່ໄວ້ດ້ວຍ
   // sessionStorage ຈົນກວ່າຈະປິດ browser ຫຼືຂໍ້ຄວາມປະກາດປ່ຽນໄປ)
   function applyAnnouncementBar(rawText) {
+    // ปิดแถบประกาศสีแดงด้านบน: ลบแถบทิ้งเสมอ (อยากเปิดกลับ ให้ลบ 3 บรรทัดนี้)
+    const oldBar = document.querySelector('.site-announcement-bar'); if (oldBar) oldBar.remove();
+    return;
     const text = (rawText && String(rawText).trim()) || '';
     let bar = document.querySelector('.site-announcement-bar');
 

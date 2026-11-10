@@ -57,3 +57,11 @@
   .stats .stat-value { font-size: 19px; }
   .stats .stat-value .unit { font-size: 11px; margin-left: 3px; }
 }
+
+/* ===== การ์ดสถิติ 4 ใบ: พื้นหลังสีดำล้วน (ซ่อนลายคริสตัลแดง) ===== */
+.stats .stat-card > canvas.scfx-bg{ display: none; }
+.stats .stat-card{
+  background: #000;
+  border-color: rgba(255,255,255,.1);
+  box-shadow: none;
+}

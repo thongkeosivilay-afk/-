@@ -18,6 +18,7 @@
 <script src="home-trial.js?v=2"></script>
 <link href="responsive.css?v=20261110a" rel="stylesheet"/>
 <link href="site-bg.css?v=20261110b" rel="stylesheet"/>
+<link href="category-hero.css?v=20261110a" rel="stylesheet"/>
 </head>
 <body>
 <div class="shell">
@@ -42,6 +43,13 @@
 </div>
 </header>
 
+  <!-- Hero: รูปปกหมวด + ชื่อหมวด + จำนวนรายการ (category.js เติมให้) -->
+  <section class="cat-hero" aria-label="hero">
+    <div class="cat-hero-art" aria-hidden="true"><img id="hero-img" alt="" hidden></div>
+    <div class="cat-hero-txt"><h2 id="hero-title"></h2><p id="hero-count"></p></div>
+  </section>
+  <!-- แถบหมวดหมู่ทั้งหมด (category.js เติมให้) -->
+  <nav class="cat-chips" id="cat-chips" aria-label="categories"></nav>
   <!-- Back link -->
   <a class="page-back" href="index.html#categories">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -90,7 +98,7 @@
      script.js: login-state / chat fab / interaction ອື່ນໆຂອງໜ້າ -->
 <script src="page-transition.js"></script>
 <script src="storefront-data.js"></script>
-<script src="category.js?v=20261026a"></script>
+<script src="category.js?v=20261110a"></script>
 <script src="prod-card-beam.js"></script>
 <script src="tabbar-close-fx.js?v=20261004b"></script>
 <script src="script.js?v=20261110d"></script>

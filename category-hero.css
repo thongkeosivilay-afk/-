@@ -1,0 +1,25 @@
+/* category-hero.css — หน้าหมวดหมู่: รูปปกเต็มขอบ + ชื่อหมวด + จำนวนรายการ + แถบหมวดหมู่ */
+.cat-hero{ position:relative; height:248px; margin-top:6px; overflow:hidden; isolation:isolate;
+  border-top:2px solid var(--red); box-shadow:0 -6px 22px -8px rgba(255,0,1,.7); }
+.cat-hero-art{ position:absolute; inset:0; z-index:-1;
+  -webkit-mask-image:linear-gradient(#000 55%,transparent 100%); mask-image:linear-gradient(#000 55%,transparent 100%);
+  background:
+    radial-gradient(ellipse 55% 70% at 50% 62%,rgba(255,0,1,.55),transparent 70%),
+    radial-gradient(ellipse 40% 60% at 12% 40%,rgba(255,70,50,.35),transparent 70%),
+    radial-gradient(ellipse 40% 60% at 90% 35%,rgba(160,0,0,.5),transparent 70%),
+    linear-gradient(180deg,#2a0306,#120102); }
+.cat-hero-art img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+.cat-hero-art img[hidden]{ display:none; }
+.cat-hero::after{ content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,.05) 35%,rgba(0,0,0,.45) 72%,transparent 100%); }
+.cat-hero-txt{ position:absolute; left:0; right:0; top:78px; padding:0 16px; text-align:center; color:#fff; }
+.cat-hero-txt h2{ margin:0; font-size:30px; line-height:1.15; font-weight:800; text-shadow:0 2px 14px rgba(0,0,0,.65); }
+.cat-hero-txt p{ margin:6px 0 0; font-size:15px; color:#ececec; text-shadow:0 1px 10px rgba(0,0,0,.75); }
+
+.cat-chips{ display:flex; gap:10px; overflow-x:auto; margin-top:-14px; padding:0 16px 16px; position:relative; z-index:1;
+  scrollbar-width:none; border-bottom:1px solid var(--card-border,#1e1e1e); }
+.cat-chips::-webkit-scrollbar{ display:none; }
+.cat-chip{ flex:none; padding:8px 18px; border-radius:12px; border:1px solid var(--card-border,#1e1e1e);
+  background:var(--card,#111); color:var(--text,#f1f1f1); font-size:15px; font-weight:600; text-decoration:none; white-space:nowrap; }
+.cat-chip.on{ background:var(--red,#ff0001); border-color:var(--red,#ff0001); color:#fff; box-shadow:0 0 18px -4px rgba(255,0,1,.8); }
+.cat-chip:focus-visible{ outline:2px solid #fff; outline-offset:3px; }

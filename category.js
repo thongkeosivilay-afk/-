@@ -373,6 +373,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const products = window.StorefrontData.productsByCategoryName(data, category.name);
 
+      // ---- Hero (รูปปก+ชื่อหมวด+จำนวนรายการ) และแถบหมวดหมู่ ----
+      (function () {
+        const hTitle = document.querySelector('#hero-title');
+        const hCount = document.querySelector('#hero-count');
+        const hImg = document.querySelector('#hero-img');
+        const chips = document.querySelector('#cat-chips');
+        if (hTitle) hTitle.textContent = category.name;
+        if (hCount) hCount.textContent = products.length + ' ລາຍການ';
+        const heroSrc = data.store && data.store.heroImage;
+        if (hImg && heroSrc) { hImg.src = heroSrc; hImg.hidden = false; }
+        if (!chips) return;
+        const cats = (data.categories || []).filter((c) => c && c.name);
+        const all = (data.products || []).length;
+        chips.innerHTML = `<a class="cat-chip" href="index.html#categories">ທັງໝົດ (${all})</a>` + cats.map((c) => {
+          const n = window.StorefrontData.productsByCategoryName(data, c.name).length;
+          const on = c.index === catIndex;
+          return `<a class="cat-chip${on ? ' on' : ''}" href="category.html?cat=${encodeURIComponent(c.index)}"${on ? ' aria-current="page"' : ''}>${escapeHtml(c.name)} (${n})</a>`;
+        }).join('');
+        const active = chips.querySelector('.cat-chip.on');
+        if (active) chips.scrollLeft = Math.max(0, active.offsetLeft - (chips.clientWidth - active.offsetWidth) / 2);
+      })();
+
       if (!products.length) {
         showEmpty('ຍັງບໍ່ມີສິນຄ້າໃນໝວດນີ້<br>ກະລຸນາກັບມາເບິ່ງພາຍຫຼັງ');
         return;
