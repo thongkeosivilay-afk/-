@@ -214,10 +214,15 @@
     }
   }
 
+  var SHOW_DELAY = 5000;   // ms — รอก่อนแสดงระบบตั้งชื่อ (ปรับตรงนี้ได้)
+
   function boot() {
     fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' })
       .then(function (r) { return r.json(); })
-      .then(function (d) { if (d && d.loggedIn && d.user && d.user.needsUsername) mount(); })
+      .then(function (d) {
+        // รอ SHOW_DELAY (5 วิ) หลังเข้าหน้าเว็บ ก่อนให้ระบบตั้งชื่อ/ข้อความขึ้น — ระหว่างรอใช้งานหน้าเว็บได้ปกติ
+        if (d && d.loggedIn && d.user && d.user.needsUsername) setTimeout(mount, SHOW_DELAY);
+      })
       .catch(function () { /* เงียบ — ไม่ให้กระทบหน้าเว็บ */ });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
