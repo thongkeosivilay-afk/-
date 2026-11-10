@@ -1,0 +1,15 @@
+/* all-products-trial.css — แถว "สินค้าทั้งหมด" แยกตามหมวดหมู่ (เลื่อนซ้าย-ขวา 2 การ์ด/หน้าจอ)
+   ตัวการ์ดใช้สไตล์ .prod-card เดิมของเว็บ (style.css) — ไฟล์นี้จัดเฉพาะแถวและหัวหมวด */
+.ap-section{ margin-top:8px; }
+.ap-cat{ margin:0 0 22px; }
+.ap-cat-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.ap-cat-name{ font-size:16px; font-weight:700; color:var(--text); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:flex; align-items:center; gap:8px; }
+.ap-cat-name::before{ content:""; width:4px; height:16px; border-radius:2px; background:var(--red); flex-shrink:0; }
+.ap-more{ font-size:12.5px; color:var(--red); text-decoration:none; font-weight:600; flex-shrink:0; }
+.ap-row{
+  display:flex; gap:12px; overflow-x:auto; overflow-y:hidden; padding:14px 0 10px; margin-top:-8px;
+  scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain; scrollbar-width:none;
+}
+.ap-row::-webkit-scrollbar{ display:none; }
+.ap-row > .prod-card.wb-pc{ flex:0 0 calc((100% - 12px) / 2); min-width:0; width:auto; scroll-snap-align:start; cursor:pointer; }
+.ap-empty{ padding:6px 0; font-size:13px; color:var(--text-faint); }
