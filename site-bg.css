@@ -1,0 +1,43 @@
+/* site-bg.css — พื้นหลังเทา #666666 ผสมดำ #000000 ผืนเดียว (โหมดมืดเท่านั้น)
+   ไม่ทำงานเมื่อ: โหมดสว่าง หรือ เปิดพื้นหลังสภาพอากาศ (html.wfx-on) */
+
+:root:not([data-theme="light"]):not(.wfx-on) body,
+:root:not([data-theme="light"]):not(.wfx-on) .shell{
+  background:transparent;
+}
+
+:root:not([data-theme="light"]):not(.wfx-on) body::before,
+:root:not([data-theme="light"]):not(.wfx-on) body::after{
+  content:""; position:fixed; z-index:-1; pointer-events:none;
+}
+
+/* ชั้นแสงเทาไล่เป็นดำ (จุดหยุดสีแบบ ease เพื่อไม่ให้เห็นขอบ/แถบ) */
+:root:not([data-theme="light"]):not(.wfx-on) body::before{
+  inset:-20%;
+  background:
+    radial-gradient(ellipse 70% 60% at 28% 22%,
+      rgba(102,102,102,1) 0%, rgba(102,102,102,.93) 8%, rgba(102,102,102,.80) 17%,
+      rgba(102,102,102,.64) 27%, rgba(102,102,102,.47) 38%, rgba(102,102,102,.31) 50%,
+      rgba(102,102,102,.18) 62%, rgba(102,102,102,.08) 75%, rgba(102,102,102,.02) 88%,
+      rgba(102,102,102,0) 100%),
+    radial-gradient(ellipse 60% 55% at 80% 85%,
+      rgba(102,102,102,.55) 0%, rgba(102,102,102,.46) 10%, rgba(102,102,102,.34) 22%,
+      rgba(102,102,102,.22) 36%, rgba(102,102,102,.12) 50%, rgba(102,102,102,.05) 66%,
+      rgba(102,102,102,.01) 84%, rgba(102,102,102,0) 100%);
+  animation:siteBgDrift 28s ease-in-out infinite alternate;
+  will-change:transform;
+}
+
+/* เกรนบาง ๆ กันสีเป็นแถบ (banding) */
+:root:not([data-theme="light"]):not(.wfx-on) body::after{
+  inset:0; opacity:.07; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+@keyframes siteBgDrift{
+  from{ transform:translate3d(-3%,-2%,0) scale(1); }
+  to{ transform:translate3d(3%,3%,0) scale(1.08); }
+}
+@media (prefers-reduced-motion:reduce){
+  :root:not([data-theme="light"]):not(.wfx-on) body::before{ animation:none; }
+}
