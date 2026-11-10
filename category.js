@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const chips = document.querySelector('#cat-chips');
         if (hTitle) hTitle.textContent = category.name;
         if (hCount) hCount.textContent = products.length + ' ລາຍການ';
-        const heroSrc = data.store && data.store.heroImage;
+        const heroSrc = category.image; // รูปปกของหมวดนั้น (ตั้งในห้องแอดมิน) — ไม่มีรูป = ใช้ลายแดงดำแทน
         if (hImg && heroSrc) { hImg.src = heroSrc; hImg.hidden = false; }
         if (!chips) return;
         const cats = (data.categories || []).filter((c) => c && c.name);
