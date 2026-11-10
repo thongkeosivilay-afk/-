@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // ---- ไอคอนแอดมินลอย (เมนูลัด 2 ชั้นไปหน้า admin): โหลดเฉพาะแอดมินที่ล็อกอินอยู่เท่านั้น ----
       // คนทั่วไป/ยังไม่ล็อกอิน จะไม่โหลดไฟล์เหล่านี้เลย (ฝั่ง admin.html ยังเช็คสิทธิ์ซ้ำที่ server เหมือนเดิม)
-      if (data.loggedIn && data.user && data.user.isAdmin && !document.querySelector('.admin-fab')) {
+      if (false /* ปิดไอคอนแอดมินลอย: อยากเปิดกลับให้เปลี่ยน false เป็นตัวเดิม */ && data.loggedIn && data.user && data.user.isAdmin && !document.querySelector('.admin-fab')) {
         const fabCss = document.createElement('link');
         fabCss.rel = 'stylesheet';
         fabCss.href = 'admin-fab.css?v=20261024c';
