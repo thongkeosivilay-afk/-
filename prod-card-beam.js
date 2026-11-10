@@ -53,21 +53,25 @@
   }
 
   function start() {
-    var grid = document.querySelector('#prod-grid');
-    if (!grid) return;
-
+    // เดิมผูกเฉพาะการ์ดใน #prod-grid (หน้าหมวดหมู่) ทำให้หน้าแรก (#allProducts / ขายดีประจำอาทิตย์)
+    // ไม่เคยได้ class in-view -> แสงวิ่งค้างนิ่ง  ตอนนี้ดูทั้งหน้า ไม่ว่าการ์ดจะถูกสร้างตอนไหน
     if ('IntersectionObserver' in window) {
       io = new IntersectionObserver(function (entries) {
         entries.forEach(function (entry) {
           entry.target.classList.toggle('in-view', entry.isIntersecting);
         });
-      }, { rootMargin: '80px', threshold: 0 });
+      }, { rootMargin: '120px', threshold: 0 });
     }
 
-    scan(grid);
+    var root = document.body || document.documentElement;
+    scan(root);
 
-    // grid ถูกเรนเดอร์ใหม่ (เช่นหลังเช็คราคาตัวแทน) -> ผูกการ์ดใบใหม่อัตโนมัติ
-    new MutationObserver(function () { scan(grid); }).observe(grid, { childList: true });
+    var pending = false;
+    new MutationObserver(function () {
+      if (pending) return;
+      pending = true;
+      (window.requestAnimationFrame || setTimeout)(function () { pending = false; scan(root); });
+    }).observe(root, { childList: true, subtree: true });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

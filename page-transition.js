@@ -10,9 +10,9 @@
   try {
     var nav = navigator;
     var conn = nav.connection || {};
-    if ((nav.hardwareConcurrency && nav.hardwareConcurrency <= 4) ||
-        (nav.deviceMemory && nav.deviceMemory <= 4) ||
-        conn.saveData) {
+    // เดิมเครื่อง CPU<=4 คอร์ / RAM<=4GB (มือถือส่วนใหญ่) ถูกปิดแอนิเมชั่นหมด -> แสงวิ่งไม่เล่น
+    // ตอนนี้ปิดเฉพาะคนที่เปิด Data Saver จริงๆ เท่านั้น
+    if (conn.saveData) {
       document.documentElement.classList.add('perf-lite');
     }
   } catch (e) {}
