@@ -1,0 +1,29 @@
+/* daily-sales-admin.css — การ์ด "ຍອດຂາຍມື້ນີ້" (ນັບຍອດຂາຍເປັນວັນ ຣີເຊັດທຸກ 00:00 ເວລາລາວ) */
+.ds-card{
+  position:relative; margin-bottom:14px; padding:14px 14px 12px; border-radius:20px; overflow:hidden;
+  background:linear-gradient(180deg, rgba(35,197,94,0.10), rgba(35,197,94,0.02));
+  border:1px solid rgba(35,197,94,0.32);
+}
+.ds-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.ds-title{ font-weight:700; font-size:13px; }
+.ds-sub{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); margin-top:3px; }
+.ds-badge{ flex-shrink:0; font-size:10px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+.ds-badge.ds-up{ background:rgba(35,197,94,0.14); color:#23c55e; }
+.ds-badge.ds-down{ background:rgba(255,0,1,0.14); color:#ff6767; }
+.ds-badge.ds-flat{ background:rgba(255,255,255,0.06); color:#a9a6a3; }
+.ds-value{ font-weight:700; font-size:30px; line-height:1; margin-bottom:4px; font-variant-numeric:tabular-nums; }
+.ds-value span{ font-size:12px; color:var(--gx-ink-dim,#9a9694); font-weight:600; margin-left:5px; }
+.ds-meta{ font-size:10.5px; color:var(--gx-ink-dim,#9a9694); display:flex; flex-wrap:wrap; gap:4px 14px; margin-bottom:12px; }
+.ds-meta b{ color:inherit; font-weight:700; opacity:.95; }
+.ds-bars{ display:grid; grid-template-columns:repeat(24,1fr); align-items:end; gap:2px; height:44px; }
+.ds-bar{ background:rgba(35,197,94,0.30); border-radius:2px 2px 0 0; min-height:2px; transition:height .4s ease; }
+.ds-bar.ds-now{ background:#23c55e; }
+.ds-bar.ds-future{ background:rgba(255,255,255,0.07); min-height:2px; }
+.ds-axis{ display:flex; justify-content:space-between; font-size:9px; color:var(--gx-ink-dim,#9a9694); margin-top:4px; }
+.ds-foot{ margin-top:10px; }
+.ds-track{ height:5px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden; }
+.ds-fill{ height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,#23c55e,#7be0a3); transition:width .6s ease; }
+.ds-reset{ display:flex; justify-content:space-between; font-size:10px; color:var(--gx-ink-dim,#9a9694); margin-top:6px; }
+.ds-reset b{ font-variant-numeric:tabular-nums; font-weight:700; }
+.ds-err{ font-size:11px; color:#ff9a9a; margin-top:8px; display:none; }
+.ds-card.ds-failed .ds-err{ display:block; }
