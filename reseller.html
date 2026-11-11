@@ -20,6 +20,7 @@
 <link href="weather-fx.css?v=20261011a" rel="stylesheet"/>
 <link href="home-trial.css?v=9" rel="stylesheet"/>
 <script src="home-trial.js?v=2"></script>
+<link href="discord-widget.css" rel="stylesheet"/>
 <link href="responsive.css?v=20261110a" rel="stylesheet"/>
 <link href="site-bg.css?v=20261110b" rel="stylesheet"/>
 <link href="polish.css?v=3" rel="stylesheet"/>
@@ -153,11 +154,36 @@
 </div>
 </main>
 <div class="toast" id="toast"></div>
-<footer>
+<footer class="sf">
+<div class="sf-brand">
 <div class="footer-logo logo"></div>
 <div class="fname en"></div>
+</div>
+<!-- ແກ້ຄຳອະທິບາຍຮ້ານໄດ້ຢູ່ບ່ອນນີ້ -->
+<p class="sf-desc">ຮ້ານຈຳໜ່າຍໂປຣແກຣມຊ່ວຍເລ່ນມືຖື ແລະ ໄກ່ໂຄ້ດເວລ ຕອບໂຈດທຸກການໃຊ້ງານ ບໍລິການວ່ອງໄວ ປອດໄພ ຕະຫຼອດ 24 ຊົ່ວໂມງ</p>
+<div class="sf-cols">
+<div class="sf-col">
+<h4>ລິ້ງດ່ວນ</h4>
+<a href="index.html#categories">ສິນຄ້າທັງໝົດ</a>
+<a href="topup.html">ເຕີມເງິນ</a>
+<a href="orders.html">ປະຫວັດສັ່ງຊື້</a>
+</div>
+<div class="sf-col">
+<h4>ບໍລິການ</h4>
+<a href="leaderboard.html">ຈັດອັນດັບຍອດເຕີມ</a>
+<a href="reseller.html">ສະໝັກຕົວແທນ</a>
+</div>
+</div>
+<!-- discord-widget.js ຈະໃສ່ການ໌ດ Discord ໃນບ່ອນນີ້ -->
+<div id="discord-widget"></div>
+<div class="sf-rule"></div>
+<div class="sf-copy">© 2026 <span class="fcopy-name en"></span></div>
+<nav class="sf-legal">
+<a href="privacy.html">ນະໂຍບາຍຄວາມເປັນສ່ວນຕົວ</a>
+<a href="#footer-social">ຕິດຕໍ່ພວກເຮົາ</a>
+</nav>
 <div class="fsocial" id="footer-social"></div>
-<div class="fcopy">© 2026 <span class="fcopy-name en"></span> . ຄວາມເປັນສ່ວນຕົວ</div>
+<a class="u-hidden u-fine-print" href="admin.html" id="admin-link">Admin</a>
 </footer>
 </div>
 <script src="page-transition.js?v=2"></script>
@@ -169,5 +195,6 @@
 <script src="reseller.js?v=20261014b"></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
 <script src="/maintenance-watch.js?v=20261014a" defer></script>
+<script src="discord-widget.js" defer></script>
 </body>
 </html>
