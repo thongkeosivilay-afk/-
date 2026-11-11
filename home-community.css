@@ -1,0 +1,146 @@
+/* =====================================================================
+   home-community.css — แถบประกาศ + การ์ด Discord บนหน้าแรก (index.html)
+   ใช้คู่กับ home-community.js
+     #homeAnnounce  : แถบ "ປະກາດ" (ข้อความวิ่ง) อยู่ใต้แบนเนอร์ ก่อนการ์ดสถิติ
+     #homeDiscord   : การ์ด Discord อยู่ใต้การ์ดสถิติ ก่อนหัวข้อ "ເປັນຫຍັງຕ້ອງເລືອກ"
+   ข้อความประกาศแอดมินแก้ได้ที่ ห้องแอดมิน > ຕັ້ງຄ່າຮ້ານ > ຂໍ້ຄວາມປະກາດ
+   ===================================================================== */
+
+/* ---------- โทนสี (มืด = ค่าเริ่มต้น, สว่าง = data-theme="light") ---------- */
+.hc-ann, .hc-dc{
+  --hc-bg:#0a0a0a; --hc-bd:#1e1e1e; --hc-tx:#f4f4f5; --hc-sub:#8d8d94;
+  --hc-div:#2a2a2e; --hc-btn:#141416; --hc-btn-bd:#2a2a2e;
+  --hc-sh:0 10px 22px -16px rgba(0,0,0,.75);
+  --hc-gray:#6b6f76;
+}
+:root[data-theme="light"] .hc-ann,
+:root[data-theme="light"] .hc-dc{
+  --hc-bg:#fff; --hc-bd:#e6e6ea; --hc-tx:#16161a; --hc-sub:#6b6b75;
+  --hc-div:#e6e6ea; --hc-btn:#f6f6f8; --hc-btn-bd:#dcdce2;
+  --hc-sh:0 2px 10px rgba(20,20,40,.12);
+  --hc-gray:#9a9ea5;
+}
+
+/* ---------- แถบประกาศ ---------- */
+.hc-ann{
+  position:relative; z-index:1;
+  margin:14px 20px 0; height:36px;
+  display:flex; align-items:stretch;
+  background:var(--hc-bg); border:1px solid var(--hc-bd); border-radius:14px;
+  box-shadow:var(--hc-sh); overflow:hidden;
+}
+.hc-ann[hidden]{ display:none; }
+.hc-ann-lab{
+  display:flex; align-items:center; gap:9px; flex-shrink:0;
+  padding:0 14px 0 13px;
+  border-right:1px solid var(--hc-div);
+  font-size:15px; font-weight:500; line-height:1; color:var(--hc-tx); white-space:nowrap;
+}
+.hc-ann-lab svg{ width:20px; height:20px; flex-shrink:0; color:var(--red,#ff0001); }
+.hc-ann-win{ flex:1; min-width:0; overflow:hidden; display:flex; align-items:center; }
+.hc-ann-track{
+  display:flex; width:max-content; white-space:nowrap;
+  animation:hcMarquee var(--hc-dur,14s) linear infinite;
+}
+.hc-ann-grp{ display:flex; flex-shrink:0; }
+.hc-ann-grp span{
+  flex-shrink:0; padding-right:56px;
+  font-size:15px; line-height:1; color:var(--hc-tx);
+}
+@keyframes hcMarquee{ to{ transform:translate3d(-50%,0,0); } }
+
+/* ผู้ที่ปิดแอนิเมชันในเครื่อง: ไม่วิ่ง แสดงข้อความเดียว ตัดท้ายด้วย … */
+@media (prefers-reduced-motion:reduce){
+  .hc-ann-track{ animation:none; width:100%; }
+  .hc-ann-grp{ width:100%; }
+  .hc-ann-grp span{ padding:0 12px; overflow:hidden; text-overflow:ellipsis; }
+  .hc-ann-grp ~ .hc-ann-grp{ display:none; }
+  .hc-ann-grp span ~ span{ display:none; }
+}
+
+/* แถบประกาศแสดงอยู่ -> ลดช่องว่างบนของการ์ดสถิติให้พอดีกับรูปอ้างอิง */
+.hc-ann:not([hidden]) ~ .stats{ padding-top:14px; }
+
+/* ---------- การ์ด Discord ---------- */
+.hc-dc{
+  position:relative; z-index:1;
+  margin:6px 20px 0; padding:12px;
+  background:var(--hc-bg); border:1px solid var(--hc-bd); border-radius:16px;
+  box-shadow:var(--hc-sh);
+}
+.hc-dc:empty{ display:none; }
+
+.hc-dc-top{ display:flex; align-items:center; gap:12px; }
+.hc-dc-ico{
+  width:40px; height:40px; flex-shrink:0; border-radius:10px;
+  background:#5865f2; display:grid; place-items:center;
+}
+.hc-dc-ico svg{ width:24px; height:24px; fill:#fff; }
+.hc-dc-info{ flex:1; min-width:0; }
+.hc-dc-name{
+  font-size:16px; font-weight:500; line-height:1.25; color:var(--hc-tx);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.hc-dc-on{
+  display:flex; align-items:center; gap:7px; margin-top:3px;
+  font-size:13px; line-height:1.2; color:var(--hc-sub); white-space:nowrap;
+}
+.hc-dc-on i{ width:7px; height:7px; border-radius:50%; background:#3ba55d; flex-shrink:0; }
+
+/* รูปสมาชิกซ้อนกัน 3 คน + ไอคอน Discord สีเทา */
+.hc-dc-stack{ display:flex; flex-shrink:0; }
+.hc-dc-stack > *{
+  width:24px; height:24px; box-sizing:border-box; flex-shrink:0;
+  border-radius:50%; border:2px solid var(--hc-bg); margin-left:-8px;
+  object-fit:cover; background:#2a2a2e;
+}
+.hc-dc-stack > :first-child{ margin-left:0; }
+.hc-dc-stack .hc-dc-more{ background:var(--hc-gray); display:grid; place-items:center; }
+.hc-dc-stack .hc-dc-more svg{ width:12px; height:12px; fill:#fff; }
+
+/* ปุ่ม 2 ปุ่ม */
+.hc-dc-act{ display:flex; gap:8px; margin-top:12px; }
+.hc-dc-act > *{
+  flex:1; min-width:0; height:36px; border-radius:8px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  font-size:15px; font-weight:500; line-height:1; white-space:nowrap;
+  transition:filter .15s, transform .15s, background .15s;
+}
+.hc-dc-act > *:active{ transform:scale(.98); }
+.hc-dc-mem{
+  background:var(--hc-btn); border:1px solid var(--hc-btn-bd); color:var(--hc-tx);
+  cursor:pointer; font-family:inherit; padding:0;
+}
+.hc-dc-mem svg{ width:18px; height:18px; transition:transform .25s ease; }
+.hc-dc.open .hc-dc-mem svg{ transform:rotate(180deg); }
+.hc-dc-join{ background:#5865f2; color:#fff; text-decoration:none; }
+.hc-dc-join:hover{ filter:brightness(1.1); }
+.hc-dc-join svg{ width:20px; height:20px; fill:#fff; flex-shrink:0; }
+.hc-dc-act > :only-child{ flex:1; }
+
+/* รายชื่อสมาชิกที่ออนไลน์ (กาง/หุบ) */
+.hc-dc-list{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s ease; }
+.hc-dc.open .hc-dc-list{ grid-template-rows:1fr; }
+.hc-dc-list-w{ min-height:0; overflow:hidden; }
+.hc-dc-list-in{
+  margin-top:12px; padding-top:4px; border-top:1px solid var(--hc-div);
+  max-height:200px; padding-bottom:4px; overflow-y:auto; scrollbar-width:none;
+}
+.hc-dc-list-in::-webkit-scrollbar{ display:none; }
+.hc-dc-m{ display:flex; align-items:center; gap:10px; height:40px; }
+.hc-dc-av{ position:relative; width:28px; height:28px; flex-shrink:0; }
+.hc-dc-av img{ width:100%; height:100%; border-radius:50%; object-fit:cover; background:#2a2a2e; display:block; }
+.hc-dc-av em{
+  position:absolute; right:-3px; bottom:-3px; width:11px; height:11px; border-radius:50%;
+  box-shadow:0 0 0 2.5px var(--hc-bg); background:#3ba55d;
+}
+.hc-dc-av em.idle{ background:#e5b53c; }
+.hc-dc-av em.dnd{ background:#e5484d; }
+.hc-dc-mname{ font-size:15px; color:var(--hc-tx); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hc-dc-empty{ padding:14px 0 6px; text-align:center; font-size:13px; color:var(--hc-sub); }
+
+@media (max-width:340px){
+  .hc-ann, .hc-dc{ margin-left:14px; margin-right:14px; }
+  .hc-dc-name{ font-size:15px; }
+  .hc-dc-act > *{ font-size:14px; }
+}

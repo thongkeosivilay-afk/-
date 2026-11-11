@@ -22,6 +22,7 @@
 <noscript><link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700;800&amp;family=Noto+Sans+Lao+Looped:wght@600;700;800&amp;family=Orbitron:wght@600;700;800;900&amp;family=Rajdhani:wght@500;600;700&amp;family=Lilita+One&amp;display=swap" rel="stylesheet"/></noscript>
 <link href="weather-fx.css?v=20261011a" rel="stylesheet"/>
 <link href="discord-widget.css" rel="stylesheet"/>
+<link href="home-community.css?v=20261111a" rel="stylesheet"/>
 <link href="responsive.css?v=20261110a" rel="stylesheet"/>
 <link href="site-bg.css?v=20261110b" rel="stylesheet"/>
 <link href="polish.css?v=3" rel="stylesheet"/>
@@ -62,6 +63,8 @@
 </section>
 <!-- Banner: ใช้รูป Hero เดิมของเว็บ (แอดมินตั้งไว้) — storefront.js ใส่รูปให้อัตโนมัติ -->
 <div class="promo"></div>
+<!-- แถบประกาศ (home-community.js) — ข้อความมาจาก ห้องแอดมิน > ຕັ້ງຄ່າຮ້ານ > ຂໍ້ຄວາມປະກາດ ; ปล่อยว่าง = ซ่อนแถบ -->
+<div id="homeAnnounce" hidden></div>
 <!-- Promotions: การ์ดโปรโมชั่น (promo-home.js) — แอดมินสร้างในห้องแอดมิน > ໂປຣໂມຊັ່ນ ; ไม่มีโปรที่เปิดอยู่ = ซ่อนทั้งส่วน -->
 <section class="section promo-sec u-hidden" id="promoSection"><div class="pm-list" id="promoList"></div></section>
 <!-- Stats -->
@@ -83,6 +86,8 @@
 <div><div class="stat-label">ຂາຍແລ້ວ</div><div class="stat-value">0<span class="unit">ຊິ້ນ</span></div></div>
 </div>
 </div>
+<!-- การ์ด Discord (home-community.js) -->
+<div id="homeDiscord"></div>
 <!-- Why choose us -->
 <section class="section">
 <div class="section-title u-mb-16">ເປັນຫຍັງຕ້ອງເລືອກ <span class="cat"> <span class="brand-name-inline"></span></span></div>
@@ -168,8 +173,6 @@
 <a href="reseller.html">ສະໝັກຕົວແທນ</a>
 </div>
 </div>
-<!-- discord-widget.js ຈະໃສ່ການ໌ດ Discord ໃນບ່ອນນີ້ -->
-<div id="discord-widget"></div>
 <div class="sf-rule"></div>
 <div class="sf-copy">© 2026 <span class="fcopy-name en"></span></div>
 <nav class="sf-legal">
@@ -202,7 +205,7 @@
 <script src="tabbar-close-fx.js?v=20261004b"></script>
 <script src="script.js?v=20261110d"></script>
 <script src="name-gate.js?v=20261110d" defer></script>
-<script src="discord-widget.js" defer></script>
+<script src="home-community.js?v=20261111a" defer></script>
 <script src="stat-card-fx.js?v=20261025b" defer></script>
 <script src="pikachu-fab.js?v=20261025b" defer></script>
 <script src="weather-fx.js?v=20261011a" defer></script>
