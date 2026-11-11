@@ -1896,6 +1896,58 @@ async function getSoldCountsByProductName(env) {
   }
 }
 
+/* ---------- helper: โปรโมชั่นที่กำลังใช้งานอยู่ (ตาราง promotions / promotion_items) ----------
+   คืน { list: [{id,title,mode,percent,applyAll,startsAt,endsAt,productCount}], byProduct: Map(productId -> [{id,mode,percent,amount,endsAt}]) }
+   ถ้ายังไม่ได้รัน migration (ไม่มีตาราง) หรือ query พัง -> คืนค่าว่าง ไม่ให้หน้าร้านพังไปด้วย */
+async function getActivePromotions(env) {
+  const empty = { list: [], byProduct: new Map() };
+  try {
+    const nowIso = new Date().toISOString();
+    const promos = await supabaseSelect(env, 'promotions', {
+      select: 'id,title,mode,percent,apply_all,starts_at,ends_at',
+      active: 'eq.true',
+      starts_at: `lte.${nowIso}`,
+      ends_at: `gt.${nowIso}`,
+      order: 'ends_at.asc',
+    });
+    if (!promos || !promos.length) return empty;
+    const items = await supabaseSelect(env, 'promotion_items', {
+      select: 'promotion_id,product_id,amount',
+      promotion_id: `in.(${promos.map((p) => p.id).join(',')})`,
+      limit: '5000',
+    });
+    const itemsByPromo = new Map();
+    (items || []).forEach((it) => {
+      if (!itemsByPromo.has(it.promotion_id)) itemsByPromo.set(it.promotion_id, []);
+      itemsByPromo.get(it.promotion_id).push(it);
+    });
+    const byProduct = new Map();
+    const push = (pid, v) => { if (!byProduct.has(pid)) byProduct.set(pid, []); byProduct.get(pid).push(v); };
+    const list = promos.map((pr) => {
+      const its = itemsByPromo.get(pr.id) || [];
+      const base = { id: pr.id, mode: pr.mode, percent: pr.percent == null ? null : Number(pr.percent), endsAt: pr.ends_at };
+      its.forEach((it) => push(it.product_id, { ...base, amount: it.amount == null ? null : Number(it.amount) }));
+      return {
+        id: pr.id, title: pr.title, mode: pr.mode,
+        percent: base.percent, applyAll: !!pr.apply_all,
+        startsAt: pr.starts_at, endsAt: pr.ends_at,
+        productIds: its.map((it) => it.product_id),
+        // โปรแบบ "% ทุกสินค้า" ไม่มีแถวใน promotion_items — ฝั่งหน้าร้านจะถือว่าครอบคลุมทั้งร้าน
+      };
+    });
+    // โปรแบบ % ทุกสินค้า: ต้องใส่ให้ทุกสินค้าด้วย (ทำที่จุดเรียกใช้ เพราะต้องรู้รายการสินค้าทั้งหมด)
+    list.forEach((pr) => {
+      if (pr.mode === 'percent' && pr.applyAll) {
+        byProduct.set('*', (byProduct.get('*') || []).concat([{ id: pr.id, mode: 'percent', percent: pr.percent, amount: null, endsAt: pr.endsAt }]));
+      }
+    });
+    return { list, byProduct };
+  } catch (err) {
+    console.error('getActivePromotions skipped:', err);
+    return empty;
+  }
+}
+
 /* ---------- 6) /api/public/storefront ----------
    ดึงหมวดหมู่ (category_1..4 name/image จาก site_settings) + สินค้า (products ที่ไม่ถูก
    archived) + สต็อกจริงของแต่ละชิ้น (ผ่าน RPC product_stock / product_duration_stock —
@@ -1929,7 +1981,7 @@ async function handlePublicStorefront(request, env) {
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_enabled`),
     ];
 
-    const [settingsRows, products, durations, userCount, totalSold, soldCountsByName] = await Promise.all([
+    const [settingsRows, products, durations, userCount, totalSold, soldCountsByName, promoData] = await Promise.all([
       supabaseSelect(env, 'site_settings', {
         select: siteSettingsColumns.join(','),
         id: 'eq.1',
@@ -1948,6 +2000,7 @@ async function handlePublicStorefront(request, env) {
       getRegisteredUserCount(env),
       getSoldCount(env),
       getSoldCountsByProductName(env),
+      getActivePromotions(env),
     ]);
 
     const settings = settingsRows[0] || {};
@@ -1995,6 +2048,8 @@ async function handlePublicStorefront(request, env) {
         stock: productStockMap.get(p.id) ?? 0,
         durations: durationsWithStock,
         soldCount: soldCountsByName.get(p.name) || 0,
+        // โปรโมชั่นที่ใช้กับสินค้านี้ ณ ตอนนี้ (หน้าร้านคิดราคาโปรจากนี้ — ราคาที่หักจริงคิดใน SQL get_effective_price)
+        promos: (promoData.byProduct.get(p.id) || []).concat(promoData.byProduct.get('*') || []),
       };
     });
 
@@ -2057,6 +2112,7 @@ async function handlePublicStorefront(request, env) {
         },
       },
       categories,
+      promotions: promoData.list,
       stats: {
         productCount: visibleProductsWithStock.length,
         totalStock,
