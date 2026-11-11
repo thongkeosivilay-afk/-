@@ -32,3 +32,18 @@
   -webkit-mask-image:none; mask-image:none; }
 .cat-hero-art:has(img:not([hidden])){ min-height:0; background:none; }
 .cat-hero-art img{ position:static; inset:auto; width:100%; height:auto; max-width:100%; object-fit:contain; }
+
+/* ---- v3 (11 พ.ย.): แบบตามภาพตัวอย่าง — รูปปกใหญ่ล้นขอบจอ ขอบเบลอจางกลืนพื้นดำ ไม่มีเส้นแข็ง ---- */
+:root{ --hero-zoom:114%; --hero-shift:-3%; } /* ปรับขนาดรูปปก: 100% = พอดีจอ ยิ่งมากยิ่งล้น */
+.cat-hero{ overflow:hidden; border-top:0; box-shadow:none; margin-top:0;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 16%,#000 78%,transparent 100%);
+          mask-image:linear-gradient(180deg,transparent 0,#000 16%,#000 78%,transparent 100%); }
+.cat-hero-art img{ width:var(--hero-zoom); max-width:none; margin-left:var(--hero-shift); }
+.cat-hero::before{ content:""; position:absolute; left:0; right:0; top:0; height:46px; z-index:1; pointer-events:none;
+  background:radial-gradient(ellipse 70% 100% at 50% 0,rgba(255,0,1,.30),transparent 75%); filter:blur(8px); }
+/* เส้นใต้แถบหมวดหมู่: จางมาก และจางหายทั้งสองข้าง */
+.cat-chips{ border-bottom:1px solid transparent; padding-bottom:16px;
+  border-image:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent) 1; }
+/* ลิงก์กลับ: ตัวเล็ก สีเทาจาง อยู่เหนือชื่อหมวด */
+.page-back{ margin:16px 20px 0; font-size:14px; color:#7a7a7a; }
+.cat-page-desc:empty{ display:none; }

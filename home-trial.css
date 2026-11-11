@@ -2,7 +2,7 @@
 .shell{ padding-top:76px; }
 /* ระยะข้อความหัวเรื่องจากแถบหัวเว็บ: ปรับตัวเลขนี้ (100 = ห่างเท่าเดิมตอนมีไอคอน, 0 = ชิดสุด) */
 :root{ --hero-top:40; }
-:root:not([data-theme="light"]) body{ background:radial-gradient(120% 340px at 50% 0, #17171a 0%, #0b0b0c 70%) no-repeat #080809; }
+:root:not([data-theme="light"]) body{ background:radial-gradient(120% 340px at 50% 0, #0b0b0b 0%, #000 70%) no-repeat #000; }
 
 /* ---------- Header ---------- */
 header.trial-hdr{
