@@ -1912,7 +1912,7 @@ async function getActivePromotions(env) {
     });
     if (!promos || !promos.length) return empty;
     const items = await supabaseSelect(env, 'promotion_items', {
-      select: 'promotion_id,product_id,amount',
+      select: 'promotion_id,product_id,duration_id,amount',
       promotion_id: `in.(${promos.map((p) => p.id).join(',')})`,
       limit: '5000',
     });
@@ -1926,7 +1926,7 @@ async function getActivePromotions(env) {
     const list = promos.map((pr) => {
       const its = itemsByPromo.get(pr.id) || [];
       const base = { id: pr.id, mode: pr.mode, percent: pr.percent == null ? null : Number(pr.percent), endsAt: pr.ends_at };
-      its.forEach((it) => push(it.product_id, { ...base, amount: it.amount == null ? null : Number(it.amount) }));
+      its.forEach((it) => push(it.product_id, { ...base, amount: it.amount == null ? null : Number(it.amount), durationId: it.duration_id || null }));
       return {
         id: pr.id, title: pr.title, mode: pr.mode,
         percent: base.percent, applyAll: !!pr.apply_all,
