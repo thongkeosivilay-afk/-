@@ -10,7 +10,7 @@
 <link href="daily-sales-admin.css?v=1" rel="stylesheet"/>
 <link href="coupons-admin.css?v=20261010a" rel="stylesheet"/>
 <link href="promo.css?v=2" rel="stylesheet"/>
-<link href="promos-admin.css?v=2" rel="stylesheet"/>
+<link href="promos-admin.css?v=3" rel="stylesheet"/>
 <link href="codes-remove-admin.css?v=20261020c" rel="stylesheet"/>
 <link href="customers-admin.css?v=20261026a" rel="stylesheet"/>
 <link href="maintenance-admin.css?v=20261014a" rel="stylesheet"/>
@@ -714,23 +714,14 @@ IJKL-9012"></textarea></div>
 <div class="panel-content" id="panelPromos">
 <div class="stat-panel">
 <h3>ສ້າງໂປຣໂມຊັ່ນ</h3>
-<p class="panel-sub">ເລືອກແບບສ່ວນຫຼຸດ, ສິນຄ້າ ແລະ ເວລາໝົດໂປຣ — ໂປຣເປີດແລ້ວ ໜ້າຫຼັກຈະມີການ໌ດໂປຣ ແລະ ສິນຄ້າທີ່ລົດຈະມີປ້າຍລິບບິ້ນແດງ "SALE -NN%" ເທິງການ໌ດ (ຕົວແທນຍັງໄດ້ລາຄາຕົວແທນຄືເກົ່າ)</p>
+<p class="panel-sub">ຕິກເລືອກສິນຄ້າ (ຫຼືແຕ່ລະໄລຍະ) ແລ້ວໃສ່ຍອດທີ່ຈະລົດ (₭) ແລະ ເວລາໝົດໂປຣ — ໂປຣເປີດແລ້ວ ໜ້າຫຼັກຈະມີການ໌ດໂປຣ ແລະ ສິນຄ້າທີ່ລົດຈະມີປ້າຍລິບບິ້ນແດງ "SALE -NN%" ເທິງການ໌ດ (ຕົວແທນຍັງໄດ້ລາຄາຕົວແທນຄືເກົ່າ)</p>
 <form id="pmaForm" autocomplete="off">
 <div class="pma-f">
 <div class="pma-l"><span>ຊື່ໂປຣ</span><small>ບໍ່ບັງຄັບ</small></div>
 <input class="pma-in" id="pmaTitle" maxlength="60" placeholder="ເຊັ່ນ ໂປຣວັນທີ 11.11">
 </div>
-<div class="pma-f">
-<div class="pma-l"><span>ແບບສ່ວນຫຼຸດ</span></div>
-<div class="pma-seg" id="pmaMode"><button class="on" type="button" data-m="percent">ລົດເປັນ %</button><button type="button" data-m="fixed">ລົດເປັນລາຄາ (ເລືອກສິນຄ້າ)</button></div>
-</div>
-<div class="pma-f" id="pmaPctBox">
-<div class="pma-l"><span>ເປີເຊັນທີ່ລົດ</span></div>
-<div class="pma-suffix"><input class="pma-in" id="pmaVal" inputmode="numeric" placeholder="10"><b>%</b></div>
-<div class="pma-seg" id="pmaScope" style="margin-top:8px"><button class="on" type="button" data-s="all">ທຸກສິນຄ້າ</button><button type="button" data-s="pick">ເລືອກສິນຄ້າ</button></div>
-</div>
-<div class="pma-f u-hidden" id="pmaProdWrap">
-<div class="pma-l"><span>ເລືອກສິນຄ້າ</span><small id="pmaPickCount">ຍັງບໍ່ເລືອກ</small></div>
+<div class="pma-f" id="pmaProdWrap">
+<div class="pma-l"><span>ເລືອກສິນຄ້າ / ໄລຍະທີ່ຈະລົດ</span><small id="pmaPickCount">ຍັງບໍ່ເລືອກ</small></div>
 <input class="pma-in" id="pmaSearch" type="search" placeholder="ຄົ້ນຫາສິນຄ້າ / ໝວດ...">
 <div class="pma-pickbar"><button type="button" id="pmaSelAll">ເລືອກທັງໝົດ</button><button type="button" id="pmaClear">ລ້າງ</button></div>
 <div class="pma-bulk"><input class="pma-in" id="pmaBulk" inputmode="numeric" placeholder="ໃສ່ຍອດລົດ (₭) ໃຫ້ທຸກອັນທີ່ເລືອກ"><button type="button" id="pmaBulkBtn">ໃສ່ທັງໝົດ</button></div>
@@ -1207,7 +1198,7 @@ IJKL-9012"></textarea></div>
 <script src="admin.js?v=20261111a"></script>
 <script src="daily-sales-admin.js?v=1"></script>
 <script src="coupons-admin.js?v=20261026a"></script>
-<script src="promos-admin.js?v=2"></script>
+<script src="promos-admin.js?v=3"></script>
 <script src="codes-remove-admin.js?v=20261026a"></script>
 <script src="codes-manager.js?v=20261022a"></script>
 <script src="customers-admin.js?v=20261110n"></script>

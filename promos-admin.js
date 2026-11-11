@@ -1,10 +1,11 @@
 /* =========================================================
    promos-admin.js — แผง "ໂປຣໂມຊັ່ນ" ในห้องแอดมิน (admin.html > #panelPromos)
-   - สร้างโปรได้ 2 แบบ:  (1) ลดเป็น %  (ทุกสินค้า หรือเลือกสินค้า)
-                        (2) ลดเป็นราคา: แอดมินติ๊กเลือกสินค้าแต่ละชิ้น แล้วใส่ยอดที่ลด (₭) แยกชิ้นได้
+   - แบบง่าย: แอดมินติ๊กเลือกสินค้า แล้วใส่ยอดที่ลด (₭) เอง
+       · สินค้าปกติ        -> ติ๊กทั้งชิ้น ใส่ยอดลด 1 ช่อง
+       · สินค้าหลายระยะเวลา -> ติ๊กเลือกเป็นรายระยะ (เช่น 1 เดือน / 3 เดือน) ใส่ยอดลดแยกกันได้
    - ตั้งเวลาเริ่ม (ค่าเริ่มต้น = ตอนนี้) และเวลาหมดอายุ (บังคับ) — หมดเวลาแล้วราคากลับปกติอัตโนมัติ
-   - อ่าน/เขียนตาราง promotions + promotion_items ผ่าน supabaseClient (-> Worker proxy ที่เช็คสิทธิ์แอดมิน)
-   - ราคาที่หักจริงตอนลูกค้าซื้อคิดใน SQL get_effective_price / promo_discount ไม่ใช่ที่นี่
+   - อ่าน/เขียนตาราง promotions + promotion_items (คอลัมน์ duration_id = ผูกกับระยะเวลา) ผ่าน supabaseClient
+   - ราคาที่หักจริงตอนลูกค้าซื้อคิดใน SQL get_effective_price / promo_discount(product, price, duration)
    - ถูกเรียกจาก initAdminPanel() ใน admin.js ผ่าน window.initPromosPanel()
    ========================================================= */
 (function () {
@@ -15,17 +16,14 @@
   const toast = (t) => { if (typeof showToast === 'function') showToast(t); };
   const pad = (n) => String(n).padStart(2, '0');
 
-  let mode = 'percent';        // 'percent' | 'fixed'
-  let scope = 'all';           // percent เท่านั้น: 'all' | 'pick'
   let endMs = 24 * 3600 * 1000; // ระยะเวลา (ms) จาก chip — null = ใช้ช่องวันเวลาเอง
-  let products = [];
-  const picked = new Map();    // product_id -> amount (fixed) หรือ true
+  let products = [];            // สินค้า + durations[]
+  const rowInfo = new Map();    // key -> { pid, did, price, name }   key = 'p:<productId>' | 'd:<durationId>'
+  const picked = new Map();     // key -> ยอดที่ลด (string)
   let promos = [];
   let bound = false;
   let saving = false;
   let tickTimer = null;
-
-  const pickNeeded = () => mode === 'fixed' || scope === 'pick';
 
   /* ---------- helpers ---------- */
   function localInputValue(ms) {
@@ -55,63 +53,95 @@
     el.textContent = msg || '';
     el.classList.toggle('show', !!msg);
   }
+  function startMs() {
+    const v = $('pmaStartAt').value;
+    return v ? new Date(v).getTime() : Date.now();
+  }
   function calcEnd() {
-    // เวลาหมดอายุ: ถ้าเลือก chip = เริ่ม(หรือตอนนี้) + ระยะเวลา ; ถ้าเลือกเอง = ค่าจากช่อง
     const start = startMs();
     if (endMs != null) return start + endMs;
     const v = $('pmaEndAt').value;
     return v ? new Date(v).getTime() : NaN;
   }
-  function startMs() {
-    const v = $('pmaStartAt').value;
-    return v ? new Date(v).getTime() : Date.now();
-  }
 
-  /* ---------- ตัวเลือกสินค้า ---------- */
+  /* ---------- ตัวเลือกสินค้า / ระยะเวลา ---------- */
   async function loadProducts() {
-    const { data, error } = await supabaseClient.from('products').select('id,name,category,price,image_url,duration_enabled,archived').order('name', { ascending: true }).limit(1000);
-    if (error) { console.error('promos: products load failed', error); $('pmaProdList').innerHTML = '<div class="pma-empty">ໂຫຼດສິນຄ້າບໍ່ສຳເລັດ</div>'; return; }
-    products = (data || []).filter((p) => !p.archived);
+    const [pr, du] = await Promise.all([
+      supabaseClient.from('products').select('id,name,category,price,image_url,duration_enabled,archived').order('name', { ascending: true }).limit(1000),
+      supabaseClient.from('product_durations').select('id,product_id,label,price,sort_order').order('sort_order', { ascending: true }).limit(5000),
+    ]);
+    if (pr.error) { console.error('promos: products load failed', pr.error); $('pmaProdList').innerHTML = '<div class="pma-empty">ໂຫຼດສິນຄ້າບໍ່ສຳເລັດ</div>'; return; }
+    const byProduct = new Map();
+    ((du && du.data) || []).forEach((d) => {
+      if (!byProduct.has(d.product_id)) byProduct.set(d.product_id, []);
+      byProduct.get(d.product_id).push(d);
+    });
+    products = (pr.data || []).filter((p) => !p.archived).map((p) => ({ ...p, durations: byProduct.get(p.id) || [] }));
+    rowInfo.clear();
+    products.forEach((p) => {
+      if (p.duration_enabled && p.durations.length) {
+        p.durations.forEach((d) => rowInfo.set('d:' + d.id, { pid: p.id, did: d.id, price: Number(d.price) || 0, name: `${p.name} · ${d.label}` }));
+      } else {
+        rowInfo.set('p:' + p.id, { pid: p.id, did: null, price: Number(p.price) || 0, name: p.name });
+      }
+    });
     renderProducts();
   }
+  const keysOf = (p) => (p.duration_enabled && p.durations.length ? p.durations.map((d) => 'd:' + d.id) : ['p:' + p.id]);
+  const matches = (p, q) => !q || (p.name || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
+
+  function newPriceTxt(key, amt) {
+    const info = rowInfo.get(key);
+    const off = Math.min(Number(amt) || 0, info ? info.price : 0);
+    return off > 0 ? ` → <b>${kip(info.price - off)}</b>` : '';
+  }
+  function amtInput(key, on, amt) {
+    return on ? `<div class="pma-amt"><span>-</span><input inputmode="numeric" data-a="amt" placeholder="5000" value="${amt ? esc(amt) : ''}"></div>` : '';
+  }
   function renderProducts() {
-    const wrap = $('pmaProdWrap');
-    wrap.classList.toggle('u-hidden', !pickNeeded());
-    if (!pickNeeded()) { upd(); return; }
     const q = $('pmaSearch').value.trim().toLowerCase();
-    const list = products.filter((p) => !q || (p.name || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q));
+    const list = products.filter((p) => matches(p, q));
     $('pmaProdList').innerHTML = list.length ? list.map((p) => {
-      const on = picked.has(p.id);
-      const amt = picked.get(p.id);
-      return `<div class="pma-prod ${on ? 'on' : ''}" data-id="${esc(p.id)}">
-        <button type="button" class="pma-chk" data-a="tg" aria-label="ເລືອກ">${on ? '✓' : ''}</button>
-        <div class="pma-img">${p.image_url ? `<img src="${esc(p.image_url)}" alt="" loading="lazy">` : esc((p.name || '?').slice(0, 1))}</div>
-        <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(p.category || '')} · ${p.duration_enabled ? 'ຫຼາຍໄລຍະ' : kip(p.price)}<span class="pma-np">${on ? newPriceTxt(p, amt) : ''}</span></small></div>
-        ${mode === 'fixed' && on ? `<div class="pma-amt"><span>-</span><input inputmode="numeric" data-a="amt" placeholder="5000" value="${amt ? esc(amt) : ''}"></div>` : ''}
+      const img = `<div class="pma-img">${p.image_url ? `<img src="${esc(p.image_url)}" alt="" loading="lazy">` : esc((p.name || '?').slice(0, 1))}</div>`;
+      if (p.duration_enabled && p.durations.length) {
+        const keys = keysOf(p);
+        const n = keys.filter((k) => picked.has(k)).length;
+        const subs = p.durations.map((d) => {
+          const key = 'd:' + d.id, on = picked.has(key), amt = picked.get(key);
+          return `<div class="pma-prod pma-sub ${on ? 'on' : ''}" data-k="${esc(key)}">
+            <button type="button" class="pma-chk" aria-label="ເລືອກ">${on ? '✓' : ''}</button>
+            <div class="pma-pn"><b>${esc(d.label)}</b><small>${kip(d.price)}<span class="pma-np">${on ? newPriceTxt(key, amt) : ''}</span></small></div>
+            ${amtInput(key, on, amt)}
+          </div>`;
+        }).join('');
+        return `<div class="pma-grp">
+          <div class="pma-ph" data-pid="${esc(p.id)}">
+            ${img}
+            <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(p.category || '')} · ${p.durations.length} ໄລຍະ${n ? ` · ເລືອກ ${n}` : ''}</small></div>
+            <button type="button" class="pma-allbtn" data-a="grp">${n === keys.length ? 'ຍົກເລີກທັງໝົດ' : 'ເລືອກທຸກໄລຍະ'}</button>
+          </div>${subs}</div>`;
+      }
+      const key = 'p:' + p.id, on = picked.has(key), amt = picked.get(key);
+      return `<div class="pma-prod ${on ? 'on' : ''}" data-k="${esc(key)}">
+        <button type="button" class="pma-chk" aria-label="ເລືອກ">${on ? '✓' : ''}</button>
+        ${img}
+        <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(p.category || '')} · ${kip(p.price)}<span class="pma-np">${on ? newPriceTxt(key, amt) : ''}</span></small></div>
+        ${amtInput(key, on, amt)}
       </div>`;
     }).join('') : '<div class="pma-empty">ບໍ່ພົບສິນຄ້າ</div>';
     $('pmaPickCount').textContent = picked.size ? `ເລືອກແລ້ວ ${picked.size}` : 'ຍັງບໍ່ເລືອກ';
     upd();
   }
-
-  /* ---------- ราคาใหม่ต่อสินค้า + ตัวอย่างป้ายบนการ์ด ---------- */
-  const pctVal = () => Math.min(parseInt(String($('pmaVal').value).replace(/\D/g, ''), 10) || 0, 100);
-  // ราคาหลังลดของสินค้า 1 ชิ้น (เฉพาะสินค้าที่ไม่ได้ตั้งหลายระยะเวลา) — ' → ₭ xx.xxx' หรือ '' ถ้ายังไม่มียอดลด
-  function newPriceTxt(p, amt) {
-    if (!p || p.duration_enabled) return '';
-    const price = Number(p.price) || 0;
-    const off = mode === 'percent' ? Math.round(price * pctVal() / 100) : Math.min(Number(amt) || 0, price);
-    return off > 0 ? ` → <b>${kip(price - off)}</b>` : '';
-  }
   function refreshNewPrices() {
-    document.querySelectorAll('#pmaProdList .pma-prod').forEach((row) => {
+    document.querySelectorAll('#pmaProdList .pma-prod[data-k]').forEach((row) => {
       const el = row.querySelector('.pma-np');
       if (!el) return;
-      const id = row.dataset.id;
-      el.innerHTML = picked.has(id) ? newPriceTxt(products.find((x) => x.id === id), picked.get(id)) : '';
+      const k = row.dataset.k;
+      el.innerHTML = picked.has(k) ? newPriceTxt(k, picked.get(k)) : '';
     });
   }
-  // ป้ายตัวอย่างหน้าตาเหมือนบนการ์ดจริง (ใช้ class เดียวกับ promo.css)
+
+  /* ---------- สรุป + ตัวอย่างป้าย ---------- */
   function badgePreview(pct, off) {
     if (!(pct >= 1) && !(off > 0)) return '';
     const showPct = pct >= 1;
@@ -120,31 +150,18 @@
     return `<div class="pma-prev"><div class="${cls}"><span class="ppb-in"><span class="ppb-top">SALE</span><span class="ppb-num">${big}</span></span></div><span class="pma-prev-t">ປ້າຍທີ່ລູກຄ້າຈະເຫັນເທິງການ໌ດສິນຄ້າ</span></div>`;
   }
   function previewFor() {
-    if (mode === 'percent') return badgePreview(pctVal(), 0);
-    for (const [id, amt] of picked) {
-      const p = products.find((x) => x.id === id);
-      const a = Number(amt) || 0;
-      if (!p || !a) continue;
-      if (p.duration_enabled) return badgePreview(0, a);
-      const price = Number(p.price) || 0;
-      return badgePreview(price ? Math.round(Math.min(a, price) / price * 100) : 0, a);
+    for (const [k, amt] of picked) {
+      const info = rowInfo.get(k), a = Number(amt) || 0;
+      if (!info || !a) continue;
+      return badgePreview(info.price ? Math.round(Math.min(a, info.price) / info.price * 100) : 0, a);
     }
     return '';
   }
-
-  /* ---------- สรุป/ตัวอย่าง ---------- */
   function upd() {
-    const v = parseInt(String($('pmaVal').value).replace(/\D/g, ''), 10) || 0;
     const end = calcEnd();
     const endTxt = Number.isFinite(end) ? fmtDate(end) : '—';
-    let line;
-    if (mode === 'percent') {
-      const base = 30000, off = Math.round(base * Math.min(v, 100) / 100);
-      line = v ? `ລົດ <b>${v}%</b> ${scope === 'all' ? 'ທຸກສິນຄ້າ' : `ສະເພາະ ${picked.size} ສິນຄ້າ`} — ຕົວຢ່າງ <s>${kip(base)}</s> → <b>${kip(base - off)}</b>` : 'ໃສ່ເປີເຊັນທີ່ຈະລົດ';
-    } else {
-      const n = picked.size;
-      line = n ? `ລົດລາຄາ ${n} ສິນຄ້າ (ແຕ່ລະຊິ້ນຕາມຍອດທີ່ໃສ່)` : 'ຕິກເລືອກສິນຄ້າ ແລ້ວໃສ່ຍອດທີ່ຈະລົດ';
-    }
+    const n = picked.size;
+    const line = n ? `ລົດລາຄາ <b>${n}</b> ລາຍການ (ແຕ່ລະອັນຕາມຍອດທີ່ໃສ່)` : 'ຕິກເລືອກສິນຄ້າ (ຫຼືໄລຍະ) ແລ້ວໃສ່ຍອດທີ່ຈະລົດ';
     $('pmaSum').innerHTML = `${line}<br>ໝົດເວລາ: <b>${esc(endTxt)}</b>${previewFor()}`;
     refreshNewPrices();
   }
@@ -155,18 +172,13 @@
     if (saving) return;
     setErr('');
     const title = $('pmaTitle').value.trim() || 'ໂປຣໂມຊັ່ນ';
-    const v = parseInt(String($('pmaVal').value).replace(/\D/g, ''), 10) || 0;
     const start = startMs(), end = calcEnd();
 
-    if (mode === 'percent') {
-      if (!v || v > 100) return setErr('ເປີເຊັນຕ້ອງຢູ່ລະຫວ່າງ 1 – 100');
-      if (scope === 'pick' && !picked.size) return setErr('ກະລຸນາເລືອກສິນຄ້າຢ່າງໜ້ອຍ 1 ອັນ');
-    } else {
-      if (!picked.size) return setErr('ກະລຸນາເລືອກສິນຄ້າຢ່າງໜ້ອຍ 1 ອັນ');
-      for (const [id, amt] of picked) {
-        const p = products.find((x) => x.id === id);
-        if (!(Number(amt) > 0)) return setErr(`ໃສ່ຍອດທີ່ຈະລົດຂອງ "${p ? p.name : id}"`);
-      }
+    if (!picked.size) return setErr('ກະລຸນາເລືອກສິນຄ້າຢ່າງໜ້ອຍ 1 ອັນ');
+    for (const [k, amt] of picked) {
+      const info = rowInfo.get(k);
+      if (!(Number(amt) > 0)) return setErr(`ໃສ່ຍອດທີ່ຈະລົດຂອງ "${info ? info.name : k}"`);
+      if (info && Number(amt) > info.price) return setErr(`ຍອດລົດຂອງ "${info.name}" ຫຼາຍກວ່າລາຄາສິນຄ້າ (${kip(info.price)})`);
     }
     if (!Number.isFinite(end)) return setErr('ກະລຸນາກຳນົດເວລາໝົດໂປຣ');
     if (end <= Date.now()) return setErr('ເວລາໝົດໂປຣຕ້ອງເປັນເວລາໃນອະນາຄົດ');
@@ -177,9 +189,7 @@
     btn.disabled = true;
     try {
       const row = {
-        title, mode,
-        percent: mode === 'percent' ? v : null,
-        apply_all: mode === 'percent' && scope === 'all',
+        title, mode: 'fixed', percent: null, apply_all: false,
         starts_at: new Date(start).toISOString(),
         ends_at: new Date(end).toISOString(),
         active: true,
@@ -187,23 +197,22 @@
       const ins = await supabaseClient.from('promotions').insert(row).select('id').single();
       if (ins.error) throw ins.error;
       const pid = ins.data.id;
-      if (pickNeeded()) {
-        const items = [...picked.entries()].map(([product_id, amt]) => ({
-          promotion_id: pid, product_id, amount: mode === 'fixed' ? Number(amt) : null,
-        }));
-        const it = await supabaseClient.from('promotion_items').insert(items);
-        if (it.error) {
-          await supabaseClient.from('promotions').delete().eq('id', pid); // ย้อนกลับ ไม่ให้เหลือโปรครึ่งๆ
-          throw it.error;
-        }
+      const items = [...picked.entries()].map(([k, amt]) => {
+        const info = rowInfo.get(k);
+        return { promotion_id: pid, product_id: info.pid, duration_id: info.did, amount: Number(amt) };
+      });
+      const it = await supabaseClient.from('promotion_items').insert(items);
+      if (it.error) {
+        await supabaseClient.from('promotions').delete().eq('id', pid); // ย้อนกลับ ไม่ให้เหลือโปรครึ่งๆ
+        throw it.error;
       }
       toast('ສ້າງໂປຣໂມຊັ່ນແລ້ວ');
-      $('pmaTitle').value = ''; $('pmaVal').value = ''; picked.clear();
+      $('pmaTitle').value = ''; picked.clear();
       renderProducts();
       await loadPromos();
     } catch (err) {
       console.error('promotions create failed:', err);
-      setErr('ສ້າງບໍ່ສຳເລັດ: ' + ((err && err.message) || 'ລອງໃໝ່ພາຍຫຼັງ') + (/relation|does not exist|schema cache/i.test((err && err.message) || '') ? ' — ກວດວ່າໄດ້ສ້າງຕາຕະລາງ promotions ໃນ Supabase ແລ້ວ' : ''));
+      setErr('ສ້າງບໍ່ສຳເລັດ: ' + ((err && err.message) || 'ລອງໃໝ່ພາຍຫຼັງ'));
     } finally {
       saving = false;
       btn.disabled = false;
@@ -214,9 +223,13 @@
   function cardHtml(p) {
     const st = statusOf(p);
     const items = p.promotion_items || [];
-    const names = items.slice(0, 3).map((i) => { const pr = products.find((x) => x.id === i.product_id); return pr ? pr.name : ''; }).filter(Boolean);
-    const scopeTxt = p.mode === 'percent' && p.apply_all ? 'ທຸກສິນຄ້າ' : `${items.length} ສິນຄ້າ${names.length ? ' · ' + names.map(esc).join(', ') + (items.length > names.length ? '…' : '') : ''}`;
-    const what = p.mode === 'percent' ? `ລົດ ${Number(p.percent)}%` : 'ລົດເປັນລາຄາ (ແຍກຕາມສິນຄ້າ)';
+    const pids = [...new Set(items.map((i) => i.product_id))];
+    const names = pids.slice(0, 3).map((id) => { const pr = products.find((x) => x.id === id); return pr ? pr.name : ''; }).filter(Boolean);
+    const durCount = items.filter((i) => i.duration_id).length;
+    const scopeTxt = p.mode === 'percent' && p.apply_all
+      ? 'ທຸກສິນຄ້າ'
+      : `${pids.length} ສິນຄ້າ${durCount ? ` (${durCount} ໄລຍະ)` : ''}${names.length ? ' · ' + names.map(esc).join(', ') + (pids.length > names.length ? '…' : '') : ''}`;
+    const what = p.mode === 'percent' ? `ລົດ ${Number(p.percent)}%` : 'ລົດເປັນລາຄາ';
     return `<div class="pma-cp ${st.k}" data-id="${esc(p.id)}">
       <div class="pma-top">
         <div class="pma-ttl"><b>${esc(p.title)}</b><small>${what} · ${scopeTxt}</small></div>
@@ -244,7 +257,7 @@
   async function loadPromos() {
     const btn = $('pmaRefresh');
     if (btn) btn.classList.add('spinning');
-    const { data, error } = await supabaseClient.from('promotions').select('*, promotion_items(product_id, amount)').order('created_at', { ascending: false }).limit(200);
+    const { data, error } = await supabaseClient.from('promotions').select('*, promotion_items(product_id, duration_id, amount)').order('created_at', { ascending: false }).limit(200);
     if (btn) setTimeout(() => btn.classList.remove('spinning'), 400);
     if (error) {
       console.error('promotions select failed:', error);
@@ -296,49 +309,43 @@
   }
 
   /* ---------- ผูกอีเวนต์ ---------- */
-  function setSeg(id, attr, val) {
-    document.querySelectorAll(`#${id} button`).forEach((x) => x.classList.toggle('on', x.dataset[attr] === val));
-  }
+  function toggleKey(k) { if (picked.has(k)) picked.delete(k); else picked.set(k, ''); }
   function bind() {
     if (bound || !$('pmaForm')) return;
     bound = true;
 
-    $('pmaMode').addEventListener('click', (e) => {
-      const b = e.target.closest('button'); if (!b || b.dataset.m === mode) return;
-      mode = b.dataset.m; setSeg('pmaMode', 'm', mode);
-      $('pmaPctBox').classList.toggle('u-hidden', mode !== 'percent');
-      if (mode === 'fixed') picked.forEach((_, k) => picked.set(k, picked.get(k) === true ? '' : picked.get(k)));
-      else picked.forEach((_, k) => picked.set(k, true));
-      renderProducts();
-    });
-    $('pmaScope').addEventListener('click', (e) => {
-      const b = e.target.closest('button'); if (!b || b.dataset.s === scope) return;
-      scope = b.dataset.s; setSeg('pmaScope', 's', scope); renderProducts();
-    });
-    $('pmaVal').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3); setErr(''); upd(); });
     $('pmaSearch').addEventListener('input', renderProducts);
 
     $('pmaProdList').addEventListener('click', (e) => {
-      const row = e.target.closest('.pma-prod'); if (!row) return;
       if (e.target.closest('.pma-amt')) return;
-      const id = row.dataset.id;
-      if (picked.has(id)) picked.delete(id); else picked.set(id, mode === 'fixed' ? '' : true);
+      const grpBtn = e.target.closest('button[data-a="grp"]');
+      if (grpBtn) { // เลือก/ยกเลิกทุกระยะของสินค้านั้น
+        const p = products.find((x) => x.id === grpBtn.closest('.pma-ph').dataset.pid);
+        if (!p) return;
+        const keys = keysOf(p);
+        const all = keys.every((k) => picked.has(k));
+        keys.forEach((k) => { if (all) picked.delete(k); else if (!picked.has(k)) picked.set(k, ''); });
+        renderProducts();
+        return;
+      }
+      const row = e.target.closest('.pma-prod[data-k]'); if (!row) return;
+      const k = row.dataset.k;
+      toggleKey(k);
       renderProducts();
-      if (mode === 'fixed' && picked.has(id)) {
-        const inp = $('pmaProdList').querySelector(`.pma-prod[data-id="${CSS.escape(id)}"] input`);
+      if (picked.has(k)) {
+        const inp = $('pmaProdList').querySelector(`.pma-prod[data-k="${CSS.escape(k)}"] input`);
         if (inp) inp.focus();
       }
     });
     $('pmaProdList').addEventListener('input', (e) => {
       if (e.target.dataset.a !== 'amt') return;
       e.target.value = e.target.value.replace(/\D/g, '');
-      picked.set(e.target.closest('.pma-prod').dataset.id, e.target.value);
+      picked.set(e.target.closest('.pma-prod').dataset.k, e.target.value);
       setErr(''); upd();
     });
     $('pmaSelAll').addEventListener('click', () => {
       const q = $('pmaSearch').value.trim().toLowerCase();
-      products.filter((p) => !q || (p.name || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q))
-        .forEach((p) => { if (!picked.has(p.id)) picked.set(p.id, mode === 'fixed' ? '' : true); });
+      products.filter((p) => matches(p, q)).forEach((p) => keysOf(p).forEach((k) => { if (!picked.has(k)) picked.set(k, ''); }));
       renderProducts();
     });
     $('pmaClear').addEventListener('click', () => { picked.clear(); renderProducts(); });

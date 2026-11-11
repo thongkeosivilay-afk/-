@@ -570,7 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // d.orig = ราคาปกติ (ไว้ขีดทับ) — ราคาที่หักจริงคิดใน SQL get_effective_price ตรงกับสูตรนี้
       if (product.promos && product.promos.length) {
         durations.forEach((d) => {
-          const np = window.StorefrontData.promoPrice(d.price, product.promos);
+          const np = window.StorefrontData.promoPrice(d.price, product.promos, product.duration_enabled ? d.id : null);
           if (np < d.price) { d.orig = d.price; d.price = np; }
         });
       }

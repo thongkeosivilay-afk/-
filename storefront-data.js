@@ -79,7 +79,7 @@
   // ids (optional) = { productId, durationId } — ถ้าส่งมา และแอดมินตั้งราคาเฉพาะตัวแทนคนนี้ไว้ จะใช้ราคานั้นก่อนเสมอ
   function effectivePrice(basePrice, resellerPrice, resellerInfo, ids) {
     const base = Number(basePrice) || 0;
-    if (!resellerInfo || !resellerInfo.isReseller) return promoPrice(base, ids && ids.promos);
+    if (!resellerInfo || !resellerInfo.isReseller) return promoPrice(base, ids && ids.promos, ids && ids.durationId);
     if (ids && resellerInfo.customPrices) {
       const key = ids.durationId ? `d:${ids.durationId}` : `p:${ids.productId}`;
       const custom = resellerInfo.customPrices[key];
@@ -102,11 +102,13 @@
      Worker ส่ง product.promos = [{ id, mode: 'percent'|'fixed', percent, amount, endsAt }] มาให้เฉพาะโปรที่กำลังใช้งานอยู่
      ฝั่งนี้คิดราคาโชว์ด้วยสูตรเดียวกับ SQL promo_discount (เลือกส่วนลดที่มากที่สุด) — ราคาที่หักจริงตอนซื้อคิดใน Supabase
      ตัวแทน (reseller) ไม่ได้ราคาโปร (ใช้ราคาตัวแทนเหมือนเดิม) */
-  function promoOff(price, promos) {
+  // durationId (optional): โปรที่ผูกกับระยะเวลาเฉพาะ (pr.durationId) ใช้ได้เฉพาะระยะนั้น ; ไม่ผูก = ใช้ทุกระยะ
+  function promoOff(price, promos, durationId) {
     const now = Date.now();
     let best = 0;
     let bestPromo = null;
     (promos || []).forEach((pr) => {
+      if (pr.durationId && pr.durationId !== durationId) return; // โปรของระยะอื่น
       if (pr.endsAt && new Date(pr.endsAt).getTime() <= now) return; // หมดเวลาแล้ว (นาฬิกาฝั่งลูกค้า)
       const off = pr.mode === 'percent'
         ? Math.round((Number(price) || 0) * (Number(pr.percent) || 0) / 100)
@@ -116,9 +118,9 @@
     best = Math.min(best, Number(price) || 0);
     return { off: best, promo: bestPromo };
   }
-  function promoPrice(price, promos) {
+  function promoPrice(price, promos, durationId) {
     const p = Number(price) || 0;
-    return Math.max(0, p - promoOff(p, promos).off);
+    return Math.max(0, p - promoOff(p, promos, durationId).off);
   }
 
   function fmtDots(n) { return Number(n || 0).toLocaleString('de-DE'); }
@@ -130,14 +132,14 @@
     const promos = product.promos;
     if (!promos || !promos.length) return null;
     const rows = product.duration_enabled
-      ? (product.durations || []).map((d) => Number(d.price)).filter((n) => Number.isFinite(n) && n > 0)
-      : [Number(product.price) || 0];
+      ? (product.durations || []).map((d) => ({ base: Number(d.price), did: d.id })).filter((r) => Number.isFinite(r.base) && r.base > 0)
+      : [{ base: Number(product.price) || 0, did: null }];
     let pick = null;
     let maxPct = 0;
     let minPct = Infinity;
     let hits = 0;
-    rows.forEach((base) => {
-      const r = promoOff(base, promos);
+    rows.forEach(({ base, did }) => {
+      const r = promoOff(base, promos, did);
       if (r.off <= 0 || !r.promo) return;
       const np = base - r.off;
       // % ที่ลดจริงของแถวนี้ (ปัดเศษ) — ใช้โชว์บนป้าย

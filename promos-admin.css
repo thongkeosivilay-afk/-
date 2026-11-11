@@ -65,3 +65,9 @@
   background:linear-gradient(180deg,#26201f,#120f0f); border:1px solid rgba(255,255,255,.08); }
 #panelPromos .pma-prev .prod-promo-badge{ position:relative; left:0; top:0; flex:none; }
 #panelPromos .pma-prev-t{ font-size:12px; opacity:.7; padding-top:12px; }
+
+/* สินค้าหลายระยะเวลา: หัวกลุ่ม + แถวระยะย่อย */
+#panelPromos .pma-grp{ display:flex; flex-direction:column; gap:5px; padding:6px; border-radius:14px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08); }
+#panelPromos .pma-ph{ display:flex; align-items:center; gap:10px; padding:2px 4px; }
+#panelPromos .pma-allbtn{ flex:none; padding:6px 10px; border-radius:9px; cursor:pointer; font:700 11.5px 'Noto Sans Lao',sans-serif; color:inherit; background:rgba(255,200,58,.12); border:1px solid rgba(255,200,58,.4); }
+#panelPromos .pma-sub{ margin-left:18px; }
