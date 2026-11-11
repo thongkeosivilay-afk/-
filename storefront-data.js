@@ -79,7 +79,7 @@
   // ids (optional) = { productId, durationId } — ถ้าส่งมา และแอดมินตั้งราคาเฉพาะตัวแทนคนนี้ไว้ จะใช้ราคานั้นก่อนเสมอ
   function effectivePrice(basePrice, resellerPrice, resellerInfo, ids) {
     const base = Number(basePrice) || 0;
-    if (!resellerInfo || !resellerInfo.isReseller) return base;
+    if (!resellerInfo || !resellerInfo.isReseller) return promoPrice(base, ids && ids.promos);
     if (ids && resellerInfo.customPrices) {
       const key = ids.durationId ? `d:${ids.durationId}` : `p:${ids.productId}`;
       const custom = resellerInfo.customPrices[key];
@@ -97,6 +97,71 @@
     return Math.round(base * (1 - (resellerInfo.discountPercent || 0) / 100));
   }
 
+
+  /* ---------- โปรโมชั่น (promotions) ----------
+     Worker ส่ง product.promos = [{ id, mode: 'percent'|'fixed', percent, amount, endsAt }] มาให้เฉพาะโปรที่กำลังใช้งานอยู่
+     ฝั่งนี้คิดราคาโชว์ด้วยสูตรเดียวกับ SQL promo_discount (เลือกส่วนลดที่มากที่สุด) — ราคาที่หักจริงตอนซื้อคิดใน Supabase
+     ตัวแทน (reseller) ไม่ได้ราคาโปร (ใช้ราคาตัวแทนเหมือนเดิม) */
+  function promoOff(price, promos) {
+    const now = Date.now();
+    let best = 0;
+    let bestPromo = null;
+    (promos || []).forEach((pr) => {
+      if (pr.endsAt && new Date(pr.endsAt).getTime() <= now) return; // หมดเวลาแล้ว (นาฬิกาฝั่งลูกค้า)
+      const off = pr.mode === 'percent'
+        ? Math.round((Number(price) || 0) * (Number(pr.percent) || 0) / 100)
+        : (Number(pr.amount) || 0);
+      if (off > best) { best = off; bestPromo = pr; }
+    });
+    best = Math.min(best, Number(price) || 0);
+    return { off: best, promo: bestPromo };
+  }
+  function promoPrice(price, promos) {
+    const p = Number(price) || 0;
+    return Math.max(0, p - promoOff(p, promos).off);
+  }
+
+  function fmtDots(n) { return Number(n || 0).toLocaleString('de-DE'); }
+
+  // ข้อมูลโปรของสินค้า 1 ชิ้นสำหรับการ์ด: { oldPrice, newPrice, off, label, kind, endsAt } หรือ null (ไม่มีโปร / เป็นตัวแทน)
+  // label: ลด % -> "11%" , ลดเป็นราคา -> "-5.000"
+  function productPromo(product, resellerInfo) {
+    if (!product || (resellerInfo && resellerInfo.isReseller)) return null;
+    const promos = product.promos;
+    if (!promos || !promos.length) return null;
+    const rows = product.duration_enabled
+      ? (product.durations || []).map((d) => Number(d.price)).filter((n) => Number.isFinite(n) && n > 0)
+      : [Number(product.price) || 0];
+    let pick = null;
+    rows.forEach((base) => {
+      const r = promoOff(base, promos);
+      if (r.off <= 0 || !r.promo) return;
+      const np = base - r.off;
+      if (!pick || np < pick.newPrice) pick = { oldPrice: base, newPrice: np, off: r.off, promo: r.promo };
+    });
+    if (!pick) return null;
+    const isPct = pick.promo.mode === 'percent';
+    return {
+      oldPrice: pick.oldPrice,
+      newPrice: pick.newPrice,
+      off: pick.off,
+      kind: isPct ? 'percent' : 'fixed',
+      label: isPct ? `${Number(pick.promo.percent)}%` : `-${fmtDots(pick.off)}`,
+      endsAt: pick.promo.endsAt,
+    };
+  }
+
+  // ป้าย HOT สีทอง + ป้ายส่วนลด (แดง) บนมุมซ้ายของการ์ดสินค้า
+  const PROMO_HOT_SVG = '<svg class="hot-badge" viewBox="0 0 124 64" role="img" aria-label="HOT" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pbG" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset=".5" stop-color="#ffc83a"/><stop offset="1" stop-color="#d98a00"/></linearGradient><linearGradient id="pbT" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e29a00"/><stop offset=".6" stop-color="#ffc83a"/><stop offset="1" stop-color="#fff3b0"/></linearGradient><linearGradient id="pbH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g class="hb-flames" fill="url(#pbT)" stroke="#8a5a00" stroke-width="1.4" stroke-linejoin="round"><path class="hb-t hb-t1" d="M76 18C88 18 96 12 100 2C106 10 104 20 96 26C90 30 84 30 76 30Z"/><path class="hb-t hb-t2" d="M76 26C92 24 104 20 114 14C114 24 110 30 102 34C94 38 86 38 76 38Z"/><path class="hb-t hb-t3" d="M76 34C92 34 106 36 118 42C108 46 100 48 90 49C84 50 80 50 76 50Z"/><path class="hb-t hb-t4" d="M76 42C88 46 96 52 100 62C92 60 86 58 76 54Z"/></g><path d="M8 34C8 22 20 15 36 15H62C80 15 88 22 88 34C88 46 80 53 62 53H36C20 53 8 46 8 34Z" fill="url(#pbG)" stroke="#8a5a00" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 30C16 21 26 18 40 18H62C50 22 30 22 14 30Z" fill="url(#pbH)"/><text x="48" y="42" text-anchor="middle" font-family="\'Lilita One\',\'Arial Black\',Impact,sans-serif" font-weight="900" font-style="italic" font-size="27" fill="#4a2a00" fill-opacity=".5" transform="translate(2 2) skewX(-8)">HOT</text><text x="48" y="42" text-anchor="middle" font-family="\'Lilita One\',\'Arial Black\',Impact,sans-serif" font-weight="900" font-style="italic" font-size="27" fill="#fff" stroke="#fff" stroke-width=".6" transform="skewX(-8)">HOT</text></svg>';
+  function promoBadgeHTML(pp) {
+    if (!pp) return '';
+    return `<div class="prod-promo-badge" aria-label="โปรโมชั่น">${PROMO_HOT_SVG}<span class="pp-pill">${escapeHtmlLocal(pp.label)}</span></div>`;
+  }
+  // ราคาบนการ์ด: ราคาเดิมขีดทับ + ราคาใหม่สีแดง
+  function promoPriceHTML(pp) {
+    return `<div class="prod-price has-promo"><s class="pp-old">${formatKip(pp.oldPrice)}</s><span class="pp-new">${formatKip(pp.newPrice)}</span></div>`;
+  }
+
   // ລາຄາທີ່ຈະໂຊວ໌ໃນກາຕູນ: ສິນຄ້າທຳມະດາ = price ຂອງມັນເລີຍ,
   // ສິນຄ້າແບບມີໄລຍະເວລາ (duration_enabled) = ລາຄາຕ່ຳສຸດໃນບັນດາໄລຍະທີ່ຕັ້ງໄວ້ (null ຖ້າຍັງບໍ່ຕັ້ງລາຄາໃດເລີຍ)
   // resellerInfo (optional): ถ้าส่งมา จะคำนวณเป็นราคาตัวแทนแทนราคาปกติ (ดู effectivePrice ด้านบน)
@@ -104,11 +169,11 @@
     if (!product) return null;
     if (product.duration_enabled) {
       const prices = (product.durations || [])
-        .map((d) => effectivePrice(d.price, d.resellerPrice, resellerInfo, { productId: product.id, durationId: d.id, resellerPrice2: d.resellerPrice2 }))
+        .map((d) => effectivePrice(d.price, d.resellerPrice, resellerInfo, { productId: product.id, durationId: d.id, resellerPrice2: d.resellerPrice2, promos: product.promos }))
         .filter((n) => Number.isFinite(n) && n > 0);
       return prices.length ? Math.min(...prices) : null;
     }
-    return effectivePrice(product.price, product.resellerPrice, resellerInfo, { productId: product.id, durationId: null, resellerPrice2: product.resellerPrice2 });
+    return effectivePrice(product.price, product.resellerPrice, resellerInfo, { productId: product.id, durationId: null, resellerPrice2: product.resellerPrice2, promos: product.promos });
   }
 
   // ສະຕັອກລວມທີ່ຈະໂຊວ໌: ສິນຄ້າແບບມີໄລຍະເວລາ = ລວມສະຕັອກທຸກໄລຍະ, ທຳມະດາ = stock ຂອງມັນເລີຍ
@@ -240,6 +305,11 @@
     effectivePrice,
     formatKip,
     productDisplayPrice,
+    promoPrice,
+    promoOff,
+    productPromo,
+    promoBadgeHTML,
+    promoPriceHTML,
     productTotalStock,
     isProductBuyable,
     productsByCategoryName,

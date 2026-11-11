@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </span>
         </span>
         <span class="opt-divider"></span>
-        <span class="opt-price">${formatKip(d.price)}</span>
+        <span class="opt-price">${d.orig != null ? `<s class="pp-old">${formatKip(d.orig)}</s> ` : ''}${formatKip(d.price)}</span>
       </button>
     `;
     }).join('');
@@ -400,6 +400,14 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedLabel.textContent = d && product.duration_enabled ? d.label : '';
     priceValue.textContent = formatKip(price);
     priceValue.classList.toggle('is-reseller-glow', resellerActive);
+    const oldPromoEl = priceValue.parentElement && priceValue.parentElement.querySelector('.pp-old-sum');
+    if (oldPromoEl) oldPromoEl.remove();
+    if (d && d.orig != null && d.orig > d.price) {
+      const o = document.createElement('s');
+      o.className = 'pp-old pp-old-sum';
+      o.textContent = formatKip(d.orig);
+      priceValue.insertAdjacentElement('beforebegin', o);
+    }
     priceValue.nextElementSibling?.classList?.contains('reseller-price-tag') && priceValue.nextElementSibling.remove();
     if (resellerActive) {
       const tag = document.createElement('span');
@@ -549,6 +557,15 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedIndex = 0;
       }
 
+      // โปรโมชั่น: ลูกค้าทั่วไปได้ราคาโปร (ตัวแทนจะถูกคืนเป็นราคาตัวแทนใน applyResellerPricing)
+      // d.orig = ราคาปกติ (ไว้ขีดทับ) — ราคาที่หักจริงคิดใน SQL get_effective_price ตรงกับสูตรนี้
+      if (product.promos && product.promos.length) {
+        durations.forEach((d) => {
+          const np = window.StorefrontData.promoPrice(d.price, product.promos);
+          if (np < d.price) { d.orig = d.price; d.price = np; }
+        });
+      }
+
       loadingState.style.display = 'none';
       prodContent.style.display = 'block';
 
@@ -570,6 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!info.isReseller) { if (couponBox) couponBox.style.visibility = ''; return; }
 
       durations.forEach((d) => {
+        if (d.orig != null) { d.price = d.orig; d.orig = null; } // ตัวแทนไม่ได้ราคาโปร
         d.price = window.StorefrontData.effectivePrice(d.price, d.resellerPrice, info, { productId: product && product.id, durationId: product && product.duration_enabled ? d.id : null, resellerPrice2: d.resellerPrice2 });
       });
 

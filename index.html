@@ -25,6 +25,7 @@
 <link href="responsive.css?v=20261110a" rel="stylesheet"/>
 <link href="site-bg.css?v=20261110b" rel="stylesheet"/>
 <link href="polish.css?v=3" rel="stylesheet"/>
+<link href="promo.css?v=1" rel="stylesheet"/>
 </head>
 <body>
 <div class="shell">
@@ -61,6 +62,8 @@
 </section>
 <!-- Banner: ใช้รูป Hero เดิมของเว็บ (แอดมินตั้งไว้) — storefront.js ใส่รูปให้อัตโนมัติ -->
 <div class="promo"></div>
+<!-- Promotions: การ์ดโปรโมชั่น (promo-home.js) — แอดมินสร้างในห้องแอดมิน > ໂປຣໂມຊັ່ນ ; ไม่มีโปรที่เปิดอยู่ = ซ่อนทั้งส่วน -->
+<section class="section promo-sec u-hidden" id="promoSection"><div class="pm-list" id="promoList"></div></section>
 <!-- Stats -->
 <div class="stats">
 <div class="stat-card">
@@ -188,12 +191,13 @@
      promo-popup.js      : popup ໂປຣໂມຊັ່ນ ໂຊວ໌ຕອນເປີດໜ້າຫຼັກ (ຮູບ/ເປີດ-ປິດ ຕັ້ງຄ່າຈາກຫ້ອງແອດມິນ)
      script.js           : ການເຮັດວຽກ interactive ອື່ນໆຂອງໜ້າ (login state, chat fab, ...) -->
 <script src="page-transition.js?v=2"></script>
-<script src="storefront-data.js"></script>
+<script src="storefront-data.js?v=20261111a"></script>
 <script src="storefront.js?v=20261025cat1"></script>
-<script src="all-products-trial.js?v=2"></script>
+<script src="all-products-trial.js?v=3"></script>
+<script src="promo-home.js?v=1"></script>
 <script src="prod-card-beam.js?v=2"></script>
 <script src="recent-purchases.js"></script>
-<script src="weekly-best.js?v=20261025a"></script>
+<script src="weekly-best.js?v=20261111a"></script>
 <script src="promo-popup.js"></script>
 <script src="tabbar-close-fx.js?v=20261004b"></script>
 <script src="script.js?v=20261110d"></script>

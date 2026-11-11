@@ -130,6 +130,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   function priceHTML(product) {
     const price = window.StorefrontData.productDisplayPrice(product, resellerInfo);
     if (price === null) return `<div class="prod-price todo">₭ 0</div>`;
+    const pp = window.StorefrontData.productPromo(product, resellerInfo);
+    if (pp) return window.StorefrontData.promoPriceHTML(pp);
     const tag = resellerInfo.isReseller ? '<span class="prod-price-reseller-tag">ຕົວແທນ</span>' : '';
     const priceClass = resellerInfo.isReseller ? 'prod-price is-reseller-glow' : 'prod-price';
     return `<div class="${priceClass}">${window.StorefrontData.formatKip(price)}${tag}</div>`;
@@ -169,6 +171,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const html = `
       <article class="${cardClass}" data-pid="${escapeHtml(product.id)}">
         ${stampHTML}
+        ${window.StorefrontData.promoBadgeHTML(window.StorefrontData.productPromo(product, resellerInfo))}
         <div class="${mediaClass}">
           ${mediaBodyHTML(product, state, product.id)}
         </div>

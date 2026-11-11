@@ -3474,6 +3474,13 @@ async function initAdminPanel() {
     console.error('initCouponsPanel failed:', err);
   }
 
+  // ---- แผง "ໂປຣໂມຊັ່ນ" (promos-admin.js) ----
+  try {
+    if (typeof window.initPromosPanel === 'function') window.initPromosPanel();
+  } catch (err) {
+    console.error('initPromosPanel failed:', err);
+  }
+
   // ---- reseller / agent ----
   const agentCreateKeyBtn = document.getElementById('agentCreateKeyBtn');
   if (agentCreateKeyBtn) agentCreateKeyBtn.addEventListener('click', createResellerKey);
