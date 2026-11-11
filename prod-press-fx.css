@@ -1,0 +1,163 @@
+/* =========================================================
+   prod-press-fx.css (ทดลอง v6) — เอฟเฟกต์ตอนกดค้างการ์ดสินค้า
+   รูปมืดเป็นโทนแดง + โลโก้เล็กกลางรูป + วงโคจรแบบอะตอมที่มีลำแสงวิ่งวนตามเส้น
+   ค่าทุกอย่างปรับได้ที่ตัวแปร --ppx-* ด้านล่าง (ทับค่าได้จาก :root ของหน้าไหนก็ได้)
+   จำนวนวงโคจรตั้งที่ window.PPX = { orbits: 3 } (ดู prod-press-fx.js)
+   ========================================================= */
+:root{
+  --ppx-size:70%;      /* ขนาดอะตอมเทียบกับความกว้างรูป */
+  --ppx-line:3.5px;    /* ความหนาลำแสงที่วิ่ง */
+  --ppx-base:1.6px;    /* ความหนาเส้นวงที่เป็นฐาน */
+  --ppx-baseop:.55;    /* ความเข้มเส้นฐาน 0-1 */
+  --ppx-tail:300deg;   /* ความยาวหางลำแสง (องศาของวง) */
+  --ppx-speed:1.7s;    /* เวลาวิ่งครบรอบของวงแรก */
+  --ppx-glow:12px;     /* ความฟุ้งของแสงเรืองรอบวง */
+  --ppx-tilt:80deg;    /* ความเอียงของวง (มาก = แบนเป็นรี) */
+  --ppx-sway:9deg;    /* แกว่งของอะตอมทั้งชุด */
+  --ppx-logo:21%;      /* ขนาดโลโก้กลาง */
+  --ppx-tint:1;        /* ความเข้มฟิล์มแดงทับรูป 0-1 */
+  --ppx-halo:.55;        /* ความเข้มฮาโลเรืองหลังโลโก้ 0-1 */
+  --ppx-vig:46px;      /* ความหนาเงามืดขอบรูป */
+  --ppx-hue:0deg;      /* เลื่อนสีทั้งชุด (0 = แดงตามต้นฉบับ) */
+  --ppx-sat:1;         /* ความสดของสี */
+}
+
+.ppx{
+  position:absolute; inset:0; z-index:3; pointer-events:none; overflow:hidden;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .3s ease;
+}
+.prod-card.ppx-on .ppx{ opacity:1; transition-duration:.14s; }
+
+/* ฟิล์มแดง + เงามืดขอบ */
+.ppx-tint{
+  position:absolute; inset:0; opacity:var(--ppx-tint);
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255,25,20,.34) 0%, rgba(190,0,8,.20) 34%, rgba(60,0,4,.26) 72%, rgba(8,0,2,.50) 100%),
+    linear-gradient(180deg, rgba(0,0,0,.30), transparent 38%, transparent 62%, rgba(0,0,0,.42));
+  box-shadow:inset 0 0 var(--ppx-vig) calc(var(--ppx-vig) / 5) rgba(0,0,0,.6);
+}
+/* ฮาโลเรืองหลังโลโก้ เต้นเป็นจังหวะ */
+.ppx::before{
+  content:""; position:absolute; left:50%; top:50%; width:46%; aspect-ratio:1; border-radius:50%;
+  translate:-50% -50%; opacity:var(--ppx-halo);
+  background:radial-gradient(circle, rgba(255,90,60,.55) 0%, rgba(255,30,40,.25) 45%, transparent 70%);
+  filter:hue-rotate(var(--ppx-hue)); 
+  animation:ppx-halo 1.6s ease-in-out infinite; animation-play-state:paused;
+}
+.prod-card.ppx-on .ppx::before{ animation-play-state:running; }
+@keyframes ppx-halo{ 0%,100%{ scale:.85; } 50%{ scale:1.2; } }
+
+/* อะตอม: วงโคจรเอียงคนละมุม ตัววงแทบนิ่ง (แกว่งเบาๆ) สิ่งที่วิ่งคือ "ลำแสง" ตามเส้นวง */
+@property --ppx-a{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+/* .ppx-fx: ตัวใส่ perspective + เอฟเฟกต์แสงเรือง/สี (filter ห้ามอยู่บนตัวที่เป็น preserve-3d)
+   .ppx-atom: ฉาก 3 มิติ ที่มีทั้งวงโคจรและโลโก้ จึงเรียงหน้า-หลังถูกต้อง
+   (เส้นวงฝั่งใกล้พาดผ่านหน้าโลโก้ ฝั่งไกลอ้อมหลังโลโก้) */
+.ppx-fx{
+  position:absolute; inset:0; perspective:520px;
+  filter:drop-shadow(0 0 2px rgba(255,30,20,.95)) drop-shadow(0 0 var(--ppx-glow) rgba(255,10,10,.65))
+         hue-rotate(var(--ppx-hue)) saturate(var(--ppx-sat));
+}
+.ppx-atom{ position:absolute; inset:0; transform-style:preserve-3d; }
+.prod-card.ppx-on .ppx-atom{ animation:ppx-sway 4.2s ease-in-out infinite alternate; }
+@keyframes ppx-sway{
+  from{ transform:rotateZ(calc(var(--ppx-sway) * -1)) rotateY(calc(var(--ppx-sway) * -2.3)); }
+  to  { transform:rotateZ(var(--ppx-sway))            rotateY(calc(var(--ppx-sway) * 2.3)); }
+}
+/* โลโก้หมุนสวนทางกับการแกว่งของอะตอม ให้หันหน้าตรงเสมอ */
+@keyframes ppx-unsway{
+  from{ transform:rotateY(calc(var(--ppx-sway) * 2.3))  rotateZ(var(--ppx-sway)); }
+  to  { transform:rotateY(calc(var(--ppx-sway) * -2.3)) rotateZ(calc(var(--ppx-sway) * -1)); }
+}
+.ppx-orbit{
+  position:absolute; left:50%; top:50%; width:var(--ppx-size); aspect-ratio:1; border-radius:50%;
+  translate:-50% -50%;
+  transform:rotateZ(var(--oz,0deg)) rotateX(var(--ppx-tilt));
+}
+.ppx-orbit::before{                       /* เส้นวงฐาน */
+  content:""; position:absolute; inset:0; border-radius:50%;
+  border:var(--ppx-base) solid var(--line, rgba(255,70,55,.9));
+  opacity:var(--ppx-baseop);
+}
+.ppx-orbit::after{                        /* ลำแสงวิ่งตามวง: conic หมุนในระนาบวง ตัดเหลือเส้นขอบด้วย mask */
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:conic-gradient(from var(--ppx-a),
+    transparent 0deg,
+    transparent calc(360deg - var(--ppx-tail)),
+    color-mix(in srgb, var(--t) 55%, transparent) calc(360deg - var(--ppx-tail) * .6),
+    var(--m) calc(360deg - var(--ppx-tail) * .2),
+    var(--h) 358deg, #ff8a78 360deg);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - var(--ppx-line)), #000 calc(100% - var(--ppx-line) + .2px));
+          mask:radial-gradient(farthest-side, transparent calc(100% - var(--ppx-line)), #000 calc(100% - var(--ppx-line) + .2px));
+  animation:ppx-run calc(var(--ppx-speed) * var(--k, 1)) linear infinite;
+  animation-delay:var(--dl, 0s); animation-direction:var(--dir, normal);
+  animation-play-state:paused;
+}
+.prod-card.ppx-on .ppx-orbit::after{ animation-play-state:running; }
+@keyframes ppx-run{ to{ --ppx-a:360deg; } }
+
+/* โลโก้เล็กตรงกลาง (นิวเคลียส) */
+.ppx-logo{
+  position:absolute; left:50%; top:50%; width:var(--ppx-logo); height:auto; max-height:40%; object-fit:contain;
+  translate:-50% -50%; scale:.3; opacity:0;
+  filter:drop-shadow(0 0 4px rgba(255,20,10,.9));
+}
+.prod-card.ppx-on .ppx-logo{ animation:ppx-logo-in .4s cubic-bezier(.2,1.1,.3,1.25) forwards, ppx-pulse 1.3s ease-in-out .4s infinite, ppx-unsway 4.2s ease-in-out infinite alternate; }
+@keyframes ppx-logo-in{ to{ scale:1; opacity:1; } }
+@keyframes ppx-pulse{ 0%,100%{ scale:1; } 50%{ scale:1.12; } }
+
+/* ขอบการ์ดเรืองแดงตอนกด (ไม่ย่อ/ขยายการ์ด) */
+.prod-card.ppx-on{
+  border-color:rgba(255,40,30,.55) !important;
+  box-shadow:0 0 0 1px rgba(255,40,30,.28), 0 0 22px -4px rgba(255,10,10,.45), 0 10px 26px -12px rgba(0,0,0,.9) !important;
+}
+
+
+@media (prefers-reduced-motion: reduce){
+  .ppx-atom, .ppx-logo, .ppx-orbit::after, .ppx::before{ animation:none !important; }
+  .prod-card.ppx-on .ppx-logo{ opacity:1; scale:1; }
+}
+
+
+/* ===== v7: ให้เหมือนวิดีโอต้นฉบับ ===== */
+/* ป้าย (เช่น "ขายแล้ว 29,834", FLASH SALE) อยู่เหนือเอฟเฟกต์ ไม่โดนฟิล์มแดงทับ */
+.prod-card.ppx-on .prod-media > *:not(.ppx):not(.prod-img){ z-index:6; }
+
+/* ชื่อสินค้าเปลี่ยนเป็นแดงตอนกด + กลิตช์เล็กน้อย */
+.prod-card .prod-name, .prod-card .prod-title, .prod-card h3, .prod-card .prod-price, .prod-card .price{
+  transition:color .18s ease;
+}
+.prod-card.ppx-on .prod-name, .prod-card.ppx-on .prod-title, .prod-card.ppx-on h3{
+  color:#ff1a1a !important; -webkit-text-fill-color:#ff1a1a !important;
+  animation:ppx-glitch 1.1s steps(1,end) infinite;
+}
+.prod-card.ppx-on .prod-price, .prod-card.ppx-on .price{
+  animation:ppx-glitch 1.1s steps(1,end) -.35s infinite;
+}
+@keyframes ppx-glitch{
+  0%,100%{ transform:none; text-shadow:none; }
+  8%  { transform:translateX(-1px); text-shadow:1.5px 0 rgba(255,0,0,.7); }
+  14% { transform:none; text-shadow:none; }
+  42% { transform:translateX(1px);  text-shadow:-1.5px 0 rgba(255,0,0,.65); }
+  48% { transform:none; text-shadow:0 0 5px rgba(255,20,20,.55); }
+  73% { transform:translateX(-.8px); text-shadow:1.5px 0 rgba(255,0,0,.6); }
+  79% { transform:none; text-shadow:none; }
+}
+@media (prefers-reduced-motion: reduce){
+  .prod-card.ppx-on .prod-name, .prod-card.ppx-on .prod-title, .prod-card.ppx-on h3,
+  .prod-card.ppx-on .prod-price, .prod-card.ppx-on .price{ animation:none !important; }
+}
+
+
+/* ===== v8: รูปสินค้าค่อยๆ เบลอจางหายตอนกด / ค่อยๆ กลับตอนปล่อย ===== */
+.prod-card .prod-media > img.prod-img{
+  transition:filter 1.1s ease, opacity 1.1s ease, transform 1.3s ease;
+}
+.prod-card.ppx-on .prod-media > img.prod-img{
+  filter:blur(11px) saturate(1.3) brightness(.6);
+  opacity:.22;
+  transform:scale(1.12);
+}
+@media (prefers-reduced-motion: reduce){
+  .prod-card .prod-media > img.prod-img{ transition:none; }
+}
