@@ -58,3 +58,10 @@
 #panelPromos .pma-b{ flex:1; padding:9px 6px; border-radius:10px; cursor:pointer; font:700 12.5px 'Noto Sans Lao',sans-serif; color:inherit; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.14); }
 #panelPromos .pma-b.del{ color:#ff8a8a; border-color:rgba(255,0,1,.4); }
 #panelPromos .pma-b.del.sure{ background:#c40000; color:#fff; }
+
+/* ราคาใหม่ต่อสินค้า + ตัวอย่างป้ายลดราคา */
+#panelPromos .pma-np b{ color:#ffc83a; font-weight:800; }
+#panelPromos .pma-prev{ display:flex; align-items:flex-start; gap:12px; margin-top:12px; padding:0 12px; border-radius:12px; min-height:76px; overflow:hidden;
+  background:linear-gradient(180deg,#26201f,#120f0f); border:1px solid rgba(255,255,255,.08); }
+#panelPromos .pma-prev .prod-promo-badge{ position:relative; left:0; top:0; flex:none; }
+#panelPromos .pma-prev-t{ font-size:12px; opacity:.7; padding-top:12px; }

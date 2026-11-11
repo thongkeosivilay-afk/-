@@ -1,26 +1,52 @@
 /* =========================================================
-   promo.css — โปรโมชั่น: ป้าย HOT ทอง + ป้ายส่วนลดแดง, ราคาขีดทับ, การ์ดโปรหน้าแรก
+   promo.css — โปรโมชั่น: ป้ายริบบิ้นลดราคา (SALE -NN%), ราคาขีดทับ, การ์ดโปรหน้าแรก
    ใช้ร่วม index.html / category.html / product.html
    ========================================================= */
 
-/* ---------- ป้ายบนการ์ดสินค้า (มุมซ้ายบนของรูป) ---------- */
-.prod-card .prod-promo-badge{
-  position:absolute; top:5px; left:5px; z-index:6;
-  width:58px; pointer-events:none;
-  transform:rotate(-6deg); transform-origin:0 0;
-  filter:drop-shadow(0 4px 8px rgba(255,190,40,.55));
+/* ---------- ป้ายลดราคาบนการ์ดสินค้า: ริบบิ้นแดงห้อยมุมซ้ายบน ----------
+   โครงสร้าง: .prod-promo-badge > .ppb-in > (.ppb-top "SALE" | "ເຖິງ") + (.ppb-num "-30%")
+   - ตัวนอกถือ drop-shadow (clip-path ของตัวใน จะตัดเงาถ้าอยู่ element เดียวกัน)
+   - แถบทองด้านบน + แสงวิบวับกวาดผ่าน (ปิดเมื่อ prefers-reduced-motion / html.perf-lite) */
+.prod-promo-badge{
+  position:absolute; top:0; left:7px; z-index:6; pointer-events:none;
+  filter:drop-shadow(0 5px 6px rgba(110,0,0,.55));
 }
-.prod-promo-badge .hot-badge{ width:100%; height:auto; display:block; }
-.prod-promo-badge .pp-pill{
-  display:block; width:max-content; margin:-3px 0 0 6px;
-  padding:2px 8px; border-radius:99px;
-  background:linear-gradient(135deg,#ff3b3b,#c40000);
-  color:#fff; font:800 11.5px/1.25 'Rajdhani','Noto Sans Lao',sans-serif; letter-spacing:.02em;
-  border:1px solid rgba(255,255,255,.35);
-  box-shadow:0 3px 8px -2px rgba(255,0,0,.6);
+.prod-promo-badge .ppb-in{
+  position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center;
+  min-width:44px; padding:4px 7px 16px; color:#fff;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(255,255,255,.28), transparent 60%),
+    linear-gradient(180deg,#ff5b46 0%,#e5121b 50%,#a50009 100%);
+  clip-path:polygon(0 0,100% 0,100% 100%,50% calc(100% - 8px),0 100%);
 }
+.prod-promo-badge .ppb-in::before{ /* แถบทองหัวริบบิ้น */
+  content:""; position:absolute; left:0; right:0; top:0; height:3px;
+  background:linear-gradient(90deg,#ffe08a,#ffc83a 50%,#ffe08a);
+}
+.prod-promo-badge .ppb-in::after{ /* แสงวิบวับ */
+  content:""; position:absolute; top:0; bottom:0; left:-90%; width:55%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.6),transparent);
+  transform:skewX(-18deg); animation:ppbShine 3.6s ease-in-out infinite;
+}
+@keyframes ppbShine{ 0%,55%{ left:-90%; } 100%{ left:150%; } }
+.prod-promo-badge .ppb-top{
+  margin-top:3px; font:800 8.5px/1 'Orbitron','Noto Sans Lao','Rajdhani',sans-serif; letter-spacing:.14em;
+  color:#ffe08a; text-shadow:0 1px 1px rgba(80,0,0,.6);
+}
+.prod-promo-badge .ppb-num{
+  margin-top:3px; white-space:nowrap; font:900 20px/1 'Rajdhani','Orbitron',sans-serif; letter-spacing:-.01em;
+  text-shadow:0 1px 0 rgba(90,0,0,.65), 0 0 8px rgba(255,220,140,.35);
+}
+.prod-promo-badge .ppb-num small{ font-size:11px; font-weight:800; margin-left:1px; }
+.prod-promo-badge.is-wide .ppb-num{ font-size:17px; }
+.prod-promo-badge.is-amount .ppb-num{ font-size:13px; }
 /* กัน CSS รูปสินค้า (opacity/fade ของ svg ใน .prod-media) มากระทบป้าย */
 .prod-card .prod-promo-badge svg{ opacity:1 !important; }
+/* การ์ดที่มีป้ายลดราคา: ขยับปุ่มหัวใจ/ป้ายแนะนำที่อยู่มุมซ้ายบนเหมือนกัน ให้ไม่ทับริบบิ้น */
+.prod-card:has(> .prod-promo-badge) > .fav-btn,
+.prod-card:has(> .prod-promo-badge) > .admin-pin-badge{ left:62px; }
+@media (prefers-reduced-motion:reduce){ .prod-promo-badge .ppb-in::after{ animation:none; display:none; } }
+html.perf-lite .prod-promo-badge .ppb-in::after{ animation:none; display:none; }
 
 /* ---------- ราคาบนการ์ด: ราคาเดิมขีดทับ + ราคาใหม่สีแดง ---------- */
 .prod-price.has-promo{ display:flex; flex-direction:column; align-items:flex-start; gap:1px; line-height:1.1; }
@@ -33,6 +59,13 @@
 .prod-price.has-promo .pp-new{ color:#ff2a2a; -webkit-text-fill-color:#ff2a2a; font-weight:800; }
 .opt-price .pp-old{ display:block; font-size:11px; }
 .price-value + .pp-old, .pp-old-sum{ display:inline-block; margin-right:8px; font-size:14px; vertical-align:middle; }
+/* ป้าย % เล็กๆ ข้างราคาในหน้ารายละเอียดสินค้า */
+.pp-pct-pill{
+  display:inline-block; margin-right:8px; padding:2px 8px; border-radius:99px; vertical-align:middle;
+  background:linear-gradient(135deg,#ff4a3d,#c40000); color:#fff; border:1px solid rgba(255,224,138,.55);
+  font:800 12px/1.3 'Rajdhani','Noto Sans Lao',sans-serif; letter-spacing:.02em;
+  box-shadow:0 3px 8px -2px rgba(255,0,0,.55);
+}
 
 /* ---------- การ์ดโปรโมชั่นหน้าแรก ---------- */
 .promo-sec{ padding-top:4px; }

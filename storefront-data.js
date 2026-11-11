@@ -133,10 +133,18 @@
       ? (product.durations || []).map((d) => Number(d.price)).filter((n) => Number.isFinite(n) && n > 0)
       : [Number(product.price) || 0];
     let pick = null;
+    let maxPct = 0;
+    let minPct = Infinity;
+    let hits = 0;
     rows.forEach((base) => {
       const r = promoOff(base, promos);
       if (r.off <= 0 || !r.promo) return;
       const np = base - r.off;
+      // % ที่ลดจริงของแถวนี้ (ปัดเศษ) — ใช้โชว์บนป้าย
+      const rowPct = r.promo.mode === 'percent' ? Number(r.promo.percent) || 0 : Math.round((r.off / base) * 100);
+      hits++;
+      maxPct = Math.max(maxPct, rowPct);
+      minPct = Math.min(minPct, rowPct);
       if (!pick || np < pick.newPrice) pick = { oldPrice: base, newPrice: np, off: r.off, promo: r.promo };
     });
     if (!pick) return null;
@@ -147,15 +155,30 @@
       off: pick.off,
       kind: isPct ? 'percent' : 'fixed',
       label: isPct ? `${Number(pick.promo.percent)}%` : `-${fmtDots(pick.off)}`,
+      pct: maxPct,                          // % สูงสุดที่ลดได้ (0 = ลดน้อยกว่า 1% -> ป้ายโชว์เป็นจำนวนเงินแทน)
+      upTo: hits > 1 && maxPct !== minPct,  // หลายระยะเวลาที่ % ไม่เท่ากัน -> ป้ายขึ้นคำว่า "ເຖິງ" (สูงสุด)
       endsAt: pick.promo.endsAt,
     };
   }
 
-  // ป้าย HOT สีทอง + ป้ายส่วนลด (แดง) บนมุมซ้ายของการ์ดสินค้า
-  const PROMO_HOT_SVG = '<svg class="hot-badge" viewBox="0 0 124 64" role="img" aria-label="HOT" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="pbG" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset=".5" stop-color="#ffc83a"/><stop offset="1" stop-color="#d98a00"/></linearGradient><linearGradient id="pbT" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e29a00"/><stop offset=".6" stop-color="#ffc83a"/><stop offset="1" stop-color="#fff3b0"/></linearGradient><linearGradient id="pbH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><g class="hb-flames" fill="url(#pbT)" stroke="#8a5a00" stroke-width="1.4" stroke-linejoin="round"><path class="hb-t hb-t1" d="M76 18C88 18 96 12 100 2C106 10 104 20 96 26C90 30 84 30 76 30Z"/><path class="hb-t hb-t2" d="M76 26C92 24 104 20 114 14C114 24 110 30 102 34C94 38 86 38 76 38Z"/><path class="hb-t hb-t3" d="M76 34C92 34 106 36 118 42C108 46 100 48 90 49C84 50 80 50 76 50Z"/><path class="hb-t hb-t4" d="M76 42C88 46 96 52 100 62C92 60 86 58 76 54Z"/></g><path d="M8 34C8 22 20 15 36 15H62C80 15 88 22 88 34C88 46 80 53 62 53H36C20 53 8 46 8 34Z" fill="url(#pbG)" stroke="#8a5a00" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 30C16 21 26 18 40 18H62C50 22 30 22 14 30Z" fill="url(#pbH)"/><text x="48" y="42" text-anchor="middle" font-family="\'Lilita One\',\'Arial Black\',Impact,sans-serif" font-weight="900" font-style="italic" font-size="27" fill="#4a2a00" fill-opacity=".5" transform="translate(2 2) skewX(-8)">HOT</text><text x="48" y="42" text-anchor="middle" font-family="\'Lilita One\',\'Arial Black\',Impact,sans-serif" font-weight="900" font-style="italic" font-size="27" fill="#fff" stroke="#fff" stroke-width=".6" transform="skewX(-8)">HOT</text></svg>';
+  // % ที่ลดจากราคาเดิม -> ราคาใหม่ (ใช้บนหน้ารายละเอียดสินค้า)
+  function discountPct(oldPrice, newPrice) {
+    const o = Number(oldPrice) || 0;
+    if (o <= 0) return 0;
+    return Math.round(((o - (Number(newPrice) || 0)) / o) * 100);
+  }
+
+  // ป้ายลดราคา: ริบบิ้นแดงห้อยมุมซ้ายบนของการ์ด (หัวทอง + แสงวิบวับ) โชว์ "SALE" + % ที่ลด
+  // - ลดเป็น % หรือลดเป็นจำนวนเงิน -> โชว์เป็น "-NN%" เสมอ (ปัดเศษ) ; ถ้าลดน้อยกว่า 1% โชว์จำนวนเงินแทน
+  // - สินค้าหลายระยะเวลาที่ % ไม่เท่ากัน -> หัวป้ายขึ้น "ເຖິງ" (สูงสุด)
+  // สไตล์อยู่ใน promo.css (.prod-promo-badge)
   function promoBadgeHTML(pp) {
     if (!pp) return '';
-    return `<div class="prod-promo-badge" aria-label="โปรโมชั่น">${PROMO_HOT_SVG}<span class="pp-pill">${escapeHtmlLocal(pp.label)}</span></div>`;
+    const showPct = pp.pct >= 1;
+    const big = showPct ? `-${pp.pct}<small>%</small>` : escapeHtmlLocal(`-${fmtDots(pp.off)}`);
+    const cls = ['prod-promo-badge', showPct ? '' : 'is-amount', pp.pct >= 100 ? 'is-wide' : ''].filter(Boolean).join(' ');
+    const top = pp.upTo ? 'ເຖິງ' : 'SALE';
+    return `<div class="${cls}" role="img" aria-label="ລົດລາຄາ ${escapeHtmlLocal(showPct ? pp.pct + '%' : fmtDots(pp.off))}"><span class="ppb-in"><span class="ppb-top">${top}</span><span class="ppb-num">${big}</span></span></div>`;
   }
   // ราคาบนการ์ด: ราคาเดิมขีดทับ + ราคาใหม่สีแดง
   function promoPriceHTML(pp) {
@@ -308,6 +331,7 @@
     promoPrice,
     promoOff,
     productPromo,
+    discountPct,
     promoBadgeHTML,
     promoPriceHTML,
     productTotalStock,

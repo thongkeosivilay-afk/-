@@ -86,12 +86,50 @@
       return `<div class="pma-prod ${on ? 'on' : ''}" data-id="${esc(p.id)}">
         <button type="button" class="pma-chk" data-a="tg" aria-label="ເລືອກ">${on ? '✓' : ''}</button>
         <div class="pma-img">${p.image_url ? `<img src="${esc(p.image_url)}" alt="" loading="lazy">` : esc((p.name || '?').slice(0, 1))}</div>
-        <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(p.category || '')} · ${p.duration_enabled ? 'ຫຼາຍໄລຍະ' : kip(p.price)}</small></div>
+        <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(p.category || '')} · ${p.duration_enabled ? 'ຫຼາຍໄລຍະ' : kip(p.price)}<span class="pma-np">${on ? newPriceTxt(p, amt) : ''}</span></small></div>
         ${mode === 'fixed' && on ? `<div class="pma-amt"><span>-</span><input inputmode="numeric" data-a="amt" placeholder="5000" value="${amt ? esc(amt) : ''}"></div>` : ''}
       </div>`;
     }).join('') : '<div class="pma-empty">ບໍ່ພົບສິນຄ້າ</div>';
     $('pmaPickCount').textContent = picked.size ? `ເລືອກແລ້ວ ${picked.size}` : 'ຍັງບໍ່ເລືອກ';
     upd();
+  }
+
+  /* ---------- ราคาใหม่ต่อสินค้า + ตัวอย่างป้ายบนการ์ด ---------- */
+  const pctVal = () => Math.min(parseInt(String($('pmaVal').value).replace(/\D/g, ''), 10) || 0, 100);
+  // ราคาหลังลดของสินค้า 1 ชิ้น (เฉพาะสินค้าที่ไม่ได้ตั้งหลายระยะเวลา) — ' → ₭ xx.xxx' หรือ '' ถ้ายังไม่มียอดลด
+  function newPriceTxt(p, amt) {
+    if (!p || p.duration_enabled) return '';
+    const price = Number(p.price) || 0;
+    const off = mode === 'percent' ? Math.round(price * pctVal() / 100) : Math.min(Number(amt) || 0, price);
+    return off > 0 ? ` → <b>${kip(price - off)}</b>` : '';
+  }
+  function refreshNewPrices() {
+    document.querySelectorAll('#pmaProdList .pma-prod').forEach((row) => {
+      const el = row.querySelector('.pma-np');
+      if (!el) return;
+      const id = row.dataset.id;
+      el.innerHTML = picked.has(id) ? newPriceTxt(products.find((x) => x.id === id), picked.get(id)) : '';
+    });
+  }
+  // ป้ายตัวอย่างหน้าตาเหมือนบนการ์ดจริง (ใช้ class เดียวกับ promo.css)
+  function badgePreview(pct, off) {
+    if (!(pct >= 1) && !(off > 0)) return '';
+    const showPct = pct >= 1;
+    const big = showPct ? `-${pct}<small>%</small>` : `-${fmt(off)}`;
+    const cls = ['prod-promo-badge', showPct ? '' : 'is-amount', pct >= 100 ? 'is-wide' : ''].filter(Boolean).join(' ');
+    return `<div class="pma-prev"><div class="${cls}"><span class="ppb-in"><span class="ppb-top">SALE</span><span class="ppb-num">${big}</span></span></div><span class="pma-prev-t">ປ້າຍທີ່ລູກຄ້າຈະເຫັນເທິງການ໌ດສິນຄ້າ</span></div>`;
+  }
+  function previewFor() {
+    if (mode === 'percent') return badgePreview(pctVal(), 0);
+    for (const [id, amt] of picked) {
+      const p = products.find((x) => x.id === id);
+      const a = Number(amt) || 0;
+      if (!p || !a) continue;
+      if (p.duration_enabled) return badgePreview(0, a);
+      const price = Number(p.price) || 0;
+      return badgePreview(price ? Math.round(Math.min(a, price) / price * 100) : 0, a);
+    }
+    return '';
   }
 
   /* ---------- สรุป/ตัวอย่าง ---------- */
@@ -107,7 +145,8 @@
       const n = picked.size;
       line = n ? `ລົດລາຄາ ${n} ສິນຄ້າ (ແຕ່ລະຊິ້ນຕາມຍອດທີ່ໃສ່)` : 'ຕິກເລືອກສິນຄ້າ ແລ້ວໃສ່ຍອດທີ່ຈະລົດ';
     }
-    $('pmaSum').innerHTML = `${line}<br>ໝົດເວລາ: <b>${esc(endTxt)}</b>`;
+    $('pmaSum').innerHTML = `${line}<br>ໝົດເວລາ: <b>${esc(endTxt)}</b>${previewFor()}`;
+    refreshNewPrices();
   }
 
   /* ---------- สร้างโปรโมชั่น ---------- */

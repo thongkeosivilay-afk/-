@@ -402,11 +402,20 @@ document.addEventListener('DOMContentLoaded', () => {
     priceValue.classList.toggle('is-reseller-glow', resellerActive);
     const oldPromoEl = priceValue.parentElement && priceValue.parentElement.querySelector('.pp-old-sum');
     if (oldPromoEl) oldPromoEl.remove();
+    const oldPctEl = priceValue.parentElement && priceValue.parentElement.querySelector('.pp-pct-pill');
+    if (oldPctEl) oldPctEl.remove();
     if (d && d.orig != null && d.orig > d.price) {
       const o = document.createElement('s');
       o.className = 'pp-old pp-old-sum';
       o.textContent = formatKip(d.orig);
       priceValue.insertAdjacentElement('beforebegin', o);
+      const pct = window.StorefrontData.discountPct(d.orig, d.price);
+      if (pct >= 1) {
+        const pill = document.createElement('span');
+        pill.className = 'pp-pct-pill';
+        pill.textContent = `-${pct}%`;
+        priceValue.insertAdjacentElement('beforebegin', pill);
+      }
     }
     priceValue.nextElementSibling?.classList?.contains('reseller-price-tag') && priceValue.nextElementSibling.remove();
     if (resellerActive) {
