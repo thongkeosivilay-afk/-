@@ -959,6 +959,7 @@ async function handleMe(request, env) {
   const needsUsername = !sessionUser.isAdmin
     && !(typeof custom.username === 'string' && custom.username)
     && !sessionUser.nameChosen;
+  merged.email = publicEmail(merged.email); // ซ่อนอีเมลสำรองของบัญชีที่สมัครโดยไม่ใส่อีเมล
   return json({ loggedIn: true, user: { ...merged, balance, hasPassword, needsUsername } });
 }
 
@@ -1302,6 +1303,39 @@ async function isUserBanned(env, userId) {
    ແບບດຽວກັນກັບ Discord login (ເກັບໃນ env.SESSIONS) ເພື່ອໃຫ້ /api/me, wallets,
    topup, orders ໃຊ້ user id ດຽວກັນໄດ້ທັນທີ */
 
+/* ---------- สมัครโดยไม่ใส่อีเมล ----------
+   Supabase Auth บังคับให้ทุก user มีอีเมล จึงสร้างอีเมลสำรอง "<username>@noemail.local" ให้บัญชีที่ไม่กรอกอีเมล
+   (ไม่ส่งเมลจริง ใช้ email_confirm:true) — ซ่อนจากหน้าเว็บ/แจ้งเตือน ผู้ใช้ล็อกอินด้วยชื่อผู้ใช้แทน */
+const PLACEHOLDER_EMAIL_DOMAIN = '@noemail.local';
+const isPlaceholderEmail = (e) => String(e || '').toLowerCase().endsWith(PLACEHOLDER_EMAIL_DOMAIN);
+const publicEmail = (e) => (isPlaceholderEmail(e) ? null : e || null);
+
+/* หาอีเมล (สำหรับ Supabase Auth) ของชื่อผู้ใช้ — อาจมีหลายบัญชีชื่อเดียวกัน (ข้อมูลเก่า) จึงคืนเป็นลิสต์ */
+async function resolveLoginEmails(env, username) {
+  const out = [];
+  try {
+    const rows = await supabaseSelect(env, 'user_profiles', {
+      select: 'user_id',
+      username: 'ilike.' + username.replace(/([_%\\])/g, '\\$1'),
+      limit: '5',
+    }, { timeoutMs: 8000 });
+    await Promise.all((rows || []).map(async (r) => {
+      try {
+        const res = await fetch(`${env.SUPABASE_URL}/auth/v1/admin/users/${encodeURIComponent(r.user_id)}`, {
+          headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` },
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!res.ok) return; // ไม่ใช่บัญชี Supabase Auth (เช่น Discord/Google) -> ข้าม
+        const u = await res.json().catch(() => null);
+        if (u && u.email) out.push(String(u.email).toLowerCase());
+      } catch { /* ข้าม */ }
+    }));
+  } catch (err) { console.error('resolveLoginEmails: อ่าน user_profiles ไม่สำเร็จ', err); }
+  const synthetic = username.toLowerCase() + PLACEHOLDER_EMAIL_DOMAIN;
+  if (!out.includes(synthetic)) out.push(synthetic);
+  return [...new Set(out)];
+}
+
 async function handlePasswordSignup(request, env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
     return json({ error: 'ລະບົບຍັງບໍ່ໄດ້ຕັ້ງຄ່າ Supabase (SUPABASE_SERVICE_ROLE_KEY)' }, 500);
@@ -1315,12 +1349,20 @@ async function handlePasswordSignup(request, env) {
   }
 
   const username = (body.username || '').trim();
-  const email = (body.email || '').trim().toLowerCase();
+  const realEmail = (body.email || '').trim().toLowerCase(); // ไม่บังคับ — เว้นว่างได้
   const password = body.password || '';
 
   if (!/^[A-Za-z0-9._-]{3,24}$/.test(username)) return json({ error: 'Username must be 3-24 characters: English letters, numbers, . _ - only' }, 400);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: 'ອີເມວບໍ່ຖືກຕ້ອງ' }, 400);
+  if (realEmail && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(realEmail) || isPlaceholderEmail(realEmail))) return json({ error: 'ອີເມວບໍ່ຖືກຕ້ອງ' }, 400);
   if (password.length < 6) return json({ error: 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ' }, 400);
+  if (RESERVED_USERNAMES.has(username.toLowerCase())) return json({ error: 'ຊື່ຜູ້ໃຊ້ນີ້ຖືກຈອງໄວ້ ກະລຸນາເລືອກຊື່ອື່ນ' }, 400);
+
+  // ชื่อผู้ใช้ต้องไม่ซ้ำ (ใช้ล็อกอินแทนอีเมล)
+  try {
+    if (await isUsernameTaken(env, username)) return json({ error: 'ຊື່ຜູ້ໃຊ້ນີ້ມີຄົນໃຊ້ແລ້ວ ກະລຸນາເລືອກຊື່ອື່ນ' }, 400);
+  } catch (err) { console.error('handlePasswordSignup: เช็คชื่อซ้ำไม่สำเร็จ', err); }
+
+  const email = realEmail || (username.toLowerCase() + PLACEHOLDER_EMAIL_DOMAIN);
 
   // ---- ສ້າງຜູ້ໃຊ້ໃໝ່ຜ່ານ Supabase Auth Admin API (ຢືນຢັນອີເມວທັນທີ ບໍ່ຕ້ອງລໍ email link) ----
   let createRes;
@@ -1354,7 +1396,7 @@ async function handlePasswordSignup(request, env) {
 
     // อีเมลซ้ำจริงๆ เท่านั้น (เดิมเหมาทุก 422 ว่า "อีเมลซ้ำ" ทำให้ error อื่นถูกบอกผิดๆ)
     if (code === 'email_exists' || /already been registered|already exists/i.test(msg)) {
-      return json({ error: 'ອີເມວນີ້ຖືກສະໝັກໄປແລ້ວ' }, 400);
+      return json({ error: realEmail ? 'ອີເມວນີ້ຖືກສະໝັກໄປແລ້ວ' : 'ຊື່ຜູ້ໃຊ້ນີ້ມີຄົນໃຊ້ແລ້ວ ກະລຸນາເລືອກຊື່ອື່ນ' }, 400);
     }
     if (code === 'weak_password' || /password/i.test(msg)) {
       return json({ error: 'ລະຫັດຜ່ານບໍ່ປອດໄພພໍ ກະລຸນາໃຊ້ລະຫັດທີ່ຍາກຂຶ້ນ' }, 400);
@@ -1391,7 +1433,7 @@ async function handlePasswordSignup(request, env) {
     color: 0xe8b34a, // ทอง
     fields: [
       { name: 'ຊື່', value: username || '-', inline: true },
-      { name: 'ອີເມວ', value: email || '-', inline: true },
+      { name: 'ອີເມວ', value: realEmail || '-', inline: true },
     ],
   });
 
@@ -1410,9 +1452,13 @@ async function handlePasswordLogin(request, env) {
     return json({ error: 'ຂໍ້ມູນທີ່ສົ່ງມາບໍ່ຖືກຕ້ອງ' }, 400);
   }
 
-  const email = (body.email || '').trim().toLowerCase();
+  // ຮັບ "ຊື່ຜູ້ໃຊ້" (ຫຼື ອີເມວ ສຳລັບບັນຊີເກົ່າ) ໃນຊ່ອງ identifier — ຍັງຮັບ body.email ເພື່ອໃຫ້ client ເກົ່າໃຊ້ໄດ້
+  const identifier = String(body.username || body.identifier || body.email || '').trim();
   const password = body.password || '';
-  if (!email || !password) return json({ error: 'ກະລຸນາໃສ່ອີເມວ ແລະ ລະຫັດຜ່ານ' }, 400);
+  if (!identifier || !password) return json({ error: 'ກະລຸນາໃສ່ຊື່ຜູ້ໃຊ້ ແລະ ລະຫັດຜ່ານ' }, 400);
+  const byEmail = identifier.includes('@');
+  if (!byEmail && !/^[A-Za-z0-9._-]{3,24}$/.test(identifier)) return json({ error: 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ' }, 400);
+  const email = identifier.toLowerCase(); // ใช้เป็นคีย์ rate limit
 
   // ---- ຄວາມປອດໄພ: ຈຳກັດຈຳນວນຄັ້ງທີ່ພະຍາຍາມລ໋ອກອິນຜິດ (ກັນ brute-force ເດົາລະຫັດຜ່ານ) ----
   // ນັບແຍກຕາມອີເມວ (ບໍ່ແມ່ນ IP ເພາະ Worker ນີ້ບໍ່ໄດ້ເກັບ IP ໄວ້ໃນ KV ຢູ່ແລ້ວ) ໃຊ້
@@ -1425,34 +1471,41 @@ async function handlePasswordLogin(request, env) {
     return json({ error: 'ພະຍາຍາມລ໋ອກອິນຜິດຫຼາຍເທື່ອເກີນໄປ ກະລຸນາລໍຖ້າ 15 ນາທີແລ້ວລອງໃໝ່' }, 429);
   }
 
-  // ---- ກວດອີເມວ/ລະຫັດຜ່ານຜ່ານ Supabase Auth token endpoint ----
-  let tokenRes;
+  // ---- ກວດລະຫັດຜ່ານຜ່ານ Supabase Auth token endpoint (ຊື່ຜູ້ໃຊ້ -> ຫາອີເມວຂອງບັນຊີກ່ອນ) ----
+  let candidates;
   try {
-    tokenRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-      },
-      body: JSON.stringify({ email, password }),
-      signal: AbortSignal.timeout(10000),
-    });
+    candidates = byEmail ? [identifier.toLowerCase()] : await resolveLoginEmails(env, identifier);
   } catch (err) {
-    console.error('handlePasswordLogin: เชื่อมต่อ Supabase ไม่ได้', err);
-    return json({ error: 'ເຊື່ອມຕໍ່ຖານຂໍ້ມູນບໍ່ໄດ້ຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 502);
+    console.error('handlePasswordLogin: resolveLoginEmails ล้มเหลว', err);
+    return json({ error: 'ລະບົບຖານຂໍ້ມູນຂັດຂ້ອງຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 503);
   }
 
-  const tokenData = await tokenRes.json().catch(() => ({}));
+  let tokenRes, tokenData = {};
+  for (const candEmail of candidates) {
+    try {
+      tokenRes = await fetch(`${env.SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: env.SUPABASE_SERVICE_ROLE_KEY },
+        body: JSON.stringify({ email: candEmail, password }),
+        signal: AbortSignal.timeout(10000),
+      });
+    } catch (err) {
+      console.error('handlePasswordLogin: เชื่อมต่อ Supabase ไม่ได้', err);
+      return json({ error: 'ເຊື່ອມຕໍ່ຖານຂໍ້ມູນບໍ່ໄດ້ຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 502);
+    }
+    tokenData = await tokenRes.json().catch(() => ({}));
+    if (tokenRes.ok) break;
+    // key ผิด / Supabase ล่ม -> หยุดทันที ไม่ต้องลองอีเมลถัดไป
+    if (tokenRes.status === 401 || tokenRes.status === 403 || tokenRes.status >= 500 || tokenRes.status === 429) break;
+  }
 
   if (!tokenRes.ok) {
     const code = (tokenData && (tokenData.error_code || tokenData.code)) || '';
     const msg = (tokenData && (tokenData.msg || tokenData.message || tokenData.error_description || tokenData.error)) || '';
     console.error('handlePasswordLogin: Supabase token failed', tokenRes.status, code, msg);
-    // key ผิด/ไม่มีสิทธิ์ -> ปัญหาการตั้งค่า ไม่ใช่รหัสผ่านผิด (เดิมบอกว่า "รหัสผ่านผิด" ทุกกรณี ทำให้หาสาเหตุไม่เจอ)
     if (tokenRes.status === 401 || tokenRes.status === 403 || /invalid api key|no api key/i.test(msg)) {
       return json({ error: 'ຕັ້ງຄ່າ SUPABASE_SERVICE_ROLE_KEY ບໍ່ຖືກ (ເບິ່ງ wrangler secret)' }, 500);
     }
-    // Supabase ล่ม/ช้า -> ไม่ใช่ความผิดของผู้ใช้ ไม่นับเข้า rate limit
     if (tokenRes.status >= 500 || tokenRes.status === 429) {
       return json({ error: 'ລະບົບຖານຂໍ້ມູນຂັດຂ້ອງຊົ່ວຄາວ ກະລຸນາລອງໃໝ່ອີກຄັ້ງ' }, 503);
     }
@@ -1460,7 +1513,7 @@ async function handlePasswordLogin(request, env) {
       return json({ error: 'ອີເມວນີ້ຍັງບໍ່ໄດ້ຢືນຢັນ' }, 400);
     }
     await bumpRateLimit(env, limitKey, 15 * 60);
-    return json({ error: 'ອີເມວ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ' }, 400);
+    return json({ error: 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ' }, 400);
   }
 
   const authUser = tokenData.user || {};
@@ -1471,7 +1524,7 @@ async function handlePasswordLogin(request, env) {
   const sessionId = await createSession(env, {
     id: authUser.id,
     username,
-    email: authUser.email || email,
+    email: authUser.email || null,
     avatar: null,
     isAdmin: false,
     discordLinked: false,
@@ -1486,7 +1539,7 @@ async function handlePasswordLogin(request, env) {
     color: 0x2ecc71, // เขียว
     fields: [
       { name: 'ຊື່', value: username || '-', inline: true },
-      { name: 'ອີເມວ', value: authUser.email || email || '-', inline: true },
+      { name: 'ອີເມວ', value: publicEmail(authUser.email) || '-', inline: true },
     ],
   });
 
@@ -1571,7 +1624,7 @@ async function handleChangePassword(request, env) {
   await sendDiscordAlert(env, {
     title: '🔑 ມີການປ່ຽນລະຫັດຜ່ານບັນຊີ',
     color: 0xf39c12,
-    fields: [{ name: 'ອີເມວ', value: user.email || '-', inline: true }],
+    fields: [{ name: 'ອີເມວ', value: publicEmail(user.email) || '-', inline: true }],
   });
 
   return json({ ok: true });
