@@ -29,6 +29,25 @@
       });
     } catch (e) {}
   }
+  // เสียงตอนซื้อสินค้าสำเร็จ: โน้ตชุดเดียวกับเสียงล็อกอิน (880 -> 1318.5Hz) แต่ช้าลงและก้องยาวขึ้น
+  // ไม่ให้เร็วเกินไป (เว้นช่วงระหว่างโน้ต 0.19 วิ, ก้อง 1.3 วิ)
+  function purchaseDing() {
+    try {
+      unlock();
+      if (!ctx) return;
+      var t0 = ctx.currentTime + 0.05;
+      [[880, 0], [1318.5, 0.19]].forEach(function (n) {
+        var o = ctx.createOscillator(), g = ctx.createGain();
+        o.type = 'sine'; o.frequency.value = n[0];
+        var s = t0 + n[1];
+        g.gain.setValueAtTime(0.0001, s);
+        g.gain.exponentialRampToValueAtTime(0.35, s + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, s + 1.3);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(s); o.stop(s + 1.35);
+      });
+    } catch (e) {}
+  }
   // เสียงเตือนผิดพลาด: โทนทุ้ม 220Hz (โน้ต A3) ตัดเสียงเร็วแล้วค่อยๆ เบาลงใน ~0.4 วิ
   // ใช้ตอน login ไม่ผ่าน และตอนซื้อสินค้าแล้วเงินไม่พอ (สังเคราะห์ ไม่ต้องใช้ไฟล์เสียง)
   function errorTone() {
@@ -63,5 +82,5 @@
     ding();
     return new Promise(function (r) { setTimeout(r, opts.hold || 1500); });
   }
-  window.LoginSuccess = { unlock: unlock, show: show, ding: ding, error: errorTone };
+  window.LoginSuccess = { unlock: unlock, show: show, ding: ding, purchase: purchaseDing, error: errorTone };
 })();
