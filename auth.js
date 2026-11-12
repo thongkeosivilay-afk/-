@@ -173,6 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .catch((err) => {
           showToast(err.message || 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ', true);
+          if (window.LoginSuccess) window.LoginSuccess.error(); // เสียงตอน login ไม่ผ่าน
         })
         .finally(() => {
           if (loginDone) return;

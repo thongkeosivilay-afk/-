@@ -472,7 +472,9 @@ document.addEventListener('DOMContentLoaded', () => {
       throw new Error('__redirecting__');
     }
     if (!res.ok || !data.ok) {
-      throw new Error(data.error || 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ');
+      const e = new Error(data.error || 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ');
+      e.code = data.code || null;
+      throw e;
     }
     return data.code;
   }
@@ -504,6 +506,10 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       if (err && err.message === '__redirecting__') return;
       console.error('purchase failed:', err);
+      // เสียงเตือนเฉพาะกรณีเงินไม่พอ (ดูจาก code ที่เซิร์ฟเวอร์ส่งมา หรือข้อความ "ບໍ່ພຽງພໍ")
+      if (window.LoginSuccess && err && (err.code === 'INSUFFICIENT_BALANCE' || /ບໍ່ພຽງພໍ|ບໍ່ພໍ/.test(err.message || ''))) {
+        window.LoginSuccess.error();
+      }
       if (codes.length) {
         showErrorSheet(`ຊື້ໄດ້ ${codes.length}/${wantQty} ອັນ ກ່ອນຈະຕິດຂັດ — ${err.message}`, codes);
       } else {

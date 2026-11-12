@@ -29,6 +29,21 @@
       });
     } catch (e) {}
   }
+  // เสียงเตือนผิดพลาด: โทนทุ้ม 220Hz (โน้ต A3) ตัดเสียงเร็วแล้วค่อยๆ เบาลงใน ~0.4 วิ
+  // ใช้ตอน login ไม่ผ่าน และตอนซื้อสินค้าแล้วเงินไม่พอ (สังเคราะห์ ไม่ต้องใช้ไฟล์เสียง)
+  function errorTone() {
+    try {
+      unlock();
+      if (!ctx) return;
+      var t0 = ctx.currentTime + 0.02;
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = 220;
+      g.gain.setValueAtTime(0.5, t0);
+      g.gain.setTargetAtTime(0.0001, t0, 0.075);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t0); o.stop(t0 + 0.6);
+    } catch (e) {}
+  }
   function show(opts) {
     opts = opts || {};
     var el = document.querySelector('.login-ok');
@@ -48,5 +63,5 @@
     ding();
     return new Promise(function (r) { setTimeout(r, opts.hold || 1500); });
   }
-  window.LoginSuccess = { unlock: unlock, show: show, ding: ding };
+  window.LoginSuccess = { unlock: unlock, show: show, ding: ding, error: errorTone };
 })();
