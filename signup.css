@@ -87,3 +87,6 @@ body::before{ left:-170px; top:38%; } body::after{ right:-170px; top:44%; }
 @view-transition{ navigation:auto; }
 ::view-transition-old(root),
 ::view-transition-new(root){ animation-duration:.18s; }
+
+/* ป้าย "(ບໍ່ບັງຄັບ)" ข้างช่องอีเมล */
+.field-optional { font-weight: 500; font-size: .85em; opacity: .6; margin-left: 4px; }

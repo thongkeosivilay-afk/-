@@ -149,7 +149,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const pw = pwField.querySelector('input').value;
 
       let ok = true;
-      if (!emailPattern.test(email)) { setFieldError(emailField, 'ກະລຸນາໃສ່ອີເມວໃຫ້ຖືກຕ້ອງ'); ok = false; }
+      // ຮັບຊື່ຜູ້ໃຊ້ (ຫຼື ອີເມວ ສຳລັບບັນຊີເກົ່າທີ່ສະໝັກດ້ວຍອີເມວ)
+      if (!email) { setFieldError(emailField, 'ກະລຸນາໃສ່ຊື່ຜູ້ໃຊ້'); ok = false; }
+      else if (email.includes('@') ? !emailPattern.test(email) : !/^[A-Za-z0-9._-]{3,24}$/.test(email)) { setFieldError(emailField, 'ຊື່ຜູ້ໃຊ້ບໍ່ຖືກຕ້ອງ'); ok = false; }
       else setFieldError(emailField, '');
 
       if (pw.length < 6) { setFieldError(pwField, 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ'); ok = false; }
@@ -164,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (window.LoginSuccess) window.LoginSuccess.unlock();
       let loginDone = false;
-      authRequest('/api/auth/login', { email, password: pw }, 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
+      authRequest('/api/auth/login', { username: email, password: pw }, 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
         .then(() => {
           loginDone = true;
           const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
@@ -203,7 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!/^[A-Za-z0-9._-]{3,24}$/.test(username)) { setFieldError(userField, 'Username: 3-24 characters, English letters, numbers, . _ - only'); ok = false; }
       else setFieldError(userField, '');
 
-      if (!emailPattern.test(email)) { setFieldError(emailField, 'ກະລຸນາໃສ່ອີເມວໃຫ້ຖືກຕ້ອງ'); ok = false; }
+      // ອີເມວບໍ່ບັງຄັບ: ເວ້ນວ່າງໄດ້ ແຕ່ຖ້າໃສ່ ຕ້ອງຖືກຮູບແບບ
+      if (email && !emailPattern.test(email)) { setFieldError(emailField, 'ກະລຸນາໃສ່ອີເມວໃຫ້ຖືກຕ້ອງ ຫຼື ເວ້ນວ່າງໄວ້'); ok = false; }
       else setFieldError(emailField, '');
 
       if (pw.length < 6) { setFieldError(pwField, 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ'); ok = false; }

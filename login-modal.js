@@ -57,14 +57,14 @@
           '<button type="button" class="lm-tab" data-tab="signup" role="tab">ສະໝັກສະມາຊິກ</button>' +
         '</nav>' +
         '<form class="lm-form" data-form="login" novalidate>' +
-          field('l-email', 'ອີເມວ', MAIL, 'type="email" placeholder="ອີເມວ" autocomplete="email" autocapitalize="none"') +
+          field('l-email', 'ຊື່ຜູ້ໃຊ້', USER, 'type="text" placeholder="ຊື່ຜູ້ໃຊ້" autocomplete="username" autocapitalize="none" spellcheck="false"') +
           field('l-pw', 'ລະຫັດຜ່ານ', LOCK, 'type="password" placeholder="ລະຫັດຜ່ານ" autocomplete="current-password"', true) +
           '<div style="height:6px"></div>' +
           '<button type="submit" class="lm-btn lm-submit">ລົງຊື່ເຂົ້າໃຊ້</button>' +
         '</form>' +
         '<form class="lm-form" data-form="signup" novalidate hidden>' +
           field('s-user', 'ຊື່ຜູ້ໃຊ້', USER, 'type="text" placeholder="Username (English, 3-24 characters)" maxlength="24" autocomplete="username" autocapitalize="none" spellcheck="false"') +
-          field('s-email', 'ອີເມວ', MAIL, 'type="email" placeholder="ອີເມວ" autocomplete="email" autocapitalize="none"') +
+          field('s-email', 'ອີເມວ (ບໍ່ບັງຄັບ)', MAIL, 'type="email" placeholder="ອີເມວ (ບໍ່ໃສ່ກໍໄດ້)" autocomplete="email" autocapitalize="none"') +
           field('s-pw', 'ລະຫັດຜ່ານ', LOCK, 'type="password" placeholder="ລະຫັດຜ່ານ (ຢ່າງໜ້ອຍ 6 ຕົວ)" autocomplete="new-password"', true) +
           field('s-pw2', 'ຢືນຢັນລະຫັດຜ່ານ', LOCK, 'type="password" placeholder="ຢືນຢັນລະຫັດຜ່ານ" autocomplete="new-password"', true) +
           '<div class="lm-row"><label><input type="checkbox" id="lm-s-terms"> ຂ້ອຍຍອມຮັບເງື່ອນໄຂການນຳໃຊ້</label></div>' +
@@ -157,14 +157,15 @@
   function onLogin(e) {
     e.preventDefault();
     var email = overlay.querySelector('#lm-l-email').value.trim(), pw = overlay.querySelector('#lm-l-pw').value, ok = true;
-    if (!emailRe.test(email)) { setErr('l-email', 'ກະລຸນາໃສ່ອີເມວໃຫ້ຖືກຕ້ອງ'); ok = false; } else setErr('l-email', '');
+    if (!email) { setErr('l-email', 'ກະລຸນາໃສ່ຊື່ຜູ້ໃຊ້'); ok = false; }
+    else if (email.indexOf('@') > -1 ? !emailRe.test(email) : !/^[A-Za-z0-9._-]{3,24}$/.test(email)) { setErr('l-email', 'ຊື່ຜູ້ໃຊ້ບໍ່ຖືກຕ້ອງ'); ok = false; } else setErr('l-email', '');
     if (pw.length < 6) { setErr('l-pw', 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ'); ok = false; } else setErr('l-pw', '');
     if (!ok) return;
     var btn = e.target.querySelector('.lm-submit'), txt = btn.textContent;
     btn.disabled = true; btn.textContent = 'ກຳລັງເຂົ້າສູ່ລະບົບ...';
     if (window.LoginSuccess) window.LoginSuccess.unlock();
     var done = false;
-    authRequest('/api/auth/login', { email: email, password: pw }, 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
+    authRequest('/api/auth/login', { username: email, password: pw }, 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
       .then(function () { done = true; finish(true); })
       .catch(function (err) { toast(err.message || 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ', true); if (window.LoginSuccess) window.LoginSuccess.error(); })
       .finally(function () { if (!done) { btn.disabled = false; btn.textContent = txt; } });
@@ -175,7 +176,7 @@
     var u = overlay.querySelector('#lm-s-user').value.trim(), em = overlay.querySelector('#lm-s-email').value.trim(),
         pw = overlay.querySelector('#lm-s-pw').value, pw2 = overlay.querySelector('#lm-s-pw2').value, ok = true;
     if (!/^[A-Za-z0-9._-]{3,24}$/.test(u)) { setErr('s-user', 'Username: 3-24 characters, English letters, numbers, . _ - only'); ok = false; } else setErr('s-user', '');
-    if (!emailRe.test(em)) { setErr('s-email', 'ກະລຸນາໃສ່ອີເມວໃຫ້ຖືກຕ້ອງ'); ok = false; } else setErr('s-email', '');
+    if (em && !emailRe.test(em)) { setErr('s-email', 'ກະລຸນາໃສ່ອີເມວໃຫ້ຖືກຕ້ອງ ຫຼື ເວ້ນວ່າງໄວ້'); ok = false; } else setErr('s-email', '');
     if (pw.length < 6) { setErr('s-pw', 'ລະຫັດຜ່ານຕ້ອງມີຢ່າງໜ້ອຍ 6 ໂຕ'); ok = false; } else setErr('s-pw', '');
     if (!pw2 || pw2 !== pw) { setErr('s-pw2', 'ລະຫັດຜ່ານບໍ່ກົງກັນ'); ok = false; } else setErr('s-pw2', '');
     if (!overlay.querySelector('#lm-s-terms').checked) { toast('ກະລຸນາຍອມຮັບເງື່ອນໄຂການນຳໃຊ້ກ່ອນ', true); ok = false; }
