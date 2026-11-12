@@ -2912,7 +2912,7 @@ async function handleOrderCreate(request, env) {
     const msg = String((err && err.message) || '');
     const matchedKey = Object.keys(ERROR_LABEL).find((key) => msg.includes(key));
     console.error('handleOrderCreate failed:', err);
-    return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, matchedKey === 'INSUFFICIENT_BALANCE' || matchedKey === 'OUT_OF_STOCK' || (matchedKey && matchedKey.startsWith('COUPON_')) ? 400 : 502);
+    return json({ error: matchedKey ? ERROR_LABEL[matchedKey] : 'ສັ່ງຊື້ບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ', code: matchedKey || null }, matchedKey === 'INSUFFICIENT_BALANCE' || matchedKey === 'OUT_OF_STOCK' || (matchedKey && matchedKey.startsWith('COUPON_')) ? 400 : 502);
   }
 }
 
