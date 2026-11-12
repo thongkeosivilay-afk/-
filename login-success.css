@@ -1,0 +1,24 @@
+/* การ์ดแจ้ง "เข้าสู่ระบบสำเร็จ" เด้งขึ้นจากด้านล่าง หลัง login สำเร็จ */
+.login-ok{
+  position:fixed; left:12px; right:12px; bottom:max(14px, env(safe-area-inset-bottom));
+  margin:0 auto; max-width:440px;
+  display:flex; align-items:center; gap:14px;
+  padding:14px 18px; border-radius:20px;
+  background:#fff; color:#0f3d2e;
+  border:1px solid rgba(34,170,110,.35);
+  box-shadow:0 12px 40px rgba(0,0,0,.55);
+  transform:translateY(130%); opacity:0;
+  transition:transform .55s cubic-bezier(.2,1.1,.3,1), opacity .3s ease;
+  z-index:9999; pointer-events:none;
+}
+.login-ok.show{ transform:translateY(0); opacity:1; }
+.login-ok .lok-ico{
+  width:52px; height:52px; border-radius:50%; flex-shrink:0;
+  background:#e3f5ec; display:grid; place-items:center;
+}
+.login-ok .lok-ico svg{ width:34px; height:34px; color:#16a269; }
+.login-ok .lok-ico circle,.login-ok .lok-ico path{ fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+.login-ok.show .lok-ico path{ stroke-dasharray:24; stroke-dashoffset:24; animation:lokDraw .45s .3s ease forwards; }
+@keyframes lokDraw{ to{ stroke-dashoffset:0; } }
+.login-ok .lok-t{ font-size:16px; font-weight:800; line-height:1.3; }
+.login-ok .lok-s{ font-size:13px; font-weight:500; color:#16a269; margin-top:2px; }

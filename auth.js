@@ -162,15 +162,20 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'ກຳລັງເຂົ້າສູ່ລະບົບ...';
 
+      if (window.LoginSuccess) window.LoginSuccess.unlock();
+      let loginDone = false;
       authRequest('/api/auth/login', { email, password: pw }, 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ')
         .then(() => {
+          loginDone = true;
           const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
-          window.location.href = next;
+          const go = () => { window.location.href = next; };
+          if (window.LoginSuccess) window.LoginSuccess.show().then(go); else go();
         })
         .catch((err) => {
           showToast(err.message || 'ເຂົ້າສູ່ລະບົບບໍ່ສຳເລັດ', true);
         })
         .finally(() => {
+          if (loginDone) return;
           submitBtn.disabled = false;
           submitBtn.textContent = originalText;
         });
