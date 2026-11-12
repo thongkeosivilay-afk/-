@@ -686,7 +686,8 @@ function renderManageList(products) {
           <div class="prod-links-list">
             ${links.length ? links.map(l => `
               <span class="prod-link-chip" data-link-id="${l.id}">
-                ${escapeHtmlAdmin(l.label)}
+                <span class="link-chip-label">${escapeHtmlAdmin(l.label)}</span>
+                <button type="button" class="link-chip-edit" title="ແກ້ໄຂລິ້ງ" aria-label="ແກ້ໄຂລິ້ງ">✎</button>
                 <button type="button" class="link-chip-remove" title="ລຶບລິ້ງ" aria-label="ລຶບລິ້ງ">×</button>
               </span>
             `).join('') : '<span class="pe-none">ຍັງບໍ່ມີລິ້ງດາວໂຫຼດ</span>'}
@@ -760,6 +761,12 @@ function renderManageList(products) {
     });
 
     row.querySelector('.link-add-btn').addEventListener('click', () => addProductLink(id, row));
+    row.querySelectorAll('.link-chip-edit').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const chip = btn.closest('.prod-link-chip');
+        openLinkEditor(id, chip.dataset.linkId, chip);
+      });
+    });
     row.querySelectorAll('.link-chip-remove').forEach(btn => {
       btn.addEventListener('click', () => {
         const chip = btn.closest('.prod-link-chip');
@@ -956,6 +963,53 @@ async function addProductLink(productId, row) {
 
   showToast('ເພີ່ມລິ້ງສຳເລັດ');
   loadProducts();
+}
+
+// ແກ້ໄຂຊື່/ລິ້ງ ຂອງລິ້ງດາວໂຫຼດທີ່ມີຢູ່ແລ້ວ (ເປີດຟອມແກ້ໄຂໃຕ້ລາຍການລິ້ງ)
+function openLinkEditor(productId, linkId, chipEl) {
+  const p = currentProducts.find(x => x.id === productId);
+  const link = p && p.links && p.links.find(l => String(l.id) === String(linkId));
+  if (!link) return;
+
+  const section = chipEl.closest('.pe-section');
+  const old = section.querySelector('.link-edit-inline');
+  if (old) old.remove();
+
+  const form = document.createElement('div');
+  form.className = 'link-add-inline link-edit-inline';
+  form.innerHTML = `
+    <input type="text" class="link-edit-label" placeholder="ຊື່ລິ້ງ">
+    <input type="url" class="link-edit-url" placeholder="https://...">
+    <div style="display:flex;gap:8px">
+      <button type="button" class="link-edit-save pe-btn pe-primary">ບັນທຶກ</button>
+      <button type="button" class="link-edit-cancel pe-btn pe-ghost">ຍົກເລີກ</button>
+    </div>`;
+  form.querySelector('.link-edit-label').value = link.label || '';
+  form.querySelector('.link-edit-url').value = link.url || '';
+  section.querySelector('.prod-links-list').after(form);
+
+  form.querySelector('.link-edit-cancel').addEventListener('click', () => form.remove());
+  form.querySelector('.link-edit-save').addEventListener('click', async (e) => {
+    const label = form.querySelector('.link-edit-label').value.trim();
+    const url = form.querySelector('.link-edit-url').value.trim();
+    if (!label || !url) { showToast('ກະລຸນາໃສ່ຊື່ ແລະ URL ຂອງລິ້ງໃຫ້ຄົບ'); return; }
+    if (!/^https?:\/\//i.test(url)) { showToast('URL ຕ້ອງຂຶ້ນຕົ້ນດ້ວຍ http:// ຫຼື https://'); return; }
+
+    e.target.disabled = true;
+    const { data, error } = await supabaseClient
+      .from('product_links').update({ label, url }).eq('id', linkId).select();
+    e.target.disabled = false;
+
+    if (error || !data || !data.length) {
+      console.error(error);
+      showToast('ແກ້ໄຂບໍ່ສຳເລັດ: ' + (error ? error.message : 'ບໍ່ມີສິດແກ້ໄຂ (ຕ້ອງເພີ່ມ UPDATE policy ໃຫ້ product_links)'));
+      return;
+    }
+    link.label = label; link.url = url;
+    chipEl.querySelector('.link-chip-label').textContent = label;
+    form.remove();
+    showToast('ແກ້ໄຂລິ້ງສຳເລັດ');
+  });
 }
 
 async function removeProductLink(linkId, chipEl, productId) {

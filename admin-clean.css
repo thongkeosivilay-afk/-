@@ -490,3 +490,13 @@ body #panelAgent .price-prod-card .gx-submit .gx-spinner{border-color:rgba(255,2
 
 /* ราคาตัวแทน 2 — ช่องที่สองในแถวราคา เต็มแถว */
 body #panelAgent .price-dur-row .price-input-2{grid-column:1/-1}
+
+/* ແກ້ໄຂລິ້ງດາວໂຫຼດ */
+body #panelManage .link-chip-edit{
+  width:30px;height:30px;border-radius:50%;border:0;cursor:pointer;
+  background:rgba(255,255,255,.08);color:var(--c-muted);font-size:15px;line-height:1;
+  display:grid;place-items:center;padding:0;
+}
+body #panelManage .link-chip-edit:hover{background:rgba(255,255,255,.16);color:var(--c-text)}
+body #panelManage .link-edit-inline{padding:10px;border:1px solid var(--c-line);border-radius:14px;margin:8px 0}
+body #panelManage .link-edit-inline input{background:rgba(255,255,255,.06);color:var(--c-text)}
