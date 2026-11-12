@@ -220,3 +220,16 @@ body.oh-lock{ overflow:hidden; }
   .oh-item{ padding:16px 14px 14px; }
   .oh-item-name{ font-size:17px; }
 }
+
+/* ลิ้งโบนัสของสินค้า (แสดงในป๊อปอัปรายละเอียดคำสั่งซื้อ) */
+.oh-links{ display:flex; flex-direction:column; gap:8px; }
+.oh-link{
+  display:flex; align-items:center; gap:10px; padding:13px 14px;
+  background:#0d0d0d; border:1px solid #2a2a2a; border-radius:13px;
+  color:#fff; text-decoration:none; font-weight:600; font-size:14px;
+  transition:border-color .2s, transform .15s;
+}
+.oh-link:active{ transform:scale(.98); border-color:#e0261a; }
+.oh-link span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.oh-link svg{ width:18px; height:18px; flex:none; color:#ff3b2d; }
+.oh-link svg:last-child{ width:16px; height:16px; color:#9a9a9a; }

@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
           duration_label: r.duration_label || '',
           status: r.status,
           image_url: r.image_url || '',
+          links: Array.isArray(r.links) ? r.links : [],
           rows: [r],
           earliestAt: r.created_at,
         });
@@ -98,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 15a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     mark: '<svg class="oh-mh-logo" viewBox="0 0 40 40"><path d="M20 3 36 12 31 18 20 12 9 18 4 12Z M8 22l12 6 12-6 2 5-14 9L6 27Z" fill="#e0261a"/><path d="M20 15l6 4-6 4-6-4Z" fill="#ff5a4a"/></svg>',
     // รูปสำรองเมื่อสินค้าไม่มีรูป (กล่องสีแดง-ดำ)
     art: '<svg viewBox="0 0 60 60"><rect width="60" height="60" fill="#0b0303"/><rect x="9" y="5" width="42" height="50" rx="3" fill="#1b0606" stroke="#e0261a" stroke-width="1.4"/><path d="M30 14l12 7-4 5-8-4-8 4-4-5Z M20 31l10 5 10-5 2 4-12 8-12-8Z" fill="#ff3b2d" opacity=".9"/><rect x="17" y="44" width="26" height="4" rx="1" fill="#ff3b2d" opacity=".7"/></svg>',
@@ -194,12 +196,21 @@ document.addEventListener('DOMContentLoaded', () => {
         + `<button type="button" class="oh-cp oh-lo" id="ohCopyAll">${ICON.copy}<span>ຄັດລອກລະຫັດຄີ</span></button>`
       : `<div class="oh-nokey oh-lo">ບໍ່ມີຄີສຳລັບລາຍການນີ້</div>`;
 
+    // ລິ້ງໂບນັດທີ່ແອັດມິນໃສ່ໃນສິນຄ້າ — ຮັບປະກັນເປັນ http(s) ເທົ່ານັ້ນ ກັນ javascript: ຕ່າງໆ
+    const safeLinks = (g.links || []).filter((l) => /^https?:\/\//i.test(String(l.url || '').trim()));
+    const linksBlock = safeLinks.length
+      ? `<div class="oh-lbl oh-lo">ລິ້ງໂບນັດ</div><div class="oh-links">`
+        + safeLinks.map((l) => `<a class="oh-link" href="${escapeHtml(String(l.url).trim())}" target="_blank" rel="noopener noreferrer">${ICON.link}<span>${escapeHtml(l.label || l.url)}</span>${ICON.arrow}</a>`).join('')
+        + `</div>`
+      : '';
+
     modalBody.innerHTML = `
       <div class="oh-mh">${ICON.mark}<h2>${escapeHtml(refOf(head))}</h2><button type="button" class="oh-x" id="ohClose" aria-label="ປິດ">${ICON.close}</button></div>
       <div class="oh-prod">${thumbHTML(g)}<div><h3>${escapeHtml(g.product_name || 'ສິນຄ້າ')}</h3>${optLine}
         <div class="oh-sub oh-lo">${qty} ຊິ້ນ - ${formatMoney(unit)}/ຊິ້ນ <em class="${failed ? 'is-failed' : ''}">${STATUS_LABEL[g.status] ? (failed ? STATUS_LABEL.failed : 'ສຳເລັດ') : escapeHtml(g.status)}</em></div></div></div>
       <div class="oh-lbl oh-lo">ຄີທີ່ໄດ້ຮັບ (${keys.length} ຄີ)</div>
       <div>${keyBlock}</div>
+      ${linksBlock}
       <div class="oh-lbl oh-lo">ສະຫຼຸບຄຳສັ່ງຊື້</div>
       <div class="oh-line"><span class="oh-lo">ວັນທີສັ່ງຊື້</span><b>${formatDate(head.created_at)}</b></div>
       <div class="oh-tot"><span class="oh-lo">ຍອດລວມທັງໝົດ</span><b id="ohTotal">${formatMoney(0)}</b></div>`;
