@@ -48,5 +48,5 @@
     ding();
     return new Promise(function (r) { setTimeout(r, opts.hold || 1500); });
   }
-  window.LoginSuccess = { unlock: unlock, show: show };
+  window.LoginSuccess = { unlock: unlock, show: show, ding: ding };
 })();

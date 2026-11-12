@@ -479,6 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   buyBtn.addEventListener('click', async () => {
     if (buyBtn.disabled) return;
+    if (window.LoginSuccess) window.LoginSuccess.unlock(); // ปลดล็อกเสียงตอนกดปุ่ม (เบราว์เซอร์บังคับ)
     const wantQty = qty;
     buyBtn.disabled = true;
     qtyMinus.disabled = true;
@@ -499,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
         codes.push(code);
       }
       showSuccessSheet(codes, unitPrice * codes.length);
+      if (window.LoginSuccess) window.LoginSuccess.ding(); // เสียงตอนซื้อสำเร็จ
     } catch (err) {
       if (err && err.message === '__redirecting__') return;
       console.error('purchase failed:', err);
