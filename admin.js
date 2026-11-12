@@ -48,7 +48,7 @@ async function compressImageIfLarge(file, maxBytes) {
    admin.js — ຫ້ອງແອດມິນ DEK MASH SHOP
    ນຳລະບົບຟັງຊັນ+UI ຈາກເວັບເກົ່າ (beertj-store) ມາໃຊ້ຢູ່ນີ້:
      - ຕໍ່ Supabase ໂປຣເຈັກເດີມ (admin-supabase-config.js) ແບບເຕັມຮູບແບບ
-       (ຈັດການສິນຄ້າ, ໄລຍະເວລາ, ລິ້ງໂບນັດ, ເຕີມລະຫັດ, ຄຳຂໍເຕີມເງິນ, ຕັ້ງຄ່າຮ້ານ)
+       (ຈັດການສິນຄ້າ, ໄລຍະເວລາ, ລິ້ງດາວໂຫຼດ, ເຕີມລະຫັດ, ຄຳຂໍເຕີມເງິນ, ຕັ້ງຄ່າຮ້ານ)
      - ການລ໋ອກອິນ/ກວດສິດແອດມິນ ຍັງໃຊ້ລະບົບ Discord OAuth ຂອງເວັບໃໝ່ (worker/src/index.js)
        ແທນລະບົບ Supabase-Auth ຂອງເວັບເກົ່າ
 
@@ -682,17 +682,17 @@ function renderManageList(products) {
         </div>` : ''}
 
         <div class="pe-section">
-          <div class="pe-title">ລິ້ງໂບນັດ</div>
+          <div class="pe-title">ລິ້ງດາວໂຫຼດ</div>
           <div class="prod-links-list">
             ${links.length ? links.map(l => `
               <span class="prod-link-chip" data-link-id="${l.id}">
                 ${escapeHtmlAdmin(l.label)}
                 <button type="button" class="link-chip-remove" title="ລຶບລິ້ງ" aria-label="ລຶບລິ້ງ">×</button>
               </span>
-            `).join('') : '<span class="pe-none">ຍັງບໍ່ມີລິ້ງໂບນັດ</span>'}
+            `).join('') : '<span class="pe-none">ຍັງບໍ່ມີລິ້ງດາວໂຫຼດ</span>'}
           </div>
           <details class="pe-fold">
-            <summary>ເພີ່ມລິ້ງໂບນັດ</summary>
+            <summary>ເພີ່ມລິ້ງດາວໂຫຼດ</summary>
             <div class="link-add-inline">
               <input type="text" class="link-add-label" placeholder="ຊື່ລິ້ງ">
               <input type="url" class="link-add-url" placeholder="https://...">
@@ -930,7 +930,7 @@ async function saveDurationPrice(chip, productId, durationId, rawValue) {
   renderManageList(currentProducts);
 }
 
-// ---------- ລິ້ງໂບນັດ — ເພີ່ມ/ລຶບໃນສິນຄ້າທີ່ມີຢູ່ແລ້ວ ----------
+// ---------- ລິ້ງດາວໂຫຼດ — ເພີ່ມ/ລຶບໃນສິນຄ້າທີ່ມີຢູ່ແລ້ວ ----------
 async function addProductLink(productId, row) {
   const labelInput = row.querySelector('.link-add-label');
   const urlInput = row.querySelector('.link-add-url');
@@ -1078,7 +1078,7 @@ async function hardDeleteProduct(id, row) {
   if (!p) return;
 
   const ok = confirm(
-    `ລຶບ "${p.name || 'ສິນຄ້ານີ້'}" ຖາວອນ?\n\nຈະລຶບຂໍ້ມູນສິນຄ້າ, ໄລຍະເວລາ, ລິ້ງໂບນັດ ແລະ ລະຫັດຄົງເຫຼືອທັງໝົດຂອງສິນຄ້ານີ້ອອກຈາກລະບົບ. ບໍ່ສາມາດກູ້ຄືນໄດ້.\n\n ຖ້າສິນຄ້ານີ້ເຄີຍມີຄົນສັ່ງຊື້ໄປແລ້ວ, ອໍເດີເກົ່າຂອງສິນຄ້ານີ້ (ໃນ "ລາຍການສັ່ງຊື້"/ປະຫວັດ) ຈະຖືກລຶບໄປພ້ອມກັນນຳ ເນື່ອງຈາກລະບົບຕ້ອງການໃຫ້ທຸກອໍເດີມີສິນຄ້າອ້າງອີງຢູ່ສະເໝີ.\n\n(ຖ້າຢາກລຶບສິນຄ້າອອກຈາກໜ້າຮ້ານ ແຕ່ຍັງເກັບປະຫວັດອໍເດີໄວ້ຄົບ ໃຫ້ໃຊ້ປຸ່ມ "ເອົາອອກຈາກໜ້າຮ້ານ" ແທນ)`
+    `ລຶບ "${p.name || 'ສິນຄ້ານີ້'}" ຖາວອນ?\n\nຈະລຶບຂໍ້ມູນສິນຄ້າ, ໄລຍະເວລາ, ລິ້ງດາວໂຫຼດ ແລະ ລະຫັດຄົງເຫຼືອທັງໝົດຂອງສິນຄ້ານີ້ອອກຈາກລະບົບ. ບໍ່ສາມາດກູ້ຄືນໄດ້.\n\n ຖ້າສິນຄ້ານີ້ເຄີຍມີຄົນສັ່ງຊື້ໄປແລ້ວ, ອໍເດີເກົ່າຂອງສິນຄ້ານີ້ (ໃນ "ລາຍການສັ່ງຊື້"/ປະຫວັດ) ຈະຖືກລຶບໄປພ້ອມກັນນຳ ເນື່ອງຈາກລະບົບຕ້ອງການໃຫ້ທຸກອໍເດີມີສິນຄ້າອ້າງອີງຢູ່ສະເໝີ.\n\n(ຖ້າຢາກລຶບສິນຄ້າອອກຈາກໜ້າຮ້ານ ແຕ່ຍັງເກັບປະຫວັດອໍເດີໄວ້ຄົບ ໃຫ້ໃຊ້ປຸ່ມ "ເອົາອອກຈາກໜ້າຮ້ານ" ແທນ)`
   );
   if (!ok) return;
 
@@ -3190,7 +3190,7 @@ async function initAdminPanel() {
   });
   durationOptionsList.appendChild(addDurationRowBtn);
 
-  // ---- ລິ້ງໂບນັດ builder (ຕອນເພີ່ມສິນຄ້າໃໝ່) — ເພີ່ມໄດ້ບໍ່ຈຳກັດ ----
+  // ---- ລິ້ງດາວໂຫຼດ builder (ຕອນເພີ່ມສິນຄ້າໃໝ່) — ເພີ່ມໄດ້ບໍ່ຈຳກັດ ----
   const pLinksEnabled = document.getElementById('pLinksEnabled');
   const linksOptionsWrap = document.getElementById('linksOptionsWrap');
   const linkRowsList = document.getElementById('linkRowsList');
