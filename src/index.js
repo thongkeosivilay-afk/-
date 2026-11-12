@@ -3070,13 +3070,39 @@ async function handleOrdersHistory(request, env) {
     // orders ไม่มีคอลัมน์รูปสินค้า -> join กับ products ด้วย product_name (เหมือน handleRecentPurchases)
     // ถ้าดึงรูปไม่สำเร็จ/สินค้าถูกลบไปแล้ว ก็แค่ไม่มี image_url (หน้าบ้านจะโชว์รูปสำรอง) ไม่ทำให้ประวัติพัง
     let imageByName = new Map();
+    let linksByName = new Map();
     try {
-      const products = await supabaseSelect(env, 'products', { select: 'name,image_url' });
+      const products = await supabaseSelect(env, 'products', { select: 'id,name,image_url' });
       imageByName = new Map((products || []).map((p) => [p.name, p.image_url || null]));
+
+      // ລິ້ງໂບນັດຂອງສິນຄ້າ (ຕາຕະລາງ product_links ທີ່ແອັດມິນເພີ່ມ) — ສົ່ງໃຫ້ສະເພາະລູກຄ້າທີ່ມີອໍເດີສິນຄ້ານີ້ແລ້ວເທົ່ານັ້ນ
+      // (endpoint ນີ້ອ່ານສະເພາະ orders ຂອງຜູ້ໃຊ້ຄົນນັ້ນ) ຖ້າດຶງບໍ່ໄດ້ ປະຫວັດກໍ່ຍັງສະແດງຕາມປົກກະຕິ
+      try {
+        const allLinks = await supabaseSelect(env, 'product_links', {
+          select: 'product_id,label,url,sort_order',
+          order: 'sort_order.asc',
+        });
+        const linksByProductId = new Map();
+        (allLinks || []).forEach((l) => {
+          if (!l || !l.url) return;
+          if (!linksByProductId.has(l.product_id)) linksByProductId.set(l.product_id, []);
+          linksByProductId.get(l.product_id).push({ label: l.label || '', url: l.url });
+        });
+        (products || []).forEach((p) => {
+          const ls = linksByProductId.get(p.id);
+          if (ls && ls.length) linksByName.set(p.name, ls);
+        });
+      } catch (e) {
+        console.error('handleOrdersHistory: product links unavailable:', e);
+      }
     } catch (e) {
       console.error('handleOrdersHistory: product images unavailable:', e);
     }
-    const items = (rows || []).map((r) => ({ ...r, image_url: imageByName.get(r.product_name) || null }));
+    const items = (rows || []).map((r) => ({
+      ...r,
+      image_url: imageByName.get(r.product_name) || null,
+      links: linksByName.get(r.product_name) || [],
+    }));
     return json({ ok: true, items });
   } catch (err) {
     console.error('handleOrdersHistory failed:', err);
