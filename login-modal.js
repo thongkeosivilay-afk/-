@@ -190,6 +190,106 @@
       .finally(function () { if (!done) { btn.disabled = false; btn.textContent = txt; } });
   }
 
+  /* ---------- อนิเมชั่น "ปุ่มลงชื่อ ขยายเป็นการ์ด" (เฉพาะตอนกดปุ่มลงชื่อบนหัวเว็บ) ----------
+     ใช้ element รูปทรง (shape) ที่ขยายจากตำแหน่งปุ่ม -> ตำแหน่งการ์ด แล้วค่อยเฟดการ์ดจริงขึ้นมาทับ
+     (ไม่ยืดตัวหนังสือ ไม่เพี้ยนมุมโค้ง) ปิดการ์ด = เล่นย้อนกลับเข้าปุ่มเดิม
+     ทางเปิดอื่นๆ (ลิงก์, ปุ่มเมนู ฯลฯ) ยังเด้งแบบเดิมทุกอย่าง */
+  var EASE_OUT = 'cubic-bezier(.22,1,.36,1)', EASE_IN = 'cubic-bezier(.55,0,.35,1)';
+  var morph = null; // { el, shape, ghost, closing }
+
+  function canMorph() {
+    try {
+      if (!document.documentElement.animate) return false;
+      if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+      return !!(window.CSS && CSS.supports && CSS.supports('border-radius', '1px'));
+    } catch (e) { return false; }
+  }
+  function rectOf(r) { return { left: r.left, top: r.top, width: r.width, height: r.height }; }
+  var SH0 = '0 0 0 rgba(0,0,0,0)', SH1 = '0 24px 70px rgba(0,0,0,.65)';
+  function boxCss(r, rad, bg, bd, sh) {
+    return { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px',
+             borderRadius: rad + 'px', backgroundColor: bg, borderColor: bd, boxShadow: sh };
+  }
+  function originStyle(el) {
+    var cs = getComputedStyle(el), r = el.getBoundingClientRect();
+    var rad = parseFloat(cs.borderTopLeftRadius); if (!(rad >= 0)) rad = 14;
+    rad = Math.min(rad, r.height / 2);
+    var bg = cs.backgroundColor;
+    if (!bg || bg === 'transparent' || /rgba\(.*,\s*0\)$/.test(bg)) bg = '#1a1a1a';
+    return { rect: rectOf(r), rad: rad, bg: bg };
+  }
+  function clearMorph() {
+    if (!morph) return;
+    try { morph.shape.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {}
+    try { morph.ghost.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {}
+    try { card.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {}
+    if (morph.shape.parentNode) morph.shape.parentNode.removeChild(morph.shape);
+    if (morph.ghost.parentNode) morph.ghost.parentNode.removeChild(morph.ghost);
+    overlay.classList.remove('lm-morph');
+    morph = null;
+  }
+  function makeGhost(el, o) { // สำเนาไอคอน+ข้อความของปุ่ม ให้เห็นว่าเป็นปุ่มเดิมก่อนมันขยาย
+    var cs = getComputedStyle(el), g = document.createElement('div');
+    g.className = 'lm-ghost';
+    g.innerHTML = el.innerHTML;
+    var s = g.style;
+    s.left = o.rect.left + 'px'; s.top = o.rect.top + 'px'; s.width = o.rect.width + 'px'; s.height = o.rect.height + 'px';
+    s.color = cs.color; s.fontFamily = cs.fontFamily; s.fontSize = cs.fontSize; s.fontWeight = cs.fontWeight; s.lineHeight = cs.lineHeight; s.letterSpacing = cs.letterSpacing; s.gap = cs.columnGap && cs.columnGap !== 'normal' ? cs.columnGap : '6px';
+    return g;
+  }
+  function openMorph(el) { // เรียกหลัง overlay เป็น display:flex และใส่คลาส lm-morph แล้ว (ก่อนใส่ is-open)
+    var o = originStyle(el), c = card.getBoundingClientRect();
+    var shape = document.createElement('div'); shape.className = 'lm-shape';
+    var ghost = makeGhost(el, o);
+    overlay.insertBefore(shape, card); overlay.appendChild(ghost);
+    morph = { el: el, shape: shape, ghost: ghost, closing: false };
+    var cr = rectOf(c), CARD_BG = '#0a0a0a', CARD_BD = '#1e1e1e';
+    var from = boxCss(o.rect, o.rad, o.bg, o.bg, SH0), to = boxCss(cr, 22, CARD_BG, CARD_BD, SH1);
+    Object.keys(from).forEach(function (k) { shape.style[k] = from[k]; });
+    var sa = shape.animate([from, to], { duration: 480, easing: EASE_OUT, fill: 'both' });
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 170, easing: 'ease-out', fill: 'both' });
+    card.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 280, delay: 190, easing: 'ease-out', fill: 'both' });
+    var mine = morph;
+    sa.onfinish = function () {
+      if (morph !== mine || mine.closing) return;
+      // จบแล้ว: ทิ้ง shape/ghost คงไว้แต่การ์ดจริง (สภาพสุดท้ายเหมือนกันทุกพิกเซล)
+      try { card.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {}
+      if (mine.shape.parentNode) mine.shape.parentNode.removeChild(mine.shape);
+      if (mine.ghost.parentNode) mine.ghost.parentNode.removeChild(mine.ghost);
+      mine.done = true;
+    };
+  }
+  function closeMorph() { // เล่นย้อนกลับ: การ์ดหุบกลับเข้าปุ่ม
+    var m = morph; if (!m || m.closing) return;
+    m.closing = true;
+    var el = m.el;
+    if (!document.body.contains(el)) { clearMorph(); return false; }
+    var o = originStyle(el), c = card.getBoundingClientRect(), cr = rectOf(c);
+    try { card.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {}
+    try { m.shape.getAnimations().forEach(function (a) { a.cancel(); }); } catch (e) {}
+    if (!m.shape.parentNode) overlay.insertBefore(m.shape, card);
+    if (!m.ghost.parentNode) overlay.appendChild(m.ghost);
+    var from = boxCss(cr, 22, '#0a0a0a', '#1e1e1e', SH1), to = boxCss(o.rect, o.rad, o.bg, o.bg, SH0);
+    Object.keys(from).forEach(function (k) { m.shape.style[k] = from[k]; });
+    var g = m.ghost.style;
+    g.left = o.rect.left + 'px'; g.top = o.rect.top + 'px'; g.width = o.rect.width + 'px'; g.height = o.rect.height + 'px';
+    overlay.classList.remove('is-open');           // พื้นหลังมืดค่อยๆ จาง (transition ใน CSS)
+    overlay.classList.add('lm-morph-out');
+    card.style.opacity = '0';                       // การ์ดจริงซ่อน เหลือแต่ shape หุบ
+    card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, easing: 'ease-out', fill: 'both' });
+    var sa = m.shape.animate([from, to], { duration: 340, delay: 50, easing: EASE_IN, fill: 'both' });
+    m.ghost.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, delay: 210, easing: 'ease-in', fill: 'both' });
+    sa.onfinish = function () {
+      if (morph !== m) return;
+      overlay.style.display = 'none';
+      clearMorph();
+      card.style.opacity = '';
+      overlay.classList.remove('lm-morph-out');
+    };
+    return true;
+  }
+
   /* ---------- เปิด / ปิด ---------- */
   /* โลโก้ร้าน: ใช้ของที่แอดมินตั้งใน "ຕັ້ງຄ່າຮ້ານ" (settings.logo_url) แทนไฟล์เดิม */
   var shopLogoUrl = '';
@@ -222,12 +322,17 @@
     if (!overlay) build();
     loadShopLogo();
     ensureSuccessFx();
+    if (morph) { if (morph.closing) return; clearMorph(); } // กันกดซ้ำระหว่างอนิเมชั่น
     nextPath = safeNext(opts.next);
     setTab(opts.tab === 'signup' ? 'signup' : 'login');
     lastFocus = document.activeElement;
     document.documentElement.classList.add('lm-open');
+    var origin = opts.origin && document.body.contains(opts.origin) && canMorph() ? opts.origin : null;
+    overlay.classList.remove('lm-morph-out');
+    if (origin) overlay.classList.add('lm-morph'); else overlay.classList.remove('lm-morph');
     overlay.style.display = 'flex';
     void overlay.offsetWidth; // ให้ transition เล่น
+    if (origin) openMorph(origin);
     overlay.classList.add('is-open');
     setTimeout(function () {
       var first = overlay.querySelector('.lm-form:not([hidden]) input');
@@ -236,8 +341,12 @@
   }
   function close(keepLocked) {
     if (!overlay) return;
-    overlay.classList.remove('is-open');
     if (keepLocked !== true) document.documentElement.classList.remove('lm-open');
+    if (morph && !morph.closing) {
+      if (keepLocked === true) clearMorph();   // ล็อกอินสำเร็จ: ใช้การปิดแบบเดิม (ต่อด้วยหน้า success)
+      else if (closeMorph()) { try { if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true }); } catch (e) {} return; }
+    }
+    overlay.classList.remove('is-open');
     try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (e) {}
   }
 
@@ -252,7 +361,8 @@
       var url; try { url = new URL(a.getAttribute('href'), location.href); } catch (err) { url = null; }
       if (url && url.origin === location.origin && authRe.test(url.pathname)) {
         e.preventDefault(); e.stopImmediatePropagation();
-        open({ tab: /signup/.test(url.pathname) ? 'signup' : 'login', next: url.searchParams.get('next') || '' });
+        open({ tab: /signup/.test(url.pathname) ? 'signup' : 'login', next: url.searchParams.get('next') || '',
+               origin: (a.id === 'trialBal' || a.hasAttribute('data-lm-morph')) ? a : null }); // ปุ่มลงชื่อบนหัวเว็บ = ขยายเป็นการ์ด
         return;
       }
     }

@@ -96,3 +96,25 @@
 @media (prefers-reduced-motion:reduce){
   .lm-overlay,.lm-card,.lm-form{ transition:none !important; animation:none !important; }
 }
+
+/* ---------- ปุ่มลงชื่อ (ชิปหัวเว็บ) ขยายเป็นการ์ด — ใช้เฉพาะตอน JS ใส่ .lm-morph ---------- */
+.lm-overlay.lm-morph{
+  opacity:1; background:rgba(0,0,0,0);
+  -webkit-backdrop-filter:blur(0px); backdrop-filter:blur(0px);
+  transition:background-color .4s ease, -webkit-backdrop-filter .4s ease, backdrop-filter .4s ease, visibility 0s;
+}
+.lm-overlay.lm-morph.is-open{
+  background:rgba(0,0,0,.66);
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+}
+.lm-overlay.lm-morph.lm-morph-out{ visibility:visible; pointer-events:none; transition-duration:.34s; }
+.lm-overlay.lm-morph .lm-card{ transition:none; transform:none; opacity:1; }
+.lm-shape{
+  position:fixed; margin:0; box-sizing:border-box; pointer-events:none;
+  border:1px solid transparent;
+}
+.lm-ghost{
+  position:fixed; margin:0; box-sizing:border-box; pointer-events:none;
+  display:flex; align-items:center; justify-content:center; white-space:nowrap; overflow:hidden;
+}
+.lm-ghost svg{ flex-shrink:0; }
