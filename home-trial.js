@@ -46,15 +46,31 @@
     var chip = document.getElementById('trialBal');
     var txt = document.getElementById('trialBalText');
     if (!chip || !txt) return;
+    // ยังไม่รู้สถานะล็อกอิน -> ซ่อนชิปไว้ก่อน ไม่ให้เห็น "0 ₭" วูบหนึ่งแล้วค่อยเปลี่ยน
+    chip.style.visibility = 'hidden';
+    var icon = chip.querySelector('svg');
+    var WALLET = icon ? icon.innerHTML : '';
+    var USER = '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>';
+    function showLoggedOut() {
+      if (icon) icon.innerHTML = USER;
+      txt.textContent = 'ລົງຊື່ເຂົ້າໃຊ້';
+      chip.setAttribute('href', '/login.html');
+      chip.setAttribute('aria-label', 'ລົງຊື່ເຂົ້າໃຊ້');
+      chip.removeAttribute('title');
+    }
+    function showLoggedIn(u) {
+      if (icon) icon.innerHTML = WALLET;
+      txt.textContent = short(u.balance);
+      chip.setAttribute('title', Number(u.balance || 0).toLocaleString('en-US') + ' ₭');
+      chip.setAttribute('href', 'topup.html');
+      chip.setAttribute('aria-label', 'ຍອດເງິນ');
+    }
     fetch('/api/me', { cache: 'no-store' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (d && d.loggedIn && d.user) {
-          txt.textContent = short(d.user.balance);
-          chip.setAttribute('title', Number(d.user.balance || 0).toLocaleString('en-US') + ' ₭');
-          chip.setAttribute('href', 'topup.html');
-        }
+        if (d && d.loggedIn && d.user) showLoggedIn(d.user); else showLoggedOut();
       })
-      .catch(function () {});
+      .catch(showLoggedOut)
+      .then(function () { chip.style.visibility = ''; });
   });
 })();
