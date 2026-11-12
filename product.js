@@ -468,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const data = await res.json().catch(() => ({}));
 
     if (res.status === 401 || data.requireLogin) {
-      window.location.href = '/login.html?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+      { const _n = window.location.pathname + window.location.search; if (window.LoginModal) window.LoginModal.open({ tab: 'login', next: _n }); else window.location.href = '/login.html?next=' + encodeURIComponent(_n); }
       throw new Error('__redirecting__');
     }
     if (!res.ok || !data.ok) {
