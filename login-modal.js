@@ -190,9 +190,36 @@
   }
 
   /* ---------- เปิด / ปิด ---------- */
+  /* โลโก้ร้าน: ใช้ของที่แอดมินตั้งใน "ຕັ້ງຄ່າຮ້ານ" (settings.logo_url) แทนไฟล์เดิม */
+  var shopLogoUrl = '';
+  var logoFetched = false;
+  function applyShopLogo() {
+    if (!overlay) return;
+    var img = overlay.querySelector('.lm-logo img');
+    if (!img) return;
+    if (!shopLogoUrl) {
+      var hdr = document.querySelector('.logo img');
+      if (hdr && hdr.getAttribute('src') && hdr.getAttribute('src').indexOf('assets/logo.png') === -1) shopLogoUrl = hdr.getAttribute('src');
+    }
+    if (shopLogoUrl && img.getAttribute('src') !== shopLogoUrl) img.setAttribute('src', shopLogoUrl);
+  }
+  function loadShopLogo() {
+    if (logoFetched) { applyShopLogo(); return; }
+    logoFetched = true;
+    fetch('/api/public/storefront', { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var u = d && d.store && d.store.logoUrl ? String(d.store.logoUrl).trim() : '';
+        if (u) shopLogoUrl = u;
+        applyShopLogo();
+      })
+      .catch(function () { logoFetched = false; applyShopLogo(); });
+  }
+
   function open(opts) {
     opts = opts || {};
     if (!overlay) build();
+    loadShopLogo();
     ensureSuccessFx();
     nextPath = safeNext(opts.next);
     setTab(opts.tab === 'signup' ? 'signup' : 'login');
