@@ -147,11 +147,11 @@
     throw new Error('ເຂົ້າສູ່ລະບົບແລ້ວ ແຕ່ browser ບໍ່ເກັບ cookie — ກະລຸນາປິດໂໝດສ່ວນຕົວ/ເປີດ cookie ແລ້ວລອງໃໝ່');
   }
 
-  function finish(showSuccess) {
+  function finish(showSuccess, fxOpts) {
     // ล็อกอินสำเร็จ: ถ้ามี next -> ไปหน้านั้น, ไม่มี -> โหลดหน้าเดิมซ้ำให้ header/เมนูเป็นสถานะล็อกอิน
     var go = function () { if (nextPath) location.href = nextPath; else location.reload(); };
     close(true);
-    if (showSuccess && window.LoginSuccess) window.LoginSuccess.show().then(go); else go();
+    if (showSuccess && window.LoginSuccess) window.LoginSuccess.show(fxOpts).then(go); else go();
   }
 
   function onLogin(e) {
@@ -182,10 +182,11 @@
     if (!ok) return;
     var btn = e.target.querySelector('.lm-submit'), txt = btn.textContent;
     btn.disabled = true; btn.textContent = 'ກຳລັງສ້າງບັນຊີ...';
+    if (window.LoginSuccess) window.LoginSuccess.unlock();
     var done = false;
     authRequest('/api/auth/signup', { username: u, email: em, password: pw }, 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ')
-      .then(function () { done = true; finish(false); })
-      .catch(function (err) { toast(err.message || 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ', true); })
+      .then(function () { done = true; finish(true, { title: 'ສະໝັກສະມາຊິກສຳເລັດ' }); })
+      .catch(function (err) { toast(err.message || 'ສະໝັກສະມາຊິກບໍ່ສຳເລັດ', true); if (window.LoginSuccess) window.LoginSuccess.error(); })
       .finally(function () { if (!done) { btn.disabled = false; btn.textContent = txt; } });
   }
 
