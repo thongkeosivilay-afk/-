@@ -1929,16 +1929,18 @@ async function getSoldCountsByProductName(env) {
     const counts = new Map();
     for (let offset = 0; offset < 200000; offset += PAGE) {
       const rows = await supabaseSelect(env, 'orders', {
-        select: 'product_name',
+        select: 'product_id,product_name',
         status: 'eq.completed',
         order: 'id.asc',
         limit: String(PAGE),
         offset: String(offset),
       });
       (rows || []).forEach((row) => {
-        const name = row.product_name;
-        if (!name) return;
-        counts.set(name, (counts.get(name) || 0) + 1);
+        // นับตาม product_id (ไม่ใช่ชื่อ) — ถ้าเปลี่ยนชื่อสินค้าในภายหลัง ออเดอร์เก่าที่เก็บชื่อเดิมไว้จะไม่หลุดไปจากยอด
+        // ออเดอร์ที่ไม่มี product_id (สินค้าถูกลบ) ใช้ชื่อเป็นคีย์สำรอง
+        const key = row.product_id || (row.product_name ? `name:${row.product_name}` : null);
+        if (!key) return;
+        counts.set(key, (counts.get(key) || 0) + 1);
       });
       if (!rows || rows.length < PAGE) break;
     }
@@ -2100,7 +2102,7 @@ async function handlePublicStorefront(request, env) {
         featured: !!p.featured,
         stock: productStockMap.get(p.id) ?? 0,
         durations: durationsWithStock,
-        soldCount: soldCountsByName.get(p.name) || 0,
+        soldCount: soldCountsByName.get(p.id) || soldCountsByName.get(`name:${p.name}`) || 0,
         // โปรโมชั่นที่ใช้กับสินค้านี้ ณ ตอนนี้ (หน้าร้านคิดราคาโปรจากนี้ — ราคาที่หักจริงคิดใน SQL get_effective_price)
         promos: (promoData.byProduct.get(p.id) || []).concat(promoData.byProduct.get('*') || []),
       };
@@ -2129,7 +2131,12 @@ async function handlePublicStorefront(request, env) {
       allCategories.filter((c) => !c.enabled).map((c) => c.name)
     );
     const visibleProductsWithStock = disabledCategoryNames.size
-      ? productsWithStock.filter((p) => !disabledCategoryNames.has((p.category || '').trim()))
+      ? productsWithStock.filter((p) => {
+          // สินค้าหลายหมวด ("A|B"): ซ่อนก็ต่อเมื่อทุกหมวดของสินค้าถูกปิด
+          const cs = String(p.category || '').split('|').map((c) => c.trim()).filter(Boolean);
+          if (!cs.length) return true;
+          return cs.some((c) => !disabledCategoryNames.has(c));
+        })
       : productsWithStock;
 
     // ຄັງ/ຈຳນວນສິນຄ້າທີ່ໂຊວ໌ໃນສະຖິຕິໜ້າຮ້ານ ຄິດສະເພາະສິນຄ້າທີ່ຍັງເບິ່ງເຫັນໄດ້ (ຕັດສິນຄ້າ
@@ -2276,7 +2283,7 @@ async function handleWeeklyBestSellers(request, env) {
     const stats = new Map(); // name -> { count, last }
     for (let page = 0; page < MAX_PAGES; page++) {
       const rows = await supabaseSelect(env, 'orders', {
-        select: 'product_name,created_at',
+        select: 'product_id,product_name,created_at',
         status: 'eq.completed',
         created_at: `gte.${since}`,
         order: 'created_at.desc',
@@ -2284,10 +2291,11 @@ async function handleWeeklyBestSellers(request, env) {
         offset: String(page * PAGE),
       });
       (rows || []).forEach((row) => {
-        if (!row.product_name) return;
-        const cur = stats.get(row.product_name) || { count: 0, last: row.created_at };
+        const key = row.product_id || (row.product_name ? `name:${row.product_name}` : null);
+        if (!key) return;
+        const cur = stats.get(key) || { count: 0, last: row.created_at };
         cur.count += 1;
-        stats.set(row.product_name, cur);
+        stats.set(key, cur);
       });
       if (!rows || rows.length < PAGE) break;
     }
@@ -2314,15 +2322,16 @@ async function handleWeeklyBestSellers(request, env) {
       if (cur === undefined || price < cur) minDurationPrice.set(d.product_id, price);
     });
 
-    const productByName = new Map((products || []).map((p) => [p.name, p]));
+    const productById = new Map((products || []).map((p) => [p.id, p]));
+    const productByName = new Map((products || []).map((p) => [`name:${p.name}`, p]));
 
     const items = [...stats.entries()]
-      .map(([name, st]) => ({ name, st, product: productByName.get(name) }))
+      .map(([key, st]) => { const product = productById.get(key) || productByName.get(key); return { name: product ? product.name : key, st, product }; })
       .filter(({ product }) => {
         if (!product) return false;
-        const cat = String(product.category || '').trim();
+        const cats = String(product.category || '').split('|').map((c) => c.trim()).filter(Boolean);
         // ต้องอยู่ในหมวดที่เปิดอยู่บนหน้าร้านจริงเท่านั้น (สินค้าไร้หมวด/หมวดไม่ตรง/หมวดที่ปิด = ลูกค้าไม่เห็นในเว็บ จึงไม่แสดง)
-        return enabledCategoryNames.has(cat) && !disabledCategoryNames.has(cat);
+        return cats.some((c) => enabledCategoryNames.has(c) && !disabledCategoryNames.has(c));
       })
       .sort((a, b) => b.st.count - a.st.count || String(b.st.last).localeCompare(String(a.st.last)))
       .slice(0, TOP_N)
