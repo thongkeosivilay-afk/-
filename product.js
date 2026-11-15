@@ -340,7 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderBadges() {
     const stock = currentDuration() ? currentDuration().stock : 0;
     const parts = [];
-    parts.push(`<span class="badge"><span class="dot"></span>ໝວດ: ${escapeHtml(product.category || '')}</span>`);
+    parts.push(`<span class="badge"><span class="dot"></span>ໝວດ: ${escapeHtml(String(product.category || '').split('|').map((c) => c.trim()).filter(Boolean).join(' • '))}</span>`);
     if (product.paused) {
       parts.push(`<span class="badge out"><span class="dot"></span>ຢຸດຂາຍຊົ່ວຄາວ${product.paused_note ? ' — ' + escapeHtml(product.paused_note) : ''}</span>`);
     } else if (stock > 0) {
@@ -537,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const categoryFromIndex = catIndexParam
         ? window.StorefrontData.categoryByIndex(data, Number(catIndexParam))
         : null;
-      const breadcrumbCatName = (categoryFromIndex && categoryFromIndex.name) || product.category || '';
+      const breadcrumbCatName = (categoryFromIndex && categoryFromIndex.name) || String(product.category || '').split('|')[0].trim() || '';
       if (breadcrumbCatName && breadcrumbCatLink && breadcrumbCatSep) {
         breadcrumbCatLink.textContent = breadcrumbCatName;
         breadcrumbCatLink.href = catIndexParam

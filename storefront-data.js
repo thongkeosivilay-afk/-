@@ -219,7 +219,10 @@
   function productsByCategoryName(data, categoryName) {
     const target = (categoryName || '').trim();
     if (!target) return [];
-    return (data.products || []).filter((p) => (p.category || '').trim() === target);
+    // สินค้าหนึ่งตัวอยู่ได้หลายหมวด (เก็บใน products.category คั่นด้วย "|")
+    return (data.products || []).filter((p) =>
+      String(p.category || '').split('|').some((c) => c.trim() === target)
+    );
   }
 
   function categoryByIndex(data, index) {

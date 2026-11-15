@@ -322,11 +322,7 @@ async function saveSingleCategoryName(i) {
   setMsg(msg, 'ກຳລັງບັນທຶກ...', 'pending');
   try {
     if (oldName) {
-      const { error: renameError } = await supabaseClient
-        .from('products')
-        .update({ category: newName })
-        .eq('category', oldName);
-      if (renameError) throw renameError;
+      await renameCategoryInProducts(oldName, newName);
       await loadProducts();
     }
 
@@ -481,6 +477,68 @@ function initCategoryTitleDescConfirmButtons() {
   }
 }
 
+// ---------- ຫຼາຍໝວດໝູ່ຕໍ່ 1 ສິນຄ້າ ----------
+// ເກັບໃນຄອລັມ products.category ເດີມ (ຂໍ້ຄວາມ) ໂດຍຂັ້ນດ້ວຍ "|" ເຊັ່ນ "ໝວດ A|ໝວດ B" — ບໍ່ຕ້ອງແກ້ຖານຂໍ້ມູນ
+const CAT_SEP = '|';
+function splitCats(v) {
+  return String(v || '').split(CAT_SEP).map(x => x.trim()).filter(Boolean);
+}
+function joinCats(arr) {
+  return [...new Set((arr || []).map(x => String(x).trim()).filter(Boolean))].join(CAT_SEP);
+}
+function productHasCat(p, name) {
+  return splitCats(p && p.category).includes(String(name || '').trim());
+}
+function catLabel(v) { return splitCats(v).join(' • '); }
+
+// ປ່ຽນຊື່ໝວດໝູ່ໃນທຸກສິນຄ້າ (ຮອງຮັບສິນຄ້າທີ່ມີຫຼາຍໝວດ "A|B")
+async function renameCategoryInProducts(oldName, newName) {
+  const { data, error } = await supabaseClient
+    .from('products')
+    .select('id,category')
+  if (error) throw error;
+  for (const p of (data || [])) {
+    const cats = splitCats(p.category);
+    if (!cats.includes(oldName)) continue;
+    const next = joinCats(cats.map(c => (c === oldName ? newName : c)));
+    const { error: upErr } = await supabaseClient.from('products').update({ category: next }).eq('id', p.id);
+    if (upErr) throw upErr;
+  }
+}
+
+(function injectCatMultiStyle() {
+  if (document.getElementById('catMultiStyle')) return;
+  const st = document.createElement('style');
+  st.id = 'catMultiStyle';
+  st.textContent = `
+    .cat-multi{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+    .cat-multi-hint{display:block;margin-top:6px;font-size:12px;color:#a99fa5}
+    .cat-chk{position:relative;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#f5f0f2;cursor:pointer;
+      font:600 13px/1.3 'Noto Sans Lao','Chakra Petch',sans-serif;user-select:none;transition:background .15s,border-color .15s}
+    .cat-chk input{position:absolute;opacity:0;pointer-events:none}
+    .cat-chk .cat-box{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(255,255,255,.35);display:inline-flex;
+      align-items:center;justify-content:center;flex:0 0 18px;font-size:12px;color:transparent}
+    .cat-chk:has(input:checked){background:rgba(255,42,42,.16);border-color:#ff2a2a}
+    .cat-chk:has(input:checked) .cat-box{background:#ff2a2a;border-color:#ff2a2a;color:#fff}
+    .cat-chk:has(input:focus-visible){outline:2px solid #ff2a2a;outline-offset:2px}
+  `;
+  document.head.appendChild(st);
+})();
+
+// ສ້າງກ່ອງຕິກໝວດໝູ່ (checkbox) — selected = ລາຍຊື່ໝວດທີ່ຕິກໄວ້ແລ້ວ
+function buildCatChecksHtml(names, selected, cls) {
+  const sel = new Set(selected || []);
+  return names.map(c => {
+    const esc = escapeHtmlAdmin(c);
+    return `<label class="cat-chk"><input type="checkbox" class="${cls}" value="${esc}" ${sel.has(c) ? 'checked' : ''}><span class="cat-box">✓</span><span>${esc}</span></label>`;
+  }).join('');
+}
+function getAllCategoryNames(products) {
+  const fromProducts = (products || []).flatMap(p => splitCats(p.category));
+  return [...new Set([...getCurrentCategoryNames(), ...fromProducts])];
+}
+
 // ໃຊ້ຊື່ຈິງທີ່ແອດມິນຕັ້ງໄວ້ໃນ "ຕັ້ງຄ່າຮ້ານ > ໝວດໝູ່ 1-10" (category_1_name ... category_10_name)
 // ເພື່ອໃຫ້ໝວດໝູ່ທີ່ເລືອກຕອນເພີ່ມສິນຄ້າ ກົງກັນກັບ card ໝວດໝູ່ທີ່ໂຊວ໌ຢູ່ໜ້າຮ້ານ/ໜ້າໝວດໝູ່ທັງໝົດ ແບບ 100%
 function getCurrentCategoryNames() {
@@ -497,21 +555,15 @@ function getCurrentCategoryNames() {
 }
 
 function renderCategoryOptions(products) {
-  const select = document.getElementById('pCategorySelect');
-  if (!select) return;
+  const box = document.getElementById('pCategoryChecks');
+  if (!box) return;
 
-  const fromProducts = products.map(p => (p.category || '').trim()).filter(Boolean);
-  const categories = [...new Set([...getCurrentCategoryNames(), ...fromProducts])]
+  const categories = getAllCategoryNames(products)
     .sort((a, b) => a.localeCompare(b, 'th'));
 
-  const prevValue = select.value;
-  select.innerHTML =
-    '<option value="">ເລືອກໝວດໝູ່</option>' +
-    categories.map(c => `<option value="${c.replace(/"/g, '&quot;')}">${c}</option>`).join('');
-
-  if (prevValue && categories.includes(prevValue)) {
-    select.value = prevValue;
-  }
+  // ຈື່ໝວດທີ່ຕິກໄວ້ກ່ອນ render ໃໝ່ (ບໍ່ໃຫ້ຫາຍເວລາຂໍ້ມູນໂຫຼດໃໝ່)
+  const prev = [...box.querySelectorAll('input:checked')].map(i => i.value);
+  box.innerHTML = buildCatChecksHtml(categories, prev.filter(c => categories.includes(c)), 'p-cat-cb');
 }
 
 // ---------- ແຜງຈັດການສິນຄ້າ (ແກ້ຊື່/ລາຄາ/ລຶບ) ----------
@@ -634,6 +686,11 @@ function renderManageList(products) {
             <span>ລາຍລະອຽດ <em>ສະແດງໃຕ້ປຸ່ມຊື້</em></span>
             <textarea class="edit-description" rows="3" placeholder="ລາຍລະອຽດສິນຄ້າ">${escapeHtmlAdmin(p.description || '')}</textarea>
           </label>
+        </div>
+
+        <div class="pe-section">
+          <div class="pe-title">ໝວດໝູ່ <small>ຕິກໄດ້ຫຼາຍໝວດ</small></div>
+          <div class="cat-multi">${buildCatChecksHtml(getAllCategoryNames(products), splitCats(p.category), 'edit-cat-cb')}</div>
         </div>
 
         <div class="pe-section">
@@ -1080,12 +1137,15 @@ async function saveProduct(id, row) {
   const pausedNote = row.querySelector('.edit-paused-note').value.trim();
   const description = row.querySelector('.edit-description').value.trim();
   const featured = row.querySelector('.edit-featured').checked;
+  const catChecked = [...row.querySelectorAll('.edit-cat-cb:checked')].map(i => i.value);
   if (!name) return;
+  if (!catChecked.length) { showToast('ກະລຸນາຕິກຢ່າງໜ້ອຍ 1 ໝວດໝູ່'); return; }
+  const category = joinCats(catChecked);
 
   btn.style.color = 'var(--ink-500)';
   const { error } = await supabaseClient
     .from('products')
-    .update({ name, price, paused, paused_note: paused ? (pausedNote || null) : null, description: description || null, featured })
+    .update({ name, price, paused, paused_note: paused ? (pausedNote || null) : null, description: description || null, featured, category })
     .eq('id', id);
   if (error) {
     console.error(error);
@@ -1094,7 +1154,7 @@ async function saveProduct(id, row) {
   }
   showToast('ບັນທຶກສຳເລັດ');
   const p = currentProducts.find(x => x.id === id);
-  if (p) { p.name = name; p.price = price; p.paused = paused; p.paused_note = paused ? pausedNote : null; p.description = description; p.featured = featured; }
+  if (p) { p.name = name; p.price = price; p.paused = paused; p.paused_note = paused ? pausedNote : null; p.description = description; p.featured = featured; p.category = category; }
   loadProducts();
 }
 
@@ -2085,8 +2145,8 @@ function renderAgentCustomPanel(panel, userId, saved) {
 
   const byCat = {};
   products.forEach(p => {
-    const c = (p.category || '').trim() || 'ອື່ນໆ';
-    (byCat[c] = byCat[c] || []).push(p);
+    const cs = splitCats(p.category);
+    (cs.length ? cs : ['ອື່ນໆ']).forEach(c => { (byCat[c] = byCat[c] || []).push(p); });
   });
 
   const body = Object.keys(byCat).map(cat => {
@@ -2355,11 +2415,11 @@ function renderAgentPriceList(products) {
 
   // ໝວດໝູ່ຈິງທີ່ຮ້ານຕັ້ງໄວ້ (category_1_name..4) + ໝວດໝູ່ອື່ນທີ່ອາດຕິດມາກັບສິນຄ້າເກົ່າ — ສະແດງສະເພາະອັນທີ່ມີສິນຄ້າຢູ່ຈິງ
   const knownNames = getCurrentCategoryNames();
-  const productCats = [...new Set(activeProducts.map(p => (p.category || '').trim()).filter(Boolean))];
+  const productCats = [...new Set(activeProducts.flatMap(p => splitCats(p.category)))];
   const orderedNames = [...knownNames, ...productCats.filter(c => !knownNames.includes(c))];
 
   const catsWithCount = orderedNames
-    .map(name => ({ name, count: activeProducts.filter(p => (p.category || '').trim() === name).length }))
+    .map(name => ({ name, count: activeProducts.filter(p => productHasCat(p, name)).length }))
     .filter(c => c.count > 0);
 
   if (!catsWithCount.length) {
@@ -2388,7 +2448,7 @@ function renderAgentPriceList(products) {
     });
   }
 
-  const shownProducts = activeProducts.filter(p => (p.category || '').trim() === agentPriceActiveCategory);
+  const shownProducts = activeProducts.filter(p => productHasCat(p, agentPriceActiveCategory));
 
   const saveBtnHtml = `
         <button type="button" class="gx-submit price-save-btn">
@@ -2977,11 +3037,7 @@ function initSiteSettingsPanel() {
         setMsg(msg, 'ກຳລັງອັບເດດສິນຄ້າໃນໝວດ...', 'pending');
         try {
           for (const r of renames) {
-            const { error } = await supabaseClient
-              .from('products')
-              .update({ category: r.newName })
-              .eq('category', r.oldName);
-            if (error) throw error;
+            await renameCategoryInProducts(r.oldName, r.newName);
           }
           await loadProducts(); // ໂຫຼດສິນຄ້າ+ຕົວເລືອກໝວດໝູ່ໃໝ່ ເພື່ອບໍ່ໃຫ້ຄ້າງຊື່ເກົ່າໃນ dropdown
         } catch (err) {
@@ -3288,7 +3344,8 @@ async function initAdminPanel() {
     const msg = document.getElementById('addMsg');
     const btn = document.getElementById('addSubmit');
     const name = document.getElementById('pName').value.trim();
-    const categorySelect = document.getElementById('pCategorySelect').value;
+    const selectedCats = [...document.querySelectorAll('#pCategoryChecks .p-cat-cb:checked')].map(i => i.value);
+    const categorySelect = joinCats(selectedCats);
     const category = categorySelect || 'ໝວດໝູ່ສິນຄ້າ';
     const price = parseFloat(document.getElementById('pPrice').value) || 0;
     const description = document.getElementById('pDescription').value.trim();
@@ -3325,7 +3382,7 @@ async function initAdminPanel() {
 
     if (!name) return;
     if (!categorySelect) {
-      setMsg(msg, 'ກະລຸນາເລືອກໝວດໝູ່ກ່ອນຈຶ່ງຈະເພີ່ມສິນຄ້າໄດ້', 'error');
+      setMsg(msg, 'ກະລຸນາຕິກເລືອກຢ່າງໜ້ອຍ 1 ໝວດໝູ່ກ່ອນຈຶ່ງຈະເພີ່ມສິນຄ້າໄດ້', 'error');
       return;
     }
     if (durationEnabled && !durationRows.length) {

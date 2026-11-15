@@ -88,7 +88,7 @@
     renderProducts();
   }
   const keysOf = (p) => (p.duration_enabled && p.durations.length ? p.durations.map((d) => 'd:' + d.id) : ['p:' + p.id]);
-  const matches = (p, q) => !q || (p.name || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q);
+  const matches = (p, q) => !q || (p.name || '').toLowerCase().includes(q) || (p.category || '').replace(/\|/g, ' ').toLowerCase().includes(q);
 
   function newPriceTxt(key, amt) {
     const info = rowInfo.get(key);
@@ -117,7 +117,7 @@
         return `<div class="pma-grp">
           <div class="pma-ph" data-pid="${esc(p.id)}">
             ${img}
-            <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(p.category || '')} · ${p.durations.length} ໄລຍະ${n ? ` · ເລືອກ ${n}` : ''}</small></div>
+            <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(String(p.category || '').split('|').map((c) => c.trim()).filter(Boolean).join(' • '))} · ${p.durations.length} ໄລຍະ${n ? ` · ເລືອກ ${n}` : ''}</small></div>
             <button type="button" class="pma-allbtn" data-a="grp">${n === keys.length ? 'ຍົກເລີກທັງໝົດ' : 'ເລືອກທຸກໄລຍະ'}</button>
           </div>${subs}</div>`;
       }
@@ -125,7 +125,7 @@
       return `<div class="pma-prod ${on ? 'on' : ''}" data-k="${esc(key)}">
         <button type="button" class="pma-chk" aria-label="ເລືອກ">${on ? '✓' : ''}</button>
         ${img}
-        <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(p.category || '')} · ${kip(p.price)}<span class="pma-np">${on ? newPriceTxt(key, amt) : ''}</span></small></div>
+        <div class="pma-pn"><b>${esc(p.name)}</b><small>${esc(String(p.category || '').split('|').map((c) => c.trim()).filter(Boolean).join(' • '))} · ${kip(p.price)}<span class="pma-np">${on ? newPriceTxt(key, amt) : ''}</span></small></div>
         ${amtInput(key, on, amt)}
       </div>`;
     }).join('') : '<div class="pma-empty">ບໍ່ພົບສິນຄ້າ</div>';
