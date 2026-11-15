@@ -16,6 +16,41 @@
 
   let cachedPromise = null;
 
+  // ---------- ໂລໂກ້ຮ້ານ (ຈາກ "ຕັ້ງຄ່າຮ້ານ") — ໃຊ້ແທນຮູບສິນຄ້າເມື່ອສິນຄ້າບໍ່ມີຮູບ ຫຼືຮູບໂຫຼດບໍ່ຂຶ້ນ ----------
+  let storeLogo = '';
+  function storeLogoUrl() {
+    if (storeLogo) return storeLogo;
+    // ສຳຮອງ: ຖ້າຍັງບໍ່ໄດ້ດຶງຂໍ້ມູນຮ້ານ ໃຫ້ເອົາຈາກໂລໂກ້ທີ່ສະແດງຢູ່ header ຂອງໜ້ານັ້ນ
+    const el = document.querySelector('.logo img');
+    return (el && el.getAttribute('src')) || '';
+  }
+
+  (function setupProductImageFallback() {
+    const st = document.createElement('style');
+    st.textContent = '.prod-img.is-logo-fallback,#prodImg.is-logo-fallback{object-fit:contain!important;padding:14%;box-sizing:border-box}';
+    document.head.appendChild(st);
+    // error ຂອງ <img> ບໍ່ bubble ຈຶ່ງຟັງແບບ capture — (CSP ບລັອກ onerror ໃນ HTML ຈຶ່ງໃຊ້ວິທີນີ້)
+    document.addEventListener('error', (e) => {
+      const img = e.target;
+      if (!img || img.tagName !== 'IMG') return;
+      if (!(img.classList.contains('prod-img') || img.id === 'prodImg')) return;
+      if (img.dataset.fb) return; // ໂລໂກ້ກໍ່ໂຫຼດບໍ່ໄດ້ ຢຸດ ບໍ່ວົນລູບ
+      const logo = storeLogoUrl();
+      const cur = img.currentSrc || img.src;
+      if (!img.dataset.retried && cur !== logo) {
+        // ລອງໂຫຼດຮູບສິນຄ້າອີກ 1 ຄັ້ງກ່ອນ (ກັນເນັດສະດຸດຊົ່ວຄາວ)
+        img.dataset.retried = '1';
+        img.src = cur + (cur.indexOf('?') >= 0 ? '&' : '?') + 'r=' + Date.now();
+        return;
+      }
+      img.dataset.fb = '1';
+      if (logo) {
+        img.classList.add('is-logo-fallback');
+        img.src = logo;
+      }
+    }, true);
+  })();
+
   // ດຶງຂໍ້ມູນຮ້ານ (cache ໄວ້ໃນ session ນີ້ — ຮຽກຫຼາຍບ່ອນໃນໜ້າດຽວກັນຈະບໍ່ຍິງຊ້ຳ)
   // ໃສ່ force = true ເພື່ອບັງຄັບດຶງໃໝ່ (ເຊັ່ນ ຫຼັງ retry)
   function fetchData(force) {
@@ -30,6 +65,7 @@
         })
         .then((data) => {
           if (data && data.error) throw new Error(data.error);
+          if (data && data.store && data.store.logoUrl) storeLogo = String(data.store.logoUrl).trim();
           return data;
         })
         .catch((err) => {
@@ -329,6 +365,7 @@
 
   global.StorefrontData = {
     fetchData,
+    storeLogoUrl,
     fetchResellerInfo,
     effectivePrice,
     formatKip,

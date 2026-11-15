@@ -66,8 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function mediaHTML(product) {
-    if (product.image_url) {
-      return `<img src="${escapeHtml(product.image_url)}" alt="${escapeHtml(product.name)}" class="prod-img" loading="lazy" decoding="async">`;
+    // ບໍ່ມີຮູບສິນຄ້າ -> ໃຊ້ໂລໂກ້ຮ້ານທີ່ຕັ້ງໃນຫ້ອງແອດມິນແທນ (ຮູບໂຫຼດບໍ່ຂຶ້ນກໍ່ປ່ຽນເປັນໂລໂກ້ ເບິ່ງ storefront-data.js)
+    const logoFallback = (window.StorefrontData && window.StorefrontData.storeLogoUrl && window.StorefrontData.storeLogoUrl()) || '';
+    const imgSrc = product.image_url || logoFallback;
+    if (imgSrc) {
+      return `<img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(product.name)}" class="prod-img${product.image_url ? '' : ' is-logo-fallback'}" loading="lazy" decoding="async">`;
     }
     return `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
