@@ -30,8 +30,7 @@
     st.textContent = '.prod-img.is-logo-fallback,#prodImg.is-logo-fallback{object-fit:contain!important;padding:14%;box-sizing:border-box}';
     document.head.appendChild(st);
     // error ຂອງ <img> ບໍ່ bubble ຈຶ່ງຟັງແບບ capture — (CSP ບລັອກ onerror ໃນ HTML ຈຶ່ງໃຊ້ວິທີນີ້)
-    document.addEventListener('error', (e) => {
-      const img = e.target;
+    function handleImgFail(img) {
       if (!img || img.tagName !== 'IMG') return;
       if (!(img.classList.contains('prod-img') || img.id === 'prodImg')) return;
       if (img.dataset.fb) return; // ໂລໂກ້ກໍ່ໂຫຼດບໍ່ໄດ້ ຢຸດ ບໍ່ວົນລູບ
@@ -48,7 +47,21 @@
         img.classList.add('is-logo-fallback');
         img.src = logo;
       }
-    }, true);
+    }
+    document.addEventListener('error', (e) => handleImgFail(e.target), true);
+
+    // ກວດຮູບທີ່ເພິ່ນພັງໄປແລ້ວກ່ອນ listener ເຮັດວຽກ (complete ແຕ່ກວ້າງ 0) — ເຊັ່ນ ຮູບທີ່ error ຕອນໜ້າກຳລັງສ້າງ
+    function sweep(root) {
+      (root || document).querySelectorAll('img.prod-img, img#prodImg').forEach((img) => {
+        if (img.complete && img.naturalWidth === 0 && img.getAttribute('src')) handleImgFail(img);
+      });
+    }
+    window.addEventListener('load', () => { sweep(); setTimeout(sweep, 1500); setTimeout(sweep, 4000); setTimeout(sweep, 8000); });
+    try {
+      let t = null;
+      new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => sweep(), 2500); })
+        .observe(document.documentElement, { childList: true, subtree: true });
+    } catch (_) { /* ບໍ່ຮອງຮັບ ກໍ່ຂ້າມໄປ */ }
   })();
 
   // ດຶງຂໍ້ມູນຮ້ານ (cache ໄວ້ໃນ session ນີ້ — ຮຽກຫຼາຍບ່ອນໃນໜ້າດຽວກັນຈະບໍ່ຍິງຊ້ຳ)
