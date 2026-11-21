@@ -23,6 +23,8 @@ SUPABASE_URL = "https://ebmambgqghyzrenknkeb.supabase.co"
 
 # 4 ตัวท้ายบัญชี BCEL ที่รับเงิน (ใช้เช็คสลิปอัตโนมัติ)
 SLIP_RECEIVER_ACCOUNT = "5907"
+# ຊື່ຜູ້ຮັບໃນສະລິບ (ໃຊ້ກວດຄູ່ກັບເລກບັນຊີ)
+SLIP_RECEIVER_NAME = "ANNA"
 
 # ⚠️ SUPABASE_SERVICE_ROLE_KEY ห้ามใส่ในไฟล์นี้เด็ดขาด (จะเข้า git ทันที)
 # ต้องตั้งแยกด้วยคำสั่ง (รันครั้งเดียว ใส่ค่าตอน prompt ถาม):
