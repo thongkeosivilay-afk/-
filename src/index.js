@@ -2854,7 +2854,7 @@ async function handleTopupConfirm(request, env) {
     // insert ຈະ error ທັງແຖວ. ຖ້າຢາກເກັບ bank ໄວ້ນຳ ໃຫ້ເພີ່ມຄໍລໍານີ້ໃນ Supabase ກ່ອນ
     // ແລ້ວຄ່ອຍໃສ່ "bank" ກັບຄືນເຂົ້າ object ດ້ານລຸ່ມນີ້
     // ---- ໂໝດອັດຕະໂນມັດ: ກວດສະລິບດ້ວຍ API ແລ້ວເຕີມເງິນເອງ (ຖ້າກວດບໍ່ໄດ້ -> ຕົກໄປໃຫ້ແອດມິນກວດຄືເກົ່າ) ----
-    let fallbackReason = null;
+    let fallbackReason = null, fallbackDebug = '';
     if (wantAuto) {
       const auto = await handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr: qrText, ref: refText });
       if (auto.response) return auto.response;
@@ -2864,6 +2864,7 @@ async function handleTopupConfirm(request, env) {
       }
       // auto.fallback -> ໄປ insert ແບບ pending ປົກກະຕິລຸ່ມນີ້ (ບັນທຶກເຫດຜົນໄວ້ ເພື່ອຮູ້ວ່າເປັນຫຍັງບໍ່ຜ່ານອັດຕະໂນມັດ)
       fallbackReason = auto.reason || 'unknown';
+      fallbackDebug = auto.debug || '';
       console.error('auto slip fallback:', fallbackReason);
       try {
         await sendDiscordAlert(env, { title: '⚠️ ເຕີມເງິນອັດຕະໂນມັດບໍ່ໄດ້ — ສົ່ງໃຫ້ແອດມິນ', color: 0xf1c40f,
@@ -2877,6 +2878,8 @@ async function handleTopupConfirm(request, env) {
       amount,
       slip_url: slipUrl,
       status: 'pending',
+      // ບັນທຶກເຫດຜົນທີ່ຕົກມາໃຫ້ແອດມິນກວດ (ໃຊ້ວິເຄາະບັນຫາ; ຄໍລຳ auto_debug ຕ້ອງມີໃນຕາຕະລາງ)
+      auto_debug: wantAuto ? (String(fallbackReason || 'no reason') + (fallbackDebug ? ' | ' + fallbackDebug : '')).slice(0, 900) : 'mode=' + (String(form.get('mode') || '') || 'none') + ' (not auto)',
     });
 
     // ---- แจ้งเตือนเข้า Discord: มีคนส่งสลิปเติมเงินเข้ามา รอแอดมินตรวจสอบ ----
@@ -2977,7 +2980,7 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
   if (r.status === 400) return { response: json({ error: 'ສະລິບບໍ່ຖືກຕ້ອງ (ບໍ່ແມ່ນ QR ສະລິບ BCEL ຫຼື ເລກອ້າງອີງຜິດ)' }, 422) };
   if (!j || !j.ok || !j.data) {
     console.error('slip api not ok', r.status, JSON.stringify(j));
-    return { fallback: true, reason: 'api http ' + r.status + ' ' + JSON.stringify(j && (j.error || j.message || j.code) || '').slice(0, 80) }; // 401/402/403/429/503/ອື່ນໆ -> ໃຫ້ແອດມິນກວດແທນ
+    return { fallback: true, reason: 'api http ' + r.status, debug: JSON.stringify(j).slice(0, 700) }; // 401/402/403/429/503/ອື່ນໆ -> ໃຫ້ແອດມິນກວດແທນ
   }
   const d = j.data;
   if (!d.found) return { response: json({ error: 'ບໍ່ພົບສະລິບນີ້ໃນລະບົບທະນາຄານ' }, 422) };
@@ -2988,14 +2991,14 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
   const gotAcc = String(d.receiver_account || '').replace(/\D/g, '');
   const gotName = String(d.receiver_name || '').trim().toUpperCase();
   if (wants.length) {
-    if (gotAcc.length < 2) return { fallback: true, reason: 'api no receiver_account' }; // API ບໍ່ສົ່ງບັນຊີຜູ້ຮັບມາ -> ໃຫ້ແອດມິນກວດ
+    if (gotAcc.length < 2) return { fallback: true, reason: 'api no receiver_account', debug: JSON.stringify(d).slice(0, 700) }; // API ບໍ່ສົ່ງບັນຊີຜູ້ຮັບມາ -> ໃຫ້ແອດມິນກວດ
     if (!wants.includes(gotAcc.slice(-2))) {
       console.error('receiver mismatch', d.receiver_account, 'want', wants.join(','));
       return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
     }
   }
   if (wantNames.length) {
-    if (!gotName) return { fallback: true, reason: 'api no receiver_name' };
+    if (!gotName) return { fallback: true, reason: 'api no receiver_name', debug: JSON.stringify(d).slice(0, 700) };
     if (!wantNames.some((n) => gotName.includes(n))) {
       console.error('receiver name mismatch', d.receiver_name, 'want', wantNames.join(','));
       return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
@@ -3004,7 +3007,7 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
   if (checks.account === false) return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
 
   const slipRef = String(d.ref || '');
-  if (!slipRef) return { fallback: true, reason: 'api no ref' };
+  if (!slipRef) return { fallback: true, reason: 'api no ref', debug: JSON.stringify(d).slice(0, 700) };
 
   const maxAgeMs = (Number(env.SLIP_MAX_AGE_HOURS) || 24) * 3600 * 1000;
   const t = parseSlipTime(d.time);
