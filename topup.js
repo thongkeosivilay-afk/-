@@ -529,16 +529,25 @@ document.addEventListener('DOMContentLoaded', () => {
   // ---- ອ່ານ QR ໃນຮູບສະລິບ (ຝັ່ງ browser ດ້ວຍ jsQR) ----
   async function decodeSlipQr(file) {
     try {
-      if (!window.createImageBitmap) return '';
+      if (!window.createImageBitmap || !window.jsQR) return '';
       const bmp = await createImageBitmap(file);
-      for (const maxSide of [1600, 1000, 700, 2400]) {
-        const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
-        const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
-        const c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        const ctx = c.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(bmp, 0, 0, w, h);
-        if (window.jsQR) {
+      const W = bmp.width, H = bmp.height;
+      // ພື້ນທີ່ທີ່ລອງສະແກນ: ທັງຮູບ, ເຄິ່ງລຸ່ມ, ມຸມລຸ່ມຂວາ (QR ຂອງ BCEL ຢູ່ມຸມລຸ່ມຂວາ)
+      const regions = [
+        [0, 0, W, H],
+        [0, H * 0.5, W, H * 0.5],
+        [W * 0.45, H * 0.55, W * 0.55, H * 0.45],
+        [W * 0.5, H * 0.7, W * 0.5, H * 0.3],
+      ];
+      for (const [sx, sy, sw, sh] of regions) {
+        for (const maxSide of [1400, 2200, 900]) {
+          const k = Math.min(maxSide / Math.max(sw, sh), 3); // ຂະຫຍາຍໄດ້ສູງສຸດ 3 ເທົ່າ ເມື່ອຄອບຮູບນ້ອຍ
+          const w = Math.max(1, Math.round(sw * k)), h = Math.max(1, Math.round(sh * k));
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const ctx = c.getContext('2d', { willReadFrequently: true });
+          ctx.imageSmoothingEnabled = true;
+          ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
           const r = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
           if (r && r.data) return r.data;
         }
