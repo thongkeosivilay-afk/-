@@ -2946,10 +2946,10 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
     if (got.length < 3) return { fallback: true }; // API ບໍ່ສົ່ງບັນຊີຜູ້ຮັບມາ -> ໃຫ້ແອດມິນກວດ
     if (!wants.includes(got.slice(-3))) {
       console.error('receiver mismatch', d.receiver_account, 'want', wants.join(','));
-      return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
+      return { response: json({ error: `ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ [debug v2: slip=${d.receiver_account || '-'} want=${wants.join(',')}]` }, 422) };
     }
   }
-  if (checks.account === false) return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
+  if (checks.account === false) return { response: json({ error: `ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ [debug v2: api-check slip=${d.receiver_account || '-'}]` }, 422) };
 
   const slipRef = String(d.ref || '');
   if (!slipRef) return { fallback: true };
