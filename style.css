@@ -2041,3 +2041,9 @@ html.perf-lite .fav-btn.is-on svg{ animation:none; }
   font-size:10.5px; font-weight:700; line-height:1; white-space:nowrap; pointer-events:none;
 }
 .admin-pin-badge svg{ width:14px; height:14px; fill:currentColor; }
+
+/* ສະຫຼັບໂໝດເຕີມເງິນ: ແອດມິນຢືນຢັນ / ອັດຕະໂນມັດ */
+.topup-mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 6px}
+.topup-mode-btn{padding:12px 8px;border-radius:12px;border:1px solid rgba(128,128,128,.35);background:transparent;color:inherit;font:inherit;font-weight:600;cursor:pointer}
+.topup-mode-btn.active{border-color:#3b82f6;background:rgba(59,130,246,.15)}
+.topup-mode-hint{font-size:13px;opacity:.75;margin:0 0 14px}

@@ -324,6 +324,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedDisplayAmount = 0; // ค่าย่อที่ตรงกับ data-amount ของปุ่ม (ใช้เทียบ active state เท่านั้น)
   let selectedAmount = 0;        // ยอดเงินจริง (กีบ) — ใช้แสดงผล/ส่ง backend ทุกจุด
   let selectedSlip = null;
+  let selectedQr = '';
+  let topupMode = 'admin'; // 'admin' = ແອດມິນຢືນຢັນ, 'auto' = ກວດສະລິບອັດຕະໂນມັດ
   let currentTopupId = null;
 
   function formatKip(n) {
@@ -333,7 +335,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateBankText() {
     const b = BANKS[selectedBank];
     bankTitle.textContent = `ໂອນ QR ${b.name}`;
-    bankDesc.textContent = `ສະແກນ QR ຮັບເງິນຂອງຮ້ານ (${b.name}) ຜ່ານແອັບທະນາຄານ ແລ້ວອັບໂຫຼດສະລິບເພື່ອລໍຖ້າແອດມິນກວດສອບ`;
+    bankDesc.textContent = topupMode === 'auto'
+      ? `ສະແກນ QR ຮັບເງິນຂອງຮ້ານ (${b.name}) ແລ້ວອັບໂຫຼດສະລິບ ລະບົບຈະກວດ ແລະ ເຕີມເງິນໃຫ້ອັດຕະໂນມັດ`
+      : `ສະແກນ QR ຮັບເງິນຂອງຮ້ານ (${b.name}) ຜ່ານແອັບທະນາຄານ ແລ້ວອັບໂຫຼດສະລິບເພື່ອລໍຖ້າແອດມິນກວດສອບ`;
   }
 
   // ---- ดึงข้อความกำกับ QR + รูป QR จริงที่แอดมินตั้งไว้ (ตั้งค่าร้าน > QR โอนเงิน) ----
@@ -371,6 +375,19 @@ document.addEventListener('DOMContentLoaded', () => {
       updateBankText();
     }
   }
+
+  document.querySelectorAll('.topup-mode-btn').forEach((mb) => {
+    mb.addEventListener('click', () => {
+      document.querySelectorAll('.topup-mode-btn').forEach((x) => x.classList.remove('active'));
+      mb.classList.add('active');
+      topupMode = mb.dataset.mode === 'auto' ? 'auto' : 'admin';
+      const hint = document.querySelector('#topupModeHint');
+      if (hint) hint.textContent = topupMode === 'auto'
+        ? 'ໂອນແລ້ວສົ່ງສະລິບ ລະບົບກວດ ແລະ ເຕີມເງິນໃຫ້ເອງ (ຖ້າກວດບໍ່ໄດ້ ແອດມິນຈະກວດໃຫ້)'
+        : 'ສົ່ງສະລິບ ແລ້ວລໍຖ້າແອດມິນກວດສອບ';
+      updateBankText();
+    });
+  });
 
   methods.forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -509,10 +526,40 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
+  // ---- ອ່ານ QR ໃນຮູບສະລິບ (ຝັ່ງ browser ດ້ວຍ jsQR) ----
+  async function decodeSlipQr(file) {
+    try {
+      if (!window.createImageBitmap) return '';
+      const bmp = await createImageBitmap(file);
+      for (const maxSide of [1600, 1000, 700, 2400]) {
+        const k = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+        const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(bmp, 0, 0, w, h);
+        if (window.jsQR) {
+          const r = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+          if (r && r.data) return r.data;
+        }
+      }
+    } catch (e) { console.error('decode QR failed', e); }
+    return '';
+  }
+
   /* ---------- Step 2: ອັບໂຫຼດສະລິບ ---------- */
   slipInput.addEventListener('change', () => {
     const file = slipInput.files && slipInput.files[0];
     selectedSlip = file || null;
+    selectedQr = '';
+    const refInput = document.querySelector('#topupSlipRef');
+    if (refInput) { refInput.value = ''; refInput.classList.add('u-hidden'); }
+    if (file && topupMode === 'auto') {
+      decodeSlipQr(file).then((q) => {
+        selectedQr = q;
+        if (!q && refInput) refInput.classList.remove('u-hidden');
+      });
+    }
     if (file) {
       uploadLabel.classList.add('has-file');
       slipName.textContent = file.name;
@@ -550,6 +597,13 @@ document.addEventListener('DOMContentLoaded', () => {
       form.append('topupId', currentTopupId || '');
       form.append('bank', String(selectedBank));
       form.append('amount', String(selectedAmount));
+      form.append('mode', topupMode);
+      if (topupMode === 'auto') {
+        if (!selectedQr) selectedQr = await decodeSlipQr(selectedSlip); // เผื่อยังอ่านไม่เสร็จ
+        form.append('qr', selectedQr || '');
+        const refInput = document.querySelector('#topupSlipRef');
+        form.append('ref', refInput ? refInput.value.trim() : '');
+      }
       const slipToSend = await compressImageIfLarge(selectedSlip);
       form.append('slip', slipToSend, slipToSend.name);
 
@@ -571,6 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // ໃຊ້ id ແຖວຈິງທີ່ backend ຄືນມາ (ອາດຕ່າງຈາກ topupId ຊົ່ວຄາວຕອນ step ກ່ອນ)
       // ເປັນຕົວອ້າງອີງໃນການ poll ສະຖານະຕໍ່ໄປ
       currentTopupId = data.id || currentTopupId;
+      if (data.auto && data.status === 'approved') showToast('ເຕີມເງິນສຳເລັດ ✅');
+      else if (data.note) showToast(data.note);
       refEl.textContent = currentTopupId || '-';
       waitAmountEl.textContent = formatKip(selectedAmount);
       stepPay.style.display = 'none';

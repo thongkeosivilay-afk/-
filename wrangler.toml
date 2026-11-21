@@ -21,6 +21,9 @@ id = "74ffa29122634c6f9cd4db4d71c40a56"
 # URL โปรเจกต์ Supabase (ไม่ใช่ข้อมูลลับ — ตั้งในนี้ได้เลย)
 SUPABASE_URL = "https://ebmambgqghyzrenknkeb.supabase.co"
 
+# 4 ตัวท้ายบัญชี BCEL ที่รับเงิน (ใช้เช็คสลิปอัตโนมัติ)
+SLIP_RECEIVER_ACCOUNT = "5907"
+
 # ⚠️ SUPABASE_SERVICE_ROLE_KEY ห้ามใส่ในไฟล์นี้เด็ดขาด (จะเข้า git ทันที)
 # ต้องตั้งแยกด้วยคำสั่ง (รันครั้งเดียว ใส่ค่าตอน prompt ถาม):
 #   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
