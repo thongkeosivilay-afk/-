@@ -2939,17 +2939,27 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
   if (!d.found) return { response: json({ error: 'ບໍ່ພົບສະລິບນີ້ໃນລະບົບທະນາຄານ' }, 422) };
   if (Number(d.previous_checks) > 0) return { response: json({ error: 'ສະລິບໃບນີ້ຖືກໃຊ້ແລ້ວ' }, 409) };
   const checks = d.checks || {};
-  // ກວດບັນຊີຜູ້ຮັບເອງ: ທຽບ 3 ຕົວທ້າຍ (ຮອງຮັບຫຼາຍບັນຊີ ຄັ່ນດ້ວຍຈຸດ , ເຊັ່ນ 5907,1234)
-  const wants = String(env.SLIP_RECEIVER_ACCOUNT || '').split(',').map((x) => x.replace(/\D/g, '').slice(-3)).filter((x) => x.length === 3);
+  // ກວດບັນຊີຜູ້ຮັບເອງ: API ສົ່ງເລກບັນຊີມາເຊື່ອງໄວ້ (010-12-XXXXXX07) ເຫັນພຽງ 2 ຕົວທ້າຍ -> ທຽບ 2 ຕົວທ້າຍ
+  // (ຮອງຮັບຫຼາຍບັນຊີ ຄັ່ນດ້ວຍ , ເຊັ່ນ 5907,1234) ແລະ ຖ້າຕັ້ງ SLIP_RECEIVER_NAME ຈະທຽບຊື່ຜູ້ຮັບຄູ່ກັນ (ປອດໄພກວ່າ)
+  const wants = String(env.SLIP_RECEIVER_ACCOUNT || '').split(',').map((x) => x.replace(/\D/g, '').slice(-2)).filter((x) => x.length === 2);
+  const wantNames = String(env.SLIP_RECEIVER_NAME || '').split(',').map((x) => x.trim().toUpperCase()).filter(Boolean);
+  const gotAcc = String(d.receiver_account || '').replace(/\D/g, '');
+  const gotName = String(d.receiver_name || '').trim().toUpperCase();
   if (wants.length) {
-    const got = String(d.receiver_account || '').replace(/\D/g, '');
-    if (got.length < 3) return { fallback: true }; // API ບໍ່ສົ່ງບັນຊີຜູ້ຮັບມາ -> ໃຫ້ແອດມິນກວດ
-    if (!wants.includes(got.slice(-3))) {
+    if (gotAcc.length < 2) return { fallback: true }; // API ບໍ່ສົ່ງບັນຊີຜູ້ຮັບມາ -> ໃຫ້ແອດມິນກວດ
+    if (!wants.includes(gotAcc.slice(-2))) {
       console.error('receiver mismatch', d.receiver_account, 'want', wants.join(','));
-      return { response: json({ error: `ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ [debug v2: slip=${d.receiver_account || '-'} want=${wants.join(',')}]` }, 422) };
+      return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
     }
   }
-  if (checks.account === false) return { response: json({ error: `ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ [debug v2: api-check slip=${d.receiver_account || '-'}]` }, 422) };
+  if (wantNames.length) {
+    if (!gotName) return { fallback: true };
+    if (!wantNames.some((n) => gotName.includes(n))) {
+      console.error('receiver name mismatch', d.receiver_name, 'want', wantNames.join(','));
+      return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
+    }
+  }
+  if (checks.account === false) return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
 
   const slipRef = String(d.ref || '');
   if (!slipRef) return { fallback: true };
