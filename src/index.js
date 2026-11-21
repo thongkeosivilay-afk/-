@@ -2907,11 +2907,30 @@ async function callSlipApi(env, { qr, ref }, expectAmount) {
   return { status: res.status, json: j };
 }
 
-// "21/11/2026 10:15:32" (ເວລາລາວ UTC+7) -> ms
+// ອ່ານເວລາໃນສະລິບໄດ້ຫຼາຍຮູບແບບ (ເວລາລາວ UTC+7 ຖ້າບໍ່ບອກ timezone): "21/11/2026 22:19:34", "21/11/2026 22:19",
+// "2026-11-21 22:19:34", "2026-11-21T22:19:34+07:00", ຕົວເລກ epoch (ວິນາທີ/ມິນລິວິນາທີ) -> ms ຫຼື null ຖ້າອ່ານບໍ່ໄດ້
 function parseSlipTime(t) {
-  const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(String(t || ''));
-  if (!m) return null;
-  const ms = Date.parse(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:${m[6]}+07:00`);
+  if (t === null || t === undefined || t === '') return null;
+  if (typeof t === 'number' || /^\d{10,13}$/.test(String(t).trim())) {
+    const n = Number(t);
+    return Number.isFinite(n) ? (n < 1e12 ? n * 1000 : n) : null;
+  }
+  const str = String(t).trim();
+  let m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(str);
+  let iso = null;
+  if (m) {
+    const p = (x) => String(x).padStart(2, '0');
+    iso = `${m[3]}-${p(m[2])}-${p(m[1])}T${p(m[4])}:${m[5]}:${m[6] || '00'}+07:00`;
+  } else {
+    m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(str);
+    if (m) {
+      let tz = m[7] || '+07:00';
+      if (/^[+-]\d{4}$/.test(tz)) tz = tz.slice(0, 3) + ':' + tz.slice(3);
+      iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6] || '00'}${tz}`;
+    }
+  }
+  if (!iso) return null;
+  const ms = Date.parse(iso);
   return Number.isFinite(ms) ? ms : null;
 }
 
@@ -2976,8 +2995,9 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
 
   const maxAgeMs = (Number(env.SLIP_MAX_AGE_HOURS) || 24) * 3600 * 1000;
   const t = parseSlipTime(d.time);
-  // ເວລາອ່ານບໍ່ໄດ້ ຫຼື ເປັນເວລາອະນາຄົດ (>10 ນາທີ) ຖືວ່າຜິດປົກກະຕິ -> ໃຫ້ແອດມິນກວດ (ເມື່ອກ່ອນ t=null ຈະຜ່ານເລີຍ)
-  const tooOld = t === null || Date.now() - t > maxAgeMs || t - Date.now() > 10 * 60 * 1000;
+  // ເວລາອ່ານບໍ່ໄດ້ -> ບໍ່ຖືວ່າເກົ່າ (ຍັງມີ ຍອດ/ບັນຊີຜູ້ຮັບ/ຊື່/ເລກອ້າງອີງບໍ່ຊ້ຳ ປ້ອງກັນຢູ່) ແຕ່ບັນທຶກ log ແລະແຈ້ງໃນ Discord
+  if (t === null) console.error('slip time unparsed:', JSON.stringify(d.time));
+  const tooOld = t !== null && Date.now() - t > maxAgeMs;
   const amountOk = checks.amount !== false && Number(d.amount) === Math.round(amount);
   // ລູກຄ້າພິມເລກເອງ (ບໍ່ມີ QR) ສ່ຽງໃຊ້ເລກຈາກສະລິບຄົນອື່ນ -> ຍອດເກີນເພດານ ໃຫ້ແອດມິນກວດ (ຕັ້ງ SLIP_REF_AUTO_MAX ໄດ້)
   const refCap = Number(env.SLIP_REF_AUTO_MAX) || 500000;
@@ -3011,7 +3031,7 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
           { name: 'ລູກຄ້າ', value: user.email || '-', inline: true },
           { name: 'ຈຳນວນເງິນ', value: `${Number(amount).toLocaleString()} ກີບ`, inline: true },
           { name: 'ref', value: slipRef.slice(0, 40), inline: false },
-          { name: 'ວິທີກວດ', value: qr ? 'QR' : 'ພິມເລກອ້າງອີງເອງ', inline: true },
+          { name: 'ວິທີກວດ', value: (qr ? 'QR' : 'ພິມເລກອ້າງອີງເອງ') + (t === null ? ' · ເວລາໃນສະລິບອ່ານບໍ່ໄດ້' : ''), inline: true },
         ],
       });
     } catch { /* ຂ້າມ */ }
