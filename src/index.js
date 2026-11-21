@@ -2810,7 +2810,7 @@ async function handleTopupConfirm(request, env) {
     return json({ error: 'ອ່ານຟອມທີ່ສົ່ງມາບໍ່ສຳເລັດ' }, 400);
   }
 
-  const amount = Math.round(Number(form.get('amount')) || 0); // ເງິນກີບເປັນຈຳນວນເຕັມ (ກັນ 1000.4 ທີ່ບັນທຶກກັບທີ່ກວດບໍ່ຕົງກັນ)
+  const amount = Number(form.get('amount')) || 0;
   const bank = form.get('bank') != null ? String(form.get('bank')) : null;
   const slip = form.get('slip');
   const wantAuto = String(form.get('mode') || '') === 'auto';
@@ -2819,9 +2819,6 @@ async function handleTopupConfirm(request, env) {
 
   if (amount < 1000) {
     return json({ error: 'ຈຳນວນເງິນຕ້ອງບໍ່ຕ່ຳກວ່າ 1,000 ກີບ' }, 400);
-  }
-  if (amount > 100000000) {
-    return json({ error: 'ຈຳນວນເງິນສູງເກີນໄປ' }, 400);
   }
   if (!(slip instanceof File) || slip.size === 0) {
     return json({ error: 'ກະລຸນາອັບໂຫຼດຮູບສະລິບກ່ອນ' }, 400);
@@ -2907,50 +2904,22 @@ async function callSlipApi(env, { qr, ref }, expectAmount) {
   return { status: res.status, json: j };
 }
 
-// ອ່ານເວລາໃນສະລິບໄດ້ຫຼາຍຮູບແບບ (ເວລາລາວ UTC+7 ຖ້າບໍ່ບອກ timezone): "21/11/2026 22:19:34", "21/11/2026 22:19",
-// "2026-11-21 22:19:34", "2026-11-21T22:19:34+07:00", ຕົວເລກ epoch (ວິນາທີ/ມິນລິວິນາທີ) -> ms ຫຼື null ຖ້າອ່ານບໍ່ໄດ້
+// "21/11/2026 10:15:32" (ເວລາລາວ UTC+7) -> ms
 function parseSlipTime(t) {
-  if (t === null || t === undefined || t === '') return null;
-  if (typeof t === 'number' || /^\d{10,13}$/.test(String(t).trim())) {
-    const n = Number(t);
-    return Number.isFinite(n) ? (n < 1e12 ? n * 1000 : n) : null;
-  }
-  const str = String(t).trim();
-  let m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})[ T,]+(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(str);
-  let iso = null;
-  if (m) {
-    const p = (x) => String(x).padStart(2, '0');
-    iso = `${m[3]}-${p(m[2])}-${p(m[1])}T${p(m[4])}:${m[5]}:${m[6] || '00'}+07:00`;
-  } else {
-    m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(Z|[+-]\d{2}:?\d{2})?$/.exec(str);
-    if (m) {
-      let tz = m[7] || '+07:00';
-      if (/^[+-]\d{4}$/.test(tz)) tz = tz.slice(0, 3) + ':' + tz.slice(3);
-      iso = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6] || '00'}${tz}`;
-    }
-  }
-  if (!iso) return null;
-  const ms = Date.parse(iso);
+  const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(String(t || ''));
+  if (!m) return null;
+  const ms = Date.parse(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:${m[6]}+07:00`);
   return Number.isFinite(ms) ? ms : null;
 }
 
 /* ຄືນ {response} = ຕອບ error ທັນທີ | {rows,status,note} = ບັນທຶກແລ້ວ | {fallback:true} = ໃຫ້ແອດມິນກວດ */
 async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }) {
   if (!env.TOPUP_API_KEY) return { fallback: true };
-  // ເລກອ້າງອີງ BCEL ເປັນຕົວເລກລ້ວນ (ເຊັ່ນ 15 ຫຼັກ) — ຕັດຊ່ອງວ່າງ/ຂີດອອກກ່ອນກວດ
-  if (ref) ref = String(ref).replace(/[\s-]+/g, '');
-  if (!qr && !(ref && /^\d{10,20}$/.test(ref))) return { fallback: true }; // ອ່ານ QR ບໍ່ໄດ້ ແລະ ບໍ່ມີເລກອ້າງອີງທີ່ຖືກຮູບແບບ
-
-  // ---- fail-closed: ຕ້ອງຕັ້ງບັນຊີ/ຊື່ຜູ້ຮັບຢ່າງໜ້ອຍອັນໃດອັນໜຶ່ງ ບໍ່ຢ່າງນັ້ນສະລິບທີ່ໂອນເຂົ້າບັນຊີ BCEL ຂອງໃຜກໍ່ຜ່ານໄດ້ ----
-  const wants = String(env.SLIP_RECEIVER_ACCOUNT || '').split(',').map((x) => x.replace(/\D/g, '').slice(-2)).filter((x) => x.length === 2);
-  const wantNames = String(env.SLIP_RECEIVER_NAME || '').split(',').map((x) => x.trim().toUpperCase()).filter(Boolean);
-  if (!wants.length && !wantNames.length) { console.error('slip auto disabled: set SLIP_RECEIVER_ACCOUNT / SLIP_RECEIVER_NAME'); return { fallback: true }; }
-  // ບໍ່ມີ KV = ຈຳກັດຈຳນວນຄັ້ງບໍ່ໄດ້ = ອາດຖືກຍິງໃຫ້ເສຍ 100 ₭/ຄັ້ງ -> ໃຫ້ແອດມິນກວດແທນ
-  if (!env.SESSIONS) return { fallback: true };
+  if (!qr && !(ref && /^[A-Za-z0-9 ]{6,40}$/.test(ref))) return { fallback: true }; // ອ່ານ QR ບໍ່ໄດ້ ແລະ ບໍ່ມີເລກອ້າງອີງ
 
   // ຈຳກັດຈຳນວນຄັ້ງກວດຕໍ່ລູກຄ້າ (ແຕ່ລະຄັ້ງເສຍ 100 ₭)
   const kvKey = `slipchk:${user.id}`;
-  {
+  if (env.SESSIONS) {
     const n = Number(await env.SESSIONS.get(kvKey)) || 0;
     if (n >= 10) return { response: json({ error: 'ກວດສະລິບຫຼາຍເກີນໄປ ລອງໃໝ່ພາຍຫຼັງ 1 ຊົ່ວໂມງ' }, 429) };
     await env.SESSIONS.put(kvKey, String(n + 1), { expirationTtl: 3600 });
@@ -2972,6 +2941,8 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
   const checks = d.checks || {};
   // ກວດບັນຊີຜູ້ຮັບເອງ: API ສົ່ງເລກບັນຊີມາເຊື່ອງໄວ້ (010-12-XXXXXX07) ເຫັນພຽງ 2 ຕົວທ້າຍ -> ທຽບ 2 ຕົວທ້າຍ
   // (ຮອງຮັບຫຼາຍບັນຊີ ຄັ່ນດ້ວຍ , ເຊັ່ນ 5907,1234) ແລະ ຖ້າຕັ້ງ SLIP_RECEIVER_NAME ຈະທຽບຊື່ຜູ້ຮັບຄູ່ກັນ (ປອດໄພກວ່າ)
+  const wants = String(env.SLIP_RECEIVER_ACCOUNT || '').split(',').map((x) => x.replace(/\D/g, '').slice(-2)).filter((x) => x.length === 2);
+  const wantNames = String(env.SLIP_RECEIVER_NAME || '').split(',').map((x) => x.trim().toUpperCase()).filter(Boolean);
   const gotAcc = String(d.receiver_account || '').replace(/\D/g, '');
   const gotName = String(d.receiver_name || '').trim().toUpperCase();
   if (wants.length) {
@@ -2995,13 +2966,8 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
 
   const maxAgeMs = (Number(env.SLIP_MAX_AGE_HOURS) || 24) * 3600 * 1000;
   const t = parseSlipTime(d.time);
-  // ເວລາອ່ານບໍ່ໄດ້ -> ບໍ່ຖືວ່າເກົ່າ (ຍັງມີ ຍອດ/ບັນຊີຜູ້ຮັບ/ຊື່/ເລກອ້າງອີງບໍ່ຊ້ຳ ປ້ອງກັນຢູ່) ແຕ່ບັນທຶກ log ແລະແຈ້ງໃນ Discord
-  if (t === null) console.error('slip time unparsed:', JSON.stringify(d.time));
   const tooOld = t !== null && Date.now() - t > maxAgeMs;
   const amountOk = checks.amount !== false && Number(d.amount) === Math.round(amount);
-  // ລູກຄ້າພິມເລກເອງ (ບໍ່ມີ QR) ສ່ຽງໃຊ້ເລກຈາກສະລິບຄົນອື່ນ -> ຍອດເກີນເພດານ ໃຫ້ແອດມິນກວດ (ຕັ້ງ SLIP_REF_AUTO_MAX ໄດ້)
-  const refCap = Number(env.SLIP_REF_AUTO_MAX) || 500000;
-  const refOverCap = !qr && Math.round(amount) > refCap;
 
   let rows;
   try {
@@ -3016,8 +2982,8 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
     throw e;
   }
 
-  if (!amountOk || tooOld || refOverCap) {
-    return { rows, status: 'pending', note: !amountOk ? 'ຍອດໃນສະລິບບໍ່ຕົງກັບທີ່ເລືອກ — ສົ່ງໃຫ້ແອດມິນກວດ' : refOverCap ? 'ຍອດສູງ — ສົ່ງໃຫ້ແອດມິນກວດ' : 'ສະລິບເກົ່າເກີນໄປ — ສົ່ງໃຫ້ແອດມິນກວດ' };
+  if (!amountOk || tooOld) {
+    return { rows, status: 'pending', note: !amountOk ? 'ຍອດໃນສະລິບບໍ່ຕົງກັບທີ່ເລືອກ — ສົ່ງໃຫ້ແອດມິນກວດ' : 'ສະລິບເກົ່າເກີນໄປ — ສົ່ງໃຫ້ແອດມິນກວດ' };
   }
 
   // ຜ່ານຄົບ -> ໃຊ້ logic atomic ເດີມ (ຈອງ pending -> approved ແລ້ວບວກກະເປົ໋າ ຄັ້ງດຽວ)
@@ -3031,7 +2997,6 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
           { name: 'ລູກຄ້າ', value: user.email || '-', inline: true },
           { name: 'ຈຳນວນເງິນ', value: `${Number(amount).toLocaleString()} ກີບ`, inline: true },
           { name: 'ref', value: slipRef.slice(0, 40), inline: false },
-          { name: 'ວິທີກວດ', value: (qr ? 'QR' : 'ພິມເລກອ້າງອີງເອງ') + (t === null ? ' · ເວລາໃນສະລິບອ່ານບໍ່ໄດ້' : ''), inline: true },
         ],
       });
     } catch { /* ຂ້າມ */ }
