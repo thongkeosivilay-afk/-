@@ -2813,6 +2813,9 @@ async function handleTopupConfirm(request, env) {
   const amount = Number(form.get('amount')) || 0;
   const bank = form.get('bank') != null ? String(form.get('bank')) : null;
   const slip = form.get('slip');
+  const wantAuto = String(form.get('mode') || '') === 'auto';
+  const qrText = String(form.get('qr') || '').slice(0, 2000);
+  const refText = String(form.get('ref') || '').slice(0, 60);
 
   if (amount < 1000) {
     return json({ error: 'ຈຳນວນເງິນຕ້ອງບໍ່ຕ່ຳກວ່າ 1,000 ກີບ' }, 400);
@@ -2847,6 +2850,17 @@ async function handleTopupConfirm(request, env) {
     // ຈາກ admin.js) ບໍ່ໄດ້ອ່ານ/ໂຊວ໌ຄ່ານີ້ຢູ່ແລ້ວ — ຖ້າ column ບໍ່ມີໃນ Supabase ຈິງ ການ
     // insert ຈະ error ທັງແຖວ. ຖ້າຢາກເກັບ bank ໄວ້ນຳ ໃຫ້ເພີ່ມຄໍລໍານີ້ໃນ Supabase ກ່ອນ
     // ແລ້ວຄ່ອຍໃສ່ "bank" ກັບຄືນເຂົ້າ object ດ້ານລຸ່ມນີ້
+    // ---- ໂໝດອັດຕະໂນມັດ: ກວດສະລິບດ້ວຍ API ແລ້ວເຕີມເງິນເອງ (ຖ້າກວດບໍ່ໄດ້ -> ຕົກໄປໃຫ້ແອດມິນກວດຄືເກົ່າ) ----
+    if (wantAuto) {
+      const auto = await handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr: qrText, ref: refText });
+      if (auto.response) return auto.response;
+      if (auto.rows) {
+        await sendTopupToDiscord(env, { id: auto.rows[0] && auto.rows[0].id, amount, user, slipUrl });
+        return json({ ok: true, id: auto.rows[0] && auto.rows[0].id, auto: true, status: auto.status, note: auto.note || null });
+      }
+      // auto.fallback -> ໄປ insert ແບບ pending ປົກກະຕິລຸ່ມນີ້
+    }
+
     const rows = await supabaseInsert(env, 'topup_requests', {
       user_id: user.id,
       user_email: user.email || null,
@@ -2868,6 +2882,107 @@ async function handleTopupConfirm(request, env) {
     console.error('handleTopupConfirm failed:', err);
     return json({ error: 'ບັນທຶກລາຍການເຕີມເງິນບໍ່ສຳເລັດ, ລອງໃໝ່ພາຍຫຼັງ' }, 502);
   }
+}
+
+
+/* ---------- ເຕີມເງິນອັດຕະໂນມັດ: ກວດສະລິບ BCEL ດ້ວຍ topup.com.la  POST /v1/slip/check ----------
+   secret ທີ່ຕ້ອງຕັ້ງ:  wrangler secret put TOPUP_API_KEY   (key ດຽວກັບ API ເຕີມເກມ)
+   ຕົວເລືອກ (vars/secret): SLIP_RECEIVER_ACCOUNT = 4 ຕົວທ້າຍບັນຊີຮ້ານ (ແນະນຳໃຫ້ຕັ້ງ), SLIP_MAX_AGE_HOURS (ເລີ່ມຕົ້ນ 24)
+   ເງື່ອນໄຂອະນຸມັດ (ຕາມເອກະສານ): found && checks.amount !== false && checks.account !== false && previous_checks === 0
+   ຄ່າກວດ 100 ₭/ຄັ້ງ ຫັກຈາກຍອດ topup.com.la ຂອງຮ້ານ — ຈຳກັດ 10 ຄັ້ງ/ຊົ່ວໂມງ/ລູກຄ້າ ກັນຖືກຍິງໃຫ້ເສຍເງິນ */
+async function callSlipApi(env, { qr, ref }, expectAmount) {
+  const body = { expect_amount: expectAmount };
+  if (qr) body.qr = qr; else body.ref = ref;
+  if (env.SLIP_RECEIVER_ACCOUNT) body.expect_account = String(env.SLIP_RECEIVER_ACCOUNT).replace(/\D/g, '').slice(-4);
+  const res = await fetch('https://api.topup.com.la/v1/slip/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Api-Key': env.TOPUP_API_KEY },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(25000), // ตามเอกสาร: timeout 25 วินาที
+  });
+  const j = await res.json().catch(() => null);
+  return { status: res.status, json: j };
+}
+
+// "21/11/2026 10:15:32" (ເວລາລາວ UTC+7) -> ms
+function parseSlipTime(t) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/.exec(String(t || ''));
+  if (!m) return null;
+  const ms = Date.parse(`${m[3]}-${m[2]}-${m[1]}T${m[4]}:${m[5]}:${m[6]}+07:00`);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/* ຄືນ {response} = ຕອບ error ທັນທີ | {rows,status,note} = ບັນທຶກແລ້ວ | {fallback:true} = ໃຫ້ແອດມິນກວດ */
+async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }) {
+  if (!env.TOPUP_API_KEY) return { fallback: true };
+  if (!qr && !(ref && /^[A-Za-z0-9 ]{6,40}$/.test(ref))) return { fallback: true }; // ອ່ານ QR ບໍ່ໄດ້ ແລະ ບໍ່ມີເລກອ້າງອີງ
+
+  // ຈຳກັດຈຳນວນຄັ້ງກວດຕໍ່ລູກຄ້າ (ແຕ່ລະຄັ້ງເສຍ 100 ₭)
+  const kvKey = `slipchk:${user.id}`;
+  if (env.SESSIONS) {
+    const n = Number(await env.SESSIONS.get(kvKey)) || 0;
+    if (n >= 10) return { response: json({ error: 'ກວດສະລິບຫຼາຍເກີນໄປ ລອງໃໝ່ພາຍຫຼັງ 1 ຊົ່ວໂມງ' }, 429) };
+    await env.SESSIONS.put(kvKey, String(n + 1), { expirationTtl: 3600 });
+  }
+
+  let r;
+  try { r = await callSlipApi(env, { qr, ref: ref && ref.replace(/\s+/g, '') }, Math.round(amount)); }
+  catch (e) { console.error('slip api error', e); return { fallback: true }; }
+
+  const j = r.json;
+  if (r.status === 400) return { response: json({ error: 'ສະລິບບໍ່ຖືກຕ້ອງ (ບໍ່ແມ່ນ QR ສະລິບ BCEL ຫຼື ເລກອ້າງອີງຜິດ)' }, 422) };
+  if (!j || !j.ok || !j.data) {
+    console.error('slip api not ok', r.status, JSON.stringify(j));
+    return { fallback: true }; // 401/402/403/429/503/ອື່ນໆ -> ໃຫ້ແອດມິນກວດແທນ
+  }
+  const d = j.data;
+  if (!d.found) return { response: json({ error: 'ບໍ່ພົບສະລິບນີ້ໃນລະບົບທະນາຄານ' }, 422) };
+  if (Number(d.previous_checks) > 0) return { response: json({ error: 'ສະລິບໃບນີ້ຖືກໃຊ້ແລ້ວ' }, 409) };
+  const checks = d.checks || {};
+  if (checks.account === false) return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
+
+  const slipRef = String(d.ref || '');
+  if (!slipRef) return { fallback: true };
+
+  const maxAgeMs = (Number(env.SLIP_MAX_AGE_HOURS) || 24) * 3600 * 1000;
+  const t = parseSlipTime(d.time);
+  const tooOld = t !== null && Date.now() - t > maxAgeMs;
+  const amountOk = checks.amount !== false && Number(d.amount) === Math.round(amount);
+
+  let rows;
+  try {
+    rows = await supabaseInsert(env, 'topup_requests', {
+      user_id: user.id, user_email: user.email || null, amount,
+      slip_url: slipUrl, status: 'pending', method: 'auto', slip_ref: slipRef,
+    });
+  } catch (e) {
+    if (/23505|duplicate key/i.test(String(e.message))) {
+      return { response: json({ error: 'ສະລິບໃບນີ້ຖືກໃຊ້ເຕີມເງິນແລ້ວ' }, 409) };
+    }
+    throw e;
+  }
+
+  if (!amountOk || tooOld) {
+    return { rows, status: 'pending', note: !amountOk ? 'ຍອດໃນສະລິບບໍ່ຕົງກັບທີ່ເລືອກ — ສົ່ງໃຫ້ແອດມິນກວດ' : 'ສະລິບເກົ່າເກີນໄປ — ສົ່ງໃຫ້ແອດມິນກວດ' };
+  }
+
+  // ຜ່ານຄົບ -> ໃຊ້ logic atomic ເດີມ (ຈອງ pending -> approved ແລ້ວບວກກະເປົ໋າ ຄັ້ງດຽວ)
+  const id = rows[0] && rows[0].id;
+  const ap = await applyTopupDecision(env, id, 'approved');
+  if (ap.status === 200) {
+    try {
+      await sendDiscordAlert(env, {
+        title: '🤖 ເຕີມເງິນອັດຕະໂນມັດ (ກວດສະລິບຜ່ານ)', color: 0x3498db,
+        fields: [
+          { name: 'ລູກຄ້າ', value: user.email || '-', inline: true },
+          { name: 'ຈຳນວນເງິນ', value: `${Number(amount).toLocaleString()} ກີບ`, inline: true },
+          { name: 'ref', value: slipRef.slice(0, 40), inline: false },
+        ],
+      });
+    } catch { /* ຂ້າມ */ }
+    return { rows, status: 'approved' };
+  }
+  return { rows, status: 'pending', note: 'ເຕີມອັດຕະໂນມັດບໍ່ສຳເລັດ — ສົ່ງໃຫ້ແອດມິນກວດ' };
 }
 
 /* ---------- 9) GET /api/topup/history ----------
