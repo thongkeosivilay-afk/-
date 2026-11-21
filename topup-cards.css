@@ -1,0 +1,102 @@
+/* topup-cards.css — การ์ดเลือกวิธีเติมเงิน (ธีมแดง/ดำ) + แผ่นเลือกจำนวนเงิน
+   ใช้ร่วมกับ topup.html / topup.js เดิม (ไม่แก้ลอจิกเดิม) */
+.tc-legacy{display:none!important}
+
+/* ---------- grid ของการ์ด ---------- */
+.tc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:8px}
+.tc-card{
+  position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;
+  padding:14px 10px 16px;border-radius:18px;
+  background:linear-gradient(160deg,#151515,#0a0a0a);border:1.5px solid var(--card-border,#1e1e1e);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.08),inset 0 -4px 10px rgba(0,0,0,.6),
+    0 0 0 1px rgba(255,0,1,.18),0 4px 0 #1b1b1b,0 8px 0 #0e0e0e,0 18px 30px -12px rgba(255,0,1,.5);
+  opacity:0;animation:tcIn .6s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:var(--d,0s);
+}
+@keyframes tcIn{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.tc-img{
+  width:68%;aspect-ratio:1;margin:2px 0 12px;border-radius:20px;overflow:hidden;background:#fff;
+  border:2.5px solid rgba(255,255,255,.92);position:relative;
+  transform:perspective(600px) rotateX(var(--rx,8deg)) rotateY(var(--ry,-10deg));transition:transform .18s ease-out;
+  box-shadow:0 2px 0 #555,0 4px 0 #3a3a3a,0 6px 0 #262626,0 8px 0 #161616,0 20px 24px rgba(255,0,1,.35),0 12px 16px rgba(0,0,0,.7);
+}
+.tc-img img{width:100%;height:100%;object-fit:cover;display:block}
+.tc-img::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.4) 0%,rgba(255,255,255,0) 42%,rgba(0,0,0,.22) 100%)}
+.tc-title{
+  font-family:'Noto Sans Lao Looped','Noto Sans Lao',sans-serif;font-weight:700;font-size:14.5px;line-height:1.25;
+  color:#fff;margin:2px 0 4px;min-height:2.5em;display:flex;align-items:center;justify-content:center;
+  text-shadow:0 1px 0 #9a9a9a,0 2px 0 #666,0 3px 0 #3a3a3a,0 4px 0 #1a1a1a,0 7px 8px rgba(255,0,1,.45);
+}
+.tc-sub{font-size:11.5px;line-height:1.3;color:#999;margin-bottom:8px;min-height:1.3em}
+.tc-badge{
+  display:flex;align-items:flex-start;justify-content:center;gap:6px;min-height:2.7em;margin-bottom:12px;
+  font-size:10.5px;line-height:1.35;font-weight:700;color:#2ecc71;
+}
+.tc-badge i{flex:none;width:9px;height:9px;margin-top:3px;border-radius:50%;background:#2ecc71;
+  box-shadow:0 0 0 3px rgba(46,204,113,.2),0 0 10px 2px rgba(46,204,113,.7);animation:tcBlink 1.8s infinite}
+@keyframes tcBlink{50%{opacity:.5}}
+.tc-btn{
+  margin-top:auto;width:100%;height:42px;border:0;border-radius:12px;color:#fff;cursor:pointer;
+  font:700 13px/1 inherit;font-family:inherit;text-shadow:0 2px 0 rgba(120,0,0,.7);
+  background:linear-gradient(180deg,#ff4a4a 0%,#ff0001 45%,#d00001 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.45),0 4px 0 #b00001,0 8px 0 #750001,0 14px 18px -4px rgba(255,0,1,.55);
+  transition:transform .08s,box-shadow .08s;
+}
+.tc-btn:active{transform:translateY(7px);box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 1px 0 #b00001,0 2px 0 #750001,0 4px 8px rgba(0,0,0,.6)}
+.tc-card.soon .tc-btn{filter:saturate(.85)}
+
+/* ---------- แผ่นเลือกจำนวนเงิน (bottom sheet) ---------- */
+.tc-overlay{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);
+  opacity:0;pointer-events:none;transition:opacity .3s}
+.tc-overlay.open{opacity:1;pointer-events:auto}
+.tc-sheet{
+  position:fixed;left:50%;bottom:0;z-index:901;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;
+  padding:14px 16px calc(22px + env(safe-area-inset-bottom,0px));
+  background:#000;border:1.5px solid var(--card-border,#1e1e1e);border-bottom:0;border-radius:26px 26px 0 0;
+  box-shadow:0 -10px 50px -10px rgba(255,0,1,.55);
+  transform:translate(-50%,105%);transition:transform .42s cubic-bezier(.2,.9,.25,1);
+  overscroll-behavior:contain;
+}
+.tc-sheet.open{transform:translate(-50%,0)}
+.tc-grab{width:44px;height:5px;border-radius:5px;background:#2a2a2a;margin:0 auto 10px}
+.tc-close{position:absolute;top:10px;right:14px;width:34px;height:34px;border-radius:50%;border:1px solid var(--card-border,#1e1e1e);
+  background:#0a0a0a;color:#fff;font-size:22px;line-height:1;cursor:pointer;z-index:2;transition:border-color .2s,background .2s}
+.tc-close:active{background:rgba(255,0,1,.18);border-color:#ff0001}
+.tc-sheet .topup-card{background:transparent;border:0;padding:6px 2px 0;overflow:visible;border-radius:0}
+.tc-sheet .topup-card::before{display:none}
+.tc-sheet .topup-card-head{padding-right:38px}
+.tc-sheet .topup-card-icon.has-logo{border-radius:12px;border:2px solid #fff}
+.tc-sheet .topup-picker-hint{display:none}
+.tc-sheet .topup-amount-summary .sum-value.picked{color:#ff0001}
+
+/* ตัวเลือกจำนวนเงิน: โชว์ครบทันทีเป็นกริด 3 ช่อง */
+.tc-sheet .topup-presets,.tc-sheet .topup-presets.expanded{flex-wrap:wrap;overflow:visible;gap:10px;padding:4px 0 10px;scroll-snap-type:none}
+.tc-sheet .topup-preset,.tc-sheet .topup-preset.wide{width:calc(33.333% - 7px);height:58px;border-radius:14px;clip-path:none;
+  background:linear-gradient(180deg,#2b2b2b,#141414);border:1px solid #222;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.16),0 4px 0 #070707,0 7px 10px rgba(0,0,0,.6);font-size:18px}
+.tc-sheet .topup-preset.first{animation:none}
+.tc-sheet .topup-preset:active{transform:translateY(4px);box-shadow:inset 0 2px 0 rgba(255,255,255,.1),0 0 0 #070707}
+.tc-sheet .topup-preset.active{
+  background:linear-gradient(180deg,#ff4a4a,#ff0001 50%,#c90001);border-color:#ff0001;color:#fff;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.4),0 3px 0 #750001,0 0 20px rgba(255,0,1,.6);
+}
+.tc-sheet .topup-preset.active .cur{color:#ffd0d0}
+.tc-sheet .topup-custom-wrap{background:#050505;box-shadow:inset 0 4px 10px rgba(0,0,0,.8)}
+.tc-sheet .topup-custom-wrap:focus-within{border-color:#ff0001;box-shadow:inset 0 4px 10px rgba(0,0,0,.8),0 0 18px rgba(255,0,1,.4)}
+.tc-sheet .topup-submit{
+  height:56px;border-radius:16px;font-size:15px;
+  background:linear-gradient(180deg,#ff4a4a,#ff0001 45%,#d00001);text-shadow:0 2px 0 rgba(120,0,0,.7);
+  box-shadow:inset 0 3px 0 rgba(255,255,255,.45),0 5px 0 #b00001,0 10px 0 #750001,0 22px 26px -6px rgba(255,0,1,.6);
+  position:relative;overflow:hidden;margin-top:6px;
+}
+.tc-sheet .topup-submit:not(:disabled)::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:skewX(-20deg);animation:tcShine 3s ease-in-out infinite}
+@keyframes tcShine{0%,55%{left:-80px}100%{left:120%}}
+.tc-sheet .topup-submit:not(:disabled):active{transform:translateY(8px);box-shadow:inset 0 3px 0 rgba(255,255,255,.35),0 1px 0 #b00001,0 2px 0 #750001}
+.tc-sheet .topup-submit:disabled{background:#141414;box-shadow:inset 0 2px 0 rgba(255,255,255,.06),0 4px 0 #080808;opacity:.8}
+.tc-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,120px);z-index:1000;
+  max-width:90vw;padding:12px 18px;border-radius:14px;background:#0a0a0a;border:1px solid #ff0001;color:#fff;font-size:13.5px;font-weight:600;
+  box-shadow:0 0 24px rgba(255,0,1,.4);transition:transform .4s cubic-bezier(.2,1.3,.4,1);text-align:center}
+.tc-toast.show{transform:translate(-50%,0)}
+body.tc-lock{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.tc-card,.tc-badge i,.tc-sheet .topup-submit::after{animation:none!important;opacity:1}}
