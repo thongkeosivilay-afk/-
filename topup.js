@@ -467,6 +467,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  /* ---------- QR ຮັບເງິນແບບສ້າງໃໝ່ຕາມຍອດ (dynamic) ----------
+     ອ່ານຂໍ້ມູນຈາກຮູບ QR ທີ່ແອດມິນອັບໄວ້ -> ໃສ່ຍອດເງິນ + ຄຳນວນ CRC ໃໝ່ -> ແຕ້ມ QR ໃໝ່ໃນໜ້າເຕີມເງິນ
+     ຖ້າຂັ້ນຕອນໃດບໍ່ສຳເລັດ ຈະສະແດງຮູບ QR ເດີມຄືເກົ່າ (ບໍ່ເສຍຫາຍ). ປິດໄດ້ໂດຍປ່ຽນເປັນ false */
+  const DYNAMIC_QR = true;
+
+  function emvParse(s) {
+    const out = [];
+    let i = 0;
+    while (i + 4 <= s.length) {
+      const id = s.slice(i, i + 2);
+      const len = parseInt(s.slice(i + 2, i + 4), 10);
+      if (!Number.isFinite(len) || i + 4 + len > s.length) return null;
+      out.push([id, s.slice(i + 4, i + 4 + len)]);
+      i += 4 + len;
+    }
+    return i === s.length ? out : null;
+  }
+
+  function crc16ccitt(str) {
+    let crc = 0xffff;
+    for (let i = 0; i < str.length; i++) {
+      crc ^= str.charCodeAt(i) << 8;
+      for (let b = 0; b < 8; b++) crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+
+  // ຮັບ payload ຂອງ QR ຖາວອນ (tag 01 = 11) -> ຄືນ payload ໃໝ່ທີ່ມີຍອດເງິນ (tag 54) + CRC ໃໝ່; ບໍ່ຜ່ານເງື່ອນໄຂ = null
+  function buildDynamicPayload(payload, amount) {
+    const tags = emvParse(payload);
+    if (!tags || tags.length < 4) return null;
+    const last = tags[tags.length - 1];
+    if (last[0] !== '63' || last[1].length !== 4) return null;
+    if (crc16ccitt(payload.slice(0, -4)) !== last[1].toUpperCase()) return null; // CRC ເດີມຕ້ອງຖືກ
+    const body = tags.slice(0, -1);
+    const t01 = body.find(([id]) => id === '01');
+    if (!t01 || t01[1] !== '11') return null; // ຮອງຮັບສະເພາະ QR ຖາວອນ
+    if (body.some(([id]) => id === '54')) return null; // ມີຍອດຢູ່ແລ້ວ ບໍ່ແກ້
+    const amt = String(Math.round(amount));
+    const out = [];
+    let inserted = false;
+    for (const [id, v] of body) {
+      if (id === '01') { out.push(['01', '12']); continue; }
+      if (!inserted && Number(id) > 54) { out.push(['54', amt]); inserted = true; }
+      out.push([id, v]);
+    }
+    if (!inserted) out.push(['54', amt]);
+    const raw = out.map(([id, v]) => id + String(v.length).padStart(2, '0') + v).join('') + '6304';
+    return raw + crc16ccitt(raw);
+  }
+
+  async function getShopQrPayload(url) {
+    const key = 'shopqr:' + url;
+    try { const c = sessionStorage.getItem(key); if (c) return c; } catch { /* ຂ້າມ */ }
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) return '';
+    const blob = await res.blob();
+    const text = await decodeSlipQr(blob); // ໃຊ້ຕົວອ່ານ QR ດຽວກັບສະລິບ
+    if (text) { try { sessionStorage.setItem(key, text); } catch { /* ຂ້າມ */ } }
+    return text || '';
+  }
+
+  async function renderShopQr(url, amount) {
+    qrBox.innerHTML = `<img src="${url}" alt="QR ຮັບເງິນ">`; // ສະແດງຮູບເດີມກ່ອນ
+    if (!DYNAMIC_QR || !window.QRCode) return;
+    try {
+      const payload = await getShopQrPayload(url);
+      const dyn = payload && buildDynamicPayload(payload, amount);
+      if (!dyn) return;
+      const canvas = document.createElement('canvas');
+      await window.QRCode.toCanvas(canvas, dyn, { width: 300, margin: 2, errorCorrectionLevel: 'M' });
+      canvas.style.cssText = 'width:100%;max-width:300px;height:auto;border-radius:14px;display:block;margin:0 auto;background:#fff';
+      canvas.setAttribute('aria-label', 'QR ຮັບເງິນ ຍອດ ' + amount);
+      qrBox.innerHTML = '';
+      qrBox.appendChild(canvas);
+    } catch (e) { console.error('dynamic QR failed', e); }
+  }
+
   /* ---------- Step 1 -> Step 2: ສ້າງ QR ---------- */
   createQrBtn.addEventListener('click', async () => {
     if (selectedAmount < 1) return;
@@ -500,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
       payAmountEl.textContent = formatKip(selectedAmount);
       const realQrUrl = QR_IMAGES[selectedBank];
       if (realQrUrl) {
-        qrBox.innerHTML = `<img src="${realQrUrl}" alt="QR ຮັບເງິນ">`;
+        renderShopQr(realQrUrl, selectedAmount);
       } else {
         qrBox.textContent = `[ ຍັງບໍ່ໄດ້ຕັ້ງຮູບ QR — ໄປໃສ່ໃນຫ້ອງແອດມິນ > ຕັ້ງຄ່າຮ້ານ > QR ໂອນເງິນ ]`;
       }
