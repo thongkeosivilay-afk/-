@@ -21,6 +21,13 @@
     return !btn || btn.classList.contains('u-hidden') || btn.style.display === 'none';
   }
 
+  // BCEL One (bank 1) -> ໂໝດ ອັດຕະໂນມັດ / ອີກ 3 ຊ່ອງທາງ (LDB, umoney, LAO QR) -> ແອດມິນຢືນຢັນ
+  function applyModeFor(bank) {
+    var wantMode = String(bank) === '1' ? 'auto' : 'admin';
+    var modeBtn = document.querySelector('.topup-mode-btn[data-mode="' + wantMode + '"]');
+    if (modeBtn && !modeBtn.classList.contains('active')) modeBtn.click();
+  }
+
   function openSheet(bank, imgSrc) {
     var legacy = document.querySelector('.topup-method[data-bank="' + bank + '"]');
     if (legacyHidden(legacy)) { say('ວິທີນີ້ຍັງບໍ່ເປີດໃຫ້ບໍລິການ'); return; }
@@ -42,6 +49,10 @@
   grid.addEventListener('click', function (e) {
     var btn = e.target.closest('.tc-btn');
     if (!btn) return;
+    var card = btn.closest('.tc-card');
+    var title = card && card.querySelector('.tc-title');
+    // BCEL One ເທົ່ານັ້ນທີ່ເປັນອັດຕະໂນມັດ (ກວດຈາກຊື່ການ໌ດ ເພາະ umoney/LAO QR ໃຊ້ data-tc-bank="0")
+    applyModeFor(title && /BCEL/i.test(title.textContent) ? '1' : 'x');
     if (btn.hasAttribute('data-tc-soon')) { say('ວິທີນີ້ກຳລັງຈະເປີດໃຫ້ບໍລິການໃນໄວໆນີ້'); return; }
     var img = btn.closest('.tc-card').querySelector('.tc-img img');
     openSheet(btn.getAttribute('data-tc-bank'), img && img.getAttribute('src'));
