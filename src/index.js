@@ -2893,7 +2893,7 @@ async function handleTopupConfirm(request, env) {
 async function callSlipApi(env, { qr, ref }, expectAmount) {
   const body = { expect_amount: expectAmount };
   if (qr) body.qr = qr; else body.ref = ref;
-  if (env.SLIP_RECEIVER_ACCOUNT) body.expect_account = String(env.SLIP_RECEIVER_ACCOUNT).replace(/\D/g, '').slice(-4);
+  // ບໍ່ສົ່ງ expect_account: ສະລິບ BCEL ເຊື່ອງເລກບັນຊີ ເຫັນພຽງ 3 ຕົວທ້າຍ (xxxxx907) ຈຶ່ງທຽບ 4 ຕົວບໍ່ໄດ້ -> ກວດເອງດ້ານລຸ່ມ
   const res = await fetch('https://api.topup.com.la/v1/slip/check', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Api-Key': env.TOPUP_API_KEY },
@@ -2939,6 +2939,16 @@ async function handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr, ref }
   if (!d.found) return { response: json({ error: 'ບໍ່ພົບສະລິບນີ້ໃນລະບົບທະນາຄານ' }, 422) };
   if (Number(d.previous_checks) > 0) return { response: json({ error: 'ສະລິບໃບນີ້ຖືກໃຊ້ແລ້ວ' }, 409) };
   const checks = d.checks || {};
+  // ກວດບັນຊີຜູ້ຮັບເອງ: ທຽບ 3 ຕົວທ້າຍ (ຮອງຮັບຫຼາຍບັນຊີ ຄັ່ນດ້ວຍຈຸດ , ເຊັ່ນ 5907,1234)
+  const wants = String(env.SLIP_RECEIVER_ACCOUNT || '').split(',').map((x) => x.replace(/\D/g, '').slice(-3)).filter((x) => x.length === 3);
+  if (wants.length) {
+    const got = String(d.receiver_account || '').replace(/\D/g, '');
+    if (got.length < 3) return { fallback: true }; // API ບໍ່ສົ່ງບັນຊີຜູ້ຮັບມາ -> ໃຫ້ແອດມິນກວດ
+    if (!wants.includes(got.slice(-3))) {
+      console.error('receiver mismatch', d.receiver_account, 'want', wants.join(','));
+      return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
+    }
+  }
   if (checks.account === false) return { response: json({ error: 'ເງິນບໍ່ໄດ້ໂອນເຂົ້າບັນຊີຂອງຮ້ານ' }, 422) };
 
   const slipRef = String(d.ref || '');
