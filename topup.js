@@ -411,6 +411,11 @@ document.addEventListener('DOMContentLoaded', () => {
       sumValueEl.textContent = '— ₭';
       sumValueEl.classList.remove('picked');
     }
+    // ซิงค์ตัวเลขในช่องพิมพ์ให้ตรงกับปุ่มที่กด (ไม่ไปรบกวนตอนผู้ใช้กำลังพิมพ์เอง)
+    const amtInput = document.querySelector('#topupCustomAmount');
+    if (amtInput && document.activeElement !== amtInput) {
+      amtInput.value = selectedDisplayAmount > 0 ? String(selectedDisplayAmount) : '';
+    }
     createQrBtn.disabled = selectedAmount < 1;
   }
 

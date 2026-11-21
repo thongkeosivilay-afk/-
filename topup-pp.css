@@ -1,0 +1,109 @@
+/* topup-pp.css — ดีไซน์การ์ดเติมเงินแบบ "PromptPay" (อ้างอิงรูป) ธีมแดง/ดำ
+   ทับ topup-cards.css เฉพาะใน .tc-sheet — ไม่แตะลอจิก topup.js (id/class เดิมครบ) */
+
+.tc-sheet{
+  max-width:520px;padding:18px 18px calc(26px + env(safe-area-inset-bottom,0px));
+  background:radial-gradient(520px 260px at 85% -8%,rgba(255,0,1,.2),transparent 70%),linear-gradient(180deg,#0e0506,#050203);
+  border:1px solid rgba(255,45,59,.32);border-bottom:0;border-radius:28px 28px 0 0;
+  box-shadow:0 -12px 60px -10px rgba(255,0,1,.55);
+}
+.tc-sheet .tc-grab{background:#3a1217}
+.tc-sheet .tc-close{background:#12080a;border-color:#3a1217}
+
+/* ---- หัวการ์ด: ใช้ข้อความหน้าการ์ด (ชื่อธนาคาร + คำอธิบาย) เป็นหัวข้อ ---- */
+.tc-sheet .topup-card{padding:4px 0 0}
+.tc-sheet .topup-card-head{display:block;margin:0 0 22px;padding-right:44px}
+.tc-sheet .topup-card-icon{display:none}
+.tc-sheet .topup-card-head-text b{
+  display:block;margin:0 0 8px;font-family:'Noto Sans Lao Looped','Noto Sans Lao',sans-serif;
+  font-size:23px;font-weight:800;line-height:1.3;color:#fff;letter-spacing:.01em;
+  text-shadow:0 0 22px rgba(255,45,59,.45);
+}
+.tc-sheet .topup-card-head-text p{margin:0;font-size:14px;line-height:1.65;color:#b49a9e}
+
+/* ซ่อนส่วนที่ไม่อยู่ในดีไซน์ (JS ยังอัปเดตได้ตามปกติ) */
+.tc-sheet .topup-amount-summary,
+.tc-sheet .topup-picker-hint,
+.tc-sheet .topup-custom-divider{display:none}
+
+/* ---- ฟอร์ม: label -> ช่องใส่เงิน -> chips ---- */
+.tc-sheet .topup-picker-wrap{display:flex;flex-direction:column;margin:0 0 18px}
+.pp-label{order:0;margin:0 0 10px;font-size:14px;font-weight:700;color:#c9b3b6}
+.tc-sheet .topup-custom-wrap{
+  order:1;height:68px;padding:0 20px;gap:10px;border-radius:18px;
+  background:#070304;border:1.5px solid #3a1217;box-shadow:inset 0 2px 8px rgba(0,0,0,.7);
+}
+.tc-sheet .topup-custom-wrap:focus-within{
+  border-color:#ff2d3b;box-shadow:0 0 0 4px rgba(255,45,59,.14),0 0 28px rgba(255,0,1,.35),inset 0 2px 8px rgba(0,0,0,.7);
+}
+.tc-sheet .topup-custom-cur{font-size:22px;color:#ff4b57}
+.tc-sheet .topup-custom-input{font-size:28px;font-weight:800;color:#fff;letter-spacing:.02em}
+.tc-sheet .topup-custom-input::placeholder{color:#5d3c41}
+.tc-sheet .topup-custom-suffix{font-size:22px;color:#7a5a5f}
+.tc-sheet .topup-custom-hint{order:2;margin:10px 4px 0;font-size:12px;color:#9a8185}
+
+/* chips ตัวเลือกราคา: แถวเดียว 6 ปุ่ม แสดงครบทันที */
+.tc-sheet .topup-presets,.tc-sheet .topup-presets.expanded{
+  order:3;display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:16px 0 0;padding:0;overflow:visible;
+}
+.tc-sheet .topup-presets .topup-preset,
+.tc-sheet .topup-presets .topup-preset.wide,
+.tc-sheet .topup-presets .topup-preset:not(.first):not(.shown){
+  width:auto;min-width:0;height:48px;margin:0;opacity:1;transform:none;pointer-events:auto;border-width:1px;
+  clip-path:none;border-radius:13px;background:#0b0506;border:1px solid #3a1217;
+  color:#ff5662;font:700 15px/1 'Rajdhani','Noto Sans Lao',sans-serif;
+  box-shadow:none;animation:none;
+  transition:transform .15s,background .2s,border-color .2s,box-shadow .2s,color .2s;
+}
+.tc-sheet .topup-preset .cur{display:none}
+.tc-sheet .topup-preset:hover{border-color:#8a1b27}
+.tc-sheet .topup-presets .topup-preset:active{transform:scale(.94)}
+.tc-sheet .topup-presets .topup-preset.active{
+  background:rgba(255,0,1,.18);border-color:#ff2d3b;color:#fff;
+  box-shadow:0 0 0 1px #ff2d3b,0 0 22px rgba(255,0,1,.45);
+}
+
+/* ---- ปุ่มสร้าง QR ---- */
+.tc-sheet .topup-submit{
+  height:60px;margin-top:2px;border-radius:16px;font-size:17px;font-weight:800;gap:12px;
+  background:linear-gradient(100deg,#b50d20,#ff2b42 50%,#b50d20);background-size:200% 100%;
+  box-shadow:0 10px 32px rgba(255,35,55,.5),inset 0 1px 0 rgba(255,255,255,.35);text-shadow:none;
+}
+.tc-sheet .topup-submit:not(:disabled){animation:ppFlow 3.2s linear infinite}
+.tc-sheet .topup-submit svg{width:22px;height:22px}
+.tc-sheet .topup-submit:not(:disabled):active{transform:scale(.97);box-shadow:0 4px 16px rgba(255,35,55,.4)}
+.tc-sheet .topup-submit:disabled{background:#150a0c;color:#7a5a5f;box-shadow:none;opacity:1;animation:none}
+@keyframes ppFlow{to{background-position:200% 0}}
+.tc-sheet .topup-note{margin:14px 0 0;font-size:12.5px;color:#9a8185;padding-bottom:16px;border-bottom:1px solid #2a1014}
+
+/* ---- วิธีเติมเงิน (อยู่ในการ์ด) ---- */
+.tc-sheet .topup-guide{margin:20px 0 0}
+.tc-sheet .topup-guide .topup-label{
+  margin:0 0 16px;font-size:17px;font-weight:800;color:#fff;text-transform:none;letter-spacing:0;
+}
+.tc-sheet .topup-guide ol{gap:16px}
+.tc-sheet .topup-guide li{gap:14px;font-size:14px;line-height:1.65;color:#b9a3a6}
+.tc-sheet .topup-guide .num{
+  width:28px;height:28px;margin-top:0;font:800 13px/1 'Rajdhani','Noto Sans Lao',sans-serif;
+  background:linear-gradient(135deg,#ff2b42,#b50d20);border:0;color:#fff;box-shadow:0 0 14px rgba(255,35,55,.45);
+}
+
+/* ---- แอนิเมชันตอนเปิดแผ่น ---- */
+.tc-sheet.open .topup-card > *{opacity:0;animation:ppRise .55s cubic-bezier(.2,.8,.2,1) forwards}
+.tc-sheet.open .topup-card > :nth-child(1){animation-delay:.12s}
+.tc-sheet.open .topup-card > :nth-child(2){animation-delay:.2s}
+.tc-sheet.open .topup-card > :nth-child(3){animation-delay:.28s}
+.tc-sheet.open .topup-card > :nth-child(4){animation-delay:.36s}
+.tc-sheet.open .topup-card > :nth-child(5){animation-delay:.44s}
+.tc-sheet.open .topup-card > :nth-child(6){animation-delay:.52s}
+@keyframes ppRise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+@media (max-width:380px){
+  .tc-sheet .topup-presets,.tc-sheet .topup-presets.expanded{grid-template-columns:repeat(3,1fr)}
+  .tc-sheet .topup-card-head-text b{font-size:20px}
+  .tc-sheet .topup-custom-input{font-size:24px}
+}
+@media (prefers-reduced-motion:reduce){
+  .tc-sheet.open .topup-card > *{animation:none;opacity:1}
+  .tc-sheet .topup-submit:not(:disabled){animation:none}
+}

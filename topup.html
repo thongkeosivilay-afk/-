@@ -23,6 +23,7 @@
 <link href="site-bg.css?v=20261110a" rel="stylesheet"/>
 <link href="polish.css?v=3" rel="stylesheet"/>
 <link href="topup-cards.css?v=1" rel="stylesheet"/>
+<link href="topup-pp.css?v=1" rel="stylesheet"/>
 <link rel="stylesheet" href="login-modal.css?v=1">
 </head>
 <body>
@@ -137,6 +138,7 @@
 <div class="sum-value" id="topupSumValue">— ₭</div>
 </div>
 <div class="topup-picker-wrap">
+<label class="pp-label" for="topupCustomAmount">ຈຳນວນເງິນ (₭)</label>
 <div class="topup-picker-hint" id="topupPickerHint">
 <span>ແຕະ ₭20 ເພື່ອເບິ່ງຕົວເລືອກທັງໝົດ</span>
 <span class="arrow"><svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" viewbox="0 0 24 24"><path d="M9 6l6 6-6 6"></path></svg></span>
@@ -147,7 +149,7 @@
 <button class="topup-preset" data-amount="100" type="button"><span class="cur">₭</span>100K</button>
 <button class="topup-preset" data-amount="200" type="button"><span class="cur">₭</span>200K</button>
 <button class="topup-preset" data-amount="500" type="button"><span class="cur">₭</span>500K</button>
-<button class="topup-preset wide" data-amount="1000" type="button"><span class="cur">₭</span>1,000K</button>
+<button class="topup-preset wide" data-amount="1000" type="button"><span class="cur">₭</span>1M</button>
 </div>
 <div class="topup-custom-divider"><span>ຫຼື ພິມຈຳນວນເອງ</span></div>
 <div class="topup-custom-wrap">
@@ -158,12 +160,10 @@
 <div class="topup-custom-hint">ພິມສະເພາະໂຕເລກ ຈະຄິດເປັນ (ໂຕເລກ × 1.000 ₭) ໃຫ້ອັດຕະໂນມັດ — ຕົວຢ່າງ: ພິມ 35 = 35.000 ₭</div>
 </div>
 <button class="topup-submit" disabled="" id="topupCreateQrBtn" type="button">
-<svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><rect height="20" rx="2" width="14" x="5" y="2"></rect><path d="M12 18h.01"></path></svg>
+<svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" aria-hidden="true"><rect height="7" rx="1.5" width="7" x="3" y="3"></rect><rect height="7" rx="1.5" width="7" x="14" y="3"></rect><rect height="7" rx="1.5" width="7" x="3" y="14"></rect><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"></path></svg>
           ສ້າງ QR ໂອນເງິນ
         </button>
-<p class="topup-note">ແຕະ ₭20 ເພື່ອເບິ່ງທຸກຕົວເລືອກ ຫຼື ເລືອກຍອດເງິນ ແລ້ວກົດສ້າງ QR</p>
-</div>
-</div>
+<p class="topup-note">ເລືອກຍອດເງິນ ຫຼື ພິມເອງ ແລ້ວກົດ “ສ້າງ QR ໂອນເງິນ”</p>
 <div class="topup-guide">
 <p class="topup-label">ວິທີເຕີມເງິນຜ່ານ QR ຮ້ານ</p>
 <ol>
@@ -172,6 +172,8 @@
 <li><span class="num">3</span><span>ອັບໂຫຼດຮູບສະລິບການໂອນ ແລ້ວກົດ "ຢືນຢັນການໂອນເງິນ"</span></li>
 <li><span class="num">4</span><span>ແອດມິນຈະກວດສອບ ແລະ ຍອດເງິນຈະເຂົ້າບັນຊີທ່ານພາຍໃນບໍ່ດົນ</span></li>
 </ol>
+</div>
+</div>
 </div>
 </section>
 <!-- ========== STEP 2: QR + ອັບໂຫຼດສະລິບ ========== -->
