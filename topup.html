@@ -60,7 +60,20 @@
 <button class="topup-mode-btn active" data-mode="admin" type="button">👤 ແອດມິນຢືນຢັນ</button>
 <button class="topup-mode-btn" data-mode="auto" type="button">⚡ ອັດຕະໂນມັດ</button>
 </div>
-<p class="topup-mode-hint" id="topupModeHint">ສົ່ງສະລິບ ແລ້ວລໍຖ້າແອດມິນກວດສອບ</p>
+<p class="topup-mode-hint" hidden style="display:none" id="topupModeHint">ສົ່ງສະລິບ ແລ້ວລໍຖ້າແອດມິນກວດສອບ</p>
+<style>
+.tu-info{margin:6px 0 14px;padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.82)}
+.tu-info .tu-row{display:flex;gap:8px;align-items:flex-start;margin:0 0 8px}
+.tu-info .tu-row:last-child{margin-bottom:0}
+.tu-info b{color:#fff}
+.tu-info .tu-auto b{color:#4ade80}
+.tu-info .tu-warn{padding-top:8px;border-top:1px dashed rgba(255,255,255,.15);color:#fbbf24}
+</style>
+<div class="tu-info" id="topupInfo">
+<p class="tu-row tu-auto"><span>⚡</span><span><b>BCEL One — ອັດຕະໂນມັດ:</b> ໂອນແລ້ວສົ່ງສະລິບ ລະບົບຈະກວດ ແລະ ເຕີມເງິນໃຫ້ທັນທີ</span></p>
+<p class="tu-row"><span>👤</span><span><b>LDB Bank ແລະ ທະນາຄານອື່ນ — ແອດມິນຢືນຢັນ:</b> ສົ່ງສະລິບແລ້ວລໍຖ້າແອດມິນກວດສອບ ອາດໃຊ້ເວລາຈັກໜ້ອຍ</span></p>
+<p class="tu-row tu-warn"><span>⚠️</span><span>ກະລຸນາອ່ານກ່ອນກົດເຕີມ: ໂອນເງິນໃຫ້ຖືກຈຳນວນທີ່ເລືອກ ແລະ ສົ່ງສະລິບທີ່ຖືກຕ້ອງເທົ່ານັ້ນ</span></p>
+</div>
 <p class="topup-label">ເລືອກວິທີເຕີມເງິນ</p>
 <div class="tc-grid" id="tcGrid">
 <article class="tc-card" style="--d:0.08s">
