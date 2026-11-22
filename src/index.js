@@ -2780,14 +2780,20 @@ async function handleAdminCustomers(request, env, url) {
    POST (ແອດມິນ)  -> body { links: [{ label, url }] } ບັນທຶກທັບທັງຊຸດ
    ເກັບໃນ KV (SESSIONS) key 'topup:links' — ບໍ່ຕ້ອງສ້າງຕາຕະລາງ/ຄໍລໍາໃໝ່ໃນ Supabase */
 const TOPUP_LINKS_KEY = 'topup:links';
+const TOPUP_REFS_KEY = 'topup:refs'; // { "1": true, ... } ຊ່ອງທີ່ເປີດໃຫ້ໃສ່ເລກອ້າງອີງ
 async function handleTopupLinks(request, env) {
   if (request.method === 'GET') {
     let links = [];
+    let refs = {};
     try {
       const raw = await env.SESSIONS.get(TOPUP_LINKS_KEY);
       if (raw) links = JSON.parse(raw);
     } catch { links = []; }
-    return json({ links: Array.isArray(links) ? links : [] });
+    try {
+      const rawRefs = await env.SESSIONS.get(TOPUP_REFS_KEY);
+      if (rawRefs) refs = JSON.parse(rawRefs);
+    } catch { refs = {}; }
+    return json({ links: Array.isArray(links) ? links : [], refs: refs && typeof refs === 'object' ? refs : {} });
   }
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
   const admin = await getSessionUser(request, env);
@@ -2808,7 +2814,12 @@ async function handleTopupLinks(request, env) {
   }
   const links = Object.keys(byCh).sort().map((k) => byCh[k]);
   await env.SESSIONS.put(TOPUP_LINKS_KEY, JSON.stringify(links));
-  return json({ ok: true, links });
+  const refs = {};
+  if (body.refs && typeof body.refs === 'object') {
+    for (const n of ['1', '2', '3', '4']) refs[n] = body.refs[n] === true;
+    await env.SESSIONS.put(TOPUP_REFS_KEY, JSON.stringify(refs));
+  }
+  return json({ ok: true, links, refs });
 }
 
 async function handleTopupCreate(request, env) {
