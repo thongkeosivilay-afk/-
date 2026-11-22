@@ -254,6 +254,33 @@ document.addEventListener('DOMContentLoaded', () => {
     showTuwToast._t = setTimeout(() => { tuwToast.className = 'tuw-toast'; }, 5000);
   }
 
+  // ดึงยอดเงินล่าสุดจาก /api/me แล้วอัปเดตชิปหัวเว็บ + เมนูข้าง ทันที (ไม่ต้องรีเฟรชหน้า)
+  function shortKip(n) {
+    n = Number(n || 0);
+    const a = Math.abs(n);
+    let v, u;
+    if (a >= 1e9) { v = n / 1e9; u = 'B'; }
+    else if (a >= 1e6) { v = n / 1e6; u = 'M'; }
+    else if (a >= 1e3) { v = n / 1e3; u = 'K'; }
+    else return String(Math.round(n));
+    return String(Math.floor(Math.abs(v) * 100) / 100 * (v < 0 ? -1 : 1)) + u;
+  }
+  async function refreshBalance() {
+    try {
+      const res = await fetch('/api/me', { credentials: 'same-origin', cache: 'no-store' });
+      const d = await res.json().catch(() => ({}));
+      if (!d || !d.loggedIn || !d.user) return;
+      const bal = Number(d.user.balance || 0);
+      const txt = document.querySelector('#trialBalText');
+      if (txt) txt.textContent = shortKip(bal);
+      const chip = document.querySelector('#trialBal');
+      if (chip) chip.setAttribute('title', bal.toLocaleString('en-US') + ' ₭');
+      if (window.StoreMenu && window.StoreMenu.setBalance) window.StoreMenu.setBalance(bal);
+      const acct = document.querySelector('#acctBal');
+      if (acct) acct.textContent = bal.toLocaleString('de-DE') + ' ₭';
+    } catch (e) { console.error('refreshBalance failed', e); }
+  }
+
   let tuwPollTimer = null;
   let tuwLastKey = null; // ກັນອັບເດດ UI ຊ້ຳໆ ຖ້າຂໍ້ມູນຍັງບໍ່ປ່ຽນຈາກຮອບກ່ອນ
 
@@ -275,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTuwState('success');
         showTuwToast('ເຕີມເງິນສຳເລັດ! ຍອດເຂົ້າບັນຊີແລ້ວ', 'success');
         if (window.LoginSuccess) window.LoginSuccess.ding(); // เสียงเหมือนตอนเข้าสู่ระบบสำเร็จ
+        refreshBalance(); // อัปเดตยอดเงินทันที
         stopTuwPolling();
       } else if (item.status === 'rejected') {
         setTuwState('failed');
