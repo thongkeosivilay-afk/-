@@ -2026,6 +2026,7 @@ async function handlePublicStorefront(request, env) {
     const siteSettingsColumns = [
       'store_name', 'tagline', 'announcement_text', 'hero_image', 'logo_url',
       'qr_label', 'qr_label_2', 'qr_url', 'qr_url_2',
+      'qr_label_3', 'qr_url_3', 'qr_label_4', 'qr_url_4',
       'social_facebook', 'social_discord', 'social_line', 'social_telegram', 'social_whatsapp',
       'promo_popup_enabled', 'promo_popup_image',
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_name`),
@@ -2159,6 +2160,10 @@ async function handlePublicStorefront(request, env) {
         qrLabel2: settings.qr_label_2 || null,
         qrUrl1: settings.qr_url || null,
         qrUrl2: settings.qr_url_2 || null,
+        qrLabel3: settings.qr_label_3 || null,
+        qrUrl3: settings.qr_url_3 || null,
+        qrLabel4: settings.qr_label_4 || null,
+        qrUrl4: settings.qr_url_4 || null,
         social: {
           facebook: settings.social_facebook || null,
           discord: settings.social_discord || null,
