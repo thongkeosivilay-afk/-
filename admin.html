@@ -1102,27 +1102,56 @@ IJKL-9012"></textarea></div>
 <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><rect height="7" width="7" x="3" y="3"></rect><rect height="7" width="7" x="14" y="3"></rect><rect height="7" width="7" x="3" y="14"></rect><line x1="14" x2="14" y1="14" y2="21"></line><line x1="21" x2="21" y1="14" y2="21"></line><line x1="17.5" x2="17.5" y1="14" y2="17.5"></line><line x1="14" x2="21" y1="17.5" y2="17.5"></line></svg>
       QR ໂອນເງິນ
     </h3>
+<div class="qr-slot-card" style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;margin-bottom:12px;background:rgba(255,255,255,.03)">
+<div style="font-weight:700;margin-bottom:8px">ຊ່ອງທີ 1 — BCEL One</div>
 <div class="gx-row2">
 <div>
 <div class="gx-field">
-<label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 1</label>
-<div class="gx-input-wrap"><input id="settingQrLabel1" placeholder="ເຊັ່ນ: ບັນຊີທະນາຄານ" type="text"/></div>
+<label>ຮູບໂລໂກ້ການ໌ດ (ທີ່ສະແດງໜ້າເຕີມເງິນ)</label>
+<div class="drop-zone" id="qrIconDropZone1">
+<span id="qrIconDropZoneText1">ແຕະເພື່ອເລືອກຮູບໂລໂກ້ໃໝ່</span>
+<input accept="image/*" id="qrIconInput1" type="file"/>
 </div>
+</div>
+</div>
+<div>
 <div class="gx-field">
-<label>ຮູບ QR ຮັບເງິນ ອັນທີ 1</label>
+<label>ຮູບ QR ຮັບເງິນ</label>
 <div class="drop-zone" id="qrDropZone">
 <span id="qrDropZoneText">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
 <input accept="image/*" id="qrInput" type="file"/>
 </div>
 </div>
 </div>
-<div>
-<div class="gx-field">
-<label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 2</label>
-<div class="gx-input-wrap"><input id="settingQrLabel2" placeholder="ເຊັ່ນ: ບັນຊີພັດທະນາ" type="text"/></div>
 </div>
 <div class="gx-field">
-<label>ຮູບ QR ຮັບເງິນ ອັນທີ 2 (ບໍ່ບັງຄັບ)</label>
+<label>ຊື່ (ຫົວຂໍ້ການ໌ດ)</label>
+<div class="gx-input-wrap"><input id="settingQrLabel1" placeholder="BCEL One" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມໃຕ້ຊື່</label>
+<div class="gx-input-wrap"><input id="settingQrSub1" placeholder="ຊຳລະດ້ວຍ BCEL One QR" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມປ້າຍສີຂຽວ</label>
+<div class="gx-input-wrap"><input id="settingQrBadge1" placeholder="ຮອງຮັບລະບົບແນບສະລິບເຕີມເງິນອໍໂຕ້" type="text"/></div>
+</div>
+</div>
+<div class="qr-slot-card" style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;margin-bottom:12px;background:rgba(255,255,255,.03)">
+<div style="font-weight:700;margin-bottom:8px">ຊ່ອງທີ 2 — LDB Bank</div>
+<div class="gx-row2">
+<div>
+<div class="gx-field">
+<label>ຮູບໂລໂກ້ການ໌ດ (ທີ່ສະແດງໜ້າເຕີມເງິນ)</label>
+<div class="drop-zone" id="qrIconDropZone2">
+<span id="qrIconDropZoneText2">ແຕະເພື່ອເລືອກຮູບໂລໂກ້ໃໝ່</span>
+<input accept="image/*" id="qrIconInput2" type="file"/>
+</div>
+</div>
+</div>
+<div>
+<div class="gx-field">
+<label>ຮູບ QR ຮັບເງິນ (ບໍ່ບັງຄັບ)</label>
 <div class="drop-zone" id="qrDropZone2">
 <span id="qrDropZoneText2">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
 <input accept="image/*" id="qrInput2" type="file"/>
@@ -1130,27 +1159,69 @@ IJKL-9012"></textarea></div>
 </div>
 </div>
 </div>
+<div class="gx-field">
+<label>ຊື່ (ຫົວຂໍ້ການ໌ດ)</label>
+<div class="gx-input-wrap"><input id="settingQrLabel2" placeholder="LDB Bank" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມໃຕ້ຊື່</label>
+<div class="gx-input-wrap"><input id="settingQrSub2" placeholder="ຊຳລະດ້ວຍ LDB Bank QR" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມປ້າຍສີຂຽວ</label>
+<div class="gx-input-wrap"><input id="settingQrBadge2" placeholder="ຮອງຮັບແບບແອດມິນຢືນຢັນ" type="text"/></div>
+</div>
+</div>
+<div class="qr-slot-card" style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;margin-bottom:12px;background:rgba(255,255,255,.03)">
+<div style="font-weight:700;margin-bottom:8px">ຊ່ອງທີ 3 — umoney</div>
 <div class="gx-row2">
 <div>
 <div class="gx-field">
-<label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 3 (umoney)</label>
-<div class="gx-input-wrap"><input id="settingQrLabel3" placeholder="ເຊັ່ນ: umoney" type="text"/></div>
+<label>ຮູບໂລໂກ້ການ໌ດ (ທີ່ສະແດງໜ້າເຕີມເງິນ)</label>
+<div class="drop-zone" id="qrIconDropZone3">
+<span id="qrIconDropZoneText3">ແຕະເພື່ອເລືອກຮູບໂລໂກ້ໃໝ່</span>
+<input accept="image/*" id="qrIconInput3" type="file"/>
 </div>
+</div>
+</div>
+<div>
 <div class="gx-field">
-<label>ຮູບ QR ຮັບເງິນ ອັນທີ 3 (ບໍ່ບັງຄັບ)</label>
+<label>ຮູບ QR ຮັບເງິນ (ບໍ່ບັງຄັບ)</label>
 <div class="drop-zone" id="qrDropZone3">
 <span id="qrDropZoneText3">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
 <input accept="image/*" id="qrInput3" type="file"/>
 </div>
 </div>
 </div>
-<div>
-<div class="gx-field">
-<label>ຂໍ້ຄວາມກຳກັບ QR ອັນທີ 4 (LAO QR)</label>
-<div class="gx-input-wrap"><input id="settingQrLabel4" placeholder="ເຊັ່ນ: ຈ່າຍໂອນດ້ວຍທະນາຄານ" type="text"/></div>
 </div>
 <div class="gx-field">
-<label>ຮູບ QR ຮັບເງິນ ອັນທີ 4 (ບໍ່ບັງຄັບ)</label>
+<label>ຊື່ (ຫົວຂໍ້ການ໌ດ)</label>
+<div class="gx-input-wrap"><input id="settingQrLabel3" placeholder="umoney" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມໃຕ້ຊື່</label>
+<div class="gx-input-wrap"><input id="settingQrSub3" placeholder="ຊຳລະດ້ວຍ umoney QR" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມປ້າຍສີຂຽວ</label>
+<div class="gx-input-wrap"><input id="settingQrBadge3" placeholder="ຮອງຮັບແບບແອດມິນຢືນຢັນ" type="text"/></div>
+</div>
+</div>
+<div class="qr-slot-card" style="border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px;margin-bottom:12px;background:rgba(255,255,255,.03)">
+<div style="font-weight:700;margin-bottom:8px">ຊ່ອງທີ 4 — ຈ່າຍໂອນດ້ວຍທະນາຄານ</div>
+<div class="gx-row2">
+<div>
+<div class="gx-field">
+<label>ຮູບໂລໂກ້ການ໌ດ (ທີ່ສະແດງໜ້າເຕີມເງິນ)</label>
+<div class="drop-zone" id="qrIconDropZone4">
+<span id="qrIconDropZoneText4">ແຕະເພື່ອເລືອກຮູບໂລໂກ້ໃໝ່</span>
+<input accept="image/*" id="qrIconInput4" type="file"/>
+</div>
+</div>
+</div>
+<div>
+<div class="gx-field">
+<label>ຮູບ QR ຮັບເງິນ (ບໍ່ບັງຄັບ)</label>
 <div class="drop-zone" id="qrDropZone4">
 <span id="qrDropZoneText4">ແຕະເພື່ອເລືອກຮູບ QR ໃໝ່</span>
 <input accept="image/*" id="qrInput4" type="file"/>
@@ -1158,8 +1229,21 @@ IJKL-9012"></textarea></div>
 </div>
 </div>
 </div>
+<div class="gx-field">
+<label>ຊື່ (ຫົວຂໍ້ການ໌ດ)</label>
+<div class="gx-input-wrap"><input id="settingQrLabel4" placeholder="ຈ່າຍໂອນດ້ວຍທະນາຄານ" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມໃຕ້ຊື່</label>
+<div class="gx-input-wrap"><input id="settingQrSub4" placeholder="LAO QR" type="text"/></div>
+</div>
+<div class="gx-field">
+<label>ຂໍ້ຄວາມປ້າຍສີຂຽວ</label>
+<div class="gx-input-wrap"><input id="settingQrBadge4" placeholder="ຮອງຮັບແບບແອດມິນຢືນຢັນ" type="text"/></div>
+</div>
+</div>
 <div class="gx-msg u-small-hint-mb">
-      ລຳດັບ: 1 = BCEL One, 2 = LDB Bank, 3 = umoney, 4 = LAO QR. ຊ່ອງໃດບໍ່ໃສ່ຮູບ QR ການ໌ດນັ້ນໃນໜ້າເຕີມເງິນຈະຍັງກົດບໍ່ໄດ້ (ຂຶ້ນວ່າກຳລັງຈະເປີດໃຫ້ບໍລິການ)
+      ຊ່ອງ 1 = BCEL One (ໂໝດອັດຕະໂນມັດ), 2 = LDB Bank, 3 = umoney, 4 = LAO QR. ຖ້າເວັ້ນຊື່/ຂໍ້ຄວາມ/ຮູບໂລໂກ້ໄວ້ ຈະໃຊ້ຄ່າເລີ່ມຕົ້ນ. ຊ່ອງໃດບໍ່ໃສ່ຮູບ QR ການ໌ດນັ້ນຈະກົດບໍ່ໄດ້ (ຂຶ້ນວ່າກຳລັງຈະເປີດໃຫ້ບໍລິການ)
     </div>
 <button class="gx-submit" id="saveQrBtn" type="button">
 <span class="gx-spinner"></span>

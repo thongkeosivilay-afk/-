@@ -383,6 +383,18 @@ document.addEventListener('DOMContentLoaded', () => {
       const name1El = document.querySelector('#topupMethodName1');
       if (name1El) name1El.textContent = BANKS[1].name;
 
+      // ຊື່ / ຂໍ້ຄວາມໃຕ້ຊື່ / ຮູບໂລໂກ້ ຂອງການ໌ດທັງ 4 — ແອດມິນແກ້ໄດ້ (ຕັ້ງຄ່າຮ້ານ > QR ໂອນເງິນ); ຖ້າບໍ່ໃສ່ໃຊ້ຄ່າເລີ່ມຕົ້ນ
+      [1, 2, 3, 4].forEach(function (n) {
+        var title = store['qrLabel' + n], sub = store['qrSub' + n], badge = store['qrBadge' + n], icon = store['qrIcon' + n];
+        var tEl = document.getElementById('tcTitle' + n), sEl = document.getElementById('tcSub' + n),
+            bEl = document.getElementById('tcBadge' + n), iEl = document.getElementById('tcImg' + n);
+        if (title && tEl) { tEl.textContent = title; if (iEl) iEl.alt = title; }
+        if (sub && sEl) sEl.textContent = sub;
+        else if (title && sEl) sEl.textContent = 'ຊຳລະດ້ວຍ ' + title + ' QR';
+        if (badge && bEl) bEl.textContent = badge;
+        if (icon && iEl) iEl.src = icon;
+      });
+
       updateBankText();
     } catch (err) {
       console.error('ດຶງຂໍ້ມູນ QR ຈິງບໍ່ສຳເລັດ', err);

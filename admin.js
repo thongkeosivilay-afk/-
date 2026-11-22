@@ -180,6 +180,7 @@ let selectedQrFile = null;
 let selectedQrFile2 = null;
 let selectedQrFile3 = null;
 let selectedQrFile4 = null;
+const selectedQrIconFiles = {};
 
 // ຕົວເລືອກໄລຍະເວລາທີ່ໃຫ້ເລືອກຕອນສ້າງສິນຄ້າ
 const DURATION_OPTIONS = ['12ຊມ', '1ວັນ', '2ວັນ', '3ວັນ', '4ວັນ', '5ວັນ', '6ວັນ', '7ວັນ', '10ວັນ', '20ວັນ', '30ວັນ'];
@@ -2614,6 +2615,13 @@ function loadSiteSettingsIntoForm(settings) {
   const qrLabel2Input = document.getElementById('settingQrLabel2');
   const qrLabel3Input = document.getElementById('settingQrLabel3');
   const qrLabel4Input = document.getElementById('settingQrLabel4');
+  [1, 2, 3, 4].forEach((n) => {
+    [['settingQrSub', 'qr_sub_'], ['settingQrBadge', 'qr_badge_']].forEach(([id, col]) => {
+      const el = document.getElementById(id + n);
+      if (el && document.activeElement !== el) el.value = settings[col + n] || '';
+    });
+    fillDropzonePreview('qrIconDropZone' + n, 'qrIconDropZoneText' + n, 'qrIconInput' + n, settings['qr_icon_' + n] || ('assets/qr-icon-' + n + '.png'));
+  });
 
   if (nameInput && document.activeElement !== nameInput) nameInput.value = settings.store_name || '';
   if (taglineInput && document.activeElement !== taglineInput) taglineInput.value = settings.tagline || '';
@@ -2989,6 +2997,7 @@ function initSiteSettingsPanel() {
   setupSiteImageDropzone('qrDropZone2', 'qrDropZoneText2', 'qrInput2', (f) => { selectedQrFile2 = f; });
   setupSiteImageDropzone('qrDropZone3', 'qrDropZoneText3', 'qrInput3', (f) => { selectedQrFile3 = f; });
   setupSiteImageDropzone('qrDropZone4', 'qrDropZoneText4', 'qrInput4', (f) => { selectedQrFile4 = f; });
+  [1, 2, 3, 4].forEach((n) => setupSiteImageDropzone('qrIconDropZone' + n, 'qrIconDropZoneText' + n, 'qrIconInput' + n, (f) => { selectedQrIconFiles[n] = f; }));
   initCategoryImageDropzones();
   initHeroImageDropzone();
   initPromoPopupDropzone();
@@ -3148,6 +3157,13 @@ function initSiteSettingsPanel() {
           qr_label_3: label3 || null,
           qr_label_4: label4 || null
         };
+        [1, 2, 3, 4].forEach((n) => {
+          fields['qr_sub_' + n] = document.getElementById('settingQrSub' + n).value.trim() || null;
+          fields['qr_badge_' + n] = document.getElementById('settingQrBadge' + n).value.trim() || null;
+        });
+        for (const n of [1, 2, 3, 4]) {
+          if (selectedQrIconFiles[n]) fields['qr_icon_' + n] = await uploadSiteAsset(selectedQrIconFiles[n], 'qr');
+        }
         if (selectedQrFile) fields.qr_url = await uploadSiteAsset(selectedQrFile, 'qr');
         if (selectedQrFile2) fields.qr_url_2 = await uploadSiteAsset(selectedQrFile2, 'qr');
         if (selectedQrFile3) fields.qr_url_3 = await uploadSiteAsset(selectedQrFile3, 'qr');
@@ -3164,6 +3180,7 @@ function initSiteSettingsPanel() {
         selectedQrFile2 = null;
         selectedQrFile3 = null;
         selectedQrFile4 = null;
+        [1, 2, 3, 4].forEach((n) => { delete selectedQrIconFiles[n]; });
         await loadSiteSettingsAdmin();
       } catch (err) {
         console.error(err);
