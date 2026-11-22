@@ -2027,6 +2027,7 @@ async function handlePublicStorefront(request, env) {
       'store_name', 'tagline', 'announcement_text', 'hero_image', 'logo_url',
       'qr_label', 'qr_label_2', 'qr_url', 'qr_url_2',
       'qr_label_3', 'qr_url_3', 'qr_label_4', 'qr_url_4',
+      ...[1, 2, 3, 4].flatMap((n) => [`qr_sub_${n}`, `qr_badge_${n}`, `qr_icon_${n}`]),
       'social_facebook', 'social_discord', 'social_line', 'social_telegram', 'social_whatsapp',
       'promo_popup_enabled', 'promo_popup_image',
       ...Array.from({ length: CATEGORY_SLOT_COUNT }, (_, i) => `category_${i + 1}_name`),
@@ -2164,6 +2165,9 @@ async function handlePublicStorefront(request, env) {
         qrUrl3: settings.qr_url_3 || null,
         qrLabel4: settings.qr_label_4 || null,
         qrUrl4: settings.qr_url_4 || null,
+        qrSub1: settings.qr_sub_1 || null, qrSub2: settings.qr_sub_2 || null, qrSub3: settings.qr_sub_3 || null, qrSub4: settings.qr_sub_4 || null,
+        qrBadge1: settings.qr_badge_1 || null, qrBadge2: settings.qr_badge_2 || null, qrBadge3: settings.qr_badge_3 || null, qrBadge4: settings.qr_badge_4 || null,
+        qrIcon1: settings.qr_icon_1 || null, qrIcon2: settings.qr_icon_2 || null, qrIcon3: settings.qr_icon_3 || null, qrIcon4: settings.qr_icon_4 || null,
         social: {
           facebook: settings.social_facebook || null,
           discord: settings.social_discord || null,
