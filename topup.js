@@ -391,7 +391,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (title && tEl) { tEl.textContent = title; if (iEl) iEl.alt = title; }
         if (sub && sEl) sEl.textContent = sub;
         else if (title && sEl) sEl.textContent = 'ຊຳລະດ້ວຍ ' + title + ' QR';
+        var isAuto = store['qrAuto' + n] === true;
+        window.__tcAuto = window.__tcAuto || {};
+        window.__tcAuto[n] = isAuto; // topup-cards.js ໃຊ້ເລືອກໂໝດ ອັດຕະໂນມັດ/ແອດມິນ ຕາມສະວິດໃນແອດມິນ
         if (badge && bEl) bEl.textContent = badge;
+        else if (bEl) bEl.textContent = isAuto ? 'ຮອງຮັບລະບົບແນບສະລິບເຕີມເງິນອໍໂຕ້' : 'ຮອງຮັບແບບແອດມິນຢືນຢັນ';
         if (icon && iEl) iEl.src = icon;
       });
 

@@ -23,7 +23,8 @@
 
   // BCEL One (bank 1) -> ໂໝດ ອັດຕະໂນມັດ / ອີກ 3 ຊ່ອງທາງ (LDB, umoney, LAO QR) -> ແອດມິນຢືນຢັນ
   function applyModeFor(bank) {
-    var wantMode = String(bank) === '1' ? 'auto' : 'admin';
+    var flags = window.__tcAuto || { 1: true };
+    var wantMode = flags[String(bank)] ? 'auto' : 'admin';
     var modeBtn = document.querySelector('.topup-mode-btn[data-mode="' + wantMode + '"]');
     if (modeBtn && !modeBtn.classList.contains('active')) modeBtn.click();
   }

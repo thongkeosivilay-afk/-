@@ -2686,6 +2686,8 @@ function loadSiteSettingsIntoForm(settings) {
       const el = document.getElementById(id + n);
       if (el && document.activeElement !== el) el.value = settings[col + n] || '';
     });
+    const autoEl = document.getElementById('qrAuto' + n);
+    if (autoEl && document.activeElement !== autoEl) autoEl.checked = n === 1 ? settings.qr_auto_1 !== false : settings['qr_auto_' + n] === true;
     fillDropzonePreview('qrIconDropZone' + n, 'qrIconDropZoneText' + n, 'qrIconInput' + n, settings['qr_icon_' + n] || ('assets/qr-icon-' + n + '.png'));
   });
 
@@ -3230,6 +3232,7 @@ function initSiteSettingsPanel() {
         [1, 2, 3, 4].forEach((n) => {
           fields['qr_sub_' + n] = document.getElementById('settingQrSub' + n).value.trim() || null;
           fields['qr_badge_' + n] = document.getElementById('settingQrBadge' + n).value.trim() || null;
+          fields['qr_auto_' + n] = !!document.getElementById('qrAuto' + n).checked;
         });
         for (const n of [1, 2, 3, 4]) {
           if (selectedQrIconFiles[n]) fields['qr_icon_' + n] = await uploadSiteAsset(selectedQrIconFiles[n], 'qr');
