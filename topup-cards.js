@@ -62,8 +62,9 @@
   // ເມື່ອ topup.js ສະຫຼັບໄປຂັ້ນຕອນ QR (ເຊື່ອງ step ນີ້) ໃຫ້ປິດແຜ່ນອັດຕະໂນມັດ
   if (stepAmount && window.MutationObserver) {
     new MutationObserver(function () {
-      if (stepAmount.classList.contains('u-hidden')) closeSheet();
-    }).observe(stepAmount, { attributes: true, attributeFilter: ['class'] });
+      // topup.js ເຊື່ອງ step ນີ້ດ້ວຍ style.display='none' (ບໍ່ແມ່ນ class) — ຕ້ອງເບິ່ງທັງສອງ ບໍ່ຊັ້ນ body ຄ້າງ tc-lock ແລ້ວເລື່ອນໜ້າບໍ່ໄດ້
+      if (stepAmount.classList.contains('u-hidden') || stepAmount.style.display === 'none') closeSheet();
+    }).observe(stepAmount, { attributes: true, attributeFilter: ['class', 'style'] });
   }
 
   // ເອຟເຟັກ 3D ເອຍງຕາມນິ້ວ/ເມົາສ໌ ຢູ່ຮູບການ໌ດ
@@ -74,4 +75,7 @@
     });
     el.addEventListener('pointerleave', function () { el.style.removeProperty('--rx'); el.style.removeProperty('--ry'); });
   });
+
+  // ກັນເຫື່ອງ: ຖ້າບໍ່ມີແຜ່ນເປີດຢູ່ ຕ້ອງບໍ່ລັອກການເລື່ອນໜ້າ (ເຊັ່ນ ກັບມາຈາກ back/cache)
+  window.addEventListener('pageshow', function () { if (!sheet.classList.contains('open')) document.body.classList.remove('tc-lock'); });
 })();
