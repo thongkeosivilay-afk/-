@@ -575,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
       qrBox.appendChild(p);
     };
     if (!DYNAMIC_QR) return why('DYNAMIC_QR off');
-    if (!window.QRCode) return why('ໄລບຣາຣີ QRCode ບໍ່ໄດ້ໂຫຼດ (cdn.jsdelivr.net/npm/qrcode)');
+    if (!window.QRCode) return why('ໄຟລ໌ qr-encode.js ບໍ່ໄດ້ໂຫຼດ (ກວດວ່າອັບໂຫຼດແລ້ວ)');
     if (!window.jsQR) return why('ໄລບຣາຣີ jsQR ບໍ່ໄດ້ໂຫຼດ (cdn.jsdelivr.net/npm/jsqr)');
     try {
       let payload = '';
