@@ -564,18 +564,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function renderShopQr(url, amount) {
     qrBox.innerHTML = `<img src="${url}" alt="QR ຮັບເງິນ">`; // ສະແດງຮູບເດີມກ່ອນ
-    if (!DYNAMIC_QR || !window.QRCode) return;
+    // ເປີດໜ້ານີ້ດ້ວຍ ?qrdebug=1 ເພື່ອໃຫ້ສະແດງເຫດຜົນຢູ່ໃຕ້ QR ເມື່ອສ້າງ QR ຝັງຍອດບໍ່ໄດ້
+    const debug = /[?&]qrdebug=1/.test(location.search);
+    const why = (msg) => {
+      console.warn('dynamic QR skipped:', msg);
+      if (!debug) return;
+      const p = document.createElement('p');
+      p.style.cssText = 'font:12px/1.5 monospace;color:#ffb4b4;word-break:break-all;margin:8px 0 0';
+      p.textContent = 'qrdebug: ' + msg;
+      qrBox.appendChild(p);
+    };
+    if (!DYNAMIC_QR) return why('DYNAMIC_QR off');
+    if (!window.QRCode) return why('ໄລບຣາຣີ QRCode ບໍ່ໄດ້ໂຫຼດ (cdn.jsdelivr.net/npm/qrcode)');
+    if (!window.jsQR) return why('ໄລບຣາຣີ jsQR ບໍ່ໄດ້ໂຫຼດ (cdn.jsdelivr.net/npm/jsqr)');
     try {
-      const payload = await getShopQrPayload(url);
-      const dyn = payload && buildDynamicPayload(payload, amount);
-      if (!dyn) return;
+      let payload = '';
+      try { payload = await getShopQrPayload(url); } catch (e) { return why('ດຶງຮູບ QR ບໍ່ໄດ້: ' + (e && e.message)); }
+      if (!payload) return why('ອ່ານ QR ໃນຮູບບໍ່ໄດ້ (fetch ຫຼື decode ລົ້ມ)');
+      const dyn = buildDynamicPayload(payload, amount);
+      if (!dyn) return why('QR ບໍ່ຜ່ານເງື່ອນໄຂຝັງຍອດ; payload=' + payload.slice(0, 60) + '…');
       const canvas = document.createElement('canvas');
       await window.QRCode.toCanvas(canvas, dyn, { width: 300, margin: 2, errorCorrectionLevel: 'M' });
       canvas.style.cssText = 'width:100%;max-width:300px;height:auto;border-radius:14px;display:block;margin:0 auto;background:#fff';
       canvas.setAttribute('aria-label', 'QR ຮັບເງິນ ຍອດ ' + amount);
       qrBox.innerHTML = '';
       qrBox.appendChild(canvas);
-    } catch (e) { console.error('dynamic QR failed', e); }
+    } catch (e) { console.error('dynamic QR failed', e); why('ວາດ QR ບໍ່ສຳເລັດ: ' + (e && e.message)); }
   }
 
   /* ---------- Step 1 -> Step 2: ສ້າງ QR ---------- */
