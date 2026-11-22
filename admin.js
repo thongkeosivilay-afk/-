@@ -192,6 +192,72 @@ function setMsg(el, text, kind) {
   el.classList.add('show', kind);
 }
 
+// ---------- ກວດ QR ທີ່ອັບໂຫຼດ: ໃຊ້ຝັງຍອດເງິນອັດຕະໂນມັດໄດ້ບໍ ----------
+function qrCrc16(str) {
+  let c = 0xffff;
+  for (let i = 0; i < str.length; i++) {
+    c ^= str.charCodeAt(i) << 8;
+    for (let b = 0; b < 8; b++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xffff : (c << 1) & 0xffff;
+  }
+  return c.toString(16).toUpperCase().padStart(4, '0');
+}
+function qrEmvParse(s) {
+  const out = [];
+  let i = 0;
+  while (i + 4 <= s.length) {
+    const len = parseInt(s.slice(i + 2, i + 4), 10);
+    if (!Number.isFinite(len) || i + 4 + len > s.length) return null;
+    out.push([s.slice(i, i + 2), s.slice(i + 4, i + 4 + len)]);
+    i += 4 + len;
+  }
+  return i === s.length ? out : null;
+}
+async function qrDecodeBlob(blob) {
+  if (!window.createImageBitmap || !window.jsQR) return '';
+  const bmp = await createImageBitmap(blob);
+  const W = bmp.width, H = bmp.height;
+  const regions = [[0, 0, W, H], [0, H * 0.5, W, H * 0.5], [W * 0.45, H * 0.55, W * 0.55, H * 0.45]];
+  for (const [sx, sy, sw, sh] of regions) {
+    for (const maxSide of [1400, 2200, 900]) {
+      const k = Math.min(maxSide / Math.max(sw, sh), 3);
+      const w = Math.max(1, Math.round(sw * k)), h = Math.max(1, Math.round(sh * k));
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(bmp, sx, sy, sw, sh, 0, 0, w, h);
+      const r = window.jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'attemptBoth' });
+      if (r && r.data) return r.data;
+    }
+  }
+  return '';
+}
+const qrCheckedKey = {};
+async function checkQrSupport(slot, source) {
+  const el = document.getElementById('qrStatus' + slot);
+  if (!el || !source) return;
+  const key = typeof source === 'string' ? source : source.name + source.size + source.lastModified;
+  if (qrCheckedKey[slot] === key) return;
+  qrCheckedKey[slot] = key;
+  setMsg(el, 'ກຳລັງກວດ QR...', 'pending');
+  try {
+    const blob = typeof source === 'string' ? await (await fetch(source)).blob() : source;
+    const text = await qrDecodeBlob(blob);
+    if (!text) { setMsg(el, '⚠️ ອ່ານ QR ໃນຮູບບໍ່ໄດ້ — ໜ້າເຕີມເງິນຈະສະແດງຮູບນີ້ຕາມເດີມ (ລູກຄ້າຕ້ອງໃສ່ຍອດເອງ). ລອງໃຊ້ຮູບ QR ທີ່ຊັດເຈນ ຕັດພຽງ QR', 'error'); return; }
+    const tags = qrEmvParse(text);
+    const last = tags && tags[tags.length - 1];
+    if (!tags || tags.length < 4 || !last || last[0] !== '63' || qrCrc16(text.slice(0, -4)) !== String(last[1]).toUpperCase()) {
+      setMsg(el, '⚠️ ອ່ານ QR ໄດ້ ແຕ່ບໍ່ແມ່ນຮູບແບບ QR ທະນາຄານມາດຕະຖານ — ຈະສະແດງຮູບເດີມ (ລູກຄ້າໃສ່ຍອດເອງ)', 'error'); return;
+    }
+    const t01 = tags.find((t) => t[0] === '01');
+    if (tags.some((t) => t[0] === '54')) { setMsg(el, '⚠️ QR ນີ້ມີຍອດເງິນຕາຍຕົວຢູ່ແລ້ວ — ຝັງຍອດໃໝ່ບໍ່ໄດ້. ໃຊ້ QR ຖາວອນ (ບໍ່ມີຍອດ)', 'error'); return; }
+    if (!t01 || t01[1] !== '11') { setMsg(el, '⚠️ ບໍ່ແມ່ນ QR ຖາວອນ — ຝັງຍອດບໍ່ໄດ້', 'error'); return; }
+    setMsg(el, '✅ QR ນີ້ຝັງຍອດເງິນໃຫ້ອັດຕະໂນມັດໄດ້ — ລູກຄ້າເລືອກຍອດແລ້ວ ສະແກນຈະຂຶ້ນຍອດໃຫ້ເລີຍ', 'success');
+  } catch (e) {
+    console.error(e);
+    setMsg(el, 'ກວດ QR ບໍ່ສຳເລັດ (ບໍ່ກະທົບການບັນທຶກ)', 'error');
+  }
+}
+
 function setLoading(btn, loading) {
   btn.disabled = loading;
   btn.classList.toggle('loading', loading);
@@ -2670,9 +2736,13 @@ function loadSiteSettingsIntoForm(settings) {
 
   fillDropzonePreview('logoDropZone', 'logoDropZoneText', 'logoInput', settings.logo_url);
   fillDropzonePreview('qrDropZone', 'qrDropZoneText', 'qrInput', settings.qr_url);
+  if (settings.qr_url && !selectedQrFile) checkQrSupport(1, settings.qr_url);
   fillDropzonePreview('qrDropZone2', 'qrDropZoneText2', 'qrInput2', settings.qr_url_2);
+  if (settings.qr_url_2 && !selectedQrFile2) checkQrSupport(2, settings.qr_url_2);
   fillDropzonePreview('qrDropZone3', 'qrDropZoneText3', 'qrInput3', settings.qr_url_3);
+  if (settings.qr_url_3 && !selectedQrFile3) checkQrSupport(3, settings.qr_url_3);
   fillDropzonePreview('qrDropZone4', 'qrDropZoneText4', 'qrInput4', settings.qr_url_4);
+  if (settings.qr_url_4 && !selectedQrFile4) checkQrSupport(4, settings.qr_url_4);
   resetDropzoneIfEmpty(
     'heroImageDropZone', 'heroImageDropZoneText', 'heroImageInput',
     settings.hero_image,
@@ -2993,10 +3063,10 @@ function initPromoPopupDropzone() {
 
 function initSiteSettingsPanel() {
   setupSiteImageDropzone('logoDropZone', 'logoDropZoneText', 'logoInput', (f) => { selectedLogoFile = f; });
-  setupSiteImageDropzone('qrDropZone', 'qrDropZoneText', 'qrInput', (f) => { selectedQrFile = f; });
-  setupSiteImageDropzone('qrDropZone2', 'qrDropZoneText2', 'qrInput2', (f) => { selectedQrFile2 = f; });
-  setupSiteImageDropzone('qrDropZone3', 'qrDropZoneText3', 'qrInput3', (f) => { selectedQrFile3 = f; });
-  setupSiteImageDropzone('qrDropZone4', 'qrDropZoneText4', 'qrInput4', (f) => { selectedQrFile4 = f; });
+  setupSiteImageDropzone('qrDropZone', 'qrDropZoneText', 'qrInput', (f) => { selectedQrFile = f; checkQrSupport(1, f); });
+  setupSiteImageDropzone('qrDropZone2', 'qrDropZoneText2', 'qrInput2', (f) => { selectedQrFile2 = f; checkQrSupport(2, f); });
+  setupSiteImageDropzone('qrDropZone3', 'qrDropZoneText3', 'qrInput3', (f) => { selectedQrFile3 = f; checkQrSupport(3, f); });
+  setupSiteImageDropzone('qrDropZone4', 'qrDropZoneText4', 'qrInput4', (f) => { selectedQrFile4 = f; checkQrSupport(4, f); });
   [1, 2, 3, 4].forEach((n) => setupSiteImageDropzone('qrIconDropZone' + n, 'qrIconDropZoneText' + n, 'qrIconInput' + n, (f) => { selectedQrIconFiles[n] = f; }));
   initCategoryImageDropzones();
   initHeroImageDropzone();
