@@ -178,6 +178,8 @@ let currentSiteSettings = {};
 let selectedLogoFile = null;
 let selectedQrFile = null;
 let selectedQrFile2 = null;
+let selectedQrFile3 = null;
+let selectedQrFile4 = null;
 
 // ຕົວເລືອກໄລຍະເວລາທີ່ໃຫ້ເລືອກຕອນສ້າງສິນຄ້າ
 const DURATION_OPTIONS = ['12ຊມ', '1ວັນ', '2ວັນ', '3ວັນ', '4ວັນ', '5ວັນ', '6ວັນ', '7ວັນ', '10ວັນ', '20ວັນ', '30ວັນ'];
@@ -2610,6 +2612,8 @@ function loadSiteSettingsIntoForm(settings) {
   const socialWhatsappInput = document.getElementById('settingSocialWhatsapp');
   const qrLabel1Input = document.getElementById('settingQrLabel1');
   const qrLabel2Input = document.getElementById('settingQrLabel2');
+  const qrLabel3Input = document.getElementById('settingQrLabel3');
+  const qrLabel4Input = document.getElementById('settingQrLabel4');
 
   if (nameInput && document.activeElement !== nameInput) nameInput.value = settings.store_name || '';
   if (taglineInput && document.activeElement !== taglineInput) taglineInput.value = settings.tagline || '';
@@ -2621,6 +2625,8 @@ function loadSiteSettingsIntoForm(settings) {
   if (socialWhatsappInput && document.activeElement !== socialWhatsappInput) socialWhatsappInput.value = settings.social_whatsapp || '';
   if (qrLabel1Input && document.activeElement !== qrLabel1Input) qrLabel1Input.value = settings.qr_label || '';
   if (qrLabel2Input && document.activeElement !== qrLabel2Input) qrLabel2Input.value = settings.qr_label_2 || '';
+  if (qrLabel3Input && document.activeElement !== qrLabel3Input) qrLabel3Input.value = settings.qr_label_3 || '';
+  if (qrLabel4Input && document.activeElement !== qrLabel4Input) qrLabel4Input.value = settings.qr_label_4 || '';
 
   // ໝວດໝູ່ 1-4: ຊື່ + ຮູບພາບ (ໜ້າຮ້ານຈິງມີ 4 ກາຕູນຄົງທີ່)
   for (let i = 1; i <= 4; i++) {
@@ -2657,6 +2663,8 @@ function loadSiteSettingsIntoForm(settings) {
   fillDropzonePreview('logoDropZone', 'logoDropZoneText', 'logoInput', settings.logo_url);
   fillDropzonePreview('qrDropZone', 'qrDropZoneText', 'qrInput', settings.qr_url);
   fillDropzonePreview('qrDropZone2', 'qrDropZoneText2', 'qrInput2', settings.qr_url_2);
+  fillDropzonePreview('qrDropZone3', 'qrDropZoneText3', 'qrInput3', settings.qr_url_3);
+  fillDropzonePreview('qrDropZone4', 'qrDropZoneText4', 'qrInput4', settings.qr_url_4);
   resetDropzoneIfEmpty(
     'heroImageDropZone', 'heroImageDropZoneText', 'heroImageInput',
     settings.hero_image,
@@ -2979,6 +2987,8 @@ function initSiteSettingsPanel() {
   setupSiteImageDropzone('logoDropZone', 'logoDropZoneText', 'logoInput', (f) => { selectedLogoFile = f; });
   setupSiteImageDropzone('qrDropZone', 'qrDropZoneText', 'qrInput', (f) => { selectedQrFile = f; });
   setupSiteImageDropzone('qrDropZone2', 'qrDropZoneText2', 'qrInput2', (f) => { selectedQrFile2 = f; });
+  setupSiteImageDropzone('qrDropZone3', 'qrDropZoneText3', 'qrInput3', (f) => { selectedQrFile3 = f; });
+  setupSiteImageDropzone('qrDropZone4', 'qrDropZoneText4', 'qrInput4', (f) => { selectedQrFile4 = f; });
   initCategoryImageDropzones();
   initHeroImageDropzone();
   initPromoPopupDropzone();
@@ -3129,13 +3139,19 @@ function initSiteSettingsPanel() {
       try {
         const label1 = document.getElementById('settingQrLabel1').value.trim();
         const label2 = document.getElementById('settingQrLabel2').value.trim();
+        const label3 = document.getElementById('settingQrLabel3').value.trim();
+        const label4 = document.getElementById('settingQrLabel4').value.trim();
 
         const fields = {
           qr_label: label1 || null,
-          qr_label_2: label2 || null
+          qr_label_2: label2 || null,
+          qr_label_3: label3 || null,
+          qr_label_4: label4 || null
         };
         if (selectedQrFile) fields.qr_url = await uploadSiteAsset(selectedQrFile, 'qr');
         if (selectedQrFile2) fields.qr_url_2 = await uploadSiteAsset(selectedQrFile2, 'qr');
+        if (selectedQrFile3) fields.qr_url_3 = await uploadSiteAsset(selectedQrFile3, 'qr');
+        if (selectedQrFile4) fields.qr_url_4 = await uploadSiteAsset(selectedQrFile4, 'qr');
 
         await ensureSiteSettingsRow();
         const { error } = await supabaseClient
@@ -3146,6 +3162,8 @@ function initSiteSettingsPanel() {
         setMsg(msg, 'ບັນທຶກ QR ໂອນເງິນສຳເລັດແລ້ວ', 'success');
         selectedQrFile = null;
         selectedQrFile2 = null;
+        selectedQrFile3 = null;
+        selectedQrFile4 = null;
         await loadSiteSettingsAdmin();
       } catch (err) {
         console.error(err);

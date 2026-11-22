@@ -312,8 +312,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const BANKS = {
     1: { name: 'ບັນຊີທະນາຄານ 1' },
     2: { name: 'ບັນຊີທະນາຄານ 2' },
+    3: { name: 'umoney' },
+    4: { name: 'LAO QR' },
   };
-  const QR_IMAGES = { 1: null, 2: null };
+  const QR_IMAGES = { 1: null, 2: null, 3: null, 4: null };
 
   // ปุ่มพรีเซ็ตเก็บ "จำนวนแสดงผลแบบย่อ" ไว้ใน data-amount (หน่วย: พันกีบ, ดูป้าย K บนปุ่ม)
   // ส่วน selectedAmount ที่ใช้จริงทั้งหมด (ยอดที่ต้องโอน / ยอดที่ส่งให้ backend / ยอดที่เติมเข้ากระเป๋า)
@@ -363,6 +365,20 @@ document.addEventListener('DOMContentLoaded', () => {
         method2Btn.classList.add('u-hidden');
         method2Btn.style.display = 'none';
       }
+
+      // ຊ່ອງ 3 (umoney) ແລະ 4 (LAO QR): ເປີດໃຫ້ກົດໄດ້ກໍຕໍ່ເມື່ອແອດມິນໃສ່ຮູບ QR ແລ້ວ
+      [[3, store.qrLabel3, store.qrUrl3], [4, store.qrLabel4, store.qrUrl4]].forEach(function (it) {
+        var n = it[0], btn = document.querySelector('#topupMethod' + n), nameEl = document.querySelector('#topupMethodName' + n);
+        if (it[2]) {
+          if (it[1]) BANKS[n].name = it[1];
+          QR_IMAGES[n] = it[2];
+          if (nameEl) nameEl.textContent = BANKS[n].name;
+          if (btn) { btn.classList.remove('u-hidden'); btn.style.display = ''; }
+        } else if (btn) {
+          btn.classList.add('u-hidden');
+          btn.style.display = 'none';
+        }
+      });
 
       const name1El = document.querySelector('#topupMethodName1');
       if (name1El) name1El.textContent = BANKS[1].name;

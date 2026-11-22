@@ -49,10 +49,8 @@
   grid.addEventListener('click', function (e) {
     var btn = e.target.closest('.tc-btn');
     if (!btn) return;
-    var card = btn.closest('.tc-card');
-    var title = card && card.querySelector('.tc-title');
-    // BCEL One ເທົ່ານັ້ນທີ່ເປັນອັດຕະໂນມັດ (ກວດຈາກຊື່ການ໌ດ ເພາະ umoney/LAO QR ໃຊ້ data-tc-bank="0")
-    applyModeFor(title && /BCEL/i.test(title.textContent) ? '1' : 'x');
+    // BCEL One (bank 1) = ອັດຕະໂນມັດ, ຊ່ອງອື່ນ = ແອດມິນຢືນຢັນ
+    applyModeFor(btn.getAttribute('data-tc-bank'));
     if (btn.hasAttribute('data-tc-soon')) { say('ວິທີນີ້ກຳລັງຈະເປີດໃຫ້ບໍລິການໃນໄວໆນີ້'); return; }
     var img = btn.closest('.tc-card').querySelector('.tc-img img');
     openSheet(btn.getAttribute('data-tc-bank'), img && img.getAttribute('src'));
