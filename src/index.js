@@ -186,6 +186,9 @@ async function route(request, env, ctx) {
     if (url.pathname.startsWith('/api/admin/customers')) {
       return handleAdminCustomers(request, env, url);
     }
+    if (url.pathname === '/api/topup-links') {
+      return handleTopupLinks(request, env);
+    }
     if (url.pathname === '/api/topup/create') {
       return handleTopupCreate(request, env);
     }
@@ -2772,6 +2775,38 @@ async function handleAdminCustomers(request, env, url) {
    topupId ปลอมฝั่ง browser เอง ไม่มีอะไรถูกบันทึกจริง — ตอนนี้เช็ค login จริง + คืน
    topupId จริงให้ (แถวจริงใน topup_requests จะถูกสร้างตอน /api/topup/confirm พร้อม
    สลิปเลย ไม่ใช่ตอนนี้ เพราะขั้นนี้ยังไม่มีสลิปให้แอดมินตรวจ) */
+/* ---------- ລິ້ງຄລິບສອນເຕີມເງິນ  /api/topup-links ----------
+   GET  (ທຸກຄົນ)  -> { links: [{ label, url }] }  ສະແດງໃນໜ້າ topup.html
+   POST (ແອດມິນ)  -> body { links: [{ label, url }] } ບັນທຶກທັບທັງຊຸດ
+   ເກັບໃນ KV (SESSIONS) key 'topup:links' — ບໍ່ຕ້ອງສ້າງຕາຕະລາງ/ຄໍລໍາໃໝ່ໃນ Supabase */
+const TOPUP_LINKS_KEY = 'topup:links';
+async function handleTopupLinks(request, env) {
+  if (request.method === 'GET') {
+    let links = [];
+    try {
+      const raw = await env.SESSIONS.get(TOPUP_LINKS_KEY);
+      if (raw) links = JSON.parse(raw);
+    } catch { links = []; }
+    return json({ links: Array.isArray(links) ? links : [] });
+  }
+  if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+  const admin = await getSessionUser(request, env);
+  if (!admin || !admin.isAdmin) return json({ error: 'ບໍ່ມີສິດເຂົ້າເຖິງ — ຕ້ອງລ໋ອກອິນເປັນແອດມິນກ່ອນ' }, 403);
+  let body = {};
+  try { body = await request.json(); } catch { /* ตรวจด้านล่าง */ }
+  if (!body || !Array.isArray(body.links)) return json({ error: 'ຂໍ້ມູນບໍ່ຖືກຕ້ອງ' }, 400);
+  const links = [];
+  for (const it of body.links.slice(0, 20)) {
+    const label = String((it && it.label) || '').trim().slice(0, 120);
+    const u = String((it && it.url) || '').trim().slice(0, 1000);
+    if (!label || !u) continue;
+    if (!/^https?:\/\//i.test(u)) return json({ error: 'URL ຕ້ອງຂຶ້ນຕົ້ນດ້ວຍ http:// ຫຼື https://' }, 400);
+    links.push({ label, url: u });
+  }
+  await env.SESSIONS.put(TOPUP_LINKS_KEY, JSON.stringify(links));
+  return json({ ok: true, links });
+}
+
 async function handleTopupCreate(request, env) {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
