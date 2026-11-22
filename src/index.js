@@ -2878,7 +2878,11 @@ async function handleTopupConfirm(request, env) {
       const auto = await handleAutoSlipTopup(env, { user, amount, slip, slipUrl, qr: qrText, ref: refText });
       if (auto.response) return auto.response;
       if (auto.rows) {
-        await sendTopupToDiscord(env, { id: auto.rows[0] && auto.rows[0].id, amount, user, slipUrl });
+        // ອັດຕະໂນມັດເຕີມສຳເລັດແລ້ວ (approved) -> ບໍ່ຕ້ອງສົ່ງການແຈ້ງເຕືອນ "ໃຫ້ແອດມິນກົດຢືນຢັນ" ອີກ (ມີ embed ແຈ້ງຜົນອັດຕະໂນມັດສົ່ງແລ້ວ)
+        // ຖ້າຍັງ pending (ຍອດບໍ່ຕົງ/ສະລິບເກົ່າ/ເຕີມບໍ່ສຳເລັດ) ຍັງຕ້ອງສົ່ງໃຫ້ແອດມິນກົດຢືນຢັນຄືເດີມ
+        if (auto.status !== 'approved') {
+          await sendTopupToDiscord(env, { id: auto.rows[0] && auto.rows[0].id, amount, user, slipUrl });
+        }
         return json({ ok: true, id: auto.rows[0] && auto.rows[0].id, auto: true, status: auto.status, note: auto.note || null });
       }
       // auto.fallback -> ໄປ insert ແບບ pending ປົກກະຕິລຸ່ມນີ້ (ບັນທຶກເຫດຜົນໄວ້ ເພື່ອຮູ້ວ່າເປັນຫຍັງບໍ່ຜ່ານອັດຕະໂນມັດ)
