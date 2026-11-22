@@ -2795,14 +2795,18 @@ async function handleTopupLinks(request, env) {
   let body = {};
   try { body = await request.json(); } catch { /* ตรวจด้านล่าง */ }
   if (!body || !Array.isArray(body.links)) return json({ error: 'ຂໍ້ມູນບໍ່ຖືກຕ້ອງ' }, 400);
-  const links = [];
-  for (const it of body.links.slice(0, 20)) {
+  // ຄລິບສອນຕໍ່ຊ່ອງ: ch = 1..4 (ຊ່ອງລະ 1 ຄລິບ)
+  const byCh = {};
+  for (const it of body.links) {
+    const ch = Number(it && it.ch);
+    if (!(ch >= 1 && ch <= 4)) continue;
     const label = String((it && it.label) || '').trim().slice(0, 120);
     const u = String((it && it.url) || '').trim().slice(0, 1000);
     if (!label || !u) continue;
     if (!/^https?:\/\//i.test(u)) return json({ error: 'URL ຕ້ອງຂຶ້ນຕົ້ນດ້ວຍ http:// ຫຼື https://' }, 400);
-    links.push({ label, url: u });
+    byCh[ch] = { ch, label, url: u };
   }
+  const links = Object.keys(byCh).sort().map((k) => byCh[k]);
   await env.SESSIONS.put(TOPUP_LINKS_KEY, JSON.stringify(links));
   return json({ ok: true, links });
 }
