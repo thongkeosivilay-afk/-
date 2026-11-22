@@ -45,10 +45,12 @@
         links.push({ ch: Number(slot.getAttribute('data-ch')), label: l, url: u });
       });
       if (bad) { say('ກະລຸນາໃສ່ຊື່ ແລະ ລິ້ງ (ຂຶ້ນຕົ້ນດ້ວຍ https://) ໃຫ້ຄົບໃນຊ່ອງທີ່ກອກ', 'error'); return; }
+      var refs = {};
+      document.querySelectorAll('.tgs-ref[data-ch]').forEach(function (c) { refs[c.getAttribute('data-ch')] = c.checked; });
       saveBtn.disabled = true; saveBtn.classList.add('loading'); say('ກຳລັງບັນທຶກ...', 'pending');
       try {
         var res = await fetch('/api/topup-links', { method: 'POST', credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ links: links }) });
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ links: links, refs: refs }) });
         var d = await res.json().catch(function () { return {}; });
         if (!res.ok || !d.ok) throw new Error(d.error || ('HTTP ' + res.status));
         say('ບັນທຶກສຳເລັດ ✅', 'success');
@@ -63,6 +65,8 @@
         slot.querySelector('.tgs-label').value = l.label || '';
         slot.querySelector('.tgs-url').value = l.url || '';
       });
+      var refs = (d && d.refs) || {};
+      document.querySelectorAll('.tgs-ref[data-ch]').forEach(function (c) { c.checked = refs[c.getAttribute('data-ch')] === true; });
     }).catch(function () {});
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

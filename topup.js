@@ -448,17 +448,26 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'ໂອນແລ້ວສົ່ງສະລິບ ລະບົບກວດ ແລະ ເຕີມເງິນໃຫ້ເອງ (ຖ້າກວດບໍ່ໄດ້ ແອດມິນຈະກວດໃຫ້)'
         : 'ສົ່ງສະລິບ ແລ້ວລໍຖ້າແອດມິນກວດສອບ';
       updateBankText();
-      // ช่อง "ເລກອ້າງອີງ" ใช้เฉพาะโหมดอัตโนมัติ
-      const refWrap = document.querySelector('#topupRefWrap');
-      if (refWrap) refWrap.classList.toggle('u-hidden', topupMode !== 'auto');
     });
   });
+
+  // ช่อง "ເລກອ້າງອີງ": แอดมินเปิดทีละช่องทาง (ตั้งค่าร้าน > สวิตช์ "ເປີດຊ່ອງໃສ່ເລກອ້າງອີງ")
+  let refEnabled = {};
+  function updateRefWrap() {
+    const refWrap = document.querySelector('#topupRefWrap');
+    if (refWrap) refWrap.classList.toggle('u-hidden', refEnabled[selectedBank] !== true);
+  }
+  fetch('/api/topup-links', { cache: 'no-store' })
+    .then((r) => r.json())
+    .then((d) => { refEnabled = (d && d.refs) || {}; updateRefWrap(); })
+    .catch(() => {});
 
   methods.forEach((btn) => {
     btn.addEventListener('click', () => {
       methods.forEach((m) => m.classList.remove('active'));
       btn.classList.add('active');
       selectedBank = Number(btn.dataset.bank);
+      updateRefWrap();
       updateBankText();
     });
   });
@@ -768,8 +777,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (topupMode === 'auto') {
         if (!selectedQr) selectedQr = await decodeSlipQr(selectedSlip); // เผื่อยังอ่านไม่เสร็จ
         form.append('qr', selectedQr || '');
+      }
+      {
         const refInput = document.querySelector('#topupSlipRef');
-        form.append('ref', refInput ? refInput.value.trim() : '');
+        const refWrapEl = document.querySelector('#topupRefWrap');
+        const refVal = refInput && refWrapEl && !refWrapEl.classList.contains('u-hidden') ? refInput.value.trim() : '';
+        form.append('ref', refVal);
       }
       const slipToSend = await compressImageIfLarge(selectedSlip);
       form.append('slip', slipToSend, slipToSend.name);
