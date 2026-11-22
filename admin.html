@@ -1272,6 +1272,23 @@ IJKL-9012"></textarea></div>
 <div class="gx-msg" id="qrMsg"></div>
 </div>
 </div>
+<!-- ລິ້ງຄລິບສອນເຕີມເງິນ — ຄວບຄຸມໂດຍ topup-guide-admin.js (API /api/topup-links) -->
+<div class="stat-panel" id="topupGuideAdmin">
+<h3>
+<svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+      ຄລິບສອນເຕີມເງິນ
+    </h3>
+<div class="gx-field">
+<label>ລິ້ງຄລິບສອນ (ໃສ່ຊື່ + ລິ້ງ ຫຼື ກົດ "ອັບໂຫຼດຄລິບ", ເພີ່ມໄດ້ບໍ່ຈຳກັດ) — ຈະສະແດງໃນໜ້າເຕີມເງິນ</label>
+<div class="link-rows-list" id="tgRows"></div>
+<button class="gx-add-link-btn" id="tgAddBtn" type="button">+ ເພີ່ມລິ້ງ</button>
+</div>
+<button class="gx-submit" id="tgSaveBtn" type="button">
+<span class="gx-spinner"></span>
+<span class="gx-submit-label">ບັນທຶກຄລິບສອນເຕີມເງິນ</span>
+</button>
+<div class="gx-msg" id="tgMsg"></div>
+</div>
 <!-- /panelSettings -->
 </div></div>
 </div>
@@ -1328,6 +1345,7 @@ IJKL-9012"></textarea></div>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="admin-supabase-config.js"></script>
 <script src="admin.js?v=20261122b"></script>
+<script src="topup-guide-admin.js?v=1"></script>
 <script src="daily-sales-admin.js?v=1"></script>
 <script src="coupons-admin.js?v=20261026a"></script>
 <script src="promos-admin.js?v=4"></script>
