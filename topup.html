@@ -23,7 +23,7 @@
 <link href="site-bg.css?v=20261110a" rel="stylesheet"/>
 <link href="polish.css?v=3" rel="stylesheet"/>
 <link href="topup-cards.css?v=1" rel="stylesheet"/>
-<link href="topup-guide.css?v=1" rel="stylesheet"/>
+<link href="topup-guide.css?v=2" rel="stylesheet"/>
 <link href="topup-pp.css?v=1" rel="stylesheet"/>
 <link rel="stylesheet" href="login-modal.css?v=1">
 </head>
@@ -233,6 +233,14 @@
 </div>
 <p class="topup-qr-hint">ສະແກນ QR ດ້ານເທິງດ້ວຍແອັບທະນາຄານ ແລ້ວໂອນຕາມຍອດທີ່ລະບຸໃຫ້ຖືກຕ້ອງ</p>
 </div>
+<div class="tref u-hidden" id="topupRefWrap">
+<label class="tref-label" for="topupSlipRef">
+<svg fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"/></svg>
+ເລກອ້າງອີງ
+</label>
+<input autocomplete="off" class="tref-input" id="topupSlipRef" inputmode="numeric" maxlength="40" placeholder="ໃສ່ເລກອ້າງອີງຈາກສະລິບ" type="text"/>
+<p class="tref-hint">ເລກອ້າງອີງຢູ່ໃນສະລິບການໂອນ — ໃສ່ໄວ້ເພື່ອໃຫ້ລະບົບກວດໄດ້ໄວ ແລະ ແນ່ນອນຂຶ້ນ</p>
+</div>
 <p class="topup-label">ອັບໂຫຼດສະລິບການໂອນ</p>
 <label class="topup-upload" id="topupUploadLabel">
 <input accept="image/*" class="u-hidden" id="topupSlipInput" type="file"/>
@@ -241,7 +249,6 @@
 <div class="fname" id="topupSlipName">ກົດເພື່ອເລືອກຮູບສະລິບ</div>
 <div class="fhint">ຮອງຮັບ JPG, PNG</div>
 </label>
-<input autocomplete="off" class="topup-custom-input u-hidden" id="topupSlipRef" maxlength="40" placeholder="ອ່ານ QR ບໍ່ໄດ້ — ໃສ່ເລກອ້າງອີງໃນສະລິບ (ບໍ່ບັງຄັບ)" style="width:100%;margin:10px 0;padding:14px;border:1px solid rgba(128,128,128,.6);border-radius:12px;background:rgba(255,255,255,.06);color:inherit;font:inherit;box-sizing:border-box" type="text"/>
 <button class="topup-submit" disabled="" id="topupConfirmBtn" type="button">
         ຢືນຢັນການໂອນເງິນ
         <svg fill="none" stroke="currentColor" stroke-width="2" viewbox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
@@ -329,7 +336,7 @@
 <script src="script.js?v=20261009a"></script>
 <script src="name-gate.js?v=20261110d" defer></script>
 <script src="login-success.js?v=5"></script>
-<script src="topup.js?v=20261122e"></script>
+<script src="topup.js?v=20261122f"></script>
 <script src="topup-cards.js?v=4"></script>
 <script src="topup-guide.js?v=1" defer></script>
 <script src="weather-fx.js?v=20261011a" defer></script>

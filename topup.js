@@ -448,6 +448,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ? 'ໂອນແລ້ວສົ່ງສະລິບ ລະບົບກວດ ແລະ ເຕີມເງິນໃຫ້ເອງ (ຖ້າກວດບໍ່ໄດ້ ແອດມິນຈະກວດໃຫ້)'
         : 'ສົ່ງສະລິບ ແລ້ວລໍຖ້າແອດມິນກວດສອບ';
       updateBankText();
+      // ช่อง "ເລກອ້າງອີງ" ใช้เฉพาะโหมดอัตโนมัติ
+      const refWrap = document.querySelector('#topupRefWrap');
+      if (refWrap) refWrap.classList.toggle('u-hidden', topupMode !== 'auto');
     });
   });
 
@@ -720,13 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const file = slipInput.files && slipInput.files[0];
     selectedSlip = file || null;
     selectedQr = '';
-    const refInput = document.querySelector('#topupSlipRef');
-    if (refInput) { refInput.value = ''; refInput.classList.add('u-hidden'); }
     if (file && topupMode === 'auto') {
-      decodeSlipQr(file).then((q) => {
-        selectedQr = q;
-        if (!q && refInput) refInput.classList.remove('u-hidden');
-      });
+      decodeSlipQr(file).then((q) => { selectedQr = q; });
     }
     if (file) {
       uploadLabel.classList.add('has-file');
