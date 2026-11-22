@@ -4,11 +4,15 @@
 (function () {
   'use strict';
   function init() {
-    var saveBtn = document.getElementById('tgSaveBtn');
-    var msg = document.getElementById('tgMsg');
+    // ใช้ปุ่ม "ບັນທຶກ QR ໂອນເງິນ" เดิมปุ่มเดียว บันทึกคลิป + สวิตช์เลขอ้างอิงไปด้วย
+    var saveBtn = document.getElementById('saveQrBtn');
+    var msg = document.getElementById('qrMsg');
     var slots = Array.prototype.slice.call(document.querySelectorAll('.tgs[data-ch]'));
     if (!saveBtn || !slots.length) return;
-    function say(t, k) { if (typeof setMsg === 'function' && msg) setMsg(msg, t, k); else if (msg) msg.textContent = t; }
+    function say(t, k) {
+      // ข้อความสำเร็จ/กำลังบันทึก ใช้ของปุ่ม QR เดิม; แจ้งเฉพาะ error (หน่วงให้ไม่ถูกทับ)
+      if (k === 'error') setTimeout(function () { if (typeof setMsg === 'function' && msg) setMsg(msg, t, 'error'); }, 2500);
+    }
 
     slots.forEach(function (slot) {
       var file = slot.querySelector('.tgs-file'), up = slot.querySelector('.tgs-up');
@@ -47,15 +51,13 @@
       if (bad) { say('ກະລຸນາໃສ່ຊື່ ແລະ ລິ້ງ (ຂຶ້ນຕົ້ນດ້ວຍ https://) ໃຫ້ຄົບໃນຊ່ອງທີ່ກອກ', 'error'); return; }
       var refs = {};
       document.querySelectorAll('.tgs-ref[data-ch]').forEach(function (c) { refs[c.getAttribute('data-ch')] = c.checked; });
-      saveBtn.disabled = true; saveBtn.classList.add('loading'); say('ກຳລັງບັນທຶກ...', 'pending');
       try {
         var res = await fetch('/api/topup-links', { method: 'POST', credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ links: links, refs: refs }) });
         var d = await res.json().catch(function () { return {}; });
         if (!res.ok || !d.ok) throw new Error(d.error || ('HTTP ' + res.status));
-        say('ບັນທຶກສຳເລັດ ✅', 'success');
       } catch (e) { say('ບັນທຶກບໍ່ສຳເລັດ: ' + (e.message || e), 'error'); }
-      finally { saveBtn.disabled = false; saveBtn.classList.remove('loading'); }
+
     });
 
     fetch('/api/topup-links', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {

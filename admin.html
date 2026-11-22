@@ -1319,7 +1319,7 @@ IJKL-9012"></textarea></div>
 </div>
 </div>
 <div class="gx-msg u-small-hint-mb">
-      ຊ່ອງ 1 = BCEL One (ໂໝດອັດຕະໂນມັດ), 2 = LDB Bank, 3 = umoney, 4 = LAO QR. ສະວິດ "ເປີດກວດສະລິບອັດຕະໂນມັດ": ເປີດ = ລູກຄ້າສົ່ງສະລິບແລ້ວລະບົບກວດ ແລະ ເຕີມໃຫ້ເອງ, ປິດ = ແອດມິນຢືນຢັນ (ກົດ "ບັນທຶກ QR ໂອນເງິນ" ຈຶ່ງມີຜົນ). ຖ້າເວັ້ນຊື່/ຂໍ້ຄວາມ/ຮູບໂລໂກ້ໄວ້ ຈະໃຊ້ຄ່າເລີ່ມຕົ້ນ. ຊ່ອງໃດບໍ່ໃສ່ຮູບ QR ການ໌ດນັ້ນຈະກົດບໍ່ໄດ້ (ຂຶ້ນວ່າກຳລັງຈະເປີດໃຫ້ບໍລິການ)
+      ຊ່ອງ 1 = BCEL One (ໂໝດອັດຕະໂນມັດ), 2 = LDB Bank, 3 = umoney, 4 = LAO QR. ສະວິດ "ເປີດກວດສະລິບອັດຕະໂນມັດ": ເປີດ = ລູກຄ້າສົ່ງສະລິບແລ້ວລະບົບກວດ ແລະ ເຕີມໃຫ້ເອງ, ປິດ = ແອດມິນຢືນຢັນ (ກົດ "ບັນທຶກ QR ໂອນເງິນ" ຈຶ່ງມີຜົນ — ຄລິບສອນ ແລະ ສະວິດເລກອ້າງອີງ ບັນທຶກພ້ອມກັນໃນປຸ່ມນີ້). ຖ້າເວັ້ນຊື່/ຂໍ້ຄວາມ/ຮູບໂລໂກ້ໄວ້ ຈະໃຊ້ຄ່າເລີ່ມຕົ້ນ. ຊ່ອງໃດບໍ່ໃສ່ຮູບ QR ການ໌ດນັ້ນຈະກົດບໍ່ໄດ້ (ຂຶ້ນວ່າກຳລັງຈະເປີດໃຫ້ບໍລິການ)
     </div>
 <button class="gx-submit" id="saveQrBtn" type="button">
 <span class="gx-spinner"></span>
@@ -1327,16 +1327,6 @@ IJKL-9012"></textarea></div>
 </button>
 <div class="gx-msg" id="qrMsg"></div>
 </div>
-</div>
-<!-- ບັນທຶກຄລິບສອນເຕີມເງິນ — ຄວບຄຸມໂດຍ topup-guide-admin.js (API /api/topup-links) -->
-<div class="stat-panel" id="topupGuideAdmin">
-<h3>ຄລິບສອນເຕີມເງິນ (4 ຊ່ອງ)</h3>
-<div class="gx-msg u-small-hint-mb">ໃສ່ຊື່ + ລິ້ງ ຫຼື ອັບໂຫຼດຄລິບ ໃນແຕ່ລະຊ່ອງດ້ານເທິງ ແລ້ວກົດບັນທຶກທີ່ນີ້ ຄັ້ງດຽວ</div>
-<button class="gx-submit" id="tgSaveBtn" type="button">
-<span class="gx-spinner"></span>
-<span class="gx-submit-label">ບັນທຶກຄລິບສອນເຕີມເງິນ</span>
-</button>
-<div class="gx-msg" id="tgMsg"></div>
 </div>
 <!-- /panelSettings -->
 </div></div>
@@ -1394,7 +1384,7 @@ IJKL-9012"></textarea></div>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="admin-supabase-config.js"></script>
 <script src="admin.js?v=20261122b"></script>
-<script src="topup-guide-admin.js?v=3"></script>
+<script src="topup-guide-admin.js?v=4"></script>
 <script src="daily-sales-admin.js?v=1"></script>
 <script src="coupons-admin.js?v=20261026a"></script>
 <script src="promos-admin.js?v=4"></script>
