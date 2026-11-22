@@ -274,10 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (item.status === 'approved') {
         setTuwState('success');
         showTuwToast('ເຕີມເງິນສຳເລັດ! ຍອດເຂົ້າບັນຊີແລ້ວ', 'success');
+        if (window.LoginSuccess) window.LoginSuccess.ding(); // เสียงเหมือนตอนเข้าสู่ระบบสำเร็จ
         stopTuwPolling();
       } else if (item.status === 'rejected') {
         setTuwState('failed');
         showTuwToast('ລາຍການບໍ່ຜ່ານການກວດສອບ', 'failed');
+        if (window.LoginSuccess) window.LoginSuccess.error(); // เสียงเหมือนตอนเข้าสู่ระบบไม่สำเร็จ
         stopTuwPolling();
       } else if (item.viewed_at) {
         setTuwState('reviewing');
@@ -723,6 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
   /* ---------- Step 2 -> Step 3: ຢືນຢັນການໂອນ ---------- */
   confirmBtn.addEventListener('click', async () => {
     if (!selectedSlip) return;
+    if (window.LoginSuccess) window.LoginSuccess.unlock(); // ปลดล็อกเสียงตอนกดปุ่ม (เบราว์เซอร์บังคับ)
 
     confirmBtn.disabled = true;
     const originalHtml = confirmBtn.innerHTML;
@@ -756,6 +759,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok || !data.ok) {
         // ສົ່ງບໍ່ສຳເລັດຈິງ -> ຢູ່ໜ້າເດີມ ບໍ່ພາໄປໜ້າ "ລໍຖ້າກວດສອບ" ຫຼອກໆ ຄືເມື່ອກ່ອນ
         showToast(data.error || 'ຢືນຢັນການໂອນບໍ່ສຳເລັດ, ລອງໃໝ່ອີກຄັ້ງ', true);
+        if (window.LoginSuccess) window.LoginSuccess.error();
         return;
       }
 
@@ -775,6 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
       console.error('ຢືນຢັນການໂອນບໍ່ສຳເລັດ', err);
       showToast('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້, ລອງໃໝ່ພາຍຫຼັງ', true);
+      if (window.LoginSuccess) window.LoginSuccess.error();
     } finally {
       confirmBtn.disabled = false;
       confirmBtn.innerHTML = originalHtml;
