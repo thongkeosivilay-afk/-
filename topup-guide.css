@@ -1,20 +1,18 @@
-/* topup-guide.css — แถวลิ้งคลิปสอนเติมเงิน (สไตล์เดียวกับแถว "ລິ້ງ" ในหน้าสินค้า) */
-.tg-list{display:flex;flex-direction:column;gap:5px;margin:0 0 14px}
-.tg-list[hidden]{display:none}
-.tg-item{
-  display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;
-  padding:8px 22px;border-radius:12px;text-decoration:none;
-  background:#0d0d0d;border:1px solid #2a2a2a;color:#fff;cursor:pointer;
-  font-family:'Noto Sans Lao Looped','Noto Sans Lao',sans-serif;
-  transition:transform .15s ease,border-color .15s ease,background .15s ease;
+/* topup-guide.css — ปุ่มคลิปสอนเติมเงินบนการ์ดแต่ละช่อง + ช่องเลขอ้างอิง */
+.tg-card{
+  display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;margin:0 0 10px;
+  padding:7px 10px;border-radius:12px;text-decoration:none;color:#fff;cursor:pointer;
+  background:linear-gradient(180deg,#171717,#0b0b0b);border:1px solid #2f2f2f;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 0 0 1px rgba(239,90,60,.12),0 6px 14px -8px rgba(239,90,60,.55);
+  font-family:'Noto Sans Lao Looped','Noto Sans Lao',sans-serif;text-align:left;
+  transition:transform .15s ease,border-color .15s ease;
 }
-.tg-item:hover{border-color:#3a3a3a;background:#121212}
-.tg-item:active{transform:scale(.985)}
-.tg-ico{flex:0 0 auto;width:18px;height:18px;color:#ef5a3c;display:flex}
-.tg-ico svg{width:100%;height:100%}
-.tg-name{flex:1;min-width:0;font-weight:700;font-size:14.5px;line-height:1.3;overflow-wrap:anywhere}
-.tg-chev{flex:0 0 auto;width:15px;height:15px;color:#8a8a8a;display:flex}
-.tg-chev svg{width:100%;height:100%}
+.tg-card:hover{border-color:#ef5a3c}
+.tg-card:active{transform:scale(.97)}
+.tg-ico{flex:0 0 auto;width:16px;height:16px;color:#ef5a3c;display:flex}
+.tg-ico svg,.tg-chev svg{width:100%;height:100%}
+.tg-name{flex:1;min-width:0;font-weight:700;font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-chev{flex:0 0 auto;width:13px;height:13px;color:#8a8a8a;display:flex}
 
 /* ช่องเลขอ้างอิง (วางเหนือหัวข้ออัปโหลดสลิป) */
 .tref{margin:18px 0 6px}
