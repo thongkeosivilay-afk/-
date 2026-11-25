@@ -18,6 +18,9 @@ binding = "SESSIONS"
 id = "74ffa29122634c6f9cd4db4d71c40a56"
 
 [vars]
+# ปิดเว็บแบบบังคับ (หน้า "ปิดปรับปรุง") — Supabase โดนจำกัดโควตา ต้องเปลี่ยนเป็น "0" หรือลบบรรทัดนี้ตอนจะเปิดเว็บกลับ
+MAINTENANCE_FORCE = "1"
+
 # URL โปรเจกต์ Supabase (ไม่ใช่ข้อมูลลับ — ตั้งในนี้ได้เลย)
 SUPABASE_URL = "https://ebmambgqghyzrenknkeb.supabase.co"
 
