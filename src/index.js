@@ -172,13 +172,13 @@ async function route(request, env, ctx) {
       return handleSupabaseProxy(request, env, url);
     }
     if (url.pathname === '/api/public/storefront') {
-      return handlePublicStorefront(request, env);
+      return withEdgeCache(request, ctx, 45, () => handlePublicStorefront(request, env));
     }
     if (url.pathname === '/api/public/recent-purchases') {
-      return handleRecentPurchases(request, env);
+      return withEdgeCache(request, ctx, 45, () => handleRecentPurchases(request, env));
     }
     if (url.pathname === '/api/public/weekly-best-sellers') {
-      return handleWeeklyBestSellers(request, env);
+      return withEdgeCache(request, ctx, 120, () => handleWeeklyBestSellers(request, env));
     }
     if (url.pathname === '/api/public/top-spenders') {
       return handleTopSpenders(request, env, ctx);
@@ -313,6 +313,12 @@ async function readMaintenanceFromDb(env) {
 }
 
 async function getMaintenanceState(env, fresh) {
+  // บังคับปิดเว็บด้วยตัวแปร MAINTENANCE_FORCE = "1" (ตั้งใน wrangler.toml [vars])
+  // ไม่ต้องอ่าน Supabase/KV เลย — ใช้ตอน Supabase ล่ม/โดนจำกัดโควตา จะได้ไม่ยิง Supabase ทุกครั้งที่มีคนเข้าเว็บ
+  // เปิดเว็บกลับ: เปลี่ยนเป็น "0" (หรือลบบรรทัดนี้) แล้ว deploy ใหม่
+  if (env.MAINTENANCE_FORCE === '1' || env.MAINTENANCE_FORCE === 'true') {
+    return { on: true, at: null, by: 'env', source: 'env' };
+  }
   const now = Date.now();
   if (!fresh && maintCache && now - maintCache.at < MAINT_CACHE_MS) return maintCache.state;
 
@@ -444,128 +450,136 @@ async function handleMaintenanceStatus(request, env) {
 
 const MAINTENANCE_HTML = `<!doctype html>
 <html lang="lo" data-maintenance><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex">
-<meta http-equiv="refresh" content="60">
-<title>ເວັບປິດປັບປຸງຊົ່ວຄາວ</title>
+<meta name="theme-color" content="#000000">
+<meta http-equiv="refresh" content="300">
+<title>DEK MASH SHOP — ປິດປັບປຸງລະບົບ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;600;800&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
 <style>
+  :root{
+    --ink:#000;
+    --panel:#0b0b0d;
+    --line:#26262b;
+    --red:#ff0001;
+    --red-deep:#8a0001;
+    --gold:#e8b34a;
+    --text:#fff;
+    --dim:#a4a4ab;
+    --lao:"Noto Sans Lao","Noto Sans Thai",system-ui,-apple-system,sans-serif;
+    --num:"Orbitron","Noto Sans Lao",system-ui,sans-serif;
+  }
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0}
-  body{position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;
-       background:radial-gradient(ellipse at 50% 38%,#17203a 0%,#0b0e17 55%,#07090f 100%);
-       color:#e8eaf0;font-family:"Noto Sans Lao",system-ui,-apple-system,"Noto Sans Thai",sans-serif;
-       text-align:center;padding:24px}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:var(--ink);color:var(--text);font-family:var(--lao);
+    min-height:100vh;min-height:100dvh;
+    padding:max(28px,env(safe-area-inset-top)) 22px max(28px,env(safe-area-inset-bottom));
+    display:flex;align-items:center;justify-content:center;
+    background-image:
+      radial-gradient(60% 45% at 50% 0%,rgba(255,0,1,.22),transparent 70%),
+      radial-gradient(rgba(255,255,255,.07) 1px,transparent 1.4px);
+    background-size:100% 100%,22px 22px;
+  }
+  .wrap{width:100%;max-width:520px}
 
-  /* พื้นหลังตาราง + แสงสีเคลื่อนไหว */
-  .grid{position:absolute;inset:0;pointer-events:none;
-        background-image:linear-gradient(rgba(120,140,255,.07) 1px,transparent 1px),
-                         linear-gradient(90deg,rgba(120,140,255,.07) 1px,transparent 1px);
-        background-size:44px 44px;
-        -webkit-mask-image:radial-gradient(ellipse at center,#000 15%,transparent 70%);
-        mask-image:radial-gradient(ellipse at center,#000 15%,transparent 70%);
-        animation:gridmove 14s linear infinite}
-  @keyframes gridmove{to{background-position:44px 44px}}
-  .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5;pointer-events:none}
-  .b1{width:300px;height:300px;background:#4f46e5;top:-80px;left:-90px;animation:drift 12s ease-in-out infinite alternate}
-  .b2{width:260px;height:260px;background:#06b6d4;bottom:-90px;right:-70px;animation:drift 15s ease-in-out infinite alternate-reverse}
-  @keyframes drift{to{transform:translate(40px,30px) scale(1.15)}}
+  .brand{font-family:var(--num);font-weight:900;font-size:13px;letter-spacing:.32em;color:var(--dim);margin:0 0 26px}
+  .brand b{color:var(--red);font-weight:900}
 
-  /* อนุภาคลอยขึ้น */
-  .sp{position:absolute;bottom:-10px;width:4px;height:4px;border-radius:50%;background:#7dd3fc;
-      box-shadow:0 0 8px #38bdf8;opacity:0;animation:rise 9s linear infinite}
-  .sp:nth-child(1){left:8%;animation-delay:0s}
-  .sp:nth-child(2){left:22%;animation-delay:2.2s;background:#c4b5fd;box-shadow:0 0 8px #a78bfa}
-  .sp:nth-child(3){left:37%;animation-delay:5s}
-  .sp:nth-child(4){left:58%;animation-delay:1.1s;background:#fda4af;box-shadow:0 0 8px #fb7185}
-  .sp:nth-child(5){left:73%;animation-delay:3.6s}
-  .sp:nth-child(6){left:88%;animation-delay:6.4s;background:#c4b5fd;box-shadow:0 0 8px #a78bfa}
-  @keyframes rise{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:.9}100%{transform:translateY(-105vh) scale(1.2);opacity:0}}
+  /* ===== ໜ້າຈໍເກມ: ຈຸດເດັ່ນຂອງໜ້ານີ້ ===== */
+  .screen{
+    position:relative;border:2px solid var(--line);border-radius:22px;background:var(--panel);
+    padding:26px 22px 22px;box-shadow:0 0 0 6px #000,0 0 0 8px var(--red-deep),0 18px 50px rgba(255,0,1,.18);
+  }
+  .screen::before{
+    content:"";position:absolute;left:50%;top:-5px;width:46px;height:8px;margin-left:-23px;border-radius:0 0 8px 8px;background:var(--red);
+  }
+  .label{margin:0;color:var(--dim);font-size:14px;font-weight:600}
+  .big{
+    display:flex;align-items:baseline;gap:12px;margin:6px 0 4px;
+    font-family:var(--num);font-weight:900;line-height:1;
+  }
+  .big .n{font-size:clamp(76px,22vw,112px);letter-spacing:-.02em;color:var(--text);text-shadow:4px 4px 0 var(--red)}
+  .big .u{font-family:var(--lao);font-weight:800;font-size:clamp(24px,7vw,34px);color:var(--gold)}
 
-  .box{position:relative;z-index:1;max-width:440px;width:100%}
+  /* ແຖບ 9 ວັນ: 8 ຊ່ອງເຕັມ + 1 ຊ່ອງເສັ້ນປະ = 8–9 ວັນ */
+  .days{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin:20px 0 6px;padding:0;list-style:none}
+  .days li{position:relative;height:30px;border-radius:5px;background:#1a1a1f;overflow:hidden}
+  .days li:last-child{background:transparent;border:2px dashed #4a4a52}
+  .days li::after{
+    content:"";position:absolute;inset:0;background:var(--red);transform:translateX(-101%);
+    animation:fill 3.6s cubic-bezier(.6,0,.3,1) infinite;animation-delay:calc(var(--i)*.16s);
+  }
+  .days li:last-child::after{background:var(--gold);opacity:.85}
+  @keyframes fill{0%{transform:translateX(-101%)}22%,62%{transform:translateX(0)}86%,100%{transform:translateX(101%)}}
+  .ticks{display:grid;grid-template-columns:repeat(9,1fr);gap:6px;margin:0;padding:0;list-style:none;
+         font-family:var(--num);font-size:11px;font-weight:700;color:#6a6a72;text-align:center}
+  .ticks li:last-child{color:var(--gold)}
 
-  /* ไอคอนเฟือง */
-  .icon{position:relative;width:240px;height:200px;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;
-        animation:float 4.5s ease-in-out infinite}
-  @keyframes float{50%{transform:translateY(-8px)}}
-  .halo{position:absolute;width:190px;height:190px;border-radius:50%;
-        background:radial-gradient(circle,rgba(99,102,241,.45),rgba(56,189,248,.12) 55%,transparent 72%);
-        animation:pulse 3s ease-in-out infinite}
-  @keyframes pulse{50%{transform:scale(1.18);opacity:.65}}
-  .orbit{position:absolute;width:210px;height:210px;border-radius:50%;border:1px dashed rgba(148,163,255,.35);
-         animation:spin 22s linear infinite}
-  .orbit::after{content:"";position:absolute;top:-4px;left:50%;margin-left:-4px;width:8px;height:8px;border-radius:50%;
-         background:#fff;box-shadow:0 0 10px 3px #38bdf8}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .icon svg{position:relative;width:230px;height:auto;overflow:visible;
-            filter:drop-shadow(0 0 10px rgba(99,102,241,.7)) drop-shadow(0 0 22px rgba(56,189,248,.35))}
+  h1{margin:30px 0 12px;font-size:clamp(25px,6.6vw,32px);font-weight:800;line-height:1.4}
+  .msg{margin:0;color:var(--dim);font-size:16px;line-height:1.85}
+  .msg strong{color:var(--text);font-weight:600}
 
-  /* ป้ายสถานะ */
-  .chip{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
-        background:rgba(99,102,241,.14);border:1px solid rgba(129,140,248,.4);
-        font-size:12px;font-weight:600;letter-spacing:.22em;color:#c7d2fe;margin-bottom:16px}
-  .chip i{width:8px;height:8px;border-radius:50%;background:#34d399;box-shadow:0 0 0 0 rgba(52,211,153,.7);animation:ping 1.8s ease-out infinite}
-  @keyframes ping{to{box-shadow:0 0 0 10px rgba(52,211,153,0)}}
+  .foot{margin:26px 0 0;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:14px;line-height:1.8}
+  .foot b{color:var(--gold);font-weight:600}
 
-  h1{margin:0 0 12px;font-size:28px;font-weight:800;line-height:1.35;
-     background:linear-gradient(100deg,#e0e7ff 20%,#7dd3fc 40%,#c4b5fd 60%,#e0e7ff 80%);background-size:250% 100%;
-     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;
-     animation:shine 5s linear infinite}
-  @keyframes shine{to{background-position:-250% 0}}
-  p{margin:0;color:#aab0bd;line-height:1.8;font-size:15px}
-
-  /* แถบโหลด */
-  .bar{position:relative;height:5px;width:220px;margin:26px auto 0;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden}
-  .bar::after{content:"";position:absolute;top:0;left:0;height:100%;width:40%;border-radius:99px;
-              background:linear-gradient(90deg,transparent,#38bdf8,#a78bfa,transparent);animation:load 1.8s ease-in-out infinite}
-  @keyframes load{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
-
+  @media (min-width:700px){
+    .wrap{max-width:560px}
+    .screen{padding:32px 30px 28px}
+  }
   @media (prefers-reduced-motion:reduce){
-    *,*::before,*::after{animation:none!important}
+    .days li::after{animation:none;transform:translateX(0)}
+    .days li:last-child::after{opacity:.4}
   }
 </style></head>
 <body>
-<div class="grid"></div><div class="blob b1"></div><div class="blob b2"></div>
-<span class="sp"></span><span class="sp"></span><span class="sp"></span><span class="sp"></span><span class="sp"></span><span class="sp"></span>
-<div class="box">
-  <div class="icon" aria-hidden="true">
-    <div class="halo"></div><div class="orbit"></div>
-    <svg viewBox="-56 -58 150 116" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="gA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38bdf8"/><stop offset="1" stop-color="#a78bfa"/></linearGradient>
-        <linearGradient id="gB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f472b6"/><stop offset="1" stop-color="#fb923c"/></linearGradient>
-        <linearGradient id="fA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232b4a"/><stop offset="1" stop-color="#121730"/></linearGradient>
-        <linearGradient id="fB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2238"/><stop offset="1" stop-color="#1c1224"/></linearGradient>
-      </defs>
-      <g transform="rotate(-18)">
-        <g transform="translate(0,0)">
-          <g>
-            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="12s" repeatCount="indefinite"/>
-            <path fill-rule="evenodd" fill="url(#fA)" stroke="url(#gA)" stroke-width="1.6" stroke-linejoin="round" d="M32.07 -5.25L38.74 -4.48L38.74 4.48L32.07 5.25A32.50 32.50 0 0 1 30.40 11.49L35.79 15.49L31.31 23.25L25.15 20.58A32.50 32.50 0 0 1 20.58 25.15L23.25 31.31L15.49 35.79L11.49 30.40A32.50 32.50 0 0 1 5.25 32.07L4.48 38.74L-4.48 38.74L-5.25 32.07A32.50 32.50 0 0 1 -11.49 30.40L-15.49 35.79L-23.25 31.31L-20.58 25.15A32.50 32.50 0 0 1 -25.15 20.58L-31.31 23.25L-35.79 15.49L-30.40 11.49A32.50 32.50 0 0 1 -32.07 5.25L-38.74 4.48L-38.74 -4.48L-32.07 -5.25A32.50 32.50 0 0 1 -30.40 -11.49L-35.79 -15.49L-31.31 -23.25L-25.15 -20.58A32.50 32.50 0 0 1 -20.58 -25.15L-23.25 -31.31L-15.49 -35.79L-11.49 -30.40A32.50 32.50 0 0 1 -5.25 -32.07L-4.48 -38.74L4.48 -38.74L5.25 -32.07A32.50 32.50 0 0 1 11.49 -30.40L15.49 -35.79L23.25 -31.31L20.58 -25.15A32.50 32.50 0 0 1 25.15 -20.58L31.31 -23.25L35.79 -15.49L30.40 -11.49A32.50 32.50 0 0 1 32.07 -5.25 ZM12.00 0 A12.00 12.00 0 1 0 -12.00 0 A12.00 12.00 0 1 0 12.00 0 Z"/>
-            <circle r="22" fill="none" stroke="url(#gA)" stroke-width="1" stroke-dasharray="3 5" opacity=".7"/>
-            <circle r="5" fill="url(#gA)"/>
-          </g>
-        </g>
-        <g transform="translate(60,0)">
-          <g>
-            <animateTransform attributeName="transform" type="rotate" from="22.5" to="-337.5" dur="8s" repeatCount="indefinite"/>
-            <path fill-rule="evenodd" fill="url(#fB)" stroke="url(#gB)" stroke-width="1.6" stroke-linejoin="round" d="M19.90 -4.94L26.60 -4.64L26.60 4.64L19.90 4.94A20.50 20.50 0 0 1 17.56 10.57L22.09 15.53L15.53 22.09L10.57 17.56A20.50 20.50 0 0 1 4.94 19.90L4.64 26.60L-4.64 26.60L-4.94 19.90A20.50 20.50 0 0 1 -10.57 17.56L-15.53 22.09L-22.09 15.53L-17.56 10.57A20.50 20.50 0 0 1 -19.90 4.94L-26.60 4.64L-26.60 -4.64L-19.90 -4.94A20.50 20.50 0 0 1 -17.56 -10.57L-22.09 -15.53L-15.53 -22.09L-10.57 -17.56A20.50 20.50 0 0 1 -4.94 -19.90L-4.64 -26.60L4.64 -26.60L4.94 -19.90A20.50 20.50 0 0 1 10.57 -17.56L15.53 -22.09L22.09 -15.53L17.56 -10.57A20.50 20.50 0 0 1 19.90 -4.94 ZM8.00 0 A8.00 8.00 0 1 0 -8.00 0 A8.00 8.00 0 1 0 8.00 0 Z"/>
-            <circle r="14" fill="none" stroke="url(#gB)" stroke-width="1" stroke-dasharray="2 4" opacity=".7"/>
-            <circle r="3.5" fill="url(#gB)"/>
-          </g>
-        </g>
-      </g>
-    </svg>
-  </div>
-  <div class="chip"><i></i>MAINTENANCE</div>
-  <h1>ເວັບປິດປັບປຸງຊົ່ວຄາວ</h1>
-  <p>ພວກເຮົາກຳລັງປັບປຸງລະບົບ ກະລຸນາກັບມາໃໝ່ໃນພາຍຫຼັງ<br>ຂໍອະໄພໃນຄວາມບໍ່ສະດວກ</p>
-  <div class="bar"></div>
-</div>
+<main class="wrap">
+  <p class="brand">DEK <b>MASH</b> SHOP</p>
+
+  <section class="screen" aria-label="ເວລາທີ່ຂໍປັບປຸງ">
+    <p class="label">ເວລາທີ່ຂໍປັບປຸງລະບົບ</p>
+    <div class="big"><span class="n">8–9</span><span class="u">ວັນ</span></div>
+    <ol class="days" aria-hidden="true">
+      <li style="--i:0"></li><li style="--i:1"></li><li style="--i:2"></li><li style="--i:3"></li><li style="--i:4"></li>
+      <li style="--i:5"></li><li style="--i:6"></li><li style="--i:7"></li><li style="--i:8"></li>
+    </ol>
+    <ol class="ticks" aria-hidden="true"><li>1</li><li>2</li><li>3</li><li>4</li><li>5</li><li>6</li><li>7</li><li>8</li><li>9</li></ol>
+  </section>
+
+  <h1>ຂໍອະໄພ ລະບົບຂອງເຮົາມີບັນຫາ</h1>
+  <p class="msg">ທີມງານກຳລັງແກ້ໄຂ ແລະ ປັບປຸງລະບົບຢູ່ <strong>ຂໍເວລາ 8–9 ວັນ</strong> ເພື່ອກັບມາໃຫ້ບໍລິການຕາມປົກກະຕິ ໃນລະຫວ່າງນີ້ຍັງບໍ່ສາມາດສັ່ງຊື້ ຫຼື ເຕີມເງິນໄດ້</p>
+
+  <p class="foot"><b>ຂອບໃຈທີ່ລໍຖ້າ</b> ແລະ ຂໍອະໄພໃນຄວາມບໍ່ສະດວກ ເມື່ອເວັບກັບມາ ໜ້ານີ້ຈະພາທ່ານເຂົ້າຮ້ານອັດຕະໂນມັດ</p>
+</main>
 <script src="/maintenance-watch.js?v=20261014a"></script>
 </body></html>`;
+
+
+/* ---------- cache ที่ edge ของ Cloudflare สำหรับ endpoint สาธารณะ (GET) ----------
+   ข้อมูลหน้าร้านเหมือนกันทุกคน จึงเก็บผลไว้ไม่กี่สิบวินาที — ต่อให้มีคนเข้าพร้อมกันกี่ร้อยคน
+   Worker ก็ยิง Supabase แค่ครั้งเดียวต่อ ttl วินาที (ลด Egress/โควตา) เก็บเฉพาะคำตอบ 200 เท่านั้น */
+async function withEdgeCache(request, ctx, ttlSeconds, producer) {
+  if (request.method !== 'GET' || typeof caches === 'undefined' || !caches.default) return producer();
+  const u = new URL(request.url);
+  const cacheKey = new Request(u.origin + u.pathname + u.search, { method: 'GET' });
+  try {
+    const hit = await caches.default.match(cacheKey);
+    if (hit) return hit;
+  } catch (e) { /* cache อ่านไม่ได้ก็ไปดึงของจริง */ }
+  const res = await producer();
+  if (res && res.status === 200) {
+    const out = new Response(res.body, res);
+    out.headers.set('Cache-Control', `public, max-age=${ttlSeconds}`);
+    try {
+      const put = caches.default.put(cacheKey, out.clone());
+      if (ctx && ctx.waitUntil) ctx.waitUntil(put); else await put;
+    } catch (e) { /* เก็บไม่ได้ก็ข้าม */ }
+    return out;
+  }
+  return res;
+}
 
 /* คืน Response (หน้าปิดปรับปรุง/JSON 503) ถ้าต้องบล็อก, คืน null ถ้าปล่อยผ่าน */
 async function maintenanceGate(request, env, url) {
